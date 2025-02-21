@@ -12,8 +12,132 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 
 MODULE mo_ocean_testbed_PtP
   !-------------------------------------------------------------------------
@@ -62,7 +186,7 @@ MODULE mo_ocean_testbed_PtP
   CHARACTER(len=12)           :: str_module    = 'test_PtP'      ! Output of module for 1 line debug
   INTEGER                     :: idt_src       = 1               ! Level of detail for 1 line debug
 
-    onCells_Type(t_cartesian_coordinates) :: &
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:) :: &
       & Pvn              ! reconstructed velocity at cell center in cartesian coordinates
 
   PUBLIC :: test_PtP

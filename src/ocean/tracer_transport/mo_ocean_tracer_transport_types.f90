@@ -11,7 +11,133 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !=============================================================================================
 MODULE mo_ocean_tracer_transport_types
 
@@ -24,14 +150,14 @@ MODULE mo_ocean_tracer_transport_types
   
   !----------------------------------------------
   TYPE t_ocean_tracer
-    onCells :: concentration
+    REAL(wp),  POINTER, DIMENSION(:,:,:) :: concentration
 
-    onEdges :: hor_diffusion_coeff
-    onCells_HalfLevels :: ver_diffusion_coeff
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: hor_diffusion_coeff
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: ver_diffusion_coeff
 
-    onCells_2D :: top_bc, bottom_bc
+    REAL(wp), POINTER, DIMENSION(:,:) :: top_bc, bottom_bc
     
-    onCells_3D :: vertical_trasnport_tendencies
+    REAL(wp),  POINTER, DIMENSION(:,:,:) :: vertical_trasnport_tendencies
 
     LOGICAL :: is_advected
 
@@ -63,12 +189,12 @@ MODULE mo_ocean_tracer_transport_types
   TYPE t_ocean_transport_state
     TYPE(t_patch_3d ),POINTER :: patch_3d
     
-    onCells_2D :: h_new, h_old
+    REAL(wp), POINTER, DIMENSION(:,:) :: h_new, h_old
 
-    onEdges    :: mass_flux_e
-    onEdges    :: vn
+    REAL(wp), POINTER, DIMENSION(:,:,:)    :: mass_flux_e
+    REAL(wp), POINTER, DIMENSION(:,:,:)    :: vn
 
-    onCells_HalfLevels :: w
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: w
 
   END TYPE t_ocean_transport_state
   !----------------------------------------------

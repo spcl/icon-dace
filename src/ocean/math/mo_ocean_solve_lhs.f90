@@ -12,12 +12,12 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#define PURE_OR_OMP
-#else
-#define PURE_OR_OMP PURE
-#endif
+
+
+
+
+
+
 
 MODULE mo_ocean_solve_lhs
 
@@ -58,13 +58,13 @@ MODULE mo_ocean_solve_lhs
       & idx_cal, grp_smap_blk, grp_smap_idx, grp_smap_inz
     INTEGER, ALLOCATABLE, DIMENSION(:,:) :: grp_map_idx, grp_map_blk, &
       & inz_t, dnz_cal
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: x_t, ax_t, coef_l_wp, coef_c_sp
-!DIR$ ATTRIBUTES ALIGN : 64 :: coef_c_wp, dcoef_c_sp, dcoef_c_wp, blk_loc
-!DIR$ ATTRIBUTES ALIGN : 64 :: idx_loc, dnz_cal, blk_cal, idx_cal
-!DIR$ ATTRIBUTES ALIGN : 64 :: grp_map_idx, grp_map_blk, grp_smap_blk
-!DIR$ ATTRIBUTES ALIGN : 64 :: grp_smap_idx, grp_smap_inz
-#endif
+
+
+
+
+
+
+
   CONTAINS
 ! for actual left-hand-sides
     PROCEDURE, PRIVATE :: apply_wp => lhs_apply_wp
@@ -602,9 +602,9 @@ CONTAINS
   END SUBROUTINE lhs_create_matrix_init
 
 ! backend routine applying lhs-matrix
-#if !defined(_OPENACC) || !defined(_CRAYFTN)
-  PURE_OR_OMP &
-#endif
+
+  PURE &
+
   SUBROUTINE lhs_doit_wp(this, x, ax, a , b, i, lacc)
     CLASS(t_lhs), INTENT(IN) :: this
     REAL(KIND=wp), INTENT(IN), DIMENSION(:,:), CONTIGUOUS :: x
@@ -650,7 +650,7 @@ CONTAINS
   END SUBROUTINE lhs_doit_wp
 
 ! backend routine applying lhs-matrix, but omitting diagonal elements
-  PURE_OR_OMP SUBROUTINE lhs_noaii_doit_wp(this, x, ax, a , b, i)
+  PURE SUBROUTINE lhs_noaii_doit_wp(this, x, ax, a , b, i)
     CLASS(t_lhs), INTENT(IN) :: this
     REAL(KIND=wp), INTENT(IN), DIMENSION(:,:), CONTIGUOUS :: x
     REAL(KIND=wp), INTENT(OUT), DIMENSION(:,:), CONTIGUOUS :: ax
@@ -728,9 +728,9 @@ CONTAINS
   END SUBROUTINE lhs_apply_noaii_wp
 
 ! sp-variant of lhs_doit_wp
-#if !defined(_OPENACC) || !defined(_CRAYFTN)
-  PURE_OR_OMP &
-#endif
+
+  PURE &
+
   SUBROUTINE lhs_doit_sp(this, x, ax, a, b, i, lacc)
     CLASS(t_lhs), INTENT(IN) :: this
     REAL(KIND=sp), INTENT(IN), DIMENSION(:,:), CONTIGUOUS :: x

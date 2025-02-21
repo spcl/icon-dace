@@ -16,7 +16,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_grf_bdyintp
@@ -35,9 +45,6 @@ USE mo_parallel_config,     ONLY: nproma, p_test_run, cpu_min_nproma
 USE mo_communication,       ONLY: exchange_data_grf
 
 USE mo_grf_intp_data_strc
-#ifdef _OPENACC
-  USE mo_mpi,               ONLY: i_am_accel_node
-#endif
 
 IMPLICIT NONE
 
@@ -606,12 +613,10 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
     !$ACC ENTER DATA ATTACH(p_in(jn)%fld) IF(i_am_accel_node)
   ENDDO
 
-#ifndef __PGI
 ! FIXME: PGI runs into deadlock on loop exit (?), if OMP-parallelized. Compiler bug suspected
 !$OMP PARALLEL DO PRIVATE (jb,nlen,nshift,jk,jc,jn,elev,limfac1,limfac2,limfac, &
 !$OMP   min_expval,max_expval,relaxed_minval,relaxed_maxval, grad_x, grad_y, &
 !$OMP   val_ctr, maxval_neighb, minval_neighb) ICON_OMP_DEFAULT_SCHEDULE
-#endif
     DO jb = 1, nblks_bdyintp
 
       nlen = MERGE(nproma_bdyintp, npromz_bdyintp, jb /= nblks_bdyintp)

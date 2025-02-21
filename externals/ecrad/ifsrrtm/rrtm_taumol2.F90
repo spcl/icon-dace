@@ -76,7 +76,7 @@ REAL(KIND=JPRB) :: taufor,tauself,corradj,pp
     !$ACC             fac11, forfrac, forfac, jp, jt, jt1, colh2o, laytrop, &
     !$ACC             selffac, selffrac, indself, indfor, fracs)
 
-#ifndef _OPENACC
+
     laytrop_min = MINVAL(laytrop)
     laytrop_max = MAXVAL(laytrop)
 
@@ -99,17 +99,6 @@ REAL(KIND=JPRB) :: taufor,tauself,corradj,pp
       enddo
       ixc(lay) = icl
     enddo
-#else
-    laytrop_min = HUGE(laytrop_min) 
-    laytrop_max = -HUGE(laytrop_max)
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR REDUCTION(min:laytrop_min) REDUCTION(max:laytrop_max)
-    do jc = KIDIA,KFDIA
-      laytrop_min = MIN(laytrop_min, laytrop(jc))
-      laytrop_max = MAX(laytrop_max, laytrop(jc))
-    end do
-    !$ACC END PARALLEL
-#endif
 
 
 !     Compute the optical depth by interpolating in ln(pressure) and 
@@ -181,15 +170,10 @@ REAL(KIND=JPRB) :: taufor,tauself,corradj,pp
         !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(ind0, ind1, inds, indf, pp, corradj)
         do lay = laytrop_min+1, laytrop_max
-#ifdef _OPENACC
-          do jl = KIDIA, KFDIA
-            if ( lay <= laytrop(jl) ) then
-#else
           ixc0 = ixc(lay)
 !$NEC ivdep
             do ixp = 1, ixc0
             jl = ixlow(ixp,lay)
-#endif
 
             ind0 = ((jp(jl,lay)-1)*5+(jt(jl,lay)-1))*nspa(2) + 1
             ind1 = (jp(jl,lay)*5+(jt1(jl,lay)-1))*nspa(2) + 1
@@ -212,9 +196,6 @@ REAL(KIND=JPRB) :: taufor,tauself,corradj,pp
                  + tauself + taufor)
               fracs(jl,ngs1+ig,lay) = fracrefa(ig)
             enddo
-#ifdef _OPENACC
-         else
-#else
           enddo
 
           ! Upper atmosphere part
@@ -222,7 +203,6 @@ REAL(KIND=JPRB) :: taufor,tauself,corradj,pp
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixhigh(ixp,lay)
-#endif
 
             ind0 = ((jp(jl,lay)-13)*5+(jt(jl,lay)-1))*nspb(2) + 1
             ind1 = ((jp(jl,lay)-12)*5+(jt1(jl,lay)-1))*nspb(2) + 1
@@ -240,9 +220,6 @@ REAL(KIND=JPRB) :: taufor,tauself,corradj,pp
                   + taufor
               fracs(jl,ngs1+ig,lay) = fracrefb(ig)
             enddo
-#ifdef _OPENACC
-           endif
-#endif
           enddo
 
       enddo

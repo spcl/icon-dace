@@ -13,13 +13,13 @@
 
 MODULE mo_nwp_ww
 
-#ifdef ONLYWW
 
-  USE mo_wwonly, ONLY: wp, vct_a, &
-                       rdv, O_m_rdv, rd_o_cpd, tmelt, alvdcp, b3, b1, b2w, b4w, &
-                       max_dom, kstart_moist, sat_pres_water
 
-#else
+
+
+
+
+
 
   USE mo_kind,               ONLY: wp
 
@@ -40,23 +40,23 @@ MODULE mo_nwp_ww
   USE mo_satad,                 ONLY: sat_pres_water
   USE mo_fortran_tools,         ONLY: set_acc_host_or_device
 
-#endif
+
 
   IMPLICIT NONE
 
   PRIVATE
 
   PUBLIC :: configure_ww, ww_diagnostics
-#ifdef ONLYWW
-  PUBLIC :: rkgrenz1, rkgrenz2
-  PUBLIC :: rf_fog, clc_fog, rain_l_m, rain_m_s, snow_l_m, snow_m_s, &
- &          rash_lm_s, rash_s_vs, snsh_l_ms, driz_l_m, driz_m_s,     &
- &          drif_l_ms, raif_l_ms, rgdiff_th1, rgdiff_th2
-#else
+
+
+
+
+
+
   PUBLIC :: ww_datetime
 
   TYPE(datetime) :: ww_datetime(max_dom)
-#endif
+
 
 !  The following indices are used in the diagnostics of WW
   INTEGER :: ih_500hPa(max_dom),  &    ! index of layer next to 500 hPa for US standard atmosphere
@@ -95,11 +95,11 @@ CONTAINS
 !
     CHARACTER(LEN=24), PARAMETER :: routine = 'atm_phy_nwp:configure_ww'
 
-#ifdef ONLYWW
-    INTEGER                                   :: ini_datetime  ! not used
-#else
+
+
+
     TYPE(datetime),   INTENT(IN)              :: ini_datetime  ! init datetime (mtime)
-#endif
+
 
     INTEGER,  INTENT(IN) :: jg           !< patch 
     INTEGER,  INTENT(IN) :: nlev         !< number of full vertical levels 
@@ -118,9 +118,9 @@ CONTAINS
 
     INTEGER             :: jk, jk1
 
-#ifndef ONLYWW
+
     ww_datetime(jg) = ini_datetime
-#endif
+
 
 !   Find next layer below height of 500 hPa, and next layer to height of 500 hPa
     ihb500hPa(jg) = kstart_moist(jg)
@@ -258,14 +258,6 @@ CONTAINS
     rgdiff_th1=  0.015 ! mm/h
     rgdiff_th2=  0.050 ! mm/h
 
-#ifdef ONLYWW
-    WRITE( *,'(a,i4,a,6i4)') 'Domain', jg,                                    &
-  &    '; ih_500hPa, ihb500hPa, ih_700hPa, ih_850hPa, ih_950hPa, ihb950hPa ', &
-  &       ih_500hPa(jg), ihb500hPa(jg), ih_700hPa(jg), ih_850hPa(jg),         &
-  &       ih_950hPa(jg), ihb950hPa(jg)
-    WRITE( *,'(2(a,i4),i4)') 'Domain', jg,                                    &
-  &    '; ifog_temp, ifog_wind ', ifog_temp(jg), ifog_wind(jg)
-#else
     WRITE( message_text,'(a,i4,a,6i4)') 'Domain', jg,                         &
   &    '; ih_500hPa, ihb500hPa, ih_700hPa, ih_850hPa, ih_950hPa, ihb950hPa ', &
   &       ih_500hPa(jg), ihb500hPa(jg), ih_700hPa(jg), ih_850hPa(jg),         &
@@ -274,7 +266,6 @@ CONTAINS
     WRITE( message_text,'(2(a,i4),i4)') 'Domain', jg,                         &
   &    '; ifog_temp, ifog_wind ', ifog_temp(jg), ifog_wind(jg)
     CALL message( TRIM(routine), message_text)
-#endif
 
   END SUBROUTINE configure_ww
 
@@ -329,12 +320,8 @@ CONTAINS
 
   LOGICAL, INTENT(IN), OPTIONAL :: lacc ! If true, use openacc
 
-#if ONLYWW
-  REAL(wp)                        :: time_diff ! time since previous call in hours
-#else
   TYPE(timeDelta),        POINTER :: time_diff ! time since previous call
   CHARACTER(LEN=26), PARAMETER    :: routine = 'atm_phy_nwp:ww_diagnostics'
-#endif
 
   INTEGER, INTENT(OUT) :: iww(ie)          ! significant weather code
 
@@ -637,16 +624,7 @@ WW_PRECIP: IF (rgdiff < rgdiff_th1) THEN
       ENDIF
 
 !.... Control Printout
-#ifndef _OPENACC
       IF ( iww(i) == -9 ) THEN
-#ifdef ONLYWW
-           WRITE(*,'(a,i7,a,i3,a,f6.3,2(a,f5.1),2(a,L1),4(a,i2),a,L1)') &
-     &     'ww(',i,'):',iww(i), ' rg:', rgdiff,               &
-     &     ' clc(ke):', clc(i,ke),' clc(ke-1):', clc(i,ke-1), &
-     &     ' lconvb: ',lconvb,' lsnb: ',lsnb,' irrb: ',irrb,  &
-     &     ' igfb: ',igfb,' iwolk: ',iwolk,' isprb: ',isprb,  &
-     &     ' test_fog: ',test_fog
-#else
            WRITE(message_text,'(a,i7,a,i3,a,f6.3,2(a,f5.1),2(a,L1),4(a,i2),a,L1)') &
      &     'ww(',i,'):',iww(i), ' rg:', rgdiff,               &
      &     ' clc(ke):', clc(i,ke),' clc(ke-1):', clc(i,ke-1), &
@@ -654,9 +632,7 @@ WW_PRECIP: IF (rgdiff < rgdiff_th1) THEN
      &     ' igfb: ',igfb,' iwolk: ',iwolk,' isprb: ',isprb,  &
      &     ' test_fog: ',test_fog
     CALL message( TRIM(routine), message_text)
-#endif
       ENDIF
-#endif
    
     ENDDO
     !$ACC END PARALLEL

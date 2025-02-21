@@ -17,7 +17,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_opt_nwp_diagnostics
@@ -73,21 +83,11 @@ MODULE mo_opt_nwp_diagnostics
   USE mo_diag_hailcast,         ONLY: hailstone_driver
   USE mo_util_phys,             ONLY: inversion_height_index  
   USE mo_nwp_tuning_config,     ONLY: tune_dursun_scaling
-#ifdef HAVE_RADARFWO
-  USE radar_data_mie,             ONLY: ldebug_dbz, T0C_emvorado => T0C_fwo
-  USE radar_interface,            ONLY: initialize_tmax_atomic_1mom, &
-    &                                   initialize_tmax_atomic_2mom, &
-    &                                   initialize_tmin_atomic_1mom, &
-    &                                   initialize_tmin_atomic_2mom, &
-    &                                   init_1mom_types, init_2mom_types      
-  USE radar_mie_iface_cosmo_1mom, ONLY: radar_mie_1mom_vec, &
-    &                                   radar_rayleigh_oguchi_1mom_vec
-  USE radar_mie_iface_cosmo_2mom, ONLY: radar_mie_2mom_vec, &
-    &                                   radar_rayleigh_oguchi_2mom_vec
-  USE mo_synradar_config,         ONLY: synradar_meta, ydir_mielookup_read, ydir_mielookup_write
-  USE mo_mpi,                     ONLY: get_my_mpi_work_comm_size
-  USE gscp_data,                  ONLY: isnow_n0temp
-#endif
+
+
+
+
+
 
   IMPLICIT NONE
 
@@ -337,13 +337,13 @@ CONTAINS
       
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(w_avg)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
+
+
+
+
       DO jk = slev, elev
         DO jc = i_startidx, i_endidx
-#endif
+
           ! half level to full level interpolation
           w_avg = 0.5_wp * (p_prog%w(jc,jk,jb) + p_prog%w(jc,jk+1,jb))
 
@@ -2459,9 +2459,9 @@ CONTAINS
          k_ml  (SIZE(te,1))        ! Index for calculation of mixed layer averages 
                                    ! (potential temperature, moisture)
 
-#ifndef _OPENACC
+
     LOGICAL :: lexit(SIZE(te,1))
-#endif
+
 
     LOGICAL :: &
          lzacc,         & ! non-optional version of lacc
@@ -2525,9 +2525,9 @@ CONTAINS
       ! outputs
       cape_ml  (jc) = 0.0_wp 
       cin_ml   (jc) = missing_value
-#ifndef _OPENACC
+
       lexit(jc)     = .FALSE.
-#endif
+
     ENDDO
 
     
@@ -2535,9 +2535,9 @@ CONTAINS
     ! specific humidity
     !$ACC LOOP SEQ
     DO k = nlev, kmoist, -1
-#ifndef _OPENACC
+
       IF (ALL(lexit(i_startidx:i_endidx))) EXIT
-#endif
+
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO jc = i_startidx, i_endidx
         IF ( prs(jc,k) > (prs(jc,nlev) - ml_depth)) THEN
@@ -2553,10 +2553,10 @@ CONTAINS
           ENDIF
 
           k_ml(jc) = k - 1
-#ifndef _OPENACC
+
         ELSE
           lexit(jc) = .TRUE.
-#endif
+
         ENDIF
 
       ENDDO
@@ -3169,9 +3169,9 @@ CONTAINS
     INTEGER :: &
          jc, k, nlev             
 
-#ifndef _OPENACC
+
     LOGICAL :: lexit(SIZE(clc,1))
-#endif
+
 
     LOGICAL :: lzacc
 
@@ -3330,10 +3330,10 @@ CONTAINS
     ! The following parameters are help values for the iterative calculation 
     ! of the parcel temperature during the moist adiabatic ascent
     REAL    (wp)             :: esat,tguess1,tguess2,thetae1,thetae2
-#ifdef __SX__
-    REAL    (wp)             :: tguess1v(SIZE(te,1))
-    LOGICAL                  :: lcalc(SIZE(te,1))
-#endif
+
+
+
+
     ! REAL    (wp)             :: rp, r1,r2
     REAL    (wp)             :: q1, q2
     REAL    (wp), PARAMETER  :: eps=0.03
@@ -3521,69 +3521,6 @@ CONTAINS
           ENDIF
         ENDIF
 
-#ifdef __SX__
-      ENDDO ! i = i_startidx, i_endidx
-      !$ACC LOOP GANG VECTOR
-      ! Vectorized version
-      DO jc = i_startidx, i_endidx
-        lcalc(jc) = .FALSE.
-        IF ( k > kstart(jc) .OR. (.NOT. lmu(jc)) ) CYCLE 
-        IF ( k <= lcllev(jc) ) THEN ! If we are above the LCL
-          ! The scheme uses a first guess temperature, which is the parcel
-          ! temperature at the level below. If it happens that the initial
-          ! parcel is already saturated, the environmental temperature
-          ! is taken as first guess instead
-          IF (  k == kstart(jc) ) THEN
-            tguess1v(jc) = te(jc,kstart(jc))
-          ELSE
-            tguess1v(jc) = tp(jc)
-          END IF
-          lcalc(jc) = .TRUE.
-        ENDIF
-      ENDDO ! jc = i_startidx, i_endidx
-
-      !$ACC LOOP SEQ
-      ! Calculate iteratively parcel temperature from thp, prs and 1st guess tguess1
-      DO icount = 1, 21
-        IF (COUNT(lcalc(i_startidx:i_endidx)) > 0) THEN
-          !$ACC LOOP GANG VECTOR PRIVATE(esat, q1, thetae1, tguess2, esat, q2, thetae2)
-          DO jc = i_startidx, i_endidx
-            IF ( lcalc(jc) ) THEN
-              esat     = esat_water( tguess1v(jc))
-              q1       = fqvs( esat, prs(jc,k) )
-              thetae1  = fthetae( tguess1v(jc),prs(jc,k),q1)
-
-              tguess2  = tguess1v(jc) - 1.0_wp
-              esat     = esat_water( tguess2)
-              q2       = fqvs( esat, prs(jc,k) )
-              thetae2  = fthetae( tguess2,prs(jc,k),q2)
-
-              tguess1v(jc)  = tguess1v(jc)+(thetae1-thp(jc))/(thetae2-thetae1)
-
-              IF ( ABS( thetae1-thp(jc)) < eps .OR. icount > 20) THEN
-                tp(jc) = tguess1v(jc)
-                lcalc(jc) = .false.
-              END IF
-            END IF
-          ENDDO ! jc = i_startidx, i_endidx
-        ELSE
-          EXIT
-        ENDIF
-      END DO
-
-      ! update specific humidity of the saturated parcel for new temperature
-      !$ACC LOOP GANG VECTOR PRIVATE(esatp)
-      DO jc = i_startidx, i_endidx
-        IF ( k > kstart(jc) .OR. (.NOT. lmu(jc)) ) CYCLE 
-        IF ( k <= lcllev(jc) ) THEN
-          esatp  = esat_water( tp(jc))
-          qvp(jc) = fqvs( esatp,prs(jc,k))
-        END IF
-      ENDDO ! jc = i_startidx, i_endidx
-      !$ACC LOOP GANG VECTOR PRIVATE(tguess1, icount, esat, q1, thetae1, tguess2, q2, thetae2, esatp, tvp, tve, buo_belo)
-      DO jc = i_startidx, i_endidx
-        IF ( k > kstart(jc) .OR. (.NOT. lmu(jc)) ) CYCLE 
-#else
 
         ! Moist adiabatic process: the parcel temperature during this part of 
         ! the ascent is calculated iteratively using the iterative newton
@@ -3633,7 +3570,6 @@ CONTAINS
           esatp  = esat_water( tp(jc))
           qvp(jc) = fqvs( esatp,prs(jc,k))
         END IF
-#endif       
 
         ! Calculate virtual temperatures of parcel and environment
         tvp    = tp(jc  ) * (1.0_wp + vtmpc1*qvp(jc  )/(1.0_wp - qvp(jc  )) )  
@@ -3873,9 +3809,6 @@ CONTAINS
     LOGICAL :: lzacc             ! OpenACC flag
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef HAVE_RADARFWO
-    IF ( synradar_meta%itype_refl == 4 ) THEN
-#endif
 
       !=========================================================================
       ! Simple Rayleigh approximation where melting particles just get the refractive index of water
@@ -3974,9 +3907,6 @@ CONTAINS
              lacc      = lzacc                             )
 
       CASE ( 4, 5, 6, 8 )
-#ifdef _OPENACC
-        CALL finish(routine, 'compute_field_dbz_2mom is supported by OpenACC, but never tested.')
-#endif
         CALL compute_field_dbz_2mom( npr       = nproma,                           &
              nlev      = ptr_patch%nlev,                   &
              nblks     = ptr_patch%nblks_c,                &
@@ -4014,9 +3944,6 @@ CONTAINS
 
 
       CASE ( 7 )
-#ifdef _OPENACC
-        CALL finish(routine, 'compute_field_dbz_2mom is supported by OpenACC, but never tested.')
-#endif
         CALL compute_field_dbz_2mom( npr       = nproma,                           &
              nlev      = ptr_patch%nlev,                   &
              nblks     = ptr_patch%nblks_c,                &
@@ -4063,385 +3990,6 @@ CONTAINS
       END SELECT
 
 
-#ifdef HAVE_RADARFWO
-    ELSE   ! synradar_meta%itype_refl == 1, 3, 5, 6
-
-      !=========================================================================
-      ! Mie-scattering or Rayleigh-Oguchi-Approximation from EMVORADO:
-      !=========================================================================
-
-      ! .. Reduced domain of this PE, i.e., excluding interior
-      !    boundary lines but including boudary halo at the outer
-      !    model domain boundaries:
-      ilow = 1
-      iup  = nproma   ! the few halo/boundary points in the first and last block are not explicitly excluded here for simplicity
-      jlow = kstart_moist(jg)
-      jup  = ptr_patch % nlev
-      klow = ptr_patch % cells % start_block(grf_bdywidth_c+1)
-      kup  = ptr_patch % cells % end_block(min_rlcell_int)
-
-      ! .. Set module switch ldebug_dbz from EMVORADO according to ICONs msg_level. Has to be the same on all workers,
-      !     so there is no "light" version of the debug output, only all or nothing:
-      ldebug_dbz = (msg_level > 15)
-
-      SELECT CASE ( atm_phy_nwp_config(jg)%inwp_gscp )
-      CASE ( 1, 2, 3 )
-
-        t   => p_diag%temp(:,:,:)
-        p   => p_diag%pres(:,:,:)
-        rho_tot => p_prog%rho(:,:,:)
-        qc  => p_prog_rcf%tracer(:,:,:,iqc)
-        qr  => p_prog_rcf%tracer(:,:,:,iqr)
-        qi  => p_prog_rcf%tracer(:,:,:,iqi)
-        qs  => p_prog_rcf%tracer(:,:,:,iqs)
-        IF (atm_phy_nwp_config(jg)%lhave_graupel) THEN 
-          qg => p_prog_rcf%tracer(:,:,:,iqg)
-        ELSE
-          ALLOCATE(dummy0(nproma,ptr_patch%nlev,ptr_patch%nblks_c))
-          dummy0 = 0.0_wp
-          qg => dummy0(:,:,:)
-        END IF
-
-        IF (atm_phy_nwp_config(jg)%inwp_gscp == 1) THEN
-          itype_gscp_emvo = 140 ! "140" is the corresponding itype_gscp in COSMO and EMVORADO
-        ELSE
-          itype_gscp_emvo = 150 ! "150" is the corresponding itype_gscp in COSMO and EMVORADO
-        END IF
-        CALL init_1mom_types(itype_gscp_loc=itype_gscp_emvo, rho_w=rhoh2o)
-
-        ALLOCATE (Tmax_i(nproma,ptr_patch%nblks_c), Tmax_s(nproma,ptr_patch%nblks_c), Tmax_g(nproma,ptr_patch%nblks_c))
-        CALL initialize_tmax_atomic_1mom(qx=qi, t=t, neigh=0.0_wp, qthresh=synradar_meta%qthresh_i, &
-             &                           Tmax_min=synradar_meta%Tmax_min_i, Tmax_max=synradar_meta%Tmax_max_i, Tmax_x=Tmax_i)
-        CALL initialize_tmax_atomic_1mom(qx=qs, t=t, neigh=0.0_wp, qthresh=synradar_meta%qthresh_s, &
-             &                           Tmax_min=synradar_meta%Tmax_min_s, Tmax_max=synradar_meta%Tmax_max_s, Tmax_x=Tmax_s)
-        CALL initialize_tmax_atomic_1mom(qx=qg, t=t, neigh=0.0_wp, qthresh=synradar_meta%qthresh_g, &
-             &                           Tmax_min=synradar_meta%Tmax_min_g, Tmax_max=synradar_meta%Tmax_max_g, Tmax_x=Tmax_g)
-
-        ALLOCATE (Tmin_g(nproma,ptr_patch%nblks_c))
-        IF (synradar_meta%ldynamic_wetgrowth_gh .AND. synradar_meta%Tmeltbegin_g < T0C_emvorado) THEN
-          CALL initialize_tmin_atomic_1mom(hydrotype='graupel', qx=qg, t=t, p=p, ql=qc+qr, qf=qi+qs, rho=rho_tot, &
-                                           Tmin_min=synradar_meta%Tmeltbegin_g, Tmin_x=Tmin_g)
-        ELSE
-          Tmin_g = synradar_meta%Tmeltbegin_g
-        END IF
-
-        SELECT CASE ( synradar_meta%itype_refl )
-        CASE ( 1, 5, 6 )
-          ! Mie- or T-matrix scattering from EMVORADO:
-#ifdef _OPENACC
-          CALL finish(routine, 'radar_mie_1mom_vec is not supported by OpenACC.')
-#endif
-          CALL radar_mie_1mom_vec( &
-               myproc               = get_my_mpi_work_id(), &
-               lambda_radar         = synradar_meta%lambda_radar, &
-               itype_gscp_fwo       = itype_gscp_emvo, &
-               itype_refl           = synradar_meta%itype_refl, &
-               luse_tmatrix         = (synradar_meta%itype_refl >= 5), &
-               ldo_nonsphere        = (synradar_meta%itype_refl == 5), &
-               isnow_n0temp         = isnow_n0temp, &
-               igraupel_type        = synradar_meta%igraupel_type, &
-               itype_Dref_fmelt     = synradar_meta%itype_Dref_fmelt, &
-               ctype_dryice         = synradar_meta%ctype_dryice_mie, &
-               ctype_wetice         = synradar_meta%ctype_wetice_mie, &
-               ctype_drysnow        = synradar_meta%ctype_drysnow_mie, &
-               ctype_wetsnow        = synradar_meta%ctype_wetsnow_mie, &
-               ctype_drygraupel     = synradar_meta%ctype_drygraupel_mie, &
-               ctype_wetgraupel     = synradar_meta%ctype_wetgraupel_mie, &
-               ldynamic_wetgrowth_gh= synradar_meta%ldynamic_wetgrowth_gh, &
-               Tmeltbegin_i         = synradar_meta%Tmeltbegin_i, &
-               meltdegTmin_i        = synradar_meta%meltdegTmin_i, &
-               Tmax_min_i           = synradar_meta%Tmax_min_i, &
-               Tmax_max_i           = synradar_meta%Tmax_max_i, &
-               Tmeltbegin_s         = synradar_meta%Tmeltbegin_s, &
-               meltdegTmin_s        = synradar_meta%meltdegTmin_s, &
-               Tmax_min_s           = synradar_meta%Tmax_min_s, &
-               Tmax_max_s           = synradar_meta%Tmax_max_s, &
-               Tmeltbegin_g         = synradar_meta%Tmeltbegin_g, &
-               meltdegTmin_g        = synradar_meta%meltdegTmin_g, &
-               Tmax_min_g           = synradar_meta%Tmax_min_g, &
-               Tmax_max_g           = synradar_meta%Tmax_max_g, &
-               pMPr                 = synradar_meta%polMP_r, &
-               pMPi                 = synradar_meta%polMP_i, &
-               pMPs                 = synradar_meta%polMP_s, &
-               pMPg                 = synradar_meta%polMP_g, &
-               rho                  = rho_tot(:,:,:), &
-               t                    = t(:,:,:), &
-               qc                   = qc(:,:,:), &
-               qr                   = qr(:,:,:), &
-               qi                   = qi(:,:,:), &
-               qs                   = qs(:,:,:), &
-               qg                   = qg(:,:,:), &
-               Tmax_i               = Tmax_i(:,:), &
-               Tmax_s               = Tmax_s(:,:), &
-               Tmax_g               = Tmax_g(:,:), &
-               Tmin_g               = Tmin_g(:,:), &
-               ilow=ilow, iup=iup, jlow=jlow, jup=jup, klow=klow, kup=kup, &
-               lalloc_qi            = .TRUE., &
-               lalloc_qs            = .TRUE., &
-               lalloc_qg            = atm_phy_nwp_config(jg)%lhave_graupel, &
-               llookup              = synradar_meta%llookup_mie, &
-               impipar_lookupgen    = 2, &
-               pe_start             = proc0_shift,   & ! Start-PE of the gang which computes the lookup tables, numbering within the work-communicator
-               pe_end               = get_my_mpi_work_comm_size()-1, &  ! End-PE of the gang. Can be at most the number of work PEs minus 1
-               linterp_mode_dualpol = (synradar_meta%itype_refl >= 5), &
-               ydir_lookup_read     = TRIM(ydir_mielookup_read), &
-               ydir_lookup_write    = TRIM(ydir_mielookup_write), &
-               zh_radar             = dbz3d_lin(:,:,:), &
-               lhydrom_choice_testing = synradar_meta%lhydrom_choice_testing &
-               )
-
-        CASE ( 3 )
-#ifdef _OPENACC
-          CALL finish(routine, 'radar_rayleigh_oguchi_1mom_vec is not supported by OpenACC.')
-#endif
-          CALL radar_rayleigh_oguchi_1mom_vec( &
-               myproc         = get_my_mpi_work_id(), &
-               lambda_radar   = synradar_meta%lambda_radar, &
-               itype_gscp_fwo = itype_gscp_emvo, &
-               isnow_n0temp   = isnow_n0temp, &
-               Tmeltbegin_i   = synradar_meta%Tmeltbegin_i, &
-               meltdegTmin_i  = synradar_meta%meltdegTmin_i, &
-               Tmeltbegin_s   = synradar_meta%Tmeltbegin_s, &
-               meltdegTmin_s  = synradar_meta%meltdegTmin_s, &
-               Tmeltbegin_g   = synradar_meta%Tmeltbegin_g, &
-               meltdegTmin_g  = synradar_meta%meltdegTmin_g, &
-               rho            = rho_tot(:,:,:), &
-               t              = t(:,:,:), &
-               qc             = qc(:,:,:), &
-               qr             = qr(:,:,:), &
-               qi             = qi(:,:,:), &
-               qs             = qs(:,:,:), &
-               qg             = qg(:,:,:), &
-               Tmax_i         = Tmax_i(:,:), &
-               Tmax_s         = Tmax_s(:,:), &
-               Tmax_g         = Tmax_g(:,:), &
-               Tmin_g         = Tmin_g(:,:), &
-               ilow=ilow, iup=iup, jlow=jlow, jup=jup, klow=klow, kup=kup, &
-               lalloc_qi      = .TRUE., &
-               lalloc_qs      = .TRUE., &
-               lalloc_qg      = atm_phy_nwp_config(jg)%lhave_graupel, &
-               zh_radar       = dbz3d_lin(:,:,:), &
-               lhydrom_choice_testing = synradar_meta%lhydrom_choice_testing &
-               )
-
-        CASE default
-
-          CALL finish( routine,  &
-               &     "dbz3d-computation not available for this synradar_meta%itype_refl! Available are options 1, 3, 4, 5 and 6" )
-
-        END SELECT
-
-        DEALLOCATE (Tmax_i, Tmax_s, Tmax_g, Tmin_g)
-        IF (ALLOCATED(dummy0)) DEALLOCATE(dummy0)
-
-      CASE ( 4, 5, 6, 7, 8)
-
-        t   => p_diag%temp(:,:,:)
-        p   => p_diag%pres(:,:,:)
-        rho_tot => p_prog%rho(:,:,:)
-        qc  => p_prog_rcf%tracer(:,:,:,iqc)
-        qr  => p_prog_rcf%tracer(:,:,:,iqr)
-        qi  => p_prog_rcf%tracer(:,:,:,iqi)
-        qs  => p_prog_rcf%tracer(:,:,:,iqs)
-        qg  => p_prog_rcf%tracer(:,:,:,iqg)
-        qh  => p_prog_rcf%tracer(:,:,:,iqh)
-        qnc => p_prog_rcf%tracer(:,:,:,iqnc)
-        qnr => p_prog_rcf%tracer(:,:,:,iqnr)
-        qni => p_prog_rcf%tracer(:,:,:,iqni)
-        qns => p_prog_rcf%tracer(:,:,:,iqns)
-        qng => p_prog_rcf%tracer(:,:,:,iqng)
-        qnh => p_prog_rcf%tracer(:,:,:,iqnh)
-        IF (atm_phy_nwp_config(jg)%inwp_gscp == 7) THEN
-          qgl => p_prog_rcf%tracer(:,:,:,iqgl)
-          qhl => p_prog_rcf%tracer(:,:,:,iqhl)
-        ELSE
-          ALLOCATE(dummy0(nproma,ptr_patch%nlev,ptr_patch%nblks_c))
-          dummy0 = 0.0_wp
-          qgl => dummy0(:,:,:)
-          qhl => dummy0(:,:,:)
-        END IF
-
-        CALL init_2mom_types()
-
-        ALLOCATE ( Tmax_i(nproma,ptr_patch%nblks_c), Tmax_s(nproma,ptr_patch%nblks_c), &
-             Tmax_g(nproma,ptr_patch%nblks_c), Tmax_h(nproma,ptr_patch%nblks_c) )
-        CALL initialize_tmax_atomic_2mom( qx=qi, qnx=qni, t=t, neigh=0.0_wp, &
-             &                            qthresh=synradar_meta%qthresh_i, qnthresh=synradar_meta%qnthresh_i, &
-             &                            Tmax_min=synradar_meta%Tmax_min_i, Tmax_max=synradar_meta%Tmax_max_i, Tmax_x=Tmax_i )
-        CALL initialize_tmax_atomic_2mom( qx=qs, qnx=qns, t=t, neigh=0.0_wp, &
-             &                            qthresh=synradar_meta%qthresh_s, qnthresh=synradar_meta%qnthresh_s, &
-             &                            Tmax_min=synradar_meta%Tmax_min_s, Tmax_max=synradar_meta%Tmax_max_s, Tmax_x=Tmax_s )
-        CALL initialize_tmax_atomic_2mom( qx=qg+qgl, qnx=qng, t=t, neigh=0.0_wp, &
-             &                            qthresh=synradar_meta%qthresh_g, qnthresh=synradar_meta%qnthresh_g, &
-             &                            Tmax_min=synradar_meta%Tmax_min_g, Tmax_max=synradar_meta%Tmax_max_g, Tmax_x=Tmax_g )
-        CALL initialize_tmax_atomic_2mom( qx=qh+qhl, qnx=qnh, t=t, neigh=0.0_wp, &
-             &                            qthresh=synradar_meta%qthresh_h, qnthresh=synradar_meta%qnthresh_h, &
-             &                            Tmax_min=synradar_meta%Tmax_min_h, Tmax_max=synradar_meta%Tmax_max_h, Tmax_x=Tmax_h )
-
-        ALLOCATE (Tmin_g(nproma,ptr_patch%nblks_c), Tmin_h(nproma,ptr_patch%nblks_c))
-        IF (synradar_meta%ldynamic_wetgrowth_gh .AND. synradar_meta%Tmeltbegin_g < T0C_emvorado) THEN
-          CALL initialize_tmin_atomic_2mom(hydrotype='graupel', qx=qg+qgl, qnx=qng, t=t, p=p, ql=qc+qr, qf=qi+qs, rho=rho_tot, &
-                                           Tmin_min=synradar_meta%Tmeltbegin_g, Tmin_x=Tmin_g)
-        ELSE
-          Tmin_g = synradar_meta%Tmeltbegin_g
-        END IF
-        IF (synradar_meta%ldynamic_wetgrowth_gh .AND. synradar_meta%Tmeltbegin_h < T0C_emvorado) THEN
-          CALL initialize_tmin_atomic_2mom(hydrotype='hail', qx=qh+qhl, qnx=qnh, t=t, p=p, ql=qc+qr, qf=qi+qs, rho=rho_tot, &
-                                           Tmin_min=synradar_meta%Tmeltbegin_h, Tmin_x=Tmin_h)
-        ELSE
-          Tmin_h = synradar_meta%Tmeltbegin_h
-        END IF
-
-        SELECT CASE ( synradar_meta%itype_refl )
-        CASE ( 1, 5, 6 )
-          ! Mie-scattering from EMVORADO:
-#ifdef _OPENACC
-          CALL finish(routine, 'radar_mie_2mom_vec is not supported by OpenACC.')
-#endif
-          CALL radar_mie_2mom_vec( &
-               myproc            = get_my_mpi_work_id(), &
-               lambda_radar      = synradar_meta%lambda_radar, &
-               itype_gscp_fwo    = 260, &
-               itype_refl        = synradar_meta%itype_refl, &
-               luse_tmatrix      = (synradar_meta%itype_refl >= 5), &
-               ldo_nonsphere     = (synradar_meta%itype_refl == 5), &
-               igraupel_type     = synradar_meta%igraupel_type, &
-               itype_Dref_fmelt  = synradar_meta%itype_Dref_fmelt, &
-               ctype_dryice      = synradar_meta%ctype_dryice_mie, &
-               ctype_wetice      = synradar_meta%ctype_wetice_mie, &
-               ctype_drysnow     = synradar_meta%ctype_drysnow_mie, &
-               ctype_wetsnow     = synradar_meta%ctype_wetsnow_mie, &
-               ctype_drygraupel  = synradar_meta%ctype_drygraupel_mie, &
-               ctype_wetgraupel  = synradar_meta%ctype_wetgraupel_mie, &
-               ctype_dryhail     = synradar_meta%ctype_dryhail_mie, &
-               ctype_wethail     = synradar_meta%ctype_wethail_mie, &
-               ldynamic_wetgrowth_gh= synradar_meta%ldynamic_wetgrowth_gh, &
-               Tmeltbegin_i      = synradar_meta%Tmeltbegin_i, &
-               meltdegTmin_i     = synradar_meta%meltdegTmin_i, &
-               Tmax_min_i        = synradar_meta%Tmax_min_i, &
-               Tmax_max_i        = synradar_meta%Tmax_max_i, &
-               Tmeltbegin_s      = synradar_meta%Tmeltbegin_s, &
-               meltdegTmin_s     = synradar_meta%meltdegTmin_s, &
-               Tmax_min_s        = synradar_meta%Tmax_min_s, &
-               Tmax_max_s        = synradar_meta%Tmax_max_s, &
-               Tmeltbegin_g      = synradar_meta%Tmeltbegin_g, &
-               meltdegTmin_g     = synradar_meta%meltdegTmin_g, &
-               Tmax_min_g        = synradar_meta%Tmax_min_g, &
-               Tmax_max_g        = synradar_meta%Tmax_max_g, &
-               Tmeltbegin_h      = synradar_meta%Tmeltbegin_h, &
-               meltdegTmin_h     = synradar_meta%meltdegTmin_h, &
-               Tmax_min_h        = synradar_meta%Tmax_min_h, &
-               Tmax_max_h        = synradar_meta%Tmax_max_h, &
-               pMPr              = synradar_meta%polMP_r, &
-               pMPi              = synradar_meta%polMP_i, &
-               pMPs              = synradar_meta%polMP_s, &
-               pMPg              = synradar_meta%polMP_g, &
-               pMPh              = synradar_meta%polMP_g, &
-               rho               = rho_tot(:,:,:), &
-               t                 = t(:,:,:), &
-               qc                = qc(:,:,:), &
-               qr                = qr(:,:,:), &
-               qi                = qi(:,:,:), &
-               qs                = qs(:,:,:), &
-               qg                = qg(:,:,:), &
-               qh                = qh(:,:,:), &
-               qnc               = qnc(:,:,:), &
-               qnr               = qnr(:,:,:), &
-               qni               = qni(:,:,:), &
-               qns               = qns(:,:,:), &
-               qng               = qng(:,:,:), &
-               qnh               = qnh(:,:,:), &
-               qgl               = qgl(:,:,:), &
-               qhl               = qhl(:,:,:), &
-               Tmax_i            = Tmax_i(:,:), &
-               Tmax_s            = Tmax_s(:,:), &
-               Tmax_g            = Tmax_g(:,:), &
-               Tmax_h            = Tmax_h(:,:), &
-               Tmin_g            = Tmin_g(:,:), &
-               Tmin_h            = Tmin_h(:,:), &
-               ilow=ilow, iup=iup, jlow=jlow, jup=jup, klow=klow, kup=kup, &
-               lalloc_qi         = .TRUE., &
-               lalloc_qs         = .TRUE., &
-               lalloc_qg         = .TRUE., &
-               lalloc_qh         = .TRUE., &
-               llookup           = synradar_meta%llookup_mie, &
-               impipar_lookupgen = 2, &
-               pe_start          = proc0_shift,   & ! Start-PE of the gang which computes the lookup tables, numbering within the work-communicator
-               pe_end            = get_my_mpi_work_comm_size()-1, &  ! End-PE of the gang. Can be at most the number of work PEs minus 1
-               linterp_mode_dualpol = (synradar_meta%itype_refl >= 5), &
-               luse_muD_relation_rain  = atm_phy_nwp_config(jg)%cfg_2mom%luse_mu_Dm_rain, &
-               ydir_lookup_read  = TRIM(ydir_mielookup_read), &
-               ydir_lookup_write = TRIM(ydir_mielookup_write), &
-               zh_radar          = dbz3d_lin(:,:,:), &
-               lhydrom_choice_testing = synradar_meta%lhydrom_choice_testing &
-               )
-
-        CASE ( 3 )
-#ifdef _OPENACC
-          CALL finish(routine, 'radar_rayleigh_oguchi_2mom_vec is not supported by OpenACC.')
-#endif
-          CALL radar_rayleigh_oguchi_2mom_vec( &
-               myproc         = get_my_mpi_work_id(), &
-               lambda_radar   = synradar_meta%lambda_radar, &
-               Tmeltbegin_i   = synradar_meta%Tmeltbegin_i, &
-               meltdegTmin_i  = synradar_meta%meltdegTmin_i, &
-               Tmeltbegin_s   = synradar_meta%Tmeltbegin_s, &
-               meltdegTmin_s  = synradar_meta%meltdegTmin_s, &
-               Tmeltbegin_g   = synradar_meta%Tmeltbegin_g, &
-               meltdegTmin_g  = synradar_meta%meltdegTmin_g, &
-               Tmeltbegin_h   = synradar_meta%Tmeltbegin_h, &
-               meltdegTmin_h  = synradar_meta%meltdegTmin_h, &
-               rho            = rho_tot(:,:,:), &
-               t              = t(:,:,:), &
-               qc             = qc(:,:,:), &
-               qr             = qr(:,:,:), &
-               qi             = qi(:,:,:), &
-               qs             = qs(:,:,:), &
-               qg             = qg(:,:,:), &
-               qh             = qh(:,:,:), &
-               qnc            = qnc(:,:,:), &
-               qnr            = qnr(:,:,:), &
-               qni            = qni(:,:,:), &
-               qns            = qns(:,:,:), &
-               qng            = qng(:,:,:), &
-               qnh            = qnh(:,:,:), &
-               qgl            = qgl(:,:,:), &
-               qhl            = qhl(:,:,:), &
-               Tmax_i         = Tmax_i(:,:), &
-               Tmax_s         = Tmax_s(:,:), &
-               Tmax_g         = Tmax_g(:,:), &
-               Tmax_h         = Tmax_h(:,:), &
-               Tmin_g         = Tmin_g(:,:), &
-               Tmin_h         = Tmin_h(:,:), &
-               ilow=ilow, iup=iup, jlow=jlow, jup=jup, klow=klow, kup=kup, &
-               lalloc_qi      = .TRUE., &
-               lalloc_qs      = .TRUE., &
-               lalloc_qg      = .TRUE., &
-               lalloc_qh      = .TRUE., &
-               luse_muD_relation_rain  = atm_phy_nwp_config(jg)%cfg_2mom%luse_mu_Dm_rain, &
-               zh_radar       = dbz3d_lin(:,:,:), &
-               lhydrom_choice_testing = synradar_meta%lhydrom_choice_testing &
-               )
-
-        CASE default
-
-          CALL finish( routine,  &
-               &     "dbz3d-computation not available for this synradar_meta%itype_refl! Available are options 1, 3, 4, 5, and 6" )
-
-        END SELECT
-
-        DEALLOCATE (Tmax_i, Tmax_s, Tmax_g, Tmax_h, Tmin_g, Tmin_h)
-        IF (ALLOCATED(dummy0)) DEALLOCATE(dummy0)
-
-      CASE DEFAULT
-
-        CALL finish( routine,  &
-             &     "dbz3d-computation not available for this microphysics scheme! Available for inwp_gscp=1,2,4,5,6 or 7" )
-
-      END SELECT
-
-    END IF   ! synradar_meta%itype_refl == 4
-#endif
 
   END SUBROUTINE compute_field_dbz3d_lin
 
@@ -5185,9 +4733,6 @@ CONTAINS
 
     REAL(wp), INTENT(INOUT) :: dhail(:,:,:) !< expected hail diameter
 
-#ifdef _OPENMP
-    CALL warning('compute_field_dhail','No OpenMP pragmas implemented for hailcast!')
-#endif
 
     CALL hailstone_driver(ptr_patch, p_metrics, p_prog, p_prog_rcf, p_diag,nwp_p_diag%wdur, topography_c, wdur_min_hailcast , dhail)
 
@@ -5331,9 +4876,7 @@ CONTAINS
     INTEGER  :: jb, jk, jc, n_limit
     REAL(wp) :: zu(1:nproma), zl(1:nproma), tu(1:nproma), tl(1:nproma), pu_loc(1:nproma), pl_loc(1:nproma), &
                 pA, pB, zpA, zpB, tpA, tpB
-#ifndef _OPENACC
     LOGICAL  :: lfound_pu(1:nproma), lfound_pl(1:nproma)
-#endif
 
     ! without halo or boundary  points:
     i_rlstart = grf_bdywidth_c + 1
@@ -5350,9 +4893,7 @@ CONTAINS
     
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx,pu_loc,pl_loc,&
-#ifndef _OPENACC
 !$OMP            lfound_pu,lfound_pl,&
-#endif
 !$OMP            pA,pB,zu,zl,tu,tl,zpA,zpB,tpA,tpB), ICON_OMP_RUNTIME_SCHEDULE
     DO jb = i_startblk, i_endblk
 
@@ -5368,16 +4909,12 @@ CONTAINS
       zu(:) = -HUGE(1.0_wp)
       zl(:) = -HUGE(1.0_wp)
 
-#ifndef _OPENACC
       lfound_pu(:) = .FALSE.
       lfound_pl(:) = .FALSE.
-#endif
 
       DO jk = n_limit, 2, -1
 
-#ifndef _OPENACC
         IF (ALL( lfound_pu(i_startidx:i_endidx) .AND. lfound_pl(i_startidx:i_endidx) )) EXIT
-#endif
 
         DO jc = i_startidx, i_endidx
 
@@ -5393,9 +4930,7 @@ CONTAINS
             tpA  = p_diag%temp(jc,jk-1,jb)
             tpB  = p_diag%temp(jc,jk  ,jb)
             tu(jc) = tpA + (tpB-tpA) / (zpB-zpA) * (zu(jc)-zpA)
-#ifndef _OPENACC
             lfound_pu(jc) = .TRUE.
-#endif
           END IF
           
           IF (pA < pl_loc(jc) .AND. pl_loc(jc) <= pB) THEN
@@ -5407,9 +4942,7 @@ CONTAINS
             tpA  = p_diag%temp(jc,jk-1,jb)
             tpB  = p_diag%temp(jc,jk  ,jb)
             tl(jc) = tpA + (tpB-tpA) / (zpB-zpA) * (zl(jc)-zpA)
-#ifndef _OPENACC
             lfound_pl(jc) = .TRUE.
-#endif
           END IF
           
         END DO

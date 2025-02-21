@@ -10,8 +10,134 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 
 MODULE mo_ocean_testbed_div
   !-------------------------------------------------------------------------
@@ -58,8 +184,8 @@ MODULE mo_ocean_testbed_div
   REAL(wp), POINTER                    :: PtPvn(:,:,:)
   REAL(wp), POINTER                    :: u_vert(:,:), v_vert(:,:), div_vert(:,:)
   REAL(wp), POINTER                    :: divPtP(:,:,:), divPtP_diff(:,:,:)
-  onVertices :: vort                   ! vorticity at triangle vertices. Unit [1/s]
-  onVertices_Type(t_cartesian_coordinates) :: vn_dual
+  REAL(wp), POINTER, DIMENSION(:,:,:) :: vort                   ! vorticity at triangle vertices. Unit [1/s]
+  TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:) :: vn_dual
 
 
   REAL(wp) :: minmaxmean(3), L2Diff, L2DivAn, LInfDiff, LInfDivAn

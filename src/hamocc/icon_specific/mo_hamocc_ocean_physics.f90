@@ -9,7 +9,29 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
+
+
+
    MODULE mo_hamocc_ocean_physics
 
     USE mo_kind,                         ONLY: wp
@@ -204,7 +226,7 @@
       old_tracer_collection%tracer(i)%ver_diffusion_coeff => ocean_to_hamocc_state%ver_diffusion_coeff
     END DO
 
-    start_timer(timer_bgc_tracer_ab,1)
+    IF (timers_level >= 1) CALL timer_start(timer_bgc_tracer_ab)
     hamocc_state_prog => hamocc_state%p_prog(nnew(1))
 
 !     IF ((my_process_is_hamocc()) .AND. lfb_bgc_oce) THEN
@@ -239,7 +261,7 @@
         ENDIF
       ENDIF
     ENDIF
-    stop_timer(timer_bgc_tracer_ab,1)
+    IF (timers_level >= 1) CALL timer_stop(timer_bgc_tracer_ab)
 
 
 

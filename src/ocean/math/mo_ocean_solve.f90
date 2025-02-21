@@ -11,7 +11,27 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
+
 
 MODULE mo_ocean_solve
   !-------------------------------------------------------------------------
@@ -55,9 +75,6 @@ MODULE mo_ocean_solve
 ! name of actual backend chosen
     CHARACTER(LEN=64), PUBLIC :: sol_type_name
     LOGICAL, PUBLIC :: is_init = .false.
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: x_loc_wp, res_loc_wp
-#endif
   CONTAINS
 ! interfaces
     PROCEDURE :: dump_matrix => ocean_solve_dump_matrix

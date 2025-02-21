@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_util_phys
@@ -37,10 +47,8 @@ MODULE mo_util_phys
   USE mo_run_config,            ONLY: iqv, iqc, iqi, iqr, iqs, iqni, ininact, &
        &                              iqm_max, nqtendphy, lart, iqnc, iqnr, iqns, &
        &                              iqb_i, iqb_e
-#ifndef __NO_ICON_LES__
   USE mo_ls_forcing_nml,        ONLY: is_ls_forcing, is_nudging_tq, &
        &                              nudge_start_height, nudge_full_height, dt_relax
-#endif
   USE mo_loopindices,           ONLY: get_indices_c
   USE mo_atm_phy_nwp_config,    ONLY: atm_phy_nwp_config
   USE mo_nwp_tuning_config,     ONLY: tune_gust_factor, itune_gust_diag, tune_gustsso_lim
@@ -400,13 +408,8 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(temp, qv, p_ex)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
       DO jk = slev, elev
         DO jc = i_startidx, i_endidx
-#endif
 
 !!$ UB: do we need p_prog_rcf%tracer_ptr(iqv) instead of p_prog%tracer_ptr(iqv)?
           ! get values for temperature, etc.:
@@ -455,9 +458,6 @@ CONTAINS
       &         jc, jk, jb
     LOGICAL  :: lclip       ! clip rel. hum. to values <=100% 
 
-#ifdef _OPENACC
-    CALL finish ('mo_util_phys:compute_field_rel_hum_ifs', 'OpenACC version currently not implemented')
-#endif
 
     IF (PRESENT(opt_lclip)) THEN
       lclip = opt_lclip
@@ -487,13 +487,13 @@ CONTAINS
       CALL get_indices_c(ptr_patch, jb, i_startblk, i_endblk, &
         i_startidx, i_endidx, rl_start, rl_end)
       
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
+
+
+
+
       DO jk = slev, elev
         DO jc = i_startidx, i_endidx
-#endif
+
 
 !!$ UB: do we need p_prog_rcf%tracer_ptr(iqv) instead of p_prog%tracer_ptr(iqv)?
           ! get values for temperature, etc.:
@@ -576,10 +576,10 @@ CONTAINS
     INTEGER  :: iq_start
     REAL(wp) :: zrhox(nproma,kend,5)
     REAL(wp) :: zrhox_clip(nproma,kend)
-#ifndef __NO_ICON_LES__
+
     REAL(wp) :: nudgecoeff  ! SCM Nudging
     REAL(wp) :: z_ddt_q_nudge
-#endif
+
     !
     INTEGER, DIMENSION(5) :: conv_list
     LOGICAL :: lzacc ! non-optional version of lacc
@@ -797,7 +797,7 @@ CONTAINS
       !$ACC END PARALLEL
     ENDIF
 
-#ifndef __NO_ICON_LES__
+
     ! Add LS forcing to moisture variable including nudging
     IF(is_ls_forcing)THEN
       CALL assert_acc_host_only("tracer_add_phytend is_ls_forcing", lacc)
@@ -833,7 +833,7 @@ CONTAINS
         ENDDO
       END DO
     ENDIF  ! is_ls_forcing
-#endif
+
 
     !$ACC WAIT
     !$ACC END DATA ! COPYIN(conv_list)

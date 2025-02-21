@@ -14,7 +14,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_aes_phy_init
@@ -63,12 +73,10 @@ MODULE mo_aes_phy_init
   USE mo_turb_vdiff,           ONLY: vdiff_init
   ! USE mo_vdf_diag_smag,        ONLY: sfc_exchange_coefficients
 
-#ifndef __NO_JSBACH__
   ! land surface
   USE mo_jsb_model_init,       ONLY: jsbach_init
   USE mo_jsb_interface,        ONLY: jsbach_get_var
   ! USE mo_phy_schemes,          ONLY: register_exchange_coefficients_procedure
-#endif
   USE mo_ext_data_state,       ONLY: ext_data
 
   ! carbon cycle
@@ -104,10 +112,8 @@ MODULE mo_aes_phy_init
   USE mo_reader_sst_sic,       ONLY: t_sst_sic_reader
   USE mo_interpolate_time,     ONLY: t_time_intp
 
-#ifndef __NO_RTE_RRTMGP__
   USE mo_rte_rrtmgp_setup,     ONLY: rte_rrtmgp_basic_setup
   USE mo_rte_rrtmgp_interface, ONLY: pressure_scale, droplet_scale
-#endif
   USE mo_lcariolle,            ONLY: lcariolle_init_o3, lcariolle_init, &
     &l_cariolle_initialized_o3, t_avi, t_time_interpolation
 
@@ -202,13 +208,11 @@ CONTAINS
       !
       ! Cloud optical properties
       CALL print_aes_cop_config(ng)
-#ifndef __NO_RTE_RRTMGP__
       !
       ! Radiation constants for gas and cloud optics
       CALL rte_rrtmgp_basic_setup(nproma, nlev, pressure_scale, droplet_scale,       &
         &                    aes_cop_config(1)%cinhoml1 ,aes_cop_config(1)%cinhoml2, &
         &                    aes_cop_config(1)%cinhoml3 ,aes_cop_config(1)%cinhomi)
-#endif
     END IF
 
     ! vertical turbulent mixing and surface
@@ -241,7 +245,6 @@ CONTAINS
       ! JSBACH land processes
       !
 
-#ifndef __NO_JSBACH__
       IF (ilnd <= nsfc_type .AND. ANY(aes_phy_config(:)%ljsb)) THEN
         DO jg=1,ng
           IF (aes_phy_config(jg)%ljsb) THEN 
@@ -252,7 +255,6 @@ CONTAINS
         !   CALL register_exchange_coefficients_procedure(sfc_exchange_coefficients)
         ! END IF
       END IF ! 
-#endif
 
     ENDIF
 
@@ -782,10 +784,8 @@ CONTAINS
 
       ! Assign initial values for some components of the "field" and
       ! "tend" state vectors.
-#ifndef __PGI
 !FIXME: PGI + OpenMP produce error in this routine... check correctness of parallel code
 !$OMP PARALLEL WORKSHARE
-#endif
       !
       ! constant-in-time fields
       ! initial and re-start
@@ -795,9 +795,9 @@ CONTAINS
       field% areacella(:,  :) = p_patch% cells%   area(:,:)
       field%    coriol(:,  :) = p_patch% cells%    f_c(:,:)
       !
-#ifndef __PGI
+
 !$OMP END PARALLEL WORKSHARE
-#endif
+
       ! in case of restart, reset output fields of unused parameterizations,
       ! to their intial value
       !
@@ -947,7 +947,7 @@ CONTAINS
       CASE('aes_bubble_land')
         ! Note that there is only one surface type for land in this case !!!
 
-#ifndef __NO_JSBACH__
+
         !
         IF (.NOT. aes_phy_config(jg)%ljsb) THEN 
           CALL finish('mo_aes_phy_init:init_aes_phy_field', 'aes_bubble_land testcase but JSBACH not activated (ljsb)')
@@ -996,9 +996,9 @@ CONTAINS
         END DO
 !$OMP END PARALLEL DO
 
-#else
-      CALL finish('mo_aes_phy_init:init_aes_phy_field', 'aes_bubble_land testcase but JSBACH not compiled')
-#endif
+
+
+
 
       CASE('RCE') !Note that there is only one surface type in this case
         !

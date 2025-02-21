@@ -17,7 +17,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_radar_data_state
@@ -54,7 +64,19 @@ MODULE mo_radar_data_state
   USE mo_util_uuid,          ONLY: OPERATOR(==), uuid_unparse
   USE mo_dictionary,         ONLY: t_dictionary
 
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   IMPLICIT NONE
 
@@ -348,7 +370,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,             &
       &           grib2_desc, ldims=shape2d_c, loutput=.FALSE.,            &
       &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-    __acc_attach(p_radar_ct%blacklist)
+    
 
 
   END SUBROUTINE new_radar_data_ct_list
@@ -416,7 +438,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,      &
       &           grib2_desc, ldims=shape3d_c, loutput=.TRUE.,     &
       &           isteptype=TSTEP_INSTANT, lopenacc=.TRUE. )  ! Meta info constituentType missing
-    __acc_attach(p_radar_td%obs)
+    
 
     ! radqual       p_radar_td%spqual(nproma,nblks_c,nobs_times)
     cf_desc    = t_cf_var('rad_qual', '-',   &
@@ -426,7 +448,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,      &
       &           grib2_desc, ldims=shape3d_c, loutput=.FALSE.,     &
       &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )  ! Meta info constituentType missing
-    __acc_attach(p_radar_td%spqual)
+    
 
     ! radar beam height
     !
@@ -438,7 +460,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,              &
       &           grib2_desc, ldims=shape3d_h, loutput=.FALSE.,            &
       &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-    __acc_attach(p_radar_td%radheight)
+    
 
   END SUBROUTINE new_radar_data_td_list
   !-------------------------------------------------------------------------
@@ -1044,7 +1066,7 @@ CONTAINS
                 & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,       &
                 & ldims=shape3d_c, loutput=.FALSE.,                                &
                 & isteptype=TSTEP_INSTANT, lopenacc=.TRUE. )
-    __acc_attach(lhn_fields%ttend_lhn)
+    
 
 
     ! qvtend_lhn      lhn_fields%qvtend_lhn(nproma,nlev,nblks_c)
@@ -1056,7 +1078,7 @@ CONTAINS
                 & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,       &
                 & ldims=shape3d_c, loutput=.FALSE.,                                &
                 & isteptype=TSTEP_INSTANT, lopenacc=.TRUE. )
-    __acc_attach(lhn_fields%qvtend_lhn)
+    
 
 
     ! NOTE: The GRIB2 and Netcdf settings 'datatype=datatype_flt' and 'ibits=DATATYPE_PACK16'
@@ -1075,7 +1097,7 @@ CONTAINS
                 & initval=.FALSE.,                                                 &
                 & isteptype=TSTEP_INSTANT,                                         &
                 & lopenacc=.TRUE. )
-    __acc_attach(lhn_fields%brightband)
+    
 
 
     ! pr_obs_sum      lhn_fields%pr_obs_sum(nproma,nblks_c)
@@ -1087,7 +1109,7 @@ CONTAINS
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,         &
                 & ldims=shape2d_c, loutput=.FALSE.,                                &
                 & isteptype=TSTEP_ACCUM, lopenacc=.TRUE. )
-    __acc_attach(lhn_fields%pr_obs_sum)
+    
 
 
     ! pr_mod_sum      lhn_fields%pr_mod_sum(nproma,nblks_c)
@@ -1099,7 +1121,7 @@ CONTAINS
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,         &
                 & ldims=shape2d_c, loutput=.FALSE.,                                &
                 & isteptype=TSTEP_ACCUM, lopenacc=.TRUE. )
-    __acc_attach(lhn_fields%pr_mod_sum)
+    
 
 
     ! pr_ref_sum      lhn_fields%pr_ref_sum(nproma,nblks_c)
@@ -1111,7 +1133,7 @@ CONTAINS
                 & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,         &
                 & ldims=shape2d_c, loutput=.FALSE.,                                &
                 & isteptype=TSTEP_ACCUM, lopenacc=.TRUE. )
-    __acc_attach(lhn_fields%pr_ref_sum)
+    
 
   END SUBROUTINE new_lhn_fields_list
 

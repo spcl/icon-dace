@@ -45,21 +45,21 @@
 !
 ! Code:
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_base
-#ifdef USE_MPI_MOD
-  USE mpi
-#endif
+
+
+
   IMPLICIT NONE
   PRIVATE
-#ifdef USE_MPI
-#ifndef USE_MPI_MOD
-  INCLUDE 'mpif.h'
-#endif
-#else
+
+
+
+
+
   !> communicator object to use by default
   INTEGER, PARAMETER :: mpi_comm_world = 0
-#endif
+
   !> communicator object to use by default
   INTEGER :: ppm_default_comm
   INCLUDE 'ppmcommon.inc'
@@ -69,9 +69,9 @@ MODULE ppm_base
   PUBLIC :: set_abort_handler, restore_default_abort_handler
   !> this should go into a wrapper module
   PUBLIC :: mpi_comm_world
-#ifdef USE_MPI
-  PUBLIC :: calls_to_mpi_are_allowed
-#endif
+
+
+
 CONTAINS
   !> abort operation in library, this will call the function reference
   !! assigned to PPM_abort on the C side and substitute non-provided
@@ -187,19 +187,6 @@ CONTAINS
     END IF
   END SUBROUTINE assertion
 
-#ifdef USE_MPI
-  FUNCTION calls_to_mpi_are_allowed() RESULT(p)
-    LOGICAL :: init_flag, finished_flag, p
-    INTEGER :: ierror(2)
-    init_flag = .FALSE.
-    finished_flag = .FALSE.
-    CALL mpi_initialized(init_flag, ierror(1))
-    IF (ierror(1) == mpi_success) &
-         CALL mpi_finalized(finished_flag, ierror(2))
-    p = ierror(1) == MPI_SUCCESS .AND. init_flag &
-         .AND. ierror(2) == MPI_SUCCESS .AND. .NOT. finished_flag
-  END FUNCTION calls_to_mpi_are_allowed
-#endif
 
 END MODULE ppm_base
 BLOCK DATA

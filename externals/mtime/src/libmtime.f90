@@ -57,29 +57,6 @@ MODULE mtime_calendar
   !
 CONTAINS
   !
-#ifdef DOXYGEN_DOCUMENTATION_ONLY
-  !>
-  !! @brief Initialize a new calendar.
-  !!
-  !! setCalendar is done at the very begining to select one of the
-  !! provided calendar libraries. It intializes the calendar to one of:
-  !!
-  !! - proleptic_gregorian
-  !! - year_of_365_days
-  !! - year_of_360_days
-  !!
-  !! The calendar type and hence it's behaviour (Calendar to Julian
-  !! conversion and vice versa) is fixed for the lifetime of the
-  !! selected calendar.  Attempts to change the calendar type on the
-  !! fly is discouraged. The lib has built-in checks to reject
-  !! change attempts at run time.  However, a calendar can be
-  !! "re-initialized" after calling resetCalendar(), but this is not
-  !! advised.
-  !!
-  !! MANTRA: Know what you are doing before you do it and do it
-  !! right the first time.
-  !!
-#endif
   !>
   !! @brief convert the calendar identifier into a human readable string
   !!
@@ -2807,17 +2784,6 @@ MODULE mtime
   PUBLIC
 
   !
-#ifdef DOXYGEN_DOCUMENTATION_ONLY
-  INTEGER, PARAMETER :: no_of_sec_in_a_day    =    86400  !!< number of seconds per day, defined in C
-  INTEGER, PARAMETER :: no_of_sec_in_a_hour   =     3600  !!< number of seconds per hour, defined in C
-  INTEGER, PARAMETER :: no_of_sec_in_a_minute =       60  !!< number of seconds per minute, defined in C
-  !
-  INTEGER, PARAMETER :: no_of_ms_in_a_day     = 86400000  !!< number of milli-seconds per day, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_half_day  = 43200000  !!< number of milli-seconds per 12 hours, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_a_hour    =  3600000  !!< number of milli-seconds per hour, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_a_minute  =    60000  !!< number of milli-seconds per minute, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_a_second  =     1000  !!< number of milli-seconds per second, defined in C
-#endif
   !
   !> @cond DOXYGEN_IGNORE_THIS
   INTEGER(c_int), BIND(c,name='NO_OF_SEC_IN_A_DAY') :: no_of_sec_in_a_day

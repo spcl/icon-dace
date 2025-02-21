@@ -17,7 +17,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_math_divrot
@@ -40,9 +50,6 @@ USE mo_parallel_config,     ONLY: nproma
 USE mo_exception,           ONLY: finish
 USE mo_loopindices,         ONLY: get_indices_c, get_indices_e, get_indices_v
 USE mo_fortran_tools,       ONLY: init
-#ifdef _OPENACC
-USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
 ! USE mo_timer,              ONLY: timer_start, timer_stop, timer_div
 
@@ -128,12 +135,7 @@ SUBROUTINE recon_lsq_cell_l( p_cc, ptr_patch, ptr_int_lsq, p_coeff, &
 
   LOGICAL, INTENT(IN), OPTIONAL ::  &   !< optional async OpenACC
     &  opt_acc_async 
-#ifdef __LOOP_EXCHANGE
-  REAL(wp)  ::   &               !< weights * difference of scalars i j
-    &  z_d(3,nproma,ptr_patch%nlev)
-#else
   REAL(wp)  :: z_d(3)
-#endif
   REAL(wp)  ::   &               !< matrix product of transposed Q matrix and d
     &  z_qt_times_d(2)
 
@@ -196,60 +198,6 @@ SUBROUTINE recon_lsq_cell_l( p_cc, ptr_patch, ptr_int_lsq, p_coeff, &
     CALL get_indices_c(ptr_patch, jb, i_startblk, i_endblk, &
                        i_startidx, i_endidx, rl_start, rl_end)
 
-#ifdef __LOOP_EXCHANGE
-    !$ACC DATA CREATE(z_d)
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-
-        ! note that the multiplication with lsq_weights_c(jc,js,jb) at
-        ! runtime is now avoided. Instead, the multiplication with
-        ! lsq_weights_c(jc,js,jb) has been shifted into the transposed
-        ! Q-matrix.
-        z_d(1,jc,jk) = p_cc(iidx(jc,jb,1),jk,iblk(jc,jb,1)) - p_cc(jc,jk,jb)
-        z_d(2,jc,jk) = p_cc(iidx(jc,jb,2),jk,iblk(jc,jb,2)) - p_cc(jc,jk,jb)
-        z_d(3,jc,jk) = p_cc(iidx(jc,jb,3),jk,iblk(jc,jb,3)) - p_cc(jc,jk,jb)
-
-      END DO ! end loop over cells
-    END DO ! end loop over vertical levels
-    !$ACC END PARALLEL
-
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_qt_times_d)
-    DO jk = slev, elev
-      DO jc = i_startidx, i_endidx
-
-        ! matrix multiplication Q^T d (partitioned into 2 dot products)
-        z_qt_times_d(1) = ptr_int_lsq%lsq_qtmat_c(jc,1,1,jb) * z_d(1,jc,jk)  &
-          &             + ptr_int_lsq%lsq_qtmat_c(jc,1,2,jb) * z_d(2,jc,jk)  &
-          &             + ptr_int_lsq%lsq_qtmat_c(jc,1,3,jb) * z_d(3,jc,jk)
-        z_qt_times_d(2) = ptr_int_lsq%lsq_qtmat_c(jc,2,1,jb) * z_d(1,jc,jk)  &
-          &             + ptr_int_lsq%lsq_qtmat_c(jc,2,2,jb) * z_d(2,jc,jk)  &
-          &             + ptr_int_lsq%lsq_qtmat_c(jc,2,3,jb) * z_d(3,jc,jk)
-
-
-        ! Solve linear system by backward substitution
-        ! Gradient in zonal and meridional direction
-        !
-        ! meridional
-        p_coeff(3,jc,jk,jb) = ptr_int_lsq%lsq_rmat_rdiag_c(jc,2,jb) * z_qt_times_d(2)
-
-        ! zonal
-        p_coeff(2,jc,jk,jb) = ptr_int_lsq%lsq_rmat_rdiag_c(jc,1,jb)                  &
-          & * (z_qt_times_d(1) - ptr_int_lsq%lsq_rmat_utri_c(jc,1,jb)                &
-          & * p_coeff(3,jc,jk,jb))
-
-        ! constant
-        p_coeff(1,jc,jk,jb) = p_cc(jc,jk,jb)
-        
-      END DO ! end loop over cells
-    END DO ! end loop over vertical levels
-    !$ACC END PARALLEL
-    !$ACC WAIT
-    !$ACC END DATA
-
-#else
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_d, z_qt_times_d)
 !$NEC outerloop_unroll(4)
@@ -290,7 +238,6 @@ SUBROUTINE recon_lsq_cell_l( p_cc, ptr_patch, ptr_int_lsq, p_coeff, &
     END DO ! end loop over vertical levels
     !$ACC END PARALLEL
 
-#endif
 
 
     IF (l_consv) THEN
@@ -382,12 +329,7 @@ SUBROUTINE recon_lsq_cell_l_svd( p_cc, ptr_patch, ptr_int_lsq, p_coeff,      &
 
   LOGICAL, INTENT(IN), OPTIONAL ::  &   !< optional async OpenACC
     &  opt_acc_async 
-#ifdef __LOOP_EXCHANGE
-  REAL(wp)  ::   &               !< weights * difference of scalars i j
-    &  z_b(3,nproma,ptr_patch%nlev)
-#else
   REAL(wp)  ::  z_b(3)
-#endif
   INTEGER, POINTER ::   &            !< Pointer to line and block indices of
     &  iidx(:,:,:), iblk(:,:,:)      !< required stencil
   INTEGER :: slev, elev              !< vertical start and end level
@@ -442,54 +384,6 @@ SUBROUTINE recon_lsq_cell_l_svd( p_cc, ptr_patch, ptr_int_lsq, p_coeff,      &
     CALL get_indices_c(ptr_patch, jb, i_startblk, i_endblk, &
                        i_startidx, i_endidx, rl_start, rl_end)
 
-#ifdef __LOOP_EXCHANGE
-    !$ACC DATA CREATE(z_b)
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-
-
-        ! note that the multiplication with lsq_weights_c(jc,js,jb) at
-        ! runtime is now avoided. Instead, the weights have been shifted 
-        ! into the pseudoinverse.
-        z_b(1,jc,jk) = p_cc(iidx(jc,jb,1),jk,iblk(jc,jb,1)) - p_cc(jc,jk,jb)
-        z_b(2,jc,jk) = p_cc(iidx(jc,jb,2),jk,iblk(jc,jb,2)) - p_cc(jc,jk,jb)
-        z_b(3,jc,jk) = p_cc(iidx(jc,jb,3),jk,iblk(jc,jb,3)) - p_cc(jc,jk,jb)
-
-      END DO ! end loop over cells
-    END DO ! end loop over vertical levels
-    !$ACC END PARALLEL
-
-    !
-    ! 2. compute cell based coefficients for linear reconstruction
-    !    calculate matrix vector product PINV(A) * b
-    !
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jk = slev, elev
-      DO jc = i_startidx, i_endidx
-
-        ! meridional
-        p_coeff(3,jc,jk,jb) = ptr_int_lsq%lsq_pseudoinv(jc,2,1,jb) * z_b(1,jc,jk)  &
-          &                 + ptr_int_lsq%lsq_pseudoinv(jc,2,2,jb) * z_b(2,jc,jk)  &
-          &                 + ptr_int_lsq%lsq_pseudoinv(jc,2,3,jb) * z_b(3,jc,jk)
-
-        ! zonal
-        p_coeff(2,jc,jk,jb) = ptr_int_lsq%lsq_pseudoinv(jc,1,1,jb) * z_b(1,jc,jk)  &
-          &                 + ptr_int_lsq%lsq_pseudoinv(jc,1,2,jb) * z_b(2,jc,jk)  &
-          &                 + ptr_int_lsq%lsq_pseudoinv(jc,1,3,jb) * z_b(3,jc,jk)
-
-        ! constant
-        p_coeff(1,jc,jk,jb) = p_cc(jc,jk,jb)
-
-      END DO ! end loop over cells
-    END DO ! end loop over vertical levels
-    !$ACC END PARALLEL
-    !$ACC WAIT
-    !$ACC END DATA
-
-#else
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_b)
 !$NEC outerloop_unroll(2)
@@ -520,7 +414,6 @@ SUBROUTINE recon_lsq_cell_l_svd( p_cc, ptr_patch, ptr_int_lsq, p_coeff,      &
       END DO ! end loop over cells
     END DO ! end loop over vertical levels
     !$ACC END PARALLEL
-#endif
 
     IF (l_consv) THEN
 
@@ -699,18 +592,11 @@ SUBROUTINE recon_lsq_cell_q( p_cc, ptr_patch, ptr_int_lsq, p_coeff, &
     ! 1. compute right hand side of linear system
     !
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG
-    DO jc = i_startidx, i_endidx
-      !$ACC LOOP VECTOR
-      DO jk = slev, elev
-#else
     !$ACC LOOP GANG
 !$NEC outerloop_unroll(4)
     DO jk = slev, elev
       !$ACC LOOP VECTOR
       DO jc = i_startidx, i_endidx
-#endif
 
         z_d(1,jc,jk) = p_cc(iidx(jc,jb,1),jk,iblk(jc,jb,1)) - p_cc(jc,jk,jb)
         z_d(2,jc,jk) = p_cc(iidx(jc,jb,2),jk,iblk(jc,jb,2)) - p_cc(jc,jk,jb)
@@ -921,18 +807,11 @@ SUBROUTINE recon_lsq_cell_q_svd( p_cc, ptr_patch, ptr_int_lsq, p_coeff, &
     !
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG
-    DO jc = i_startidx, i_endidx
-      !$ACC LOOP VECTOR
-      DO jk = slev, elev
-#else
     !$ACC LOOP GANG
 !$NEC outerloop_unroll(4)
     DO jk = slev, elev
       !$ACC LOOP VECTOR
       DO jc = i_startidx, i_endidx
-#endif
 
         z_b(1,jc,jk) = p_cc(iidx(jc,jb,1),jk,iblk(jc,jb,1)) - p_cc(jc,jk,jb)
         z_b(2,jc,jk) = p_cc(iidx(jc,jb,2),jk,iblk(jc,jb,2)) - p_cc(jc,jk,jb)
@@ -1142,19 +1021,12 @@ SUBROUTINE recon_lsq_cell_c( p_cc, ptr_patch, ptr_int_lsq, p_coeff, &
     !
     ! 1. compute right hand side of linear system
     !
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG
-    DO jc = i_startidx, i_endidx
-      !$ACC LOOP VECTOR
-      DO jk = slev, elev
-#else
     !$ACC LOOP GANG
 !$NEC outerloop_unroll(4)
     DO jk = slev, elev
       !$ACC LOOP VECTOR
 !NEC$ ivdep
       DO jc = i_startidx, i_endidx
-#endif
 
         z_d(1,jc,jk) = p_cc(iidx(jc,jb,1),jk,iblk(jc,jb,1)) - p_cc(jc,jk,jb)
         z_d(2,jc,jk) = p_cc(iidx(jc,jb,2),jk,iblk(jc,jb,2)) - p_cc(jc,jk,jb)
@@ -1347,13 +1219,8 @@ SUBROUTINE recon_lsq_cell_c_svd( p_cc, ptr_patch, ptr_int_lsq, p_coeff, &
                                   !< constant coefficient for zonal and meridional
                                   !< direction
 
-#ifdef __LOOP_EXCHANGE
-  REAL(wp)  ::           &        !< difference of scalars i j
-    &  z_b(lsq_high_set%dim_c,nproma,ptr_patch%nlev)
-#else
   REAL(wp)  ::           &        !< difference of scalars i j
     &  z_b(9)
-#endif
 
   INTEGER, POINTER  ::   &        !< Pointer to line and block indices of
     &  iidx(:,:,:), iblk(:,:,:)   !< required stencil
@@ -1438,71 +1305,6 @@ SUBROUTINE recon_lsq_cell_c_svd( p_cc, ptr_patch, ptr_int_lsq, p_coeff, &
     ! 1. compute right hand side of linear system
     !
 
-#ifdef __LOOP_EXCHANGE
-    !$ACC DATA CREATE(z_b)
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-
-        z_b(1,jc,jk) = p_cc(iidx(jc,jb,1),jk,iblk(jc,jb,1)) - p_cc(jc,jk,jb)
-        z_b(2,jc,jk) = p_cc(iidx(jc,jb,2),jk,iblk(jc,jb,2)) - p_cc(jc,jk,jb)
-        z_b(3,jc,jk) = p_cc(iidx(jc,jb,3),jk,iblk(jc,jb,3)) - p_cc(jc,jk,jb)
-        z_b(4,jc,jk) = p_cc(iidx(jc,jb,4),jk,iblk(jc,jb,4)) - p_cc(jc,jk,jb)
-        z_b(5,jc,jk) = p_cc(iidx(jc,jb,5),jk,iblk(jc,jb,5)) - p_cc(jc,jk,jb)
-        z_b(6,jc,jk) = p_cc(iidx(jc,jb,6),jk,iblk(jc,jb,6)) - p_cc(jc,jk,jb)
-        z_b(7,jc,jk) = p_cc(iidx(jc,jb,7),jk,iblk(jc,jb,7)) - p_cc(jc,jk,jb)
-        z_b(8,jc,jk) = p_cc(iidx(jc,jb,8),jk,iblk(jc,jb,8)) - p_cc(jc,jk,jb)
-        z_b(9,jc,jk) = p_cc(iidx(jc,jb,9),jk,iblk(jc,jb,9)) - p_cc(jc,jk,jb)
-
-      ENDDO
-    ENDDO
-    !$ACC END PARALLEL
-
-    !
-    ! 2. compute cell based coefficients for cubic reconstruction
-    !    calculate matrix vector product PINV(A) * b
-    !
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jk = slev, elev
-      DO jc = i_startidx, i_endidx
-
-        ! (intrinsic function matmul not applied, due to massive
-        ! performance penalty on the NEC. Instead the intrinsic dot product
-        ! function is applied
-
-        p_coeff(10,jc,jk,jb) = DOT_PRODUCT(ptr_int_lsq%lsq_pseudoinv(jc,9,1:9,jb), &
-          &                               z_b(1:9,jc,jk))
-        p_coeff(9, jc,jk,jb) = DOT_PRODUCT(ptr_int_lsq%lsq_pseudoinv(jc,8,1:9,jb), &
-          &                               z_b(1:9,jc,jk))
-        p_coeff(8, jc,jk,jb) = DOT_PRODUCT(ptr_int_lsq%lsq_pseudoinv(jc,7,1:9,jb), &
-          &                               z_b(1:9,jc,jk))
-        p_coeff(7, jc,jk,jb) = DOT_PRODUCT(ptr_int_lsq%lsq_pseudoinv(jc,6,1:9,jb), &
-          &                               z_b(1:9,jc,jk))
-        p_coeff(6, jc,jk,jb) = DOT_PRODUCT(ptr_int_lsq%lsq_pseudoinv(jc,5,1:9,jb), &
-          &                               z_b(1:9,jc,jk))
-        p_coeff(5, jc,jk,jb) = DOT_PRODUCT(ptr_int_lsq%lsq_pseudoinv(jc,4,1:9,jb), &
-          &                               z_b(1:9,jc,jk))
-        p_coeff(4, jc,jk,jb) = DOT_PRODUCT(ptr_int_lsq%lsq_pseudoinv(jc,3,1:9,jb), &
-          &                               z_b(1:9,jc,jk))
-        p_coeff(3, jc,jk,jb) = DOT_PRODUCT(ptr_int_lsq%lsq_pseudoinv(jc,2,1:9,jb), &
-          &                               z_b(1:9,jc,jk))
-        p_coeff(2, jc,jk,jb) = DOT_PRODUCT(ptr_int_lsq%lsq_pseudoinv(jc,1,1:9,jb), &
-          &                               z_b(1:9,jc,jk))
-
-
-        p_coeff(1,jc,jk,jb)  = p_cc(jc,jk,jb) - DOT_PRODUCT(p_coeff(2:10,jc,jk,jb), &
-          &                    ptr_int_lsq%lsq_moments(jc,jb,1:9))
-
-
-      END DO ! end loop over cells
-    END DO ! end loop over vertical levels
-    !$ACC END PARALLEL
-    !$ACC WAIT
-    !$ACC END DATA
-
-#else
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR TILE(32, 4) PRIVATE(z_b)
     DO jk = slev, elev
@@ -1559,7 +1361,6 @@ SUBROUTINE recon_lsq_cell_c_svd( p_cc, ptr_patch, ptr_int_lsq, p_coeff, &
     END DO ! end loop over vertical levels
     !$ACC END PARALLEL
 
-#endif
 
   END DO ! end loop over blocks
 !$OMP END DO NOWAIT
@@ -1688,17 +1489,10 @@ i_endblk   = ptr_patch%cells%end_blk(rl_end,i_nchdom)
     ! ptr_patch%grid%cells%edge_orientation)
 
       !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      !$ACC LOOP GANG
-      DO jc = i_startidx, i_endidx
-        !$ACC LOOP VECTOR
-        DO jk = slev, elev
-#else
       !$ACC LOOP GANG
       DO jk = slev, elev
         !$ACC LOOP VECTOR
         DO jc = i_startidx, i_endidx
-#endif
 
           div_vec_c(jc,jk,jb) =  &
             vec_e(iidx(jc,jb,1),jk,iblk(jc,jb,1)) * ptr_int%geofac_div(jc,1,jb) + &
@@ -1832,17 +1626,10 @@ i_endblk   = ptr_patch%cells%end_blk(rl_end,i_nchdom)
     ! ptr_patch%grid%cells%edge_orientation)
 
       !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      !$ACC LOOP GANG
-      DO jc = i_startidx, i_endidx
-        !$ACC LOOP VECTOR
-        DO jk = slev, elev
-#else
       !$ACC LOOP GANG
       DO jk = slev, elev
         !$ACC LOOP VECTOR
         DO jc = i_startidx, i_endidx
-#endif
 
           div_vec_c(jc,jk,jb) =  &
             vec_e(iidx(jc,jb,1),jk,iblk(jc,jb,1)) * ptr_int%geofac_div(jc,1,jb) + &
@@ -1965,19 +1752,11 @@ i_endblk   = ptr_patch%cells%end_blk(rl_end,i_nchdom)
                        i_startidx, i_endidx, rl_start, rl_end)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG
-    DO jc = i_startidx, i_endidx
-      DO ji = 1, dim4d
-      !$ACC LOOP VECTOR
-        DO jk = slev(ji), elev(ji)
-#else
     !$ACC LOOP GANG
     DO ji = 1, dim4d
       DO jk = slev(ji), elev(ji)
         !$ACC LOOP VECTOR
         DO jc = i_startidx, i_endidx
-#endif
 
           f4dout(jc,jk,jb,ji) =  &
             f4din(iidx(jc,jb,1),jk,iblk(jc,jb,1),ji) * ptr_int%geofac_div(jc,1,jb) + &
@@ -2130,15 +1909,9 @@ IF (l2fields) THEN
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
 
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
-#endif
 
         aux_c(jc,jk,jb) =  &
           vec_e(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * ptr_int%geofac_div(jc,1,jb) + &
@@ -2166,15 +1939,9 @@ ELSE
                      i_startidx, i_endidx, rl_start, rl_end_l1)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
-#endif
         aux_c(jc,jk,jb) =  &
           vec_e(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * ptr_int%geofac_div(jc,1,jb) + &
           vec_e(ieidx(jc,jb,2),jk,ieblk(jc,jb,2)) * ptr_int%geofac_div(jc,2,jb) + &
@@ -2251,15 +2018,9 @@ IF (l2fields) THEN
                      i_startidx, i_endidx, rl_start_l2, rl_end)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
-#endif
 
         !  calculate the weighted average
         div_vec_c(jc,jk,jb) =  &
@@ -2291,15 +2052,9 @@ ELSE
                      i_startidx, i_endidx, rl_start_l2, rl_end)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
-#endif
 
         !  calculate the weighted average
         div_vec_c(jc,jk,jb) =  &
@@ -2444,15 +2199,9 @@ END IF
     !
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jv = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO jk = slev, elev
       DO jv = i_startidx, i_endidx
-#endif
         !
         ! calculate rotation, i.e.
         ! add individual edge contributions to rotation
@@ -2572,17 +2321,10 @@ END IF
     ! calculate rotation, i.e.
     ! add individual edge contributions to rotation
     !
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO jv = i_startidx, i_endidx
-      DO jk = slev, elev
-        rot_vec(jk,jv,jb) =   &
-#else
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO jk = slev, elev
       DO jv = i_startidx, i_endidx
         rot_vec(jv,jk,jb) =   &
-#endif
           vec_e(iidx(jv,jb,1),jk,iblk(jv,jb,1)) * ptr_int%geofac_rot(jv,1,jb) + &
           vec_e(iidx(jv,jb,2),jk,iblk(jv,jb,2)) * ptr_int%geofac_rot(jv,2,jb) + &
           vec_e(iidx(jv,jb,3),jk,iblk(jv,jb,3)) * ptr_int%geofac_rot(jv,3,jb) + &

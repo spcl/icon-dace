@@ -106,9 +106,9 @@ MODULE mo_rte_rrtmgp_merge_debug
 
   INTEGER :: nf_write_id, writing, dump_index
   LOGICAL :: dump_finished, is_omp_radiation
-#ifdef _OPENMP
-!$OMP THREADPRIVATE(dump_index)
-#endif
+
+
+
   INTEGER, SAVE :: dump_offset = 0
   INTEGER, PARAMETER :: ngas_old = 6
 
@@ -210,25 +210,25 @@ CONTAINS
     INTEGER :: i, ret, dim_val(ndim), idummy
 
     ret = nf_create(TRIM(name), nf_clobber, nf_write_id)
-    IF (ret /= nf_noerr) CALL crash(ret, __LINE__)
+    IF (ret /= nf_noerr) CALL crash(ret, 213)
 
     dim_val = (/kbdim, klev, klev+1, 4, nf_unlimited/)
     DO i = 1,ndim
       dims(i)%length = dim_val(i)
       ret = nf_def_dim(nf_write_id, TRIM(dims(i)%name), dim_val(i), idummy)
-      IF (ret /= nf_noerr) CALL crash(ret, __LINE__)
+      IF (ret /= nf_noerr) CALL crash(ret, 219)
     END DO
 
     DO i = 1, nvar_all
       IF (dump_list%is_active(i)) THEN
         ret = nf_def_var(nf_write_id, TRIM(vars(i)%name), &
           vars(i)%nf_type, vars(i)%ndim, vars(i)%dims, dump_list%nf_idx(i))
-        IF (ret /= nf_noerr) CALL crash(ret, __LINE__)
+        IF (ret /= nf_noerr) CALL crash(ret, 226)
       ENDIF
     END DO
 
     ret = nf_enddef(nf_write_id)
-    if (ret /= nf_noerr) CALL crash(ret, __LINE__)
+    if (ret /= nf_noerr) CALL crash(ret, 231)
 
   END SUBROUTINE open_write_internal
 
@@ -241,12 +241,12 @@ CONTAINS
     var_idx = var_id(var_name)
     IF (var_idx == 0) THEN
       CALL crash('Variable ' // TRIM(var_name) // ' not in dump dictionary', &
-        __LINE__)
+        244)
     ENDIF
 
     IF (.not. dump_list%is_active(var_idx)) RETURN
     IF (vars(var_idx)%nf_type /= nf_double) THEN
-      CALL crash('Wrong type in call', __LINE__)
+      CALL crash('Wrong type in call', 249)
     END IF
     start = 1
     DO i = 1,vars(var_idx)%ndim-1
@@ -256,7 +256,7 @@ CONTAINS
     start(i) = pos
     ret = nf_put_vara_double(nf_write_id, &
       dump_list%nf_idx(var_idx), start, count, data)
-    if (ret /= nf_noerr) CALL crash(ret, __LINE__)
+    if (ret /= nf_noerr) CALL crash(ret, 259)
   END SUBROUTINE write_double
 
   SUBROUTINE write_int(var_name, data, pos)
@@ -268,12 +268,12 @@ CONTAINS
     var_idx = var_id(var_name)
     IF (var_idx == 0) THEN
       CALL crash('Variable ' // TRIM(var_name) // ' not in dump dictionary', &
-        __LINE__)
+        271)
     ENDIF
 
     IF (.not. dump_list%is_active(var_idx)) RETURN
     IF (vars(var_idx)%nf_type /= nf_int) THEN
-      CALL crash('Wrong type in call', __LINE__)
+      CALL crash('Wrong type in call', 276)
     END IF
     start = 1
     DO i = 1,vars(var_idx)%ndim-1
@@ -283,7 +283,7 @@ CONTAINS
     start(i) = pos
     ret = nf_put_vara_int(nf_write_id, &
       dump_list%nf_idx(var_idx), start, count, data)
-    if (ret /= nf_noerr) CALL crash(ret, __LINE__)
+    if (ret /= nf_noerr) CALL crash(ret, 286)
   END SUBROUTINE write_int
 
   SUBROUTINE write_record_interface_aes(kproma, cosmu0, day_frc, &
@@ -367,7 +367,7 @@ CONTAINS
     INTEGER :: ret
     IF (writing == 1) THEN
       ret = nf_close(nf_write_id)
-      IF (ret /= nf_noerr) CALL crash(ret, __LINE__)
+      IF (ret /= nf_noerr) CALL crash(ret, 370)
       writing = 0
     ENDIF
   END SUBROUTINE close_write

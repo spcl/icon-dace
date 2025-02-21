@@ -20,7 +20,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_advection_traj
 
@@ -33,22 +43,12 @@ MODULE mo_advection_traj
   USE mo_impl_constants,      ONLY: min_rledge_int, SUCCESS
   USE mo_timer,               ONLY: timer_start, timer_stop, timers_level, timer_back_traj
   USE mo_advection_utils,     ONLY: t_list2D
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
 ! Some compiler NVHPC versions have issues with the fast atomic path
-#ifdef _OPENACC
-#define _USE_FAST_ATOMIC
-#endif
 
-#if defined (_USE_FAST_ATOMIC) && (__NVCOMPILER_MAJOR__ == 21 && __NVCOMPILER_MINOR__ == 3)
-#undef _USE_FAST_ATOMIC
-#endif
 
-#if defined (_USE_FAST_ATOMIC) && (__NVCOMPILER_MAJOR__ == 99 && __NVCOMPILER_PATCHLEVEL__ <= 224325)
-#undef _USE_FAST_ATOMIC
-#endif
+
+
 
 
   IMPLICIT NONE
@@ -494,11 +494,11 @@ CONTAINS
     i_startblk = ptr_p%edges%start_block(i_rlstart)
     i_endblk   = ptr_p%edges%end_block(i_rlend)
 
-#ifdef _OPENACC
-    IF( .NOT. i_am_accel_node) CALL finish(modname//":btraj_dreg", "The following code must run in GPU mode.")
-    ! The OpenACC ATOMIC code must not run on CPU. (gang_eidx, gang_elev would be to small.)
-    ! TODO: remove all IF(i_am_accel_node)
-#endif
+
+
+
+
+
 
     !$ACC DATA PRESENT(ptr_p, ptr_int, p_vn, p_vt, p_coords_dreg_v, p_cell_idx, p_cell_blk) &
     !$ACC   NO_CREATE(opt_falist) CREATE(edge_verts, lvn_sys_pos) &
@@ -560,19 +560,19 @@ CONTAINS
 
         ! Nvidia compilers only support 65536 gangs
         ! So if nproma*nlev > 65536 * gang_size * pts_per_thread the FAST_ATOMIC code won't work
-#ifdef __NVCOMPILER_MAJOR__
-        IF ( (elev-slev+1)*(i_endidx-i_startidx+1) > 65535 * gang_size * pts_per_thread ) THEN
-          CALL finish(modname//":btraj_dreg", & 
-            "Too many grid points for the fast algorithm, please undefine _USE_FAST_ATOMIC and recompile")
-        END IF
-#endif
+
+
+
+
+
+
 
         num_gangs = ( (elev-slev+1)*(i_endidx-i_startidx+1) + gang_size-1) / gang_size
         !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node) &
         !$ACC   PRIVATE(gang_ie, gang_captured_ie, gang_elev, gang_eidx) &
-#ifndef _USE_FAST_ATOMIC
+
         !$ACC   COPY(ie) &
-#endif
+
         !$ACC   NUM_GANGS(num_gangs) VECTOR_LENGTH(gang_size)
         gang_ie(1) = 0
 
@@ -590,7 +590,7 @@ CONTAINS
               &                 ptr_p%edges%edge_cell_length(je,jb,2),lvn_pos)
 
             IF (traj_length > 1.25_wp*e2c_length) THEN   ! add point to index list
-#ifndef _USE_FAST_ATOMIC
+
               ! Default code path 
               !$ACC ATOMIC CAPTURE
               ie = ie + 1
@@ -598,20 +598,10 @@ CONTAINS
               !$ACC END ATOMIC
               opt_falist%eidx(ie_capture,jb) = je
               opt_falist%elev(ie_capture,jb) = jk
-#else
-              ! Optimized OpenACC path
-              !$ACC ATOMIC CAPTURE
-              gang_ie(1) = gang_ie(1) + 1
-              ie_capture = gang_ie(1)
-              !$ACC END ATOMIC
-              gang_eidx(ie_capture) = je
-              gang_elev(ie_capture) = jk
-#endif
             ENDIF
           ENDDO ! loop over edges
         ENDDO   ! loop over vertical levels
 
-#ifndef _USE_FAST_ATOMIC
         !$ACC END PARALLEL
 
         ! Default code path
@@ -619,26 +609,6 @@ CONTAINS
         !$ACC KERNELS ASYNC(1) COPYIN(ie)
         opt_falist%len(jb) = ie
         !$ACC END KERNELS
-#else
-        ! Optimized OpenACC path
-        ! Copy gang-local lists into the global array
-        !$ACC ATOMIC CAPTURE
-        gang_captured_ie(1) = opt_falist%len(jb)
-        opt_falist%len(jb)  = opt_falist%len(jb) + gang_ie(1)
-        !$ACC END ATOMIC
-
-        !$ACC LOOP GANG
-        DO jg = 1, num_gangs
-          !$ACC LOOP VECTOR
-          DO jl = 1, gang_size*pts_per_thread
-            IF (jl <= gang_ie(1)) THEN
-              opt_falist%eidx(gang_captured_ie(1)+jl, jb) = gang_eidx(jl)
-              opt_falist%elev(gang_captured_ie(1)+jl, jb) = gang_elev(jl)
-            END IF
-          END DO
-        END DO
-        !$ACC END PARALLEL
-#endif
       ENDIF
 
       !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
@@ -661,12 +631,9 @@ CONTAINS
           !
           !  3\--------------\2       4\--------------\3
           !    \              \         \              \         [vn < 0]
-          !     \      N       \         \      N       \
-          !      \      \       \         \      \       \      <- edge normal
+          !     \      N       \         \      N                 !      \      \       \         \      \       \      <- edge normal
           !   4,2 \------\-------\1      1 \------\-------\2,4  <- triangle edge
-          !        \              \         \              \
-          !         \              \         \              \
-          !          \              \         \              \   [vn > 0]
+          !        \              \         \                        !         \              \         \                        !          \              \         \              \   [vn > 0]
           !         3 \--------------\4      2 \--------------\3
 
 

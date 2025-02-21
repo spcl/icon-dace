@@ -17,10 +17,10 @@ MODULE mo_nwp_gpu_util
   USE mo_dynamics_config,         ONLY: nnow, nnew, nnow_rcf, nnew_rcf
   USE mo_intp_data_strc,          ONLY: t_int_state
   USE mo_nwp_parameters,          ONLY: t_phy_params
-#ifdef __ICON_ART
-  USE mo_art_data,                ONLY: t_art_data
-  USE mo_art_config,              ONLY: art_config
-#endif
+
+
+
+
   USE mo_nonhydrostatic_config,   ONLY: kstart_moist, kstart_tracer
   USE mo_grid_config,             ONLY: n_dom
   USE mo_nwp_phy_state,           ONLY: phy_params, prm_diag
@@ -29,19 +29,19 @@ MODULE mo_nwp_gpu_util
   USE mo_nwp_lnd_state,           ONLY: p_lnd_state
   USE mo_atm_phy_nwp_config,      ONLY: t_atm_phy_nwp_config
   USE mo_fortran_tools,           ONLY: assert_acc_device_only
-#ifdef _OPENACC
-  USE mo_var_list_gpu,            ONLY: gpu_update_var_list
-  USE mo_sppt_config,             ONLY: sppt_config
-#endif
+
+
+
+
 
   IMPLICIT NONE
 
   PRIVATE
 
   PUBLIC :: gpu_d2h_nh_nwp, gpu_h2d_nh_nwp, devcpy_nwp, hostcpy_nwp, gpu_d2h_dace
-#ifdef __ICON_ART
-  PUBLIC :: gpu_d2h_art, gpu_h2d_art
-#endif
+
+
+
 
   CONTAINS
 
@@ -90,39 +90,6 @@ MODULE mo_nwp_gpu_util
     !$ACC   HOST(p_int%verts_aw_cells) &
     !$ACC   ASYNC(1) IF(PRESENT(p_int))
 
-#ifdef _OPENACC
-    ! Update NWP fields
-    CALL gpu_update_var_list('prm_diag_of_domain_', .false., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('prm_tend_of_domain_', .false., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('lnd_prog_of_domain_', .false., domain=jg, substr='_and_timelev_', timelev=nnow(jg), lacc=.TRUE.)
-    CALL gpu_update_var_list('lnd_prog_of_domain_', .false., domain=jg, substr='_and_timelev_', timelev=nnew(jg), lacc=.TRUE.)
-    CALL gpu_update_var_list('lnd_diag_of_domain_', .false., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('wtr_prog_of_domain_', .false., domain=jg, substr='_and_timelev_', timelev=nnow(jg), lacc=.TRUE.)
-    CALL gpu_update_var_list('wtr_prog_of_domain_', .false., domain=jg, substr='_and_timelev_', timelev=nnew(jg), lacc=.TRUE.)
-    CALL gpu_update_var_list('ext_data_atm_td_D',.false.,domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('ext_data_atm_D', .false., domain=jg, lacc=.TRUE.)
-
-    IF(ldass_lhn) THEN
-      ! Update radar data and LHN fields
-      CALL gpu_update_var_list('radar_data_ct_dom_',    .false., domain=jg, lacc=.TRUE.)
-      CALL gpu_update_var_list('radar_data_td_dom_',    .false., domain=jg, lacc=.TRUE.)
-      CALL gpu_update_var_list('lhn_fields_of_domain_', .false., domain=jg, lacc=.TRUE.)
-    ENDIF
-
-    ! Update dynamics fields
-    CALL gpu_update_var_list('nh_state_metrics_of_domain_', .false., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('nh_state_diag_of_domain_', .false., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('nh_state_prog_of_domain_', .false., domain=jg, substr='_and_timelev_', timelev=nnow(jg), lacc=.TRUE.)
-    CALL gpu_update_var_list('nh_state_prog_of_domain_', .false., domain=jg, substr='_and_timelev_', timelev=nnew(jg), lacc=.TRUE.) !p_prog
-    CALL gpu_update_var_list('nh_state_prog_of_domain_', .false., domain=jg, substr='_and_timelev_', timelev=nnow_rcf(jg), lacc=.TRUE.) !p_prog_now_rcf
-    CALL gpu_update_var_list('nh_state_prog_of_domain_', .false., domain=jg, substr='_and_timelev_', timelev=nnew_rcf(jg), lacc=.TRUE.) !p_prog_rcf
-    CALL gpu_update_var_list('prepadv_of_domain_', .false., domain=jg, lacc=.TRUE.)
-
-    ! Update sppt
-    IF (sppt_config(jg)%lsppt) THEN
-      CALL gpu_update_var_list('sppt_of_domain_', .false., domain=jg, lacc=.TRUE.)
-    END IF
-#endif
 
     IF (PRESENT(phy_params)) THEN
       ! This is save as long as all t_phy_params components are scalars.
@@ -139,9 +106,7 @@ MODULE mo_nwp_gpu_util
       !$ACC   HOST(a%efdt_min_raylfric, a%latm_above_top, a%icalc_reff, a%icpl_rad_reff, a%luse_clc_rad, a%ithermo_water) &
       !$ACC   HOST(a%lupatmo_phy, a%lenabled, a%lcall_phy, a%lcalc_acc_avg) &
       !$ACC   HOST(a%lcalc_extra_avg, a%lhave_graupel, a%l2moment, a%lhydrom_read_from_fg, a%lhydrom_read_from_ana) &
-#ifndef __NO_ICON_LES__
       !$ACC   HOST(a%is_les_phy) &
-#endif
       !$ACC   HOST(a%nclass_gscp, a%l_3d_rad_fluxes, a%l_3d_turb_fluxes, a%fac_ozone, a%shapefunc_ozone) &
       !$ACC   HOST(a%ozone_maxinc) &
       !$ACC   ASYNC(1)
@@ -199,40 +164,6 @@ MODULE mo_nwp_gpu_util
     !$ACC   DEVICE(p_int%verts_aw_cells) &
     !$ACC   ASYNC(1) IF(PRESENT(p_int))
 
-#ifdef _OPENACC
-    ! Update NWP fields
-    CALL gpu_update_var_list('prm_diag_of_domain_', .true., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('prm_tend_of_domain_', .true., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('lnd_prog_of_domain_', .true., domain=jg, substr='_and_timelev_', timelev=nnow(jg), lacc=.TRUE.)
-    CALL gpu_update_var_list('lnd_prog_of_domain_', .true., domain=jg, substr='_and_timelev_', timelev=nnew(jg), lacc=.TRUE.)
-    CALL gpu_update_var_list('lnd_diag_of_domain_', .true., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('wtr_prog_of_domain_', .true., domain=jg, substr='_and_timelev_', timelev=nnow(jg), lacc=.TRUE.)
-    CALL gpu_update_var_list('wtr_prog_of_domain_', .true., domain=jg, substr='_and_timelev_', timelev=nnew(jg), lacc=.TRUE.)
-    CALL gpu_update_var_list('lnd_diag_of_domain_', .true., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('ext_data_atm_td_D',.true.,domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('ext_data_atm_D', .true., domain=jg, lacc=.TRUE.)
-
-    IF(ldass_lhn) THEN
-      ! Update radar data and LHN fields
-      CALL gpu_update_var_list('radar_data_ct_dom_',    .true., domain=jg, lacc=.TRUE.)
-      CALL gpu_update_var_list('radar_data_td_dom_',    .true., domain=jg, lacc=.TRUE.)
-      CALL gpu_update_var_list('lhn_fields_of_domain_', .true., domain=jg, lacc=.TRUE.)
-    ENDIF
-
-    ! Update dynamics fields
-    CALL gpu_update_var_list('nh_state_metrics_of_domain_', .true., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('nh_state_diag_of_domain_', .true., domain=jg, lacc=.TRUE.)
-    CALL gpu_update_var_list('nh_state_prog_of_domain_', .true., domain=jg, substr='_and_timelev_', timelev=nnow(jg), lacc=.TRUE.)
-    CALL gpu_update_var_list('nh_state_prog_of_domain_', .true., domain=jg, substr='_and_timelev_', timelev=nnew(jg), lacc=.TRUE.) !p_prog
-    CALL gpu_update_var_list('nh_state_prog_of_domain_', .true., domain=jg, substr='_and_timelev_', timelev=nnow_rcf(jg), lacc=.TRUE.) !p_prog_now_rcf
-    CALL gpu_update_var_list('nh_state_prog_of_domain_', .true., domain=jg, substr='_and_timelev_', timelev=nnew_rcf(jg), lacc=.TRUE.) !p_prog_new_rcf
-    CALL gpu_update_var_list('prepadv_of_domain_', .true., domain=jg, lacc=.TRUE.)
-
-    ! Update sppt
-    IF (sppt_config(jg)%lsppt) THEN
-      CALL gpu_update_var_list('sppt_of_domain_', .true., domain=jg, lacc=.TRUE.)
-    END IF
-#endif
 
     IF (PRESENT(phy_params)) THEN
       ! This is save as long as all t_phy_params components are scalars.
@@ -249,9 +180,7 @@ MODULE mo_nwp_gpu_util
       !$ACC   DEVICE(a%efdt_min_raylfric, a%latm_above_top, a%icalc_reff, a%icpl_rad_reff, a%luse_clc_rad, a%ithermo_water) &
       !$ACC   DEVICE(a%lupatmo_phy, a%lenabled, a%lcall_phy, a%lcalc_acc_avg) &
       !$ACC   DEVICE(a%lcalc_extra_avg, a%lhave_graupel, a%l2moment, a%lhydrom_read_from_fg, a%lhydrom_read_from_ana) &
-#ifndef __NO_ICON_LES__
       !$ACC   DEVICE(a%is_les_phy) &
-#endif
       !$ACC   DEVICE(a%nclass_gscp, a%l_3d_rad_fluxes, a%l_3d_turb_fluxes, a%fac_ozone, a%shapefunc_ozone) &
       !$ACC   DEVICE(a%ozone_maxinc) &
       !$ACC   ASYNC(1)
@@ -259,85 +188,6 @@ MODULE mo_nwp_gpu_util
 
   END SUBROUTINE gpu_h2d_nh_nwp
 
-#ifdef __ICON_ART
-  SUBROUTINE gpu_d2h_art(jg, p_art_data, lacc)
-
-    INTEGER, INTENT(in) :: jg ! domain index
-    TYPE(t_art_data), OPTIONAL, INTENT(inout) :: p_art_data
-    LOGICAL, INTENT(IN), OPTIONAL :: lacc ! If true, use openacc
-
-    ! local scalars
-    INTEGER :: ipoll
-
-    CALL assert_acc_device_only("gpu_d2h_art", lacc)
-
-    IF (PRESENT(p_art_data)) THEN
-      !$ACC UPDATE HOST(p_art_data%air_prop%art_dyn_visc, p_art_data%air_prop%art_free_path) &
-      !$ACC   HOST(p_art_data%atmo%gz0, p_art_data%atmo%ktrpwmop1_real, p_art_data%atmo%ktrpwmop1) &
-      !$ACC   HOST(p_art_data%atmo%ktrpwmo, p_art_data%atmo%lat, p_art_data%atmo%llsm, p_art_data%atmo%lon) &
-      !$ACC   HOST(p_art_data%atmo%ptropo, p_art_data%atmo%rh_2m, p_art_data%atmo%swflxsfc) &
-      !$ACC   HOST(p_art_data%atmo%swflx_par_sfc, p_art_data%atmo%sza, p_art_data%atmo%sza_deg) &
-      !$ACC   HOST(p_art_data%atmo%theta, p_art_data%atmo%t_2m, p_art_data%diag%acc_drydepo) &
-      !$ACC   HOST(p_art_data%turb_fields%sv, p_art_data%turb_fields%vdep) &
-      !$ACC   ASYNC(1)
-
-      IF (art_config(jg)%iart_pollen > 0) THEN
-        DO ipoll = 1, p_art_data%ext%pollen_prop%npollen_types
-          !$ACC UPDATE HOST(p_art_data%ext%pollen_prop%pollen_type(ipoll)%fr_cov) &
-          !$ACC   HOST(p_art_data%ext%pollen_prop%pollen_type(ipoll)%f_q_alt) &
-          !$ACC   HOST(p_art_data%ext%pollen_prop%pollen_type(ipoll)%rh_sum) &
-          !$ACC   HOST(p_art_data%ext%pollen_prop%pollen_type(ipoll)%sobs_sum) &
-          !$ACC   HOST(p_art_data%ext%pollen_prop%pollen_type(ipoll)%no_max_day) &
-          !$ACC   HOST(p_art_data%ext%pollen_prop%pollen_type(ipoll)%no_max_timestep) &
-          !$ACC   HOST(p_art_data%ext%pollen_prop%pollen_type(ipoll)%tune) &
-          !$ACC   ASYNC(1)
-        END DO
-      ENDIF
-      !$ACC WAIT(1)
-    END IF
-
-  END SUBROUTINE gpu_d2h_art
-
-  SUBROUTINE gpu_h2d_art(jg, p_art_data, lacc)
-
-    INTEGER, INTENT(in) :: jg ! domain index
-    TYPE(t_art_data), OPTIONAL, INTENT(inout) :: p_art_data
-    LOGICAL, INTENT(IN), OPTIONAL :: lacc ! If true, use openacc
-
-    ! local scalars
-    INTEGER :: ipoll
-
-    TYPE(t_atm_phy_nwp_config), POINTER :: a
-
-
-    CALL assert_acc_device_only("gpu_h2d_art", lacc)
-
-    IF (PRESENT(p_art_data)) THEN
-      !$ACC UPDATE DEVICE(p_art_data%air_prop%art_dyn_visc, p_art_data%air_prop%art_free_path) &
-      !$ACC   DEVICE(p_art_data%atmo%gz0, p_art_data%atmo%ktrpwmop1_real, p_art_data%atmo%ktrpwmop1) &
-      !$ACC   DEVICE(p_art_data%atmo%ktrpwmo, p_art_data%atmo%lat, p_art_data%atmo%llsm, p_art_data%atmo%lon) &
-      !$ACC   DEVICE(p_art_data%atmo%ptropo, p_art_data%atmo%rh_2m, p_art_data%atmo%swflxsfc) &
-      !$ACC   DEVICE(p_art_data%atmo%swflx_par_sfc, p_art_data%atmo%sza, p_art_data%atmo%sza_deg) &
-      !$ACC   DEVICE(p_art_data%atmo%theta, p_art_data%atmo%t_2m, p_art_data%diag%acc_drydepo) &
-      !$ACC   DEVICE(p_art_data%turb_fields%sv, p_art_data%turb_fields%vdep) &
-      !$ACC   ASYNC(1)
-
-      IF (art_config(jg)%iart_pollen > 0) THEN
-        DO ipoll = 1, p_art_data%ext%pollen_prop%npollen_types
-          !$ACC UPDATE DEVICE(p_art_data%ext%pollen_prop%pollen_type(ipoll)%fr_cov) &
-          !$ACC   DEVICE(p_art_data%ext%pollen_prop%pollen_type(ipoll)%f_q_alt) &
-          !$ACC   DEVICE(p_art_data%ext%pollen_prop%pollen_type(ipoll)%rh_sum) &
-          !$ACC   DEVICE(p_art_data%ext%pollen_prop%pollen_type(ipoll)%sobs_sum) &
-          !$ACC   DEVICE(p_art_data%ext%pollen_prop%pollen_type(ipoll)%no_max_day) &
-          !$ACC   DEVICE(p_art_data%ext%pollen_prop%pollen_type(ipoll)%no_max_timestep) &
-          !$ACC   DEVICE(p_art_data%ext%pollen_prop%pollen_type(ipoll)%tune) &
-          !$ACC   ASYNC(1)
-        END DO
-      ENDIF
-    END IF
-
-  END SUBROUTINE gpu_h2d_art
-#endif
 
   SUBROUTINE devcpy_nwp(lacc)
     LOGICAL, INTENT(IN), OPTIONAL :: lacc ! If true, use openacc
@@ -422,9 +272,6 @@ MODULE mo_nwp_gpu_util
     END IF
 
     ! Not sure why this is needed
-#ifdef _OPENACC
-    CALL gpu_update_var_list('nh_state_prog_of_domain_', .false., domain=jg, substr='_and_timelev_', timelev=nnow(jg), lacc=.TRUE.)
-#endif
 
     !$ACC WAIT(1)
 

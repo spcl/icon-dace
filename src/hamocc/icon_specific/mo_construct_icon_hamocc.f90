@@ -9,13 +9,20 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 
 MODULE mo_construct_icon_hamocc
 
-#ifdef _OPENMP
-  USE omp_lib
-#endif
 
   USE mo_kind, ONLY           : wp
   USE mo_hamocc_nml, ONLY     : l_init_bgc
@@ -232,21 +239,6 @@ SUBROUTINE INI_BGC_ICON(hamocc_ocean_state,l_is_restart)
 !   CALL debug_messages_on()
 
 !DIR$ INLINE
-#ifdef _OPENMP
-!ICON_OMP_PARALLEL PRIVATE(local_memory_idx, local_bgc_memory, local_sediment_memory, local_aggregate_memory)
-local_memory_idx = omp_get_thread_num()
-! write(0,*) "construct hamocc: local_memory_idx=", local_memory_idx
-local_bgc_memory => bgc_local_memory(local_memory_idx)
-local_sediment_memory => sediment_local_memory(local_memory_idx)
-local_aggregate_memory => aggregates_memory(local_memory_idx)
-
-!ICON_OMP_SINGLE
-test_memory_copies = OMP_GET_NUM_THREADS()
-IF (test_memory_copies /= bgc_memory_copies) &
-  & CALL finish(routine, "test_memory_copies /= bgc_memory_copies")
-!ICON_OMP_END_SINGLE        
-!ICON_OMP_DO PRIVATE(levels, start_index, end_index)
-#endif
  DO jb = all_cells%start_block, all_cells%end_block
  
         CALL get_index_range(all_cells, jb, start_index, end_index)

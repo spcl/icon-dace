@@ -12,9 +12,9 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#endif
+
+
+
 
 MODULE mo_ocean_solve_cgj
 
@@ -35,9 +35,9 @@ MODULE mo_ocean_solve_cgj
 ! arrays only used by CGJ
     REAL(KIND=wp), ALLOCATABLE, DIMENSION(:,:) :: &
       & z_wp, d_wp, r1_wp, rsq_wp, h_wp
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_wp, d_wp, r1_wp, rsq_wp, h_wp
-#endif
+
+
+
 ! interfaces
   CONTAINS
     PROCEDURE :: doit_wp => ocean_solve_cgj_cal_wp ! override deferred
@@ -85,9 +85,9 @@ SUBROUTINE ocean_solve_cgj_recover_arrays_wp(this, x, b, z, d, r, r2, &
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(this_mod_name, 'OpenACC version currently not tested/validated')
-#endif
+
+
+
 
 ! retrieve extends of vector to solve
     nidx_a = this%trans%nidx

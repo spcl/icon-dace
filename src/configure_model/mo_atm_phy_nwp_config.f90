@@ -29,9 +29,9 @@ MODULE mo_atm_phy_nwp_config
   USE mo_model_domain,        ONLY: t_patch
   USE mo_vertical_coord_table,ONLY: vct_a
   USE mo_radiation_config,    ONLY: irad_o3
-#ifndef __NO_ICON_LES__
+
   USE mo_les_config,          ONLY: configure_les, les_config
-#endif
+
   USE mo_limarea_config,      ONLY: configure_latbc
   USE mo_time_config,         ONLY: time_config
   USE mo_initicon_config,     ONLY: timeshift
@@ -159,10 +159,10 @@ MODULE mo_atm_phy_nwp_config
 
     LOGICAL :: luse_clc_rad
 
-#ifndef __NO_ICON_LES__
+
     LOGICAL :: is_les_phy          !>TRUE is turbulence is 3D 
                                    !>FALSE otherwise
-#endif
+
     INTEGER :: nclass_gscp         !> number of hydrometeor classes for 
                                    ! chosen grid scale microphysics
 
@@ -377,7 +377,7 @@ CONTAINS
         CALL finish('configure_atm_phy_nwp', "lshallowconv_only and lgrayzone_deepconv are mutually exclusive")
       ENDIF
 
-#ifndef __NO_ICON_LES__
+
       ! Configure LES physics (if activated)
       !
       atm_phy_nwp_config(jg)%is_les_phy = .FALSE. 
@@ -418,7 +418,7 @@ CONTAINS
         END IF
 
       ENDIF ! is_les_phy
-#endif
+
 
       !$ACC ENTER DATA COPYIN(atm_phy_nwp_config(jg)%lenabled)
 

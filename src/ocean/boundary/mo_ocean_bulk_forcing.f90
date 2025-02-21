@@ -65,9 +65,9 @@ MODULE mo_ocean_bulk_forcing
   USE mo_grid_geometry_info,  ONLY: planar_torus_geometry
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device
 
-#ifdef _OPENACC
-  USE openacc, ONLY: acc_is_present 
-#endif
+
+
+
   
   IMPLICIT NONE
   
@@ -575,7 +575,7 @@ CONTAINS
  !  p_as%pao(:,:)   = 101300.0_wp
 
     !---------DEBUG DIAGNOSTICS-------------------------------------------
-#ifndef __SPEED_OVER_DEBUG__
+
     !$ACC DATA CREATE(z_c2) IF(lzacc)
 
     !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
@@ -588,7 +588,7 @@ CONTAINS
     !$ACC END KERNELS
     !$ACC WAIT(1)
     CALL dbg_print('FlxFil: Ext data4-ta/mon2' ,z_c2        ,str_module,3, in_subset=patch_2D%cells%owned)
-#endif
+
     CALL dbg_print('FlxFil: p_as%tafo'         ,p_as%tafo   ,str_module,3, in_subset=patch_2D%cells%owned)
     CALL dbg_print('FlxFil: p_as%windStr-u',p_as%topBoundCond_windStress_u, str_module,3,in_subset=patch_2D%cells%owned)
     CALL dbg_print('FlxFil: p_as%windStr-v',p_as%topBoundCond_windStress_v, str_module,4,in_subset=patch_2D%cells%owned)
@@ -626,7 +626,7 @@ CONTAINS
         &  ' mon1=',jmon1,' mon2=',jmon2,' day1=',rday1,' day2=',rday2
       CALL message (' ', message_text)
     END IF
-#ifndef __SPEED_OVER_DEBUG__
+
     !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     z_c2(:,:)=ext_data(1)%oce%flux_forc_mon_c(:,jmon1,:,1)
     !$ACC END KERNELS
@@ -665,7 +665,7 @@ CONTAINS
     !---------------------------------------------------------------------
 
     !$ACC END DATA
-#endif
+
 
   END SUBROUTINE update_flux_fromFile
 

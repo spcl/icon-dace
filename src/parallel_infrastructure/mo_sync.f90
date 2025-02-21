@@ -14,7 +14,26 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
 !----------------------------
 MODULE mo_sync
 !-------------------------------------------------------------------------
@@ -42,9 +61,6 @@ USE mo_mpi,                ONLY: p_pe, p_bcast, p_sum, p_max, p_min, p_send, p_r
   &                              my_process_is_mpi_parallel, p_work_pe0,p_pe_work,                 &
   &                              comm_lev, glob_comm, comm_proc0,   &
   &                              p_gather, p_gatherv, num_test_procs
-#ifdef _OPENACC
-USE mo_mpi,                ONLY: i_am_accel_node
-#endif
 USE mo_parallel_config, ONLY:p_test_run,   &
   & n_ghost_rows, l_log_checks, l_fast_sum
 USE mo_communication,      ONLY: exchange_data, exchange_data_4de1,            &
@@ -80,11 +96,6 @@ INTEGER, PARAMETER, PUBLIC :: SYNC_E = 2
 INTEGER, PARAMETER, PUBLIC :: SYNC_V = 3
 INTEGER, PARAMETER, PUBLIC :: SYNC_C1 = 4
 
-#if defined( __ROUNDOFF_CHECK )
-REAL(wp), PARAMETER :: ABS_TOL  = 1.0D-06
-REAL(wp), PARAMETER :: REL_TOL  = 1.0D-06
-REAL(wp), PARAMETER :: MACH_TOL = 3.0D-14
-#endif
 
 INTERFACE sync_patch_array
   MODULE PROCEDURE sync_patch_array_r2
@@ -596,12 +607,10 @@ SUBROUTINE sync_patch_array_4de1(typ, p_patch, nfields, f4din, opt_varname)
 
    ! If this is a verification run, check consistency before doing boundary exchange
    IF (p_test_run .AND. do_sync_checks) THEN
-#if !defined( __PGI ) || !defined( _OPENACC )
 ! The silly PGI OpenACC compiler does not know f4din(i,:,:,:) is present on the device
      DO i = 1, nfields
        CALL check_patch_array_3(typ, p_patch, f4din(i,:,:,:), opt_varname)
      ENDDO
-#endif
    ENDIF
 
    ! Boundary exchange for work PEs
@@ -838,31 +847,22 @@ SUBROUTINE check_patch_array_3(typ, p_patch, arr, opt_varname)
          flag = MIN(flag,UBOUND(nerr,1))
 
          DO n=1,ndim2
-#if defined( __ROUNDOFF_CHECK )
-            IF( ( ( ABS(arr(jl,n,jb)- arr_g(jl_g,n,jb_g)) > ABS_TOL ) ) .AND.     &
-                ( ( ABS(arr(jl,n,jb)- arr_g(jl_g,n,jb_g) ) ) / (ABS(arr(jl,n,jb))+MACH_TOL) ) > REL_TOL ) THEN
-#else
             IF(arr(jl,n,jb) /= arr_g(jl_g,n,jb_g)) THEN
-#endif
                nerr(flag) = nerr(flag)+1
                IF(flag==0) THEN
                   ! Real sync error detected
                   sync_error = .TRUE.
                   absmax = MAX(absmax,ABS(arr(jl,n,jb) - arr_g(jl_g,n,jb_g)))
-#if defined( __ROUNDOFF_CHECK )
-                  relmax = MAX(relmax,(ABS(arr(jl,n,jb) - arr_g(jl_g,n,jb_g))) / (ABS(arr(jl,n,jb))+MACH_TOL) )
-#endif
                   IF (l_log_checks) THEN
-#if defined( __ROUNDOFF_CHECK )
-!!!                     PRINT *, varname(1:varname_tlen), ' sync error location:',&
-!!!                        jb,jl,jb_g,jl_g,n,arr(jl,n,jb),arr_g(jl_g,n,jb_g),    &
-!!!                       ABS(arr(jl,n,jb)-arr_g(jl_g,n,jb_g)),  &
-!!!                       ( ABS(arr(jl,n,jb)- arr_g(jl_g,n,jb_g) ) ) / (ABS(arr(jl,n,jb))+MACH_TOL)
-#else
+
+
+
+
+
                      WRITE(log_unit,'(2a,5i7,3e18.10)') varname, 'sync error location:',&
                        jb,jl,jb_g,jl_g,n,arr(jl,n,jb),arr_g(jl_g,n,jb_g),    &
                        ABS(arr(jl,n,jb)-arr_g(jl_g,n,jb_g))
-#endif
+
                   ENDIF
                ENDIF
             ENDIF
@@ -885,11 +885,11 @@ SUBROUTINE check_patch_array_3(typ, p_patch, arr, opt_varname)
          ELSE
             WRITE(log_unit,cfmt) nerr(0:n),varname(1:varname_tlen)
          ENDIF
-#if defined( __ROUNDOFF_CHECK )
-         IF(absmax > 0.0_wp) WRITE(log_unit,*) 'Max abs inner err:',absmax, ' max rel error ', relmax
-#else
+
+
+
          IF(absmax > 0.0_wp) WRITE(log_unit,*) 'Max abs inner err:',absmax
-#endif
+
       ENDIF
 
       ! Terminate the programm if the array is out of sync
@@ -900,19 +900,10 @@ SUBROUTINE check_patch_array_3(typ, p_patch, arr, opt_varname)
      IF (num_test_procs > 1) &
           WRITE(0, '(2a,i0)') varname(1:varname_tlen), &
           ' sync error in level jk = ', jk_min_err
-#if defined( __ROUNDOFF_CHECK )
-     PRINT *, TRIM(varname), ' synch error detected '
-     IF(l_log_checks) THEN
-       WRITE(log_file,'(''log'',i4.4,''.txt'')') p_pe
-       OPEN(log_unit, FILE=log_file, STATUS="OLD", POSITION="APPEND", ACTION="WRITE")   ! Reopen file for subsequent output
-       PRINT *, 'OPEN_ACC version: ', TRIM(varname), ' max abs error ', absmax, ' rel error ', relmax
-     ENDIF
-#else
      IF(l_log_checks) THEN
        CLOSE (log_unit)
      ENDIF
      CALL finish('sync_patch_array','Out of sync detected!')
-#endif
    ENDIF
 
    !$ACC END DATA
@@ -990,9 +981,6 @@ SUBROUTINE sync_idx(type_arr, type_idx, p_patch, idx, blk, opt_remap, opt_varnam
   REAL(wp), ALLOCATABLE :: z_idx(:,:)
   TYPE(t_grid_domain_decomp_info), POINTER :: decomp_info
 
-#ifdef __SX__
-  INTEGER :: ind_v(nproma)
-#endif
 
   ! opt_remap: Flag if index values pointing outside local domain
   ! should be remapped to values within local domain
@@ -1070,13 +1058,8 @@ SUBROUTINE sync_idx(type_arr, type_idx, p_patch, idx, blk, opt_remap, opt_varnam
       i_g = INT(z_idx(jl,jb))
 
       IF(i_g <= 0 .or. i_g > n_idx_g) THEN
-#ifndef __SX__
         idx(jl,jb) = idx_no(0)
         blk(jl,jb) = blk_no(0)
-#else
-        !NEC_RP: skip initialization of idx and blk here and instead store index in order
-        ind_v(jl) = 0
-#endif
       ELSE
         IF (remap) THEN
           i_l = MAX(get_valid_local_index(decomp_info%glb2loc_index, i_g), 1)
@@ -1088,24 +1071,12 @@ SUBROUTINE sync_idx(type_arr, type_idx, p_patch, idx, blk, opt_remap, opt_varnam
           ! MoHa: ...does this make sense?
           IF (i_l <= 0) i_l = - i_g
         END IF
-#ifndef __SX__
         idx(jl,jb) = idx_no(i_l)
         blk(jl,jb) = blk_no(i_l)
-#else
-       !NEC: skip initialization of idx and blk here and instead store index
-        ind_v(jl) = i_l
-#endif
       ENDIF
 
     END DO
 
-#ifdef __SX__
-    !NEC: initialize idx and blk in vectroized loop 
-    DO jl = 1, nproma
-      idx(jl,jb) = idx_no(ind_v(jl))
-      blk(jl,jb) = blk_no(ind_v(jl))
-    END DO
-#endif
 
   END DO
   !$ACC END PARALLEL
@@ -1221,7 +1192,7 @@ FUNCTION global_sum_array_0di (zfield, opt_iroot) RESULT (global_sum)
   ! local variables
   REAL(wp)                      :: z_aux, z_auxs
   INTEGER                       :: p_comm_glob
-  start_sync_timer(timer_global_sum)
+  IF (activate_sync_timers) CALL timer_start(timer_global_sum)
 
   IF(comm_lev==0) THEN
     p_comm_glob = p_comm_work
@@ -1235,7 +1206,7 @@ FUNCTION global_sum_array_0di (zfield, opt_iroot) RESULT (global_sum)
 
   global_sum = NINT(z_auxs)
 
-  stop_sync_timer(timer_global_sum)
+  IF (activate_sync_timers) CALL timer_stop(timer_global_sum)
 END FUNCTION global_sum_array_0di
 
 !-------------------------------------------------------------------------
@@ -1513,12 +1484,7 @@ FUNCTION global_sum_array2 (zfield) RESULT (global_sum)
    REAL(dp), PARAMETER :: two_40 = 1099511627776._dp ! 2.**40
    REAL(dp), PARAMETER :: r_two_40 = 1._dp/two_40
 
-#if defined (__PGI)
-   INTEGER(i8) :: mask40
-   DATA mask40 / z'000000ffffffffff' / ! last 40 bits set
-#else
    INTEGER(i8), PARAMETER :: mask40 = INT(z'000000ffffffffff',i8)
-#endif
    INTEGER :: p_comm_glob
 
 !-----------------------------------------------------------------------
@@ -1665,12 +1631,7 @@ FUNCTION global_sum_array3 (nfields,ldiff,f3din,f3dd,f3din2,f3dd2,f4din,f4dd,dif
    REAL(dp), PARAMETER :: two_40 = 1099511627776._dp ! 2.**40
    REAL(dp), PARAMETER :: r_two_40 = 1._dp/two_40
 
-#if defined (__PGI)
-   INTEGER(i8) :: mask40
-   DATA mask40 / z'000000ffffffffff' / ! last 40 bits set
-#else
    INTEGER(i8), PARAMETER :: mask40 = INT(z'000000ffffffffff',i8)
-#endif
    INTEGER :: p_comm_glob
 
 !-----------------------------------------------------------------------
@@ -2066,15 +2027,7 @@ SUBROUTINE check_result(res, routine, res_on_testpe)
     out_of_sync = .FALSE.
     DO k = 1, SIZE(res)
       ! Check if result is identical
-#if defined( __ROUNDOFF_CHECK )
-      IF ( ( ( ABS(aux(k)- res(k)) > ABS_TOL ) ) .AND.     &
-                ( ( ABS(aux(k)- res(k) ) ) / (ABS(res(k))+MACH_TOL)  > REL_TOL ) ) THEN
-        out_of_sync = .TRUE.
-        PRINT *, 'Abs. error ', ABS(aux(k)- res(k)), ' rel. error ', ( ABS(aux(k)- res(k) ) ) / (ABS(res(k))+MACH_TOL)
-      ENDIF
-#else
       out_of_sync = out_of_sync .OR. (aux(k)/=res(k))
-#endif
     END DO
     IF (out_of_sync) CALL finish(routine, 'Result out of sync')
   END IF
@@ -2112,15 +2065,10 @@ FUNCTION omp_order_insensit_ieee64_sum(vals, num_vals, mpi_comm) RESULT(global_s
    REAL(dp), PARAMETER :: two_30 = 1073741824._dp ! 2.**30
    REAL(dp), PARAMETER :: r_two_30 = 1._dp/two_30
 
-#if defined (__PGI)
-   INTEGER(i8) :: mask30
-   DATA mask30 / z'000000003fffffff' / ! last 30 bits set
-#else
    INTEGER(i8), PARAMETER :: mask30 = INT(z'000000003fffffff',i8)
-#endif
 
 !-----------------------------------------------------------------------
-!    start_sync_timer(timer_omp_ordglb_sum)
+!    IF (activate_sync_timers) CALL timer_start(timer_omp_ordglb_sum)
 
    ! Set shared variables in a MASTER region
 
@@ -2225,7 +2173,7 @@ FUNCTION omp_order_insensit_ieee64_sum(vals, num_vals, mpi_comm) RESULT(global_s
        global_sum = global_sum - (REAL(ival1,dp)*r_fact) - (REAL(ival2,dp)*r_fact)*r_two_30
     ENDIF
 
-!    stop_sync_timer(timer_omp_ordglb_sum)
+!    IF (activate_sync_timers) CALL timer_stop(timer_omp_ordglb_sum)
 
 END FUNCTION omp_order_insensit_ieee64_sum
 !-------------------------------------------------------------------------------
@@ -2263,15 +2211,10 @@ FUNCTION order_insensit_ieee64_sum(vals, num_vals, mpi_comm, lacc) RESULT(global
    REAL(dp), PARAMETER :: two_30 = 1073741824._dp ! 2.**30
    REAL(dp), PARAMETER :: r_two_30 = 1._dp/two_30
 
-#if defined (__PGI)
-   INTEGER(i8) :: mask30
-   DATA mask30 / z'000000003fffffff' / ! last 30 bits set
-#else
    INTEGER(i8), PARAMETER :: mask30 = INT(z'000000003fffffff',i8)
-#endif
 
 !-----------------------------------------------------------------------
-   start_sync_timer(timer_ordglb_sum)
+   IF (activate_sync_timers) CALL timer_start(timer_ordglb_sum)
 
    CALL set_acc_host_or_device(lzacc, lacc)
 
@@ -2293,7 +2236,7 @@ FUNCTION order_insensit_ieee64_sum(vals, num_vals, mpi_comm, lacc) RESULT(global
    ! and we are done
    IF(abs_max == 0.0_dp) THEN
       global_sum = 0._dp
-      stop_sync_timer(timer_ordglb_sum)
+      IF (activate_sync_timers) CALL timer_stop(timer_ordglb_sum)
       RETURN
    ENDIF
 
@@ -2306,7 +2249,7 @@ FUNCTION order_insensit_ieee64_sum(vals, num_vals, mpi_comm, lacc) RESULT(global
 
    IF(iexp < -980) THEN
       global_sum = 0._dp
-      stop_sync_timer(timer_ordglb_sum)
+      IF (activate_sync_timers) CALL timer_stop(timer_ordglb_sum)
       RETURN
    ENDIF
 
@@ -2369,7 +2312,7 @@ FUNCTION order_insensit_ieee64_sum(vals, num_vals, mpi_comm, lacc) RESULT(global
        global_sum = global_sum - (REAL(ival1,dp)*r_fact) - (REAL(ival2,dp)*r_fact)*r_two_30
     ENDIF
 
-    stop_sync_timer(timer_ordglb_sum)
+    IF (activate_sync_timers) CALL timer_stop(timer_ordglb_sum)
 
 END FUNCTION order_insensit_ieee64_sum
 !-------------------------------------------------------------------------------
@@ -2394,7 +2337,7 @@ FUNCTION simple_sum(vals, num_vals, mpi_comm, opt_iroot) RESULT(global_sum)
   REAL(dp), SAVE :: s, res
 
 !-----------------------------------------------------------------------
-   start_sync_timer(timer_global_sum)
+   IF (activate_sync_timers) CALL timer_start(timer_global_sum)
 
    s   = 0._dp
    res = 0._dp
@@ -2407,7 +2350,7 @@ FUNCTION simple_sum(vals, num_vals, mpi_comm, opt_iroot) RESULT(global_sum)
 
    global_sum = res
 
-   stop_sync_timer(timer_global_sum)
+   IF (activate_sync_timers) CALL timer_stop(timer_global_sum)
 
 END FUNCTION simple_sum
 !-------------------------------------------------------------------------
@@ -2430,7 +2373,7 @@ FUNCTION omp_simple_sum(vals, num_vals, mpi_comm) RESULT(global_sum)
    REAL(dp), SAVE :: s, res
 
 !-----------------------------------------------------------------------
-  start_sync_timer(timer_omp_global_sum)
+  IF (activate_sync_timers) CALL timer_start(timer_omp_global_sum)
 
    ! Set shared variables in a MASTER region
 
@@ -2454,7 +2397,7 @@ FUNCTION omp_simple_sum(vals, num_vals, mpi_comm) RESULT(global_sum)
 
    global_sum = res
 
-   stop_sync_timer(timer_omp_global_sum)
+   IF (activate_sync_timers) CALL timer_stop(timer_omp_global_sum)
 
 END FUNCTION omp_simple_sum
 !-------------------------------------------------------------------------

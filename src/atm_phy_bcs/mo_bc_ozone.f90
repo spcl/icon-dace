@@ -35,10 +35,10 @@ MODULE mo_bc_ozone
   USE mo_bcs_time_interpolation,   ONLY: t_time_interpolation_weights, &
        &                                      calculate_time_interpolation_weights
 
-#ifdef YAC_coupling
-  USE mo_atmo_coupling_frame,      ONLY: field_id
-  USE mo_yac_finterface
-#endif
+
+
+
+
   USE mo_sync,                     ONLY: sync_c, sync_patch_array
 
   IMPLICIT NONE
@@ -123,36 +123,6 @@ CONTAINS
 
     IF (PRESENT(opt_from_yac)) from_yac = opt_from_yac
 
-#ifdef YAC_coupling
-    IF (from_yac) THEN
-
-       nplev_o3 =  yac_fget_field_collection_size(field_id(14))
-       ext_ozone(jg)%nplev_o3 = nplev_o3
-
-       IF ( .NOT. ALLOCATED(yac_recv_buf) ) &
-            ALLOCATE(yac_recv_buf(p_patch%n_patch_cells, nplev_o3))
-       IF ( .NOT. ALLOCATED(ext_ozone(jg)% o3_plev) ) THEN
-          ALLOCATE(ext_ozone(jg)% o3_plev(nproma, nplev_o3, p_patch%nblks_c, 1))
-          ext_ozone(jg)% o3_plev = 0
-       END IF
-
-       CALL yac_fget(field_id(14), p_patch%n_patch_cells, nplev_o3, &
-            yac_recv_buf, info, ierr)
-
-       IF ( info > 0 .AND. info < 7 ) THEN
-          DO i=1,p_patch%nblks_c
-             DO j=1,nproma
-                IF ((i-1)*nproma+j > p_patch%n_patch_cells) CYCLE
-                ext_ozone(jg)% o3_plev(j,:,i,1) = vmr2mmr_o3*yac_recv_buf((i-1)*nproma+j,:)
-             END DO
-          END DO
-          CALL sync_patch_array(sync_c, p_patch, ext_ozone(jg)%o3_plev(:,:,:,1))
-       END IF
-
-       fname = 'bc_ozone.nc'
-
-    END IF
-#endif
 
     IF (year > pre_year(jg) .AND. .NOT. from_yac) THEN
       !

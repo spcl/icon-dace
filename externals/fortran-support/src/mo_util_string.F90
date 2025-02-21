@@ -19,9 +19,9 @@ MODULE mo_util_string
   USE ISO_C_BINDING, ONLY: c_int8_t, c_char
   USE mo_io_units, ONLY: MAX_CHAR_LENGTH => filename_max
   USE mo_util_sort, ONLY: quicksort
-#ifdef __SX__
-  USE mo_util_sort, ONLY: radixsort
-#endif
+
+
+
   IMPLICIT NONE
   !
   PRIVATE
@@ -311,7 +311,7 @@ CONTAINS
     INTEGER :: i, n, in_str_tlen, arg_tlen
     CHARACTER(len=LEN_TRIM(in_str)) :: in_str_upper
 
-#ifndef _CRAYFTN
+
     one_of = -1
     n = SIZE(arg)
     IF (n > 0) THEN
@@ -327,22 +327,6 @@ CONTAINS
         END IF
       END DO
     END IF
-#else
-    ! The crap compiler is to brain-dead to compile and USE the above code.
-    one_of = -1
-    IF (SIZE(arg) > 0) THEN
-      in_str_tlen = LEN_TRIM(in_str)
-      DO i = 1, SIZE(arg)
-        arg_tlen = LEN_TRIM(arg(i))
-        IF (arg_tlen == in_str_tlen) THEN
-          IF (toupper(in_str(1:in_str_tlen)) == toupper(arg(i) (1:arg_tlen))) THEN
-            one_of = i
-            EXIT
-          END IF
-        END IF
-      END DO
-    END IF
-#endif
   END FUNCTION one_of
 
   !> parses a character string, splits string into words.
@@ -783,11 +767,7 @@ CONTAINS
     N = SIZE(idx_list)
     list(:) = idx_list(:)
     ! sort the list
-#ifdef __SX__
-    CALL radixsort(list)
-#else
     CALL quicksort(list)
-#endif
     ! find out, how many direct successors follow:
     j = 1
     nnext(:) = 0

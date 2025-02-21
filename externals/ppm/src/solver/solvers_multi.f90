@@ -48,9 +48,9 @@ FUNCTION PRECOND_CG_METHOD(A, b, x, ext_x, precond, exchange, tol_opt, &
   REAL(PREC), OPTIONAL, INTENT(IN) :: tol_opt     ! tolerance for residual
   INTEGER, OPTIONAL, INTENT(IN) :: maxiter_opt    ! maximum iterations
   INTEGER :: jb, ib, il, jl, ie, je, kiter, maxiter
-#ifdef BLASVES
-  INTEGER :: inner_size
-#endif
+
+
+
   REAL(PREC) :: delta, delta0, delta_old, dAd, alpha, beta, tol
 
   ! Auxiliary fields for CG-Method
@@ -95,9 +95,9 @@ FUNCTION PRECOND_CG_METHOD(A, b, x, ext_x, precond, exchange, tol_opt, &
   jb = extent_start(ext_x(2))
   il = extent_end(ext_x(1))
   jl = extent_end(ext_x(2))
-#ifdef BLASVES
-  inner_size = extent_size(ext_x)
-#endif
+
+
+
 
   ALLOCATE(d(ie,je), r(ie,je), Ad(ie,je), s(ie,je))
 
@@ -107,11 +107,11 @@ FUNCTION PRECOND_CG_METHOD(A, b, x, ext_x, precond, exchange, tol_opt, &
 
   ! Initialise residual and direction
   CALL A(x, Ad)
-#ifndef BLASVES
+
   r(ib:il,jb:jl) = b(ib:il,jb:jl) - Ad(ib:il,jb:jl)
-#else
-  CALL PVES(inner_size,b(ib:il,jb:jl),1,Ad(ib:il,jb:jl),1,r(ib:il,jb:jl),1)
-#endif
+
+
+
 
   ! Apply Preconditioner
   d(ib:il,jb:jl) = r(ib:il,jb:jl)
@@ -136,13 +136,13 @@ FUNCTION PRECOND_CG_METHOD(A, b, x, ext_x, precond, exchange, tol_opt, &
     alpha = delta/dAd
 
     ! One step of preconditioned CG-method
-#ifndef BLASAXPY
+
     x(ib:il,jb:jl) = x(ib:il,jb:jl) + alpha*d(ib:il,jb:jl)
     r(ib:il,jb:jl) = r(ib:il,jb:jl) - alpha*Ad(ib:il,jb:jl)
-#else
-    CALL PAXPY(inner_size,alpha,d(ib:il,jb:jl),1,x(ib:il,jb:jl),1)
-    CALL PAXPY(inner_size,-alpha,Ad(ib:il,jb:jl),1,r(ib:il,jb:jl),1)
-#endif
+
+
+
+
 
     ! Apply Preconditioner
     s(ib:il,jb:jl) = r(ib:il,jb:jl)
@@ -157,12 +157,12 @@ FUNCTION PRECOND_CG_METHOD(A, b, x, ext_x, precond, exchange, tol_opt, &
     !write(*,*) 'PCG iteration: ', kiter, ' current delta: ', delta
 
     ! Compute new direction d
-#if !(defined BLASAXPY || defined BLASSCAL)
+
     d(ib:il,jb:jl) = s(ib:il,jb:jl) + beta*d(ib:il,jb:jl)
-#else
-    CALL PSCAL(inner_size,beta,d(ib:il,jb:jl),1)
-    CALL PAXPY(inner_size,1.0_precs,s(ib:il,jb:jl),1,d(ib:il,jb:jl),1)
-#endif
+
+
+
+
 
 
   ENDDO
@@ -222,9 +222,9 @@ FUNCTION SCHWARZ_METHOD(A, b, x, ext_x, local_solver, exchange, tol_opt, &
   INTEGER, OPTIONAL, INTENT(IN) :: maxiter_opt      ! maximum iterations
   REAL(PREC), OPTIONAL, INTENT(IN) :: omega_opt     ! relaxation parameter
   INTEGER :: kiter, maxiter, iiter, ie, je, jb, ib, jl, il!, ierror
-#ifdef BLASVES
-  INTEGER :: inner_size
-#endif
+
+
+
   !INTEGER :: my_rank
   REAL(PREC) :: tol, numer, denom, omega!, local_relres
   REAL(PREC), ALLOCATABLE :: r(:,:), dx(:,:), Ax(:,:)
@@ -297,19 +297,19 @@ FUNCTION SCHWARZ_METHOD(A, b, x, ext_x, local_solver, exchange, tol_opt, &
   jb = extent_start(ext_x(2))
   il = extent_end(ext_x(1))
   jl = extent_end(ext_x(2))
-#ifdef BLASVES
-  inner_size = extent_size(ext_x)
-#endif
+
+
+
 
   ALLOCATE(r(ie,je), dx(ie,je), Ax(ie,je))
 
   ! Initialise residual
   CALL A(x, Ax)
-#ifndef BLASVES
+
   r(ib:il,jb:jl) = b(ib:il,jb:jl) - Ax(ib:il,jb:jl)
-#else
-  CALL PVES(inner_size,b(ib:il,jb:jl),1,Ax(ib:il,jb:jl),1,r(ib:il,jb:jl),1)
-#endif
+
+
+
 
   denom = arr_norm_2(r(ib:il,jb:jl), .TRUE.)
   numer = denom
@@ -323,20 +323,20 @@ FUNCTION SCHWARZ_METHOD(A, b, x, ext_x, local_solver, exchange, tol_opt, &
     iiter = local_solver(A, r, dx, ext_x, exchange, REAL(config%tol, PREC), &
          config%maxiter)
 
-#ifndef BLASAXPY
+
     x(ib:il,jb:jl) = x(ib:il,jb:jl) + omega*dx(ib:il,jb:jl)
-#else
-    CALL PAXPY(inner_size,omega,dx(ib:il,jb:jl),1,x(ib:il,jb:jl),1)
-#endif
+
+
+
 
     CALL exchange(x, 'schwarz_method 1')
 
     CALL A(x, Ax)
-#ifndef BLASVES
+
     r(ib:il,jb:jl) = b(ib:il,jb:jl) - Ax(ib:il,jb:jl)
-#else
-    CALL PVES(inner_size,b(ib:il,jb:jl),1,Ax(ib:il,jb:jl),1,r(ib:il,jb:jl),1)
-#endif
+
+
+
 
 !~     local_relres = calc_rel_res(A, b, x, ext_x, .FALSE.)
 !~     WRITE(*,*) "CPU: ", my_rank, "kiter: ", kiter, "iiter: ", iiter, &
@@ -405,9 +405,9 @@ FUNCTION PRECOND_CHEBYSHEV_METHOD(A, b, x, ext_x, lambda_min, lambda_max, &
   REAL(PREC), OPTIONAL, INTENT(IN) :: tol_opt       ! tolerance for residual
   INTEGER, OPTIONAL, INTENT(IN) :: maxiter_opt      ! maximum iterations
   INTEGER :: jb, ib, il, jl, ie, je, kiter, maxiter
-#if defined BLASVES || defined BLASAXPY || defined BLASSCAL
-  INTEGER :: inner_size
-#endif
+
+
+
   REAL(PREC) :: rho_old, rho_new, theta, delta, sigma, tol, denom, numer
   ! Auxiliary fields for CG-Method
   REAL(PREC), ALLOCATABLE :: r(:,:), Ax(:,:), d(:,:)
@@ -454,22 +454,22 @@ FUNCTION PRECOND_CHEBYSHEV_METHOD(A, b, x, ext_x, lambda_min, lambda_max, &
   jb = extent_start(ext_x(2))
   il = extent_end(ext_x(1))
   jl = extent_end(ext_x(2))
-#if defined BLASVES || defined BLASAXPY || defined BLASSCAL
-  inner_size = extent_size(ext_x)
-#endif
+
+
+
 
   theta = (lambda_max + lambda_min) / 2.0_precs
   delta = (lambda_max - lambda_min) / 2.0_precs
 
   ! Check for trivial solution
   ! use workaround because gfortran warns about comparing real with ==
-#ifdef __GNUC__
+
   IF (delta >= 0.0_precs .AND. delta <= 0.0_precs) THEN
     IF (lambda_max  >= 0.0_precs .AND. lambda_max <= 0.0_precs) THEN
-#else
-  IF (delta == 0.0_precs) THEN
-    IF (lambda_max  == 0.0_precs) THEN
-#endif
+
+
+
+
       x(ib:il,jb:jl) = 0.0_precs
     ELSE
       x(ib:il,jb:jl) = b(ib:il,jb:jl)/lambda_max
@@ -484,17 +484,17 @@ FUNCTION PRECOND_CHEBYSHEV_METHOD(A, b, x, ext_x, lambda_min, lambda_max, &
 
   ! Residual and direction for first iteration
   CALL A(x, Ax)
-#ifndef BLASVES
+
   r(ib:il,jb:jl) = b(ib:il,jb:jl) - Ax(ib:il,jb:jl)
-#else
-  CALL PVES(inner_size,b(ib:il,jb:jl),1,Ax(ib:il,jb:jl),1,r(ib:il,jb:jl),1)
-#endif
+
+
+
   CALL precond(r)
-#ifndef BLASYAX
+
   d(ib:il,jb:jl) = 1.0_precs/theta*r(ib:il,jb:jl)
-#else
-  CALL PYAX(inner_size,1.0_precs/theta,r(ib:il,jb:jl),1,d(ib:il,jb:jl),1)
-#endif
+
+
+
 
   ! Denominator for relativ residual
   denom = arr_dotproduct(r(ib:il,jb:jl))
@@ -507,34 +507,34 @@ FUNCTION PRECOND_CHEBYSHEV_METHOD(A, b, x, ext_x, lambda_min, lambda_max, &
     kiter = kiter + 1
 
     ! x_new = x_old + d_old
-#ifndef BLASAXPY
+
     x(ib:il,jb:jl) = x(ib:il,jb:jl) + d(ib:il,jb:jl)
-#else
-    CALL PAXPY(inner_size,1.0_precs,d(ib:il,jb:jl),1,x(ib:il,jb:jl),1)
-#endif
+
+
+
     IF (config%do_exchange) CALL exchange(x, 'chebyshev 1')
 
     ! r_new = r_old - A*d_old = b - A*x_new
     CALL A(x, Ax)
-#ifndef BLASVES
+
     r(ib:il,jb:jl) = b(ib:il,jb:jl) - Ax(ib:il,jb:jl) ! = r - Ad in Saad
-#else
-    CALL PVES(inner_size,b(ib:il,jb:jl),1,Ax(ib:il,jb:jl),1,r(ib:il,jb:jl),1)
-#endif
+
+
+
     CALL precond(r)
 
     ! update rho
     rho_new = 1.0_precs/(2.0_precs*sigma - rho_old)
 
     ! d_new = rho_new*rho_old * d_old + (2*rho_new)/delta * r_new
-#if !(defined BLASAXPY || defined BLASSCAL)
+
     d(ib:il,jb:jl) = rho_new*rho_old*d(ib:il,jb:jl) &
          + (2.0_precs * rho_old)/delta*r(ib:il,jb:jl)
-#else
-    CALL PSCAL(inner_size,rho_new*rho_old,d(ib:il,jb:jl),1)
-    CALL PAXPY(inner_size,(2.0_precs * rho_old)/delta,r(ib:il,jb:jl),1,   &
-         d(ib:il,jb:jl),1)
-#endif
+
+
+
+
+
     rho_old = rho_new
 
     ! calculate current residual

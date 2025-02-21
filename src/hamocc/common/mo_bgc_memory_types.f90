@@ -10,12 +10,19 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 
 MODULE mo_bgc_memory_types
-#ifdef _OPENMP
-  USE omp_lib
-#endif
 
   USE mo_kind, ONLY   : wp
   USE mo_exception, ONLY      : message
@@ -163,13 +170,6 @@ CONTAINS
     INTEGER :: i
     CHARACTER(LEN=*), PARAMETER :: routine_name = 'allocate_all_bgc_memory'
 
-#ifdef _OPENMP
-!ICON_OMP_PARALLEL 
-!ICON_OMP_SINGLE
-    bgc_memory_copies = OMP_GET_NUM_THREADS()
-!ICON_OMP_END_SINGLE
-!ICON_OMP_END_PARALLEL
-#endif
 
     !
     ! Allocate allocate_bgc_memory_types

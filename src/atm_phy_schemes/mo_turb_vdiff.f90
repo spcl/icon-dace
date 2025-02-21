@@ -13,9 +13,9 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#if defined __xlC__ && !defined NOXLFPROCESS
-@PROCESS HOT
-#endif
+
+
+
 
 MODULE mo_turb_vdiff
 
@@ -1616,7 +1616,7 @@ CONTAINS
     ! - vertical levels [1,klev-1], for all the other variables.
     !-----------------------------------------------------------------------------
 
-#ifndef _OPENACC
+
     DO im = 1,nmatrix
       DO jc = jcs,kproma
         aa(jc,1,3,im) = aa(jc,1,3,im)/aa(jc,1,2,im)
@@ -1632,24 +1632,6 @@ CONTAINS
         ENDDO
       ENDDO
     END DO
-#else
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jmax)
-    DO im = 1,nmatrix
-      DO jc = jcs,kproma
-
-        jmax = klev + ibtmoffset_mtrx(im) - 1
-        aa(jc,1,3,im) = aa(jc,1,3,im)/aa(jc,1,2,im)
-        !$ACC LOOP SEQ
-        DO jk = 2,jmax
-          aa(jc,jk,2,im) =  aa(jc,jk,2,im)                       &
-                            & -aa(jc,jk,1,im)*aa(jc,jk-1,3,im)
-          aa(jc,jk,3,im) =  aa(jc,jk,3,im)/aa(jc,jk,2,im)
-        ENDDO
-      ENDDO
-    END DO
-    !$ACC END PARALLEL
-#endif
 
 
     ! Translation for developers who prefer to think in terms of
@@ -1943,7 +1925,6 @@ CONTAINS
     ! 1. Vertical levels [2,klev-2] for TTE and variance of theta_v;
     !    [2,klev-1] for all the other variables.
 
-#ifndef _OPENACC
     DO jvar = 1,nvar_vdiff
       im = matrix_idx(jvar)  ! Index of coefficient matrix
       DO jc = jcs, kproma
@@ -1961,29 +1942,6 @@ CONTAINS
         ENDDO
       ENDDO
     ENDDO !jvar: variable loop
-#else
-
-  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-  !$ACC LOOP GANG VECTOR COLLAPSE(2)
-  DO jvar = 1,nvar_vdiff
-    DO jc = jcs,kproma
-
-      im   = matrix_idx(jvar)
-      jmax = klev + ibtmoffset_var(jvar) - 1
-
-      bb(jc,1,jvar) =  bb(jc,1,jvar)/aa(jc,1,2,im)
-      !$ACC LOOP SEQ
-      DO jk = 2,jmax
-        jkm1 = jk - 1
-
-        znum           = bb(jc,jk,jvar) - bb(jc,jkm1,jvar)*aa(jc,jk,1,im)
-        bb(jc,jk,jvar) = znum/aa(jc,jk,2,im)
-      ENDDO
-    ENDDO
-  END DO
-  !$ACC END PARALLEL
-
-#endif
 
     ! 2. Bottom level for all variables except u, v, dry static energy
     !    and moisture. After this step the array bb contains the

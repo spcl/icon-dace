@@ -81,9 +81,9 @@ contains
 
     real(jphook) :: hook_handle
 
-#ifndef _OPENACC
+
     if (lhook) call dr_hook('radiation_adding_ica_sw:adding_ica_sw',0,hook_handle)
-#endif
+
 
     !$ACC ROUTINE WORKER
 
@@ -158,9 +158,9 @@ contains
     end do
     flux_dn_direct(:,nlev+1) = flux_dn_direct(:,nlev+1)*cos_sza
 
-#ifndef _OPENACC
+
     if (lhook) call dr_hook('radiation_adding_ica_sw:adding_ica_sw',1,hook_handle)
-#endif
+
 
   end subroutine adding_ica_sw
 

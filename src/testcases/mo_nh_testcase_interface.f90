@@ -90,9 +90,9 @@ CONTAINS
         
       CASE ('PA') ! Solid body rotation
 
-#ifdef _OPENACC
-        CALL finish (routine, 'Test PA - Solid body rotation: OpenACC version currently not implemented')
-#endif
+
+
+
 
         ! Set time-variant vertical velocity
         CALL set_nh_w_rho( p_patch,                      &  !in
@@ -106,9 +106,9 @@ CONTAINS
         
       CASE ('DF1', 'DF2', 'DF3', 'DF4') ! deformational flow
 
-#ifdef _OPENACC
-       CALL finish (routine, 'Tests DF1, DF2, DF3, DF4 - deformational flow: OpenACC version currently not implemented')
-#endif
+
+
+
 
         ! Get velocity field
        CALL get_nh_df_velocity( p_patch,                    &  !in

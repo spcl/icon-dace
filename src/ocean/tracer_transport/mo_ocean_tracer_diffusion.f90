@@ -13,9 +13,131 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
-#include "icon_definitions.inc"
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !----------------------------
 MODULE mo_ocean_tracer_diffusion
   
@@ -329,7 +451,7 @@ CONTAINS
     TYPE(t_patch), POINTER :: patch_2d
     LOGICAL :: lzacc
 
-    start_timer(timer_dif_vert,4)
+    IF (timers_level >= 4) CALL timer_start(timer_dif_vert)
 
     !-----------------------------------------------------------------------
     cells_in_domain       =>  patch_3d%p_patch_2d(1)%cells%in_domain
@@ -346,22 +468,6 @@ CONTAINS
     ENDIF
     !-----------------------------------------------------------------------
 
-#ifdef __LVECTOR__
-! vectorized for NEC
-!ICON_OMP_PARALLEL_DO PRIVATE(start_index,end_index) ICON_OMP_DEFAULT_SCHEDULE
-      DO cell_block = cells_in_domain%start_block, cells_in_domain%end_block
-        CALL get_index_range(cells_in_domain, cell_block, start_index, end_index)
-
-        CALL tracer_diffusion_vertical_implicit_onBlock_lvector( &
-          & patch_3d,                       &
-          & ocean_tracer,                   &
-          & a_v(:,:,cell_block),            &
-          & h(:,cell_block),                &
-          & cell_block, start_index, end_index, lacc=lzacc)
-
-      END DO
-!ICON_OMP_END_PARALLEL_DO
-#else
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index,end_index) ICON_OMP_DEFAULT_SCHEDULE
       DO cell_block = cells_in_domain%start_block, cells_in_domain%end_block
         CALL get_index_range(cells_in_domain, cell_block, start_index, end_index)
@@ -375,10 +481,9 @@ CONTAINS
 
       END DO
 !ICON_OMP_END_PARALLEL_DO
-#endif
 
 
-    stop_timer(timer_dif_vert,4)
+    IF (timers_level >= 4) CALL timer_stop(timer_dif_vert)
     
   END SUBROUTINE tracer_diffusion_vertical_implicit
   !------------------------------------------------------------------------
@@ -752,10 +857,6 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef NAGFOR
-    inv_prism_thickness(:,:) = 0.0_wp
-    inv_prisms_center_distance(:,:) = 0.0_wp
-#endif
 
     !$ACC DATA CREATE(a, b, bottom_level, c, column_tracer, fact, inv_prism_thickness) &
     !$ACC   CREATE(inv_prisms_center_distance, top_cell_thickness) IF(lzacc)

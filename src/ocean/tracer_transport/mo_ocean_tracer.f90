@@ -14,9 +14,130 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
-#include "icon_definitions.inc"
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+!---------------------
+! mappings
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !----------------------------
 MODULE mo_ocean_tracer
   !-------------------------------------------------------------------------
@@ -147,9 +268,6 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, 'OpenACC version currently not tested/validated')
-#endif
 
     !$ACC DATA COPYIN(trac_old) &
     !$ACC   COPY(trac_new) IF(lzacc)
@@ -298,9 +416,6 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, 'OpenACC version currently not tested/validated')
-#endif
 
     !$ACC DATA PRESENT(nproma, n_zlev, patch_3d%p_patch_2d(1)%alloc_cell_blocks) &
     !$ACC   COPYIN(k_h, transport_state_h_old, transport_state_h_new) &
@@ -451,7 +566,6 @@ CONTAINS
     !$ACC   CREATE(div_adv_flux_horz, div_adv_flux_vert, div_diff_flux_horz, top_bc) IF(lzacc)
 
     !---------------------------------------------------------------------
-#ifndef _OPENACC
     !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     ! these are probably not necessary
     div_adv_flux_vert(:,:,:) = 0.0_wp
@@ -459,7 +573,6 @@ CONTAINS
     div_diff_flux_horz(:,:,:) = 0.0_wp
     !$ACC END KERNELS
     !$ACC WAIT(1)
-#endif
     !---------------------------------------------------------------------
     IF ( l_with_vert_tracer_advection ) THEN
 
@@ -533,27 +646,11 @@ CONTAINS
         !$ACC WAIT(1)
       ENDIF
       
-#ifdef __LVECTOR__
-      level = 1
-      max_dolic_c = -1
-      !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) REDUCTION(MAX: max_dolic_c) IF(lzacc)
-      DO jc = start_cell_index, end_cell_index
-        max_dolic_c = MAX(max_dolic_c, dolic_c(jc,jb))
-      END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC WAIT(1)
-
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP GANG VECTOR
-      DO jc = start_cell_index, end_cell_index
-        IF (dolic_c(jc,jb) < level) CYCLE
-#else
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR
       DO jc = start_cell_index, end_cell_index
         !TODO check algorithm: inv_prism_thick_c vs. del_zlev_m | * vs. /
         DO level = 1, MIN(dolic_c(jc,jb),1)  ! this at most should be 1
-#endif
 
           delta_z     = prism_thick_flat_sfc_c(jc,level,jb)+transport_state_h_old(jc,jb)
           delta_z_new = prism_thick_flat_sfc_c(jc,level,jb)+transport_state_h_new(jc,jb)
@@ -565,24 +662,14 @@ CONTAINS
             & -div_diff_flux_horz(jc,level,jb) - top_bc(jc))) / delta_z_new
 
         ENDDO
-#ifndef __LVECTOR__
       ENDDO
-#endif
       !$ACC END PARALLEL
       !$ACC WAIT(1)
 
-#ifdef __LVECTOR__
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-        DO level = 2, max_dolic_c
-          DO jc = start_cell_index, end_cell_index
-            IF (dolic_c(jc,jb) < level) CYCLE
-#else
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
         !$ACC LOOP GANG VECTOR
         DO jc = start_cell_index, end_cell_index
           DO level = 2, dolic_c(jc,jb)
-#endif
             new_tracer_concentration(jc,level,jb) =                          &
               &  old_tracer_concentration(jc,level,jb)                       &
               &  - (delta_t / prism_thick_c(jc,level,jb))    &

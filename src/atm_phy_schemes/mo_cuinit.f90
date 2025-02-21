@@ -32,10 +32,10 @@ MODULE mo_cuinit
   !KF new - use module instead of include file
   USE mo_cufunctions, ONLY: foealfcu, foeewm, foealfa
 
-#ifdef _OPENACC
-  USE mo_cuparameters,  ONLY : r2es, r3les, r3ies, rtt, r5alvcp, r5alscp
-  USE mo_cufunctions,   ONLY : foeldcpmcu
-#endif
+
+
+
+
 
   IMPLICIT NONE
 
@@ -228,12 +228,12 @@ CONTAINS
 
       IF(lphylin)THEN
         icall=0
-#ifndef _OPENACC
+
         CALL cuadjtqs &
           & ( kidia,    kfdia,    klon,  klev,&
           & ik,&
           & zph,      ptenh,    pqsenh,   llflag,   icall)
-#endif
+
       ELSE
         icall=3
         CALL cuadjtq &
@@ -565,9 +565,9 @@ REAL(KIND=jprb) :: zwork1, zwork2! work arrays for T and w perturbations
 REAL(KIND=jprb) :: zrcpd, zrg, ztmp, zredfac, zcbase
 REAL(KIND=jprb) :: zhook_handle
 
-#ifdef _OPENACC
-REAL(KIND=jprb) :: uzqp,uzl,uzi,uzqsat,uzcor,uzf,uzcond,uzcond1
-#endif
+
+
+
 
 !#include "cuadjtq.intfb.h"
 !#include "fcttre.func.h"
@@ -670,16 +670,16 @@ DO jkk=klev,MAX(ktdia,jkt1),-1 ! Big external loop for level testing:
    !        ---------------------------------------------------------
    !
 
-#ifndef _OPENACC
+
   is=0
-#endif
+
 
   !$ACC LOOP GANG(STATIC: 1) VECTOR
   DO jl=kidia,kfdia
     IF (llgo_on(jl)) THEN
-#ifndef _OPENACC
+
       is=is+1
-#endif
+
       idpl(jl)    =jkk      ! departure level
       icbot  (jl) =jkk      ! cloud base level for convection, (-1 if not found)
       ibotsc (jl) =klev-1   ! sc    base level for sc-clouds , (-1 if not found)
@@ -694,9 +694,9 @@ DO jkk=klev,MAX(ktdia,jkt1),-1 ! Big external loop for level testing:
     ENDIF 
   ENDDO
 
-#ifndef _OPENACC
+
   IF(is /= 0) THEN
-#endif
+
 
     IF(jkk == klev) THEN
 
@@ -808,9 +808,9 @@ DO jkk=klev,MAX(ktdia,jkt1),-1 ! Big external loop for level testing:
       ENDDO
    
     ENDIF  ! jkk=klev
-#ifndef _OPENACC
+
   ENDIF    ! is/=0  or ANY(llgo_on)
-#endif
+
    
    !----------------------------------------------------------------------
    !     2.0          DO ASCENT IN SUBCLOUD AND LAYER,
@@ -824,18 +824,18 @@ DO jkk=klev,MAX(ktdia,jkt1),-1 ! Big external loop for level testing:
 
   !$ACC LOOP SEQ
   smalldoloop: DO jk=jkk-1,MAX(ktdia,jkt2),-1
-#ifndef _OPENACC
+
     is=0
-#endif
+
 
     IF(jkk==klev) THEN ! 1/z mixing for shallow
 
       !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zeps, zqf, zsf, ztmp)
       DO jl=kidia,kfdia
         IF (llgo_on(jl)) THEN
-#ifndef _OPENACC
+
           is         = is+1
-#endif
+
           zdz(jl)    = (pgeoh(jl,jk) - pgeoh(jl,jk+1))*zrg
           zeps       = entstpc1/((pgeoh(jl,jk)-pgeoh(jl,klev+1))*zrg) + entstpc2
   !        zmix(jl)   = 0.5_JPRB*zdz(jl)*zeps
@@ -858,9 +858,9 @@ DO jkk=klev,MAX(ktdia,jkt1),-1 ! Big external loop for level testing:
       !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zqf, zsf)
       DO jl=kidia,kfdia
         IF (llgo_on(jl)) THEN
-#ifndef _OPENACC
+
           is         = is+1
-#endif
+
           zdz(jl)    = (pgeoh(jl,jk) - pgeoh(jl,jk+1))*zrg
           zqf = (pqenh(jl,jk+1) + pqenh(jl,jk))*0.5_JPRB
           zsf = (zsenh(jl,jk+1) + zsenh(jl,jk))*0.5_JPRB
@@ -880,19 +880,19 @@ DO jkk=klev,MAX(ktdia,jkt1),-1 ! Big external loop for level testing:
 
     ENDIF
 
-#ifndef _OPENACC
+
     IF (is == 0) EXIT smalldoloop
-#endif
+
  
     ik=jk
     icall=1
      
-#if defined(_OPENACC) && (__NVCOMPILER_MAJOR__ <= 21)
-    !$ACC LOOP GANG(STATIC: 1) VECTOR
-    do jl=kidia,kfdia
-    if (jl==-1292) print *, 'working on:  ', ik, jk, jkk
-    enddo
-#endif
+
+
+
+
+
+
 
     CALL cuadjtq &
      & ( kidia,    kfdia,    klon,    klev,      ik,&
@@ -1122,12 +1122,12 @@ DO jkk=klev,MAX(ktdia,jkt1),-1 ! Big external loop for level testing:
       !llreset=llreset.OR.llresetjl(jl)
     ENDDO
 
-#ifndef _OPENACC
+
 !RS this would be a reduction on GPUs
     llreset = ANY(llresetjl(kidia:kfdia))
 
     IF(llreset) THEN
-#endif
+
       !$ACC LOOP SEQ
       DO jk=klev,ktdia,-1
         !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jkt, jkb)
@@ -1152,9 +1152,9 @@ DO jkk=klev,MAX(ktdia,jkt1),-1 ! Big external loop for level testing:
           ENDIF
         ENDDO
       ENDDO
-#ifndef _OPENACC
+
     ENDIF
-#endif
+
 
     !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jkb)
     DO jl=kidia,kfdia

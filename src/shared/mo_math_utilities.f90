@@ -35,9 +35,9 @@ MODULE mo_math_utilities
   USE mo_math_types,          ONLY: t_cartesian_coordinates, t_geographical_coordinates, &
     &                               t_line, t_tangent_vectors
   USE mo_util_sort,           ONLY: quicksort
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
+
+
+
   IMPLICIT NONE
 
   PRIVATE
@@ -155,19 +155,19 @@ MODULE mo_math_utilities
 
 !-----------------------------------------------------------------------
 ! Basic geometry functions definitions
-#define d_norma_3d(v) SQRT(DOT_PRODUCT(v%x,v%x))
-#define d_norma_3d_x(x) SQRT(DOT_PRODUCT(x,x))
-#define d_normalize(v) v%x=v%x/d_norma_3d(v)
-#define d_normalize_x(x) x=x/d_norma_3d_x(x)
-#define d_arc_of_hord_normalsphere(l) (2.0_wp*ASIN((l)*0.5_wp))
-#define d_normalize_f(v) v%x/d_norma_3d(v)
-#define d_sqrdistance_3d(v1,v2) DOT_PRODUCT((v1%x-v2%x),(v1%x-v2%x))
+
+
+
+
+
+
+
 
   CHARACTER(LEN=*), PARAMETER :: modname = 'mo_math_utilities'
 
-#if defined( _OPENACC )
-  LOGICAL, PARAMETER ::  acc_on = .TRUE.
-#endif
+
+
+
 CONTAINS
 
   !-------------------------------------------------------------------------
@@ -219,9 +219,9 @@ CONTAINS
   !! @f{align*}{
   !! \begin{pmatrix} p\_cu \\ p\_cv \\ p\_cw \end{pmatrix} =
   !! \begin{pmatrix}
-  !! -\sin p\_long & -\sin p\_lat \cdot \cos p\_long \\\
-  !! \cos p\_long & -\sin p\_lat \cdot \sin p\_long \\\
-  !! 0 & -\cos p\_lat
+  !! -\sin p\_long & -\sin p\_lat \cdot \cos p\_long \\  !! \cos p\_long & -\sin p\_lat \cdot \sin p\_long \\  !! 0 & -\cos p\_lat
+
+
   !! \end{pmatrix} \cdot
   !! \begin{pmatrix} p\_gu \\ p\_gv \end{pmatrix}
   !! @f}
@@ -279,8 +279,8 @@ CONTAINS
   !! @f{align*}{
   !! \begin{pmatrix} p\_gu \\ p\_gv \end{pmatrix} =
   !! \begin{pmatrix}
-  !! -\sin p\_long & \cos p\_long & 0 \\\
-  !! -\sin p\_lat \cdot \cos p\_long & -\sin p\_lat \cdot \sin p\_long & \cos p\_lat
+  !! -\sin p\_long & \cos p\_long & 0 \\  !! -\sin p\_lat \cdot \cos p\_long & -\sin p\_lat \cdot \sin p\_long & \cos p\_lat
+
   !! \end{pmatrix} \cdot
   !! \begin{pmatrix} p\_cu \\ p\_cv \\ p\_cw \end{pmatrix}
   !! @f}
@@ -410,7 +410,7 @@ CONTAINS
       cartesian(i)%x(2) = SIN(geo_coordinates(i)%lon) * cos_lat
       cartesian(i)%x(3) = SIN(geo_coordinates(i)%lat)
 
-      check = d_norma_3d(cartesian(i))
+      check = SQRT(DOT_PRODUCT(cartesian(i)%x,cartesian(i)%x))
       IF (ABS(check-1.0_wp) > 1.0e-8_wp) &
         & CALL finish ('geographicalToCartesian', 'Error in calculation')
 
@@ -431,7 +431,7 @@ CONTAINS
     TYPE(t_cartesian_coordinates), INTENT(in) :: v
     REAL(wp) :: length
 
-    length = d_norma_3d(v)
+    length = SQRT(DOT_PRODUCT(v%x,v%x))
 
   END FUNCTION norma
   !-------------------------------------------------------------------------
@@ -441,7 +441,7 @@ CONTAINS
     TYPE(t_cartesian_coordinates), INTENT(in) :: v
     TYPE(t_cartesian_coordinates) :: n
 
-    n%x = v%x / d_norma_3d(v)
+    n%x = v%x / SQRT(DOT_PRODUCT(v%x,v%x))
 
   END FUNCTION normalize
   !-------------------------------------------------------------------------
@@ -455,7 +455,7 @@ CONTAINS
    ! TYPE(cartesian_coordinates) :: v3
 
     prod = DOT_PRODUCT(v1%x,v2%x)/ &
-      & (d_norma_3d(v1) * d_norma_3d(v2))
+      & (SQRT(DOT_PRODUCT(v1%x,v1%x)) * SQRT(DOT_PRODUCT(v2%x,v2%x)))
     angle = ATAN2(SQRT(1.0_wp - prod*prod), prod)
 
   END FUNCTION angle_of_vectors
@@ -496,7 +496,7 @@ CONTAINS
     x2%x(3) = x0%x(1)*x1%x(2) - x0%x(2)*x1%x(1)
 
 !    x2%x = x2%x/ SQRT(x2%x(1)**2+x2%x(2)**2+x2%x(3)**2)
-    x2%x = x2%x/ d_norma_3d(x2)
+    x2%x = x2%x/ SQRT(DOT_PRODUCT(x2%x,x2%x))
 
   END FUNCTION normal_vector
   !-------------------------------------------------------------------------
@@ -528,8 +528,8 @@ CONTAINS
 
     !-----------------------------------------------------------------------
 
-    z_lx = d_norma_3d(p_x)
-    z_ly = d_norma_3d(p_y)
+    z_lx = SQRT(DOT_PRODUCT(p_x%x,p_x%x))
+    z_ly = SQRT(DOT_PRODUCT(p_y%x,p_y%x))
 
     z_cc = DOT_PRODUCT(p_x%x, p_y%x)/(z_lx*z_ly)
 
@@ -667,8 +667,8 @@ CONTAINS
     REAL(wp) :: carc
     REAL(wp) :: z_d0,  z_d1,  z_cc
 
-    z_d0 = d_norma_3d(x0)
-    z_d1 = d_norma_3d(x1)
+    z_d0 = SQRT(DOT_PRODUCT(x0%x,x0%x))
+    z_d1 = SQRT(DOT_PRODUCT(x1%x,x1%x))
 
     z_cc = DOT_PRODUCT(x0%x, x1%x)/(z_d0*z_d1)
 
@@ -738,7 +738,7 @@ CONTAINS
 
     dv = plane_torus_closest_coordinates(v0, v1, geometry_info)
     dv%x = dv%x - v0
-    plane_torus_distance = d_norma_3d(dv)
+    plane_torus_distance = SQRT(DOT_PRODUCT(dv%x,dv%x))
 
   END FUNCTION plane_torus_distance
   !--------------------------------------------------------------------
@@ -750,7 +750,7 @@ CONTAINS
 
       mid_point%x = (p1%x + p2%x)
       mid_point%x = mid_point%x / &
-        & d_norma_3d(mid_point)
+        & SQRT(DOT_PRODUCT(mid_point%x,mid_point%x))
 
   END FUNCTION sphere_cartesian_midpoint
   !-------------------------------------------------------------------------
@@ -764,8 +764,8 @@ CONTAINS
     TYPE(t_cartesian_coordinates) :: r
 
     r = vector_product(x0, x1)
-    sin_cc = d_norma_3d(r) / &
-      & (d_norma_3d(x0) * d_norma_3d(x1))
+    sin_cc = SQRT(DOT_PRODUCT(r%x,r%x)) / &
+      & (SQRT(DOT_PRODUCT(x0%x,x0%x)) * SQRT(DOT_PRODUCT(x1%x,x1%x)))
 
   END FUNCTION sin_cc
   !-----------------------------------------------------------------------
@@ -862,7 +862,7 @@ CONTAINS
       cu%x = -cu%x
     END IF
 
-    z_cnorm = d_norma_3d(cu)
+    z_cnorm = SQRT(DOT_PRODUCT(cu%x,cu%x))
     center%x = cu%x/z_cnorm
 
   END FUNCTION circum_center
@@ -893,7 +893,7 @@ CONTAINS
     bc%x = bc%x/3._wp
 
     ! norm of barycenter
-    z_cnorm = d_norma_3d(bc)
+    z_cnorm = SQRT(DOT_PRODUCT(bc%x,bc%x))
 
     ! new center
     center%x = bc%x/z_cnorm
@@ -928,7 +928,7 @@ CONTAINS
 
     ! rescale on sphere surface
 
-    z_pn = d_norma_3d(p)
+    z_pn = SQRT(DOT_PRODUCT(p%x,p%x))
 
     p%x = p%x/z_pn
 
@@ -955,7 +955,7 @@ CONTAINS
     in_p%x = in_point%x - to_v0%x
 
     norm_to_plane = vector_product (v1, v2)
-    d_normalize(norm_to_plane)
+    norm_to_plane%x=norm_to_plane%x/SQRT(DOT_PRODUCT(norm_to_plane%x,norm_to_plane%x))
     norm_to_plane%x = norm_to_plane%x * &
       & DOT_PRODUCT(norm_to_plane%x, (v1%x - in_p%x))
 
@@ -1031,7 +1031,7 @@ CONTAINS
     p = vecpro (g1, g2)
 
     ! rescale on sphere surface
-    z_pn = d_norma_3d(p)
+    z_pn = SQRT(DOT_PRODUCT(p%x,p%x))
 
     p%x = p%x/z_pn
 
@@ -1076,7 +1076,7 @@ CONTAINS
       p(ji) = vecpro (g1, g2)
 
       ! rescale on sphere surface
-      z_pn = d_norma_3d(p(ji))
+      z_pn = SQRT(DOT_PRODUCT(p(ji)%x,p(ji)%x))
 
       p(ji)%x = p(ji)%x/z_pn
 
@@ -1150,24 +1150,24 @@ CONTAINS
   !!  @f{align*}{
   !!  R_z (\lambda) &=
   !!  \begin{pmatrix}
-  !!   \cos\lambda & \sin\lambda & 0 \\\
-  !!   -\sin\lambda & \cos\lambda & 0 \\\
-  !!   0 & 0 & 1
-  !!  \end{pmatrix}\\\
-  !!  R_y (\varphi) &=
+  !!   \cos\lambda & \sin\lambda & 0 \\  !!   -\sin\lambda & \cos\lambda & 0 \\  !!   0 & 0 & 1
+
+
+  !!  \end{pmatrix}\\  !!  R_y (\varphi) &=
+
   !!  \begin{pmatrix}
-  !!   \cos\varphi & 0 & \sin\varphi \\\
-  !!   0 & 1 & 0 \\\
-  !!   -\sin\varphi & 0 &\cos\varphi
+  !!   \cos\varphi & 0 & \sin\varphi \\  !!   0 & 1 & 0 \\  !!   -\sin\varphi & 0 &\cos\varphi
+
+
   !!  \end{pmatrix}
   !!  @f}
   !!  Thus, the rotation matrix @f$R@f$ is
   !!  @f{align*}{
   !!  R(\lambda,\varphi) ~=~  R_y (\varphi) \cdot R_z (\lambda) &=
   !!  \begin{pmatrix}
-  !!   \cos\lambda \cos\varphi & \sin\lambda \cos\varphi & \sin\varphi\\\
-  !!   -\sin\lambda & \cos\lambda & 0\\\
-  !!   -\cos\lambda \sin\varphi & -\sin\lambda \sin\varphi & \cos\varphi
+  !!   \cos\lambda \cos\varphi & \sin\lambda \cos\varphi & \sin\varphi\\  !!   -\sin\lambda & \cos\lambda & 0\\  !!   -\cos\lambda \sin\varphi & -\sin\lambda \sin\varphi & \cos\varphi
+
+
   !!  \end{pmatrix}
   !!  @f}
   !!  Given the Cartesian coordinates of point

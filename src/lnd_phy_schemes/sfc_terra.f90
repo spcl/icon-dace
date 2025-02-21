@@ -37,9 +37,9 @@ MODULE sfc_terra
 !------------------------------------------------------------------------------
 !
 ! Modules used:
-#ifdef _OPENMP
-  USE omp_lib,            ONLY: omp_get_thread_num
-#endif
+
+
+
 
 
 !------------------------------------------------------------------------------
@@ -111,11 +111,11 @@ PUBLIC :: terra
 ! Public variables
 !------------------------------------------------------------------------------
 
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
+
+
+
   LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
+
 
 !------------------------------------------------------------------------------
 ! Parameters and variables which are global in this module
@@ -239,9 +239,9 @@ CONTAINS
                   prs_gsp          , & ! precipitation rate of snow, grid-scale        (kg/m2*s)
                   pri_gsp          , & ! precipitation rate of ice, grid-scale        (kg/m2*s)
                   prg_gsp          , & ! precipitation rate of graupel, grid-scale     (kg/m2*s)
-#ifdef TWOMOM_SB
-                  prh_gsp          , & ! precipitation rate of hail, grid-scale        (kg/m2*s)
-#endif
+
+
+
 !
                   tch              , & ! turbulent transfer coefficient for heat       ( -- )
                   tcm              , & ! turbulent transfer coefficient for momentum   ( -- )
@@ -338,9 +338,9 @@ CONTAINS
                   prs_gsp          , & ! precipitation rate of snow, grid-scale        (kg/m2*s)
                   pri_gsp          , & ! precipitation rate of ice, grid-scale         (kg/m2*s)
                   prg_gsp          , & ! precipitation rate of graupel, grid-scale     (kg/m2*s)
-#ifdef TWOMOM_SB
-                  prh_gsp          , & ! precipitation rate of hail, grid-scale        (kg/m2*s)
-#endif
+
+
+
                   sobs             , & ! solar radiation at the ground                 ( W/m2)
                   thbs             , & ! thermal radiation at the ground               ( W/m2)
                   pabs                 !!!! photosynthetic active radiation            ( W/m2)
@@ -943,9 +943,9 @@ CONTAINS
     limit_tch (nvec)         ! indicator for flux limitation problem
 
 
-#ifdef __SX__
-  REAL(wp) :: zfac(nvec),lhfl_pl_int(nvec)
-#endif
+
+
+
 
   ! ground water as lower boundary of soil column
   REAL    (KIND=wp) ::  &
@@ -979,9 +979,9 @@ ELSE
 ENDIF
 
 my_cart_id = get_my_global_mpi_id()
-#ifdef _OPENMP
-my_thrd_id = omp_get_thread_num()
-#endif
+
+
+
 mbid = 714
 mcid =   0
 mtid =   0
@@ -1001,20 +1001,20 @@ mvid =   8
 ! Just do some checkout prints:
   IF (ldebug) THEN
     IF (iblock == mbid .AND. my_cart_id == mcid) THEN
-#ifdef _OPENMP
-     IF (my_thrd_id == mtid) THEN
-#endif
+
+
+
       WRITE(*,'(A,3I5)'   ) 'SFC-DIAGNOSIS terra start (ke_soil, ke_snow, ke_soil_hy): ', &
                             ke_soil, ke_snow, ke_soil_hy
-#ifdef _OPENMP
-     ENDIF
-#endif
+
+
+
     ENDIF
     DO i = ivstart, ivend
       IF (i== mvid .AND. iblock == mbid .AND. my_cart_id == mcid) THEN
-#ifdef _OPENMP
-       IF (my_thrd_id == mtid) THEN
-#endif
+
+
+
         WRITE(*,'(A,2I5   )') ' SFC-DIAGNOSIS terra:  iblock = ', iblock, i
  
         WRITE(*,'(A       )') ' External Parameters:  '
@@ -1052,9 +1052,9 @@ mvid =   8
         WRITE(*,'(A,F28.16)') '   prr_gsp          :  ', prr_gsp     (i)
         WRITE(*,'(A,F28.16)') '   prs_gsp          :  ', prs_gsp     (i)
         WRITE(*,'(A,F28.16)') '   prg_gsp          :  ', prg_gsp     (i)
-#ifdef TWOMOM_SB
-        WRITE(*,'(A,F28.16)') '   prh_gsp          :  ', prh_gsp     (i)
-#endif
+
+
+
         WRITE(*,'(A,F28.16)') '   sobs             :  ', sobs        (i)
         WRITE(*,'(A,F28.16)') '   thbs             :  ', thbs        (i)
         WRITE(*,'(A,F28.16)') '   pabs             :  ', pabs        (i)
@@ -1086,9 +1086,9 @@ ENDDO
         WRITE(*,'(A,F28.16)') '   runoff_s (in)    :  ', runoff_s    (i)
         WRITE(*,'(A,F28.16)') '   runoff_g (in)    :  ', runoff_g    (i)
 
-#ifdef _OPENMP
-       ENDIF
-#endif
+
+
+
       ENDIF
     ENDDO
   ENDIF
@@ -1108,9 +1108,9 @@ ENDDO
     RETURN       ! whatever happens then
   ENDIF
 
-#ifdef _OPENACC
-  IF(lmulti_snow) CALL finish("sfc_terra:terra", "lmulti_snow has not been tested with OpenACC yet.")
-#endif
+
+
+
 
   ! set number of active soil moisture layers for Mire
   ke_soil_hy_m            = 4
@@ -1140,9 +1140,9 @@ ENDDO
   !$ACC   PRESENT(heatcond_fac, heatcap_fac) &
   !$ACC   PRESENT(rsmin2d, u, v, t, qv, ptot, ps, h_snow_gp, u_10m) &
   !$ACC   PRESENT(v_10m, prr_con, prs_con, conv_frac, prr_gsp, prs_gsp, pri_gsp) &
-#ifdef TWOMOM_SB
-  !$ACC   PRESENT(prh_gsp) &
-#endif
+
+
+
   !$ACC   PRESENT(prg_gsp, sobs, thbs, pabs, zdzhs, tsnred) &
 
   ! Subroutine parameters INOUT
@@ -1255,7 +1255,7 @@ ENDDO
     ! ensure that glaciers are covered with at least 1 m of snow
     IF (mstyp == 1) h_snow(i) = MAX(1._wp, h_snow(i))
 
-#ifndef __SX__
+
     zdw       (i,:) = cdw0  (mstyp)
     zdw1      (i,:) = cdw1  (mstyp)
     zkw       (i,:) = ckw0  (mstyp)
@@ -1268,7 +1268,7 @@ ENDDO
     zrocg     (i,:) = crhoc (mstyp)*heatcap_fac(i)   ! heat capacity
     zrocg_soil(i,:) = crhoc (mstyp)*heatcap_fac(i)   ! heat capacity
     zalam     (i,:) = cala0 (mstyp)              ! heat conductivity parameter
-#endif
+
     zrock     (i)   = crock (mstyp)              ! EQ 0 for Ice and Rock EQ 1 else
     zik2      (i)   = cik2  (mstyp)
     zdlam     (i)   = cala1 (mstyp)-cala0(mstyp) ! heat conductivity parameter
@@ -1284,32 +1284,6 @@ ENDDO
     meltrate(i)     = 0.0_wp
   ENDDO
 
-#ifdef __SX__
-!$NEC outerloop_unroll(8)
-  DO kso = 1, ke_soil+1
-    DO i = ivstart, ivend
-    mstyp       = soiltyp_subs(i)        ! soil type
-    zdw   (i,kso)  = cdw0  (mstyp)
-    zdw1  (i,kso)  = cdw1  (mstyp)
-    zkw   (i,kso)  = ckw0  (mstyp)
-    zkwm  (i,kso)  = ckw0  (mstyp)
-    zkw1  (i,kso)  = ckw1  (mstyp)
-    zporv(i,kso)  = cporv(mstyp)              ! pore volume
-    zpwp (i,kso)  = cpwp (mstyp)              ! plant wilting point
-    zadp (i,kso)  = cadp (mstyp)              ! air dryness point
-    zfcap(i,kso)  = cfcap(mstyp)              ! field capacity
-    zrocg(i,kso)  = crhoc(mstyp)*heatcap_fac(i)      ! heat capacity
-    zrocg_soil(i,kso) = crhoc(mstyp)*heatcap_fac(i)  ! heat capacity
-   ENDDO
-  ENDDO
-!$NEC outerloop_unroll(7)
-  DO kso = 1, ke_soil
-    DO i = ivstart, ivend
-    mstyp       = soiltyp_subs(i)        ! soil type
-    zalam(i,kso)  = cala0(mstyp)              ! heat conductivity parameter
-   ENDDO
-  ENDDO
-#endif
 
   ! Arrays for soil water freezing/melting
   zd = LOG((T_ref_ice-(t_zw_low-t0_melt))/T_star_ice)
@@ -1791,7 +1765,6 @@ ENDDO
   ENDDO
 
 
-#ifndef _OPENACC
   IF (msg_level >= 20) THEN
     ! counter for limitation of transfer coefficients
     m_limit = COUNT( limit_tch(:) )
@@ -1816,7 +1789,6 @@ ENDDO
       END DO
     ENDIF
   ENDIF
-#endif
 
   ! Update indicator for age of snow in top of snow layer
   ! Note that cloud ice is deliberately disregarded here in order to avoid counting drifting snow as fresh snow
@@ -1828,9 +1800,6 @@ ENDDO
     ELSE
       IF ( nclass_gscp >= 2000 ) THEN
         ! only possible when running 2-moment microphysics
-#ifdef TWOMOM_SB
-        zsnow_rate = prs_gsp(i)+prs_con(i)+prg_gsp(i)+prh_gsp(i) ! [kg/m**2 s]
-#endif
       ELSEIF ( nclass_gscp >= 6 ) THEN
         zsnow_rate = prs_gsp(i)+prs_con(i)+prg_gsp(i)            ! [kg/m**2 s]
       ELSE
@@ -2597,15 +2566,6 @@ ENDDO
   !              associated fictitious soil humidity qv_s
   !----------------------------------------------------------------------------
 
-#ifdef __SX__
-  lhfl_pl_int(:) = 0._wp
-  zfac(:)        = 1._wp
-  DO kso = 1,ke_soil_hy
-    DO i = ivstart, ivend
-      lhfl_pl_int(i) = lhfl_pl_int(i) + lhfl_pl(i,kso)
-    ENDDO
-  ENDDO
-#endif
 
   ! Ensure that the sum of the evaporation terms does not exceed the potential evaporation
   !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(ze_sum, zxx, zzz)
@@ -2619,12 +2579,8 @@ ENDDO
       zesoil(i)  = zesoil(i) *zzz
       ztrangs(i) = ztrangs(i)*zzz
       lhfl_bs(i) = lhfl_bs(i)*zzz
-#ifdef __SX__
-      zfac(i)    = zzz
-#else
       ztrang(i,:)  = ztrang(i,:)*zzz
       lhfl_pl(i,:) = lhfl_pl(i,:)*zzz
-#endif
     ENDIF
     IF (itype_trvg == 3) THEN
       ! accumulated plant evaporation since sunrise; an offset is subtracted to parameterize the
@@ -2632,11 +2588,7 @@ ENDDO
       ! rate is assumed at night
       zzz = MAX(1._wp, 0.1_wp*(50._wp - pabs(i)))
       plevap(i) = MAX(-6._wp, MIN(0._wp, plevap(i) + zzz*dt/lh_v *           &
-#ifdef __SX__
-                 (lhfl_pl_int(i)+MAX(0.2_wp,plcov(i))*75._wp) ))
-#else
                  (SUM(lhfl_pl(i,1:ke_soil_hy))+MAX(0.2_wp,plcov(i))*75._wp) ))
-#endif
     ENDIF
     ! Negative values of tsnred indicate that snow is present on the corresponding snow tile
     ! and that the snow-free tile has been artificially generated by the melting-rate parameterization
@@ -2647,24 +2599,11 @@ ENDDO
       zesoil(i)    = zzz*zesoil(i)
       lhfl_bs(i)   = zzz*lhfl_bs(i)
       ztrangs(i)   = zxx*ztrangs(i)
-#ifdef __SX__
-      zfac(i)      = zxx*zfac(i)
-#else
       ztrang(i,:)  = zxx*ztrang(i,:)
       lhfl_pl(i,:) = zxx*lhfl_pl(i,:)
-#endif
     ENDIF
   ENDDO
 
-#ifdef __SX__
-!$NEC outerloop_unroll(7)
-  DO kso = 1,ke_soil
-    DO i = ivstart, ivend
-      ztrang(i,kso)  = ztrang(i,kso)*zfac(i)
-      lhfl_pl(i,kso) = lhfl_pl(i,kso)*zfac(i)
-    ENDDO
-  ENDDO
-#endif
 
   IF (itype_interception == 1) THEN
     !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(ze_sum)
@@ -2849,9 +2788,6 @@ ENDDO
       zrs(i) = zrs(i) + prs_con(i) + prs_gsp(i) + pri_gsp(i)
       IF ( nclass_gscp >= 2000 ) THEN
         ! only possible when running 2-moment microphysics
-#ifdef TWOMOM_SB
-        zrs(i) = zrs(i) + prg_gsp(i) + prh_gsp(i)
-#endif
       ELSEIF ( nclass_gscp >= 6 ) THEN
         zrs(i) = zrs(i) + prg_gsp(i)
       ENDIF
@@ -3036,9 +2972,6 @@ ENDDO
 
       IF ( nclass_gscp >= 2000 ) THEN
         ! only possible when running 2-moment microphysics
-#ifdef TWOMOM_SB
-        zrs(i) = zrrs(i) + prs_con(i) + prs_gsp(i) + pri_gsp(i) + prg_gsp(i) + prh_gsp(i)
-#endif
       ELSEIF ( nclass_gscp >= 6 ) THEN
         zrs(i) = zrrs(i) + prs_con(i) + prs_gsp(i) + pri_gsp(i) + prg_gsp(i)
       ELSE
@@ -5230,9 +5163,6 @@ ENDDO
       ! graupel fraction
       IF ( nclass_gscp >= 2000 ) THEN
         ! only possible when running 2-moment microphysics
-#ifdef TWOMOM_SB
-        zgrfrac = (prh_gsp(i)+prg_gsp(i)+prs_con(i)) / MAX(eps_soil,prs_gsp(i)+pri_gsp(i)+prs_con(i)+prg_gsp(i)+prh_gsp(i))
-#endif
       ELSEIF ( nclass_gscp >= 6 ) THEN
         zgrfrac = (prg_gsp(i)+prs_con(i)) / MAX(eps_soil,prs_gsp(i)+pri_gsp(i)+prs_con(i)+prg_gsp(i))
       ELSE
@@ -5243,9 +5173,6 @@ ENDDO
       IF ( nclass_gscp >= 2000 ) THEN
        ! only possible when running the 2-moment microphysics
        !!$ UB: does that really make sense to integrate hail into snow density at the surface?
-#ifdef TWOMOM_SB
-        zzz = (prs_gsp(i)+pri_gsp(i)+prs_con(i)+prg_gsp(i)+prh_gsp(i))*zdtdrhw
-#endif
       ELSEIF ( nclass_gscp >= 6 ) THEN
         zzz = (prs_gsp(i)+pri_gsp(i)+prs_con(i)+prg_gsp(i))*zdtdrhw
       ELSE
@@ -5498,10 +5425,6 @@ ENDDO
       ! the rain rates 
       IF ( nclass_gscp >= 2000 ) THEN
         ! only possible when running 2-moment microphysics
-#ifdef TWOMOM_SB
-        zhwso_budget(i) = zhwso_budget(i) + &
-          ( prr_con(i) + prs_con(i) + prr_gsp(i) + prs_gsp(i) + prg_gsp(i) + prh_gsp(i) )*zdt
-#endif
       ELSEIF ( nclass_gscp >= 6 ) THEN
         zhwso_budget(i) = zhwso_budget(i) + &
           ( prr_con(i) + prs_con(i) + prr_gsp(i) + prs_gsp(i) + prg_gsp(i) )*zdt

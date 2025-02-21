@@ -26,9 +26,21 @@
 !              OF ADVECTION EQUATION
 !
 
-#if !defined _OPENACC
-#include "consistent_fma.inc"
-#endif
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! For runs that check result consistency we fix the different
+! contractions that the Intel compiler performs on some loops (at
+! least in version 16.0) for the vectorized part and the
+! non-vectorized parts
 
 MODULE mo_cuflxtends
 
@@ -52,7 +64,19 @@ MODULE mo_cuflxtends
 !K.L. for testing:
   USE mo_exception,           ONLY: message, message_text
 
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   IMPLICIT NONE
 
@@ -952,9 +976,6 @@ CONTAINS
         ENDDO
       ENDDO
 
-#ifdef _CRAYFTN
-!dir$ inline
-#endif
       CALL cubidiag&
         & ( kidia,    kfdia,   klon,   ktdia, klev, &
         & kctop,    llcumbas, &
@@ -965,12 +986,9 @@ CONTAINS
         & kctop,    llcumbas, &
         & zmfus,    zb,     zdqdt,   zr2)
 
-#ifdef _CRAYFTN
-!dir$ noinline
-#endif
       ! Compute tendencies
 
-      !PREVENT_INCONSISTENT_IFORT_FMA
+      !
       !$ACC LOOP SEQ
       DO jk=ktdia-1+ktopm2,klev
         !$ACC LOOP GANG(STATIC: 1) VECTOR
@@ -1126,9 +1144,7 @@ CONTAINS
     !#include "cubidiag.intfb.h"
     !----------------------------------------------------------------------
 
-#ifndef _OPENACC
     IF (lhook) CALL dr_hook('CUDUDV',0,zhook_handle)
-#endif
 
     !$ACC DATA &
     !$ACC   PRESENT(ktype, kcbot, kctop, ldcum, paph, zdph, puen, pven, pmfu) &
@@ -1307,9 +1323,6 @@ CONTAINS
         ENDDO
       ENDDO
 
-#ifdef _CRAYFTN
-!dir$ inline
-#endif
       CALL cubidiag&
         & ( kidia, kfdia, klon, ktdia, klev, &
         & kctop, llcumbas, &
@@ -1320,9 +1333,6 @@ CONTAINS
         & kctop, llcumbas, &
         & zmfuu,    zb,    zdvdt,   zr2)
 
-#ifdef _CRAYFTN
-!dir$ noinline
-#endif
 
       ! Compute tendencies
 
@@ -1347,9 +1357,7 @@ CONTAINS
 
     !$ACC END DATA
 
-#ifndef _OPENACC
     IF (lhook) CALL dr_hook('CUDUDV',1,zhook_handle)
-#endif
 
   END SUBROUTINE cududv
 
@@ -1515,7 +1523,7 @@ CONTAINS
     !$ACC DATA CREATE(llcumask, zb, zcd, zcen, zcu, zdp, zmfc, zr1, ztenc) &
     !$ACC   PRESENT(kctop, kdtop, ldcum, lddraf, paph, pddrate, pmfd, pmfu, pudrate, zdgeoh, zdph)
 
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO jk=ktdia+1,klev
@@ -1854,9 +1862,7 @@ CONTAINS
 
     !----------------------------------------------------------------------
 
-#ifndef _OPENACC
     IF (lhook) CALL dr_hook('CUBIDIAG',0,zhook_handle)
-#endif
 
     !$ACC LOOP SEQ
     DO jk = 1, klev
@@ -1878,12 +1884,7 @@ CONTAINS
       END IF
     END DO
 
-#ifndef _OPENACC
     DO jk = MAX(ktdia+1, MINVAL(kctop)), klev
-#else
-    !$ACC LOOP SEQ
-    DO jk = ktdia+1, klev
-#endif
       !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zbet)
       DO jl = kidia,kfdia
         IF ( jk >= kctop(jl) .AND. ld_lcumask(jl,jk) ) THEN
@@ -1893,9 +1894,8 @@ CONTAINS
       ENDDO
     ENDDO
 
-#ifndef _OPENACC
     IF (lhook) CALL dr_hook('CUBIDIAG',1,zhook_handle)
-#endif
+
 
   END SUBROUTINE cubidiag
 

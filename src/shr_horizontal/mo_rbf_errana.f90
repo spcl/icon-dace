@@ -143,12 +143,12 @@ CONTAINS
       END DO
     END DO
     ! decompose linear system
-#ifdef __SX__
-!CDIR NOIEXPAND
-    CALL choldec_v(start_idx,end_idx,kdim,N,mat_A,z_diag)
-#else
+
+
+
+
     CALL choldec_v(start_idx,end_idx,kdim,  mat_A,z_diag)
-#endif
+
 
     ! --------------------------------------------------------------------
     ! first, estimate ||A^{-1}||_1 with a single step of Hager's
@@ -161,12 +161,12 @@ CONTAINS
     v(:,start_idx:end_idx)   = 0.0_wp
     p(:,start_idx:end_idx)   = 0.0_wp
 
-#ifdef __SX__
-!CDIR NOIEXPAND
-    CALL solve_chol_v(start_idx, end_idx, kdim, N, mat_A, z_diag, e_n, v)
-#else
+
+
+
+
     CALL solve_chol_v(start_idx, end_idx, kdim,    mat_A, z_diag, e_n, v)
-#endif
+
     sign_v(start_idx:end_idx,:) = 0._wp
 
     DO i=1,N
@@ -176,12 +176,12 @@ CONTAINS
         IF (v(i,jc) < 0._wp) sign_v(jc,i) = -1.0_wp
       END DO
     END DO
-#ifdef __SX__
-!CDIR NOIEXPAND
-    CALL solve_chol_v(start_idx, end_idx, kdim, N, mat_A, z_diag, sign_v, p)
-#else
+
+
+
+
     CALL solve_chol_v(start_idx, end_idx, kdim,    mat_A, z_diag, sign_v, p)
-#endif
+
     ! move to a new point, maximizing ||A^(-1) p||_1
     e_n(start_idx:end_idx,:) = 0._wp
     DO jc=start_idx,end_idx
@@ -190,12 +190,12 @@ CONTAINS
       e_n(jc, p_imax(1)) = 1.0_wp
     END DO
 
-#ifdef __SX__
-!CDIR NOIEXPAND
-    CALL solve_chol_v(start_idx, end_idx, kdim, N, mat_A, z_diag, e_n, v)
-#else
+
+
+
+
     CALL solve_chol_v(start_idx, end_idx, kdim,    mat_A, z_diag, e_n, v)
-#endif
+
     gamma(start_idx:end_idx) = 0._wp
     DO i=1,N
       DO jc=start_idx,end_idx
@@ -218,12 +218,12 @@ CONTAINS
       END DO
     END DO
     ! solve q = A^(-1)*e_n
-#ifdef __SX__
-!CDIR NOIEXPAND
-    CALL solve_chol_v(start_idx, end_idx, kdim, N, mat_A, z_diag, e_n, q)
-#else
+
+
+
+
     CALL solve_chol_v(start_idx, end_idx, kdim,    mat_A, z_diag, e_n, q)
-#endif
+
     ! counteract numerical cancellation [Higham1988]
     gamma_2(start_idx:end_idx) = 0._wp
     DO i=1,N

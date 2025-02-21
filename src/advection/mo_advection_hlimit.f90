@@ -16,14 +16,18 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
-#define LAXFR_UPFLUX_MACRO(PPp_vn,PPp_psi_a,PPp_psi_b) (0.5_wp*((PPp_vn)*((PPp_psi_a)+(PPp_psi_b))-ABS(PPp_vn)*((PPp_psi_b)-(PPp_psi_a))))
-#define LAXFR_UPFLUX_V_MACRO(PPp_w,PPp_psi_a,PPp_psi_b) (0.5_wp*((PPp_w)*((PPp_psi_a)+(PPp_psi_b))+ABS(PPp_w)*((PPp_psi_b)-(PPp_psi_a))))
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
 
-#ifdef __INTEL_COMPILER
-#define USE_LAXFR_MACROS
-#define laxfr_upflux LAXFR_UPFLUX_MACRO
-#endif
+
 !----------------------------
 MODULE mo_advection_hlimit
 
@@ -39,12 +43,8 @@ MODULE mo_advection_hlimit
   USE mo_intp_data_strc,      ONLY: t_int_state
   USE mo_impl_constants_grf,  ONLY: grf_bdywidth_c, grf_bdywidth_e
   USE mo_impl_constants,      ONLY: min_rledge_int, min_rlcell_int
-#ifndef USE_LAXFR_MACROS
   USE mo_advection_utils,     ONLY: laxfr_upflux
-#endif
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
+
 
   IMPLICIT NONE
 
@@ -178,11 +178,11 @@ CONTAINS
     INTEGER  :: i_rlstart_e, i_rlend_e, i_rlstart_c, i_rlend_c
     INTEGER  :: je, jk, jb, jc         !< index of edge, vert level, block, cell
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: z_mflx_low,z_anti,z_mflx_anti_in,z_mflx_anti_out
-!DIR$ ATTRIBUTES ALIGN :64 :: z_fluxdiv_c,z_tracer_new_low,z_tracer_max,z_tracer_min
-!DIR$ ATTRIBUTES ALIGN :64 :: r_p,r_m,z_min,z_max
-#endif
+
+
+
+
+
   !-------------------------------------------------------------------------
 
     ! Set default values
@@ -247,14 +247,14 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
+
+
+
+
 !$NEC outerloop_unroll(4)
       DO jk = slev, elev
         DO je = i_startidx, i_endidx
-#endif
+
           !
           ! compute the first order upwind flux; notice
           ! that only the p_cc*p_vn value at cell edge is computed
@@ -297,15 +297,15 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_mflx_anti_1, z_mflx_anti_2, z_mflx_anti_3)
-#ifdef __LOOP_EXCHANGE
-!DIR$ IVDEP,PREFERVECTOR
-      DO jc = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
+
+
+
+
+
 !$NEC outerloop_unroll(4)
       DO jk = slev, elev
         DO jc = i_startidx, i_endidx
-#endif
+
 
           !
           ! 2. Define "antidiffusive" fluxes A(jc,jk,jb,je) for each cell. It is the difference
@@ -422,15 +422,15 @@ CONTAINS
                          i_startidx, i_endidx, i_rlstart_c, i_rlend_c)
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
+
+
+
+
 !$NEC outerloop_unroll(4)
       !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
       DO jk = slev, elev
         DO jc = i_startidx, i_endidx
-#endif
+
 
           ! max value of cell and its neighbors
           ! also look back to previous time step
@@ -502,13 +502,13 @@ CONTAINS
       !
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_signum, r_frac)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
+
+
+
+
       DO jk = slev, elev
         DO je = i_startidx, i_endidx
-#endif
+
 
           z_signum = SIGN(1._wp,z_anti(je,jk,jb))
 
@@ -604,12 +604,12 @@ CONTAINS
 
     REAL(wp) :: z_signum                     !< sign of mass flux
                                              !< >0: out; <0: in
-#if defined (__SX__) || defined ( _OPENACC )
-    REAL(wp) :: p_m                          !< sum of fluxes out of cell jc
-                                             !< [kg m^-3]
-#else
+
+
+
+
     REAL(wp) :: p_m(nproma,slev:elev)
-#endif
+
     INTEGER, CONTIGUOUS, POINTER :: &        !< Pointer to line and block indices of two
       &  iilc(:,:,:), iibc(:,:,:)            !< neighbor cells (array)
 
@@ -620,9 +620,9 @@ CONTAINS
     INTEGER  :: i_rlstart, i_rlend, i_rlstart_c, i_rlend_c
     INTEGER  :: je, jk, jb, jc         !< index of edge, vert level, block, cell
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: p_m,r_m
-#endif
+
+
+
   !-------------------------------------------------------------------------
 
     ! set default values
@@ -689,15 +689,15 @@ CONTAINS
                          i_startidx, i_endidx, i_rlstart_c, i_rlend_c)
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
+
+
+
+
 !$NEC outerloop_unroll(4)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_mflx1, z_mflx2, z_mflx3, p_m)
       DO jk = slev, elev
         DO jc = i_startidx, i_endidx
-#endif
+
 
           z_mflx1 = ptr_int%geofac_div(jc,1,jb) * p_dtime &
             &                * p_mflx_tracer_h(iidx(jc,jb,1),jk,iblk(jc,jb,1))
@@ -706,16 +706,6 @@ CONTAINS
           z_mflx3 = ptr_int%geofac_div(jc,3,jb) * p_dtime &
             &                * p_mflx_tracer_h(iidx(jc,jb,3),jk,iblk(jc,jb,3))
 
-#if defined (__SX__) || defined ( _OPENACC )
-
-          ! Sum of all outgoing fluxes out of cell jc
-          p_m =  MAX(0._wp,z_mflx1) + MAX(0._wp,z_mflx2) + MAX(0._wp,z_mflx3)
-
-          ! 2. fraction which must multiply all fluxes out of cell jc to guarantee no undershoot
-          !    Nominator: maximum allowable decrease of \rho q
-          r_m(jc,jk,jb) = MIN(1._wp, (p_cc(jc,jk,jb)*p_rhodz_now(jc,jk,jb)) / (p_m + dbl_eps) )
-
-#else
           ! Sum of all outgoing fluxes out of cell jc
           p_m(jc,jk) = MAX(0._wp,z_mflx1) + &
             &          MAX(0._wp,z_mflx2) + &
@@ -731,7 +721,6 @@ CONTAINS
           r_m(jc,jk,jb) = MIN(1._wp, (p_cc(jc,jk,jb)*p_rhodz_now(jc,jk,jb)) &
             &                        /(p_m(jc,jk) + dbl_eps) )
 
-#endif
         ENDDO
       ENDDO
       !$ACC END PARALLEL
@@ -758,15 +747,10 @@ CONTAINS
                          i_startidx, i_endidx, i_rlstart, i_rlend)
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
 !$NEC outerloop_unroll(4)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_signum)
       DO jk = slev, elev
         DO je = i_startidx, i_endidx
-#endif
 
           ! p_mflx_tracer_h > 0: flux directed from cell 1 -> 2
           ! p_mflx_tracer_h < 0: flux directed from cell 2 -> 1

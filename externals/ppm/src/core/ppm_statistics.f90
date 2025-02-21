@@ -44,7 +44,7 @@
 !
 ! Code:
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_statistics
   IMPLICIT NONE
   PRIVATE

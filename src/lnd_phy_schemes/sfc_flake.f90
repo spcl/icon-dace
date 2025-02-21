@@ -280,11 +280,11 @@ MODULE sfc_flake
          &  flake_init          , & ! procedure (initialization)
          &  flake_interface         ! procedure (time stepping)
 
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
+
+
+
   LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
+
 
 !234567890023456789002345678900234567890023456789002345678900234567890023456789002345678900234567890
 
@@ -1760,9 +1760,9 @@ REAL (KIND = wp),     INTENT(OUT)  :: &
 
 ! We rely on Cray inlining the subroutine, otherwise compilation fails with
 ! derived types (that contain only scalars)
-#ifndef CRAY_FIX_SEQ
+
   !$ACC ROUTINE SEQ
-#endif
+
 
 !==============================================================================
 !  Start calculations
@@ -2035,9 +2035,9 @@ REAL (KIND = wp)     :: &
 
 ! We rely on Cray inlining the subroutine, otherwise compilation fails with
 ! derived types (that contain only scalars)
-#ifndef CRAY_FIX_SEQ
+
 !$ACC ROUTINE SEQ
-#endif
+
 
 !==============================================================================
 !  Start calculations
@@ -2908,9 +2908,9 @@ REAL (KIND = wp)    , INTENT(IN) :: &
 !  Start calculations
 !------------------------------------------------------------------------------
 
-#ifndef CRAY_FIX_SEQ
+
   !$ACC ROUTINE SEQ
-#endif
+
 
 ! Buoyancy parameter [m s^{-2} K^{-1}]
 
@@ -2945,9 +2945,9 @@ REAL (KIND = wp)    , INTENT(IN) :: &
 !  Start calculations
 !------------------------------------------------------------------------------
 
-#ifndef CRAY_FIX_SEQ
+
   !$ACC ROUTINE SEQ
-#endif
+
 
 ! Snow density [kg m^{-3}]
 
@@ -2986,9 +2986,9 @@ REAL (KIND = wp)    , INTENT(IN) :: &
 !  Start calculations
 !------------------------------------------------------------------------------
 
-#ifndef CRAY_FIX_SEQ
+
   !$ACC ROUTINE SEQ
-#endif
+
 
 ! Snow heat conductivity [J m^{-1} s^{-1} K^{-1} = kg m s^{-3} K^{-1}]
 

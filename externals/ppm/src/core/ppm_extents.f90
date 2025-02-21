@@ -39,7 +39,7 @@
 !
 !> contains definition of extent and interval types and associated
 !! functions
-#include "fc_feature_defs.inc"
+
 MODULE ppm_extents
   USE ppm_std_type_kinds, ONLY: i4, i8, dp, sp
   USE ppm_math_extensions, ONLY: de_g_sp, de_g_sp_width, de_g_dp, de_g_dp_width
@@ -652,12 +652,12 @@ CONTAINS
     CHARACTER(len=ext2s_len) :: str
     TYPE(extent), INTENT(in) :: ext
     IF (ext%size /= 0) THEN
-#if defined __GNUC__ && __GNUC__ == 7
-      CALL ppm_sprint_extent(str, ext)
-#else
+
+
+
       WRITE (str, '(a,i0,a,i0,a)') '[', extent_start(ext), ',', &
            extent_end(ext), ']'
-#endif
+
     ELSE
       str = '{}'
     END IF
@@ -667,12 +667,12 @@ CONTAINS
     CHARACTER(len=ext2s_len_i8) :: str
     TYPE(extent_i8), INTENT(in) :: ext
     IF (ext%size /= 0_i8) THEN
-#if defined __GNUC__ && __GNUC__ == 7
-      CALL ppm_sprint_extent_i8(str, ext)
-#else
+
+
+
       WRITE (str, '(a,i0,a,i0,a)') '[', extent_start(ext), ',', &
            extent_end(ext), ']'
-#endif
+
     ELSE
       str = '{}'
     END IF
@@ -753,52 +753,52 @@ CONTAINS
   ELEMENTAL FUNCTION char_auto_i(rng) RESULT(str)
     CHARACTER(len=ext2s_len) :: str
     TYPE(iinterval), INTENT(in) :: rng
-#if defined __GNUC__ && __GNUC__ == 7
-    CALL ppm_sprint_iinterval(str, rng)
-#else
+
+
+
     WRITE (str, '(a,i0,a,i0,a)') '[', rng%first, ',', &
          rng%last, ']'
-#endif
+
   END FUNCTION char_auto_i
 
   ELEMENTAL FUNCTION char_auto_i_i8(rng) RESULT(str)
     CHARACTER(len=ext2s_len_i8) :: str
     TYPE(iinterval_i8), INTENT(in) :: rng
-#if defined __GNUC__ && __GNUC__ == 7
-    CALL ppm_sprint_iinterval_i8(str, rng)
-#else
+
+
+
     WRITE (str, '(a,i0,a,i0,a)') '[', rng%first, ',', &
          rng%last, ']'
-#endif
+
   END FUNCTION char_auto_i_i8
 
   SUBROUTINE init_io_formats
-#ifdef PPM_REAL_EDIT_DESC_AT_RUNTIME
-    WRITE (iinterval_sp_fmt, '(5a)') &
-         '("[",', TRIM(de_g_sp), ',",",', TRIM(de_g_sp), ',"]")'
-    WRITE (iinterval_dp_fmt, '(5a)') &
-         '("[",', TRIM(de_g_dp), ',",",', TRIM(de_g_dp), ',"]")'
-#endif
+
+
+
+
+
+
   END SUBROUTINE init_io_formats
 
   ELEMENTAL FUNCTION char_auto_i_sp(rng) RESULT(str)
     CHARACTER(len=iinterval_sp2s_len) :: str
     TYPE(iinterval_sp), INTENT(in) :: rng
-#if defined __GNUC__ && __GNUC__ == 7
-    CALL ppm_sprint_iinterval_sp(str, rng)
-#else
+
+
+
     WRITE (str, fmt=iinterval_sp_fmt) rng%first, rng%last
-#endif
+
   END FUNCTION char_auto_i_sp
 
   ELEMENTAL FUNCTION char_auto_i_dp(rng) RESULT(str)
     CHARACTER(len=iinterval_dp2s_len) :: str
     TYPE(iinterval_dp), INTENT(in) :: rng
-#if defined __GNUC__ && __GNUC__ == 7
-    CALL ppm_sprint_iinterval_dp(str, rng)
-#else
+
+
+
     WRITE (str, fmt=iinterval_dp_fmt) rng%first, rng%last
-#endif
+
   END FUNCTION char_auto_i_dp
 
   ELEMENTAL FUNCTION extent_equality(a, b) RESULT(l)

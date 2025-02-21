@@ -1834,12 +1834,12 @@ DO jk=ktdia+1,klev
   ENDDO
 ENDDO
 
-#ifndef _OPENACC
+
 !*UPG change to operations
 IF ( llconscheck ) THEN
-#ifdef _OPENACC
-  CALL finish('mo_cumaster:', 'llconscheck=.TRUE. not available on GPU')
-#endif
+
+
+
   ALLOCATE(ztent(klon,klev))
   ALLOCATE(ztenq(klon,klev))
   DO jk=ktdia+1,klev
@@ -1872,7 +1872,7 @@ IF ( llconscheck ) THEN
    ENDIF
 ENDIF
 !*UPG change to operations
-#endif
+
 
 ! Calculation of kinetic energy production by the convective buoyant heat flux:
 !$ACC LOOP SEQ

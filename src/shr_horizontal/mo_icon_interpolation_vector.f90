@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_icon_interpolation_vector
@@ -122,14 +132,9 @@ DO jb = i_startblk, i_endblk
                      i_startidx, i_endidx, rl_start, rl_end)
 
 
-#ifdef __LOOP_EXCHANGE
-  DO jc = i_startidx, i_endidx
-    DO jk = slev, elev
-#else
 !CDIR UNROLL=6
   DO jk = slev, elev
     DO jc = i_startidx, i_endidx
-#endif
 
       p_u_out(jc,jk,jb) =  &
         p_int%e_bln_c_u(jc,1,jb)*p_vn_in(iidx(jc,jb,1),jk,iblk(jc,jb,1)) + &

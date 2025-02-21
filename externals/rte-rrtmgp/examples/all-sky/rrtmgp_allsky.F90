@@ -400,16 +400,16 @@ program rte_rrtmgp_clouds
   !$acc exit data delete(p_lay, p_lev, t_lay, t_lev)
   !$omp target exit data map(release:p_lay, p_lev, t_lay, t_lev)
 
-#if defined(_OPENACC) || defined(_OPENMP)
-  avg = sum( elapsed(merge(2,1,nloops>1):) ) / real(merge(nloops-1,nloops,nloops>1))
 
-  print *, "Execution times - min(s)        :", minval(elapsed) / real(clock_rate)
-  print *, "                - avg(s)        :", avg / real(clock_rate)
-  print *, "                - per column(ms):", avg / real(ncol) / (1.0e-3*clock_rate)
-#else
+
+
+
+
+
+
   print *, "Execution times - total(s)      :", (finish_all-start_all) / real(clock_rate)
   print *, "                - per column(ms):", (finish_all-start_all) / real(ncol*nloops) / (1.0e-3*clock_rate)
-#endif
+
 
   if(is_lw) then
     !$acc exit data copyout(flux_up, flux_dn)

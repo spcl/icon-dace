@@ -136,9 +136,9 @@ MODULE turb_diffusion
 
 ! Modules used:
 
-#ifdef _OPENMP
-  USE omp_lib,            ONLY: omp_get_thread_num
-#endif
+
+
+
 
 !-------------------------------------------------------------------------------
 ! Parameter for precision
@@ -335,11 +335,11 @@ USE turb_utilities,          ONLY:   &
     zexner
     
 !-------------------------------------------------------------------------------
-#ifdef SCLM
-USE data_1d_global, ONLY : &
-    lsclm, latmflu, i_cal, i_mod, imb, &
-    SHF, LHF
-#endif
+
+
+
+
+
 !SCLM---------------------------------------------------------------------------
 
 !===============================================================================
@@ -374,7 +374,7 @@ CONTAINS
 
 !===============================================================================
 
-#  define err_args
+
 
 SUBROUTINE turbdiff ( &
 !
@@ -412,7 +412,7 @@ SUBROUTINE turbdiff ( &
           tet_flux, vap_flux, liq_flux,l_3d_turb_fluxes,             &
           tket_therm, tket_mech, tket_shear                          &
 !
-          err_args)
+          )
 
 !-------------------------------------------------------------------------------
 !
@@ -1014,19 +1014,6 @@ LOGICAL :: lzacc
   lsfli(:)=.FALSE. !surface values are concentrations by default
 
 !SCLM --------------------------------------------------------------------------------
-#ifdef SCLM
-  IF (lsclm) THEN
-    IF (SHF%mod(0)%vst.GT.i_cal .AND. SHF%mod(0)%ist.EQ.i_mod) THEN
-      !measured SHF has to be used for forcing:
-      lsfli(tem)=.TRUE.
-    END IF
-    IF (LHF%mod(0)%vst.GT.i_cal .AND. LHF%mod(0)%ist.EQ.i_mod) THEN
-      !measured LHF has to be used for forcing:
-      lsfli(vap)=.TRUE.
-    END IF
-  END IF
-  !Note: the measured SHF and LHF have to be present by shfl_s and qvfl_s!
-#endif
 !SCLM --------------------------------------------------------------------------------
 
   IF (lsfluse) THEN !use explicit heat flux densities at the surface
@@ -1085,9 +1072,6 @@ LOGICAL :: lzacc
 !-------------------------------------------------------------------------------
 
 my_cart_id = get_my_global_mpi_id()
-#ifdef _OPENMP
-my_thrd_id = omp_get_thread_num()
-#endif
 
 ! Just do some check printouts:
   IF (ldebug) THEN
@@ -1666,10 +1650,6 @@ my_thrd_id = omp_get_thread_num()
     !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
     DO n=1,nmvar
 
-#ifdef __INTEL_COMPILER
-      FORALL(k=2:ke,i=ivstart:ivend)                        &
-               zvari(i,k,n)=(zvari(i,k-1,n)-zvari(i,k,n))*hlp(i,k)
-#else
       !$ACC LOOP SEQ
       DO k=ke,2,-1
 !DIR$ IVDEP
@@ -1678,7 +1658,6 @@ my_thrd_id = omp_get_thread_num()
           zvari(i,k,n)=(zvari(i,k-1,n)-zvari(i,k,n))*hlp(i,k)
         END DO
       END DO
-#endif
 
     END DO
     !$ACC END PARALLEL
@@ -2120,9 +2099,6 @@ my_thrd_id = omp_get_thread_num()
                              dt_tke=dt_tke, fr_tke=fr_tke,                            &
                              tke=tke, ediss=ediss,                                    &
                              fm2=frm, fh2=frh, ft2=ftm, lsm=tkvm, lsh=tkvh,           &
-#ifdef SCLM
-                             grd=zvari,                                               &
-#endif
                              fcd=can, tls=len_scale, tvt=tketens, avt=tketadv,        &
                              lacc=lzacc)
 
@@ -2738,11 +2714,6 @@ my_thrd_id = omp_get_thread_num()
         IF (PRESENT(r_air)) THEN
 
           !Zuschlag durch Volumenterm aus der Divergenzbildung:
-#ifdef __INTEL_COMPILER
-          FORALL(k=kcm:ke, i=ivstart:ivend) &
-            upd_prof(i,k)=upd_prof(i,k)+frh(i,k)*z1d2*(r_air(i,k-1)-r_air(i,k+1)) &
-                                                        /(len_scale(i,k)*dicke(i,k))
-#else
           !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
           !$ACC LOOP SEQ
           DO k=ke,kcm,-1 !innerhalb der Rauhigkeitsschicht
@@ -2757,7 +2728,6 @@ my_thrd_id = omp_get_thread_num()
             END DO
           END DO
           !$ACC END PARALLEL
-#endif
         ENDIF ! PRESENT(r_air)
 
         !Bereucksichtige Zirkulations-Tendenz:
@@ -2972,10 +2942,6 @@ my_thrd_id = omp_get_thread_num()
     END DO
     !$ACC END PARALLEL
 
-#ifdef __INTEL_COMPILER
-    FORALL(k=2:kem-1, i=ivstart:ivend) &
-        rcld(i,k)=(rcld(i,k)+rcld(i,k+1))*z1d2
-#else
     !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
     !$ACC LOOP SEQ
     DO k=2,kem-1
@@ -2986,7 +2952,6 @@ my_thrd_id = omp_get_thread_num()
       END DO
     END DO
     !$ACC END PARALLEL
-#endif
 
     ! Fuer die unterste Hauptflaeche (k=ke) wird bei kem=ke
     ! der Wert auf der entspr. Nebenflaeche beibehalten.

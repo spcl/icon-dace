@@ -39,7 +39,7 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 !> emulation of standard functions on older compilers
-#include "fc_feature_defs.inc"
+
 MODULE ieee_arithmetic
   USE ppm_std_type_kinds, ONLY: dp, sp
   IMPLICIT NONE
@@ -76,9 +76,9 @@ MODULE ieee_arithmetic
     INTEGER :: enum_val
   END TYPE ieee_class_type
   TYPE(ieee_class_type), PUBLIC, PARAMETER :: &
-#ifdef HAVE_IEEE_SIGNALING_NAN
+
        ieee_signaling_nan = ieee_class_type(1), &
-#endif
+
        ieee_quiet_nan = ieee_class_type(2), &
        ieee_negative_inf = ieee_class_type(3), &
        ieee_negative_normal = ieee_class_type(4), &

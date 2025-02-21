@@ -80,9 +80,9 @@ MODULE turb_transfer
 
 ! Modules used:
 
-#ifdef _OPENMP
-  USE omp_lib,            ONLY: omp_get_thread_num
-#endif
+
+
+
 USE mo_exception,         ONLY: message_text, message
 !-------------------------------------------------------------------------------
 ! Parameter for precision
@@ -275,11 +275,11 @@ USE turb_utilities,          ONLY:   &
     alpha0_char
     
 !-------------------------------------------------------------------------------
-#ifdef SCLM
-USE data_1d_global, ONLY : &
-    lsclm, lsurflu, i_cal, i_upd, i_mod, imb, &
-    SHF, LHF
-#endif
+
+
+
+
+
 !SCLM---------------------------------------------------------------------------
 
 USE mo_fortran_tools, ONLY: set_acc_host_or_device
@@ -311,11 +311,11 @@ REAL (KIND=wp), PARAMETER :: &
     z2d3=z2/z3     ,&
     z3d2=z3/z2
 
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
+
+
+
   LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
+
 
 !===============================================================================
 
@@ -859,17 +859,17 @@ LOGICAL        ::   ldebug = .FALSE.
                    l_scal=l_scal, fc_min=fc_min, liqs=liqs(:,ke1), rcld=rcld, tfm=tfm, tfh=tfh, &
                    lacc=lzacc, opt_acc_async_queue=acc_async_queue)
 
-#ifdef ICON_USE_CUDA_GRAPH
-   IF (lzacc .AND. lini) THEN
-      CALL finish ('turbtran', 'initialization is not supported when capturing a graph with OpenACC')
-   END IF
-#endif
+
+
+
+
+
 !-------------------------------------------------------------------------------
 
 my_cart_id = get_my_global_mpi_id()
-#ifdef _OPENMP
-my_thrd_id = omp_get_thread_num()
-#endif
+
+
+
 
 ! Just do some check printouts:
   IF (ldebug) THEN
@@ -1691,9 +1691,9 @@ my_thrd_id = omp_get_thread_num()
                                   tke=tke, ediss=ediss,                                        &
                                   fm2=frm(:,ke1:ke1), fh2=frh(:,ke1:ke1), ft2=frm(:,ke1:ke1),  &
                                   lsm=tkvm(:,ke1:ke1), lsh=tkvh(:,ke1:ke1),                    &
-#ifdef SCLM
-                                  grd=zvari(:,ke1:ke1,:),                                      &
-#endif
+
+
+
                                   tls=len_scale(:,ke1:ke1), tvt=tvt(:,ke1:ke1),                &
                                   velmin=velmin(:),                                            &
                                   lacc=lzacc, opt_acc_async_queue=acc_async_queue              )
@@ -1823,17 +1823,6 @@ my_thrd_id = omp_get_thread_num()
             !Note: shfl_s is positive downward and belogns to the T-equation!
          END DO
 !SCLM --------------------------------------------------------------------------------
-#ifdef SCLM
-         IF (lsclm) THEN
-            IF (SHF%mod(0)%vst.GT.i_cal .AND. SHF%mod(0)%ist.EQ.i_mod) THEN
-               !measured SHF has to be used for forcing:
-               shfl_s(imb)=SHF%mod(0)%val
-            ELSEIF (lsurflu) THEN !SHF defined by explicit surface flux density
-               SHF%mod(0)%val=shfl_s(imb)
-               SHF%mod(0)%vst=MAX(i_upd, SHF%mod(0)%vst) !SHF is at least updated
-            END IF
-         END IF
-#endif
 !SCLM --------------------------------------------------------------------------------
       END IF
 
@@ -1847,19 +1836,6 @@ my_thrd_id = omp_get_thread_num()
       END IF   
 
 !SCLM --------------------------------------------------------------------------------
-#ifdef SCLM
-      IF (lsclm) THEN
-         IF (LHF%mod(0)%vst.GT.i_cal .AND. LHF%mod(0)%ist.EQ.i_mod) THEN
-            !measured LHF has to be used for forcing:
-            qvfl_s(imb)=LHF%mod(0)%val / lh_v
-         ELSEIF (lsurflu) THEN !LHF defined by explicit surface flux density
-            LHF%mod(0)%val=qvfl_s(imb) * lh_v
-            LHF%mod(0)%vst=MAX(i_upd, LHF%mod(0)%vst) !LHF is at least updated
-         END IF
-         !Note: LHF always is the latent heat flux connected with evaporation by definition,
-         !      independent whether the surface is frozen or not!
-      END IF
-#endif
 !SCLM --------------------------------------------------------------------------------
 
       !Note:
@@ -1918,13 +1894,8 @@ my_thrd_id = omp_get_thread_num()
 
 !     Diagnose der 2m-Groessen:
 
-#ifdef _OPENACC
-      CALL diag_level_gpu(ivstart, ivend, z2m_2d, k_2d, hk_2d, hk1_2d, &
-         lacc=lzacc, opt_acc_async_queue=acc_async_queue)
-#else
       CALL diag_level(ivstart, ivend, z2m_2d, k_2d, hk_2d, hk1_2d, &
          lacc=lzacc, opt_acc_async_queue=acc_async_queue)
-#endif
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(acc_async_queue) IF(lzacc)
       IF (itype_diag_t2m.EQ.2) THEN !using an exponential rougness layer profile
@@ -2193,13 +2164,8 @@ my_thrd_id = omp_get_thread_num()
 
 !        Diagnose der 10m-Groessen:
 
-#ifdef _OPENACC
-         CALL diag_level_gpu(ivstart, ivend, z10m_2d, k_2d, hk_2d, hk1_2d, &
-            lacc=lzacc, opt_acc_async_queue=acc_async_queue)
-#else
          CALL diag_level(ivstart, ivend, z10m_2d, k_2d, hk_2d, hk1_2d, &
             lacc=lzacc, opt_acc_async_queue=acc_async_queue)
-#endif
 
 !DIR$ IVDEP
          !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(vel2_2d) ASYNC(acc_async_queue) IF(lzacc)

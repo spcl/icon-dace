@@ -172,9 +172,9 @@ CONTAINS
     INTEGER, INTENT(in) :: indices(:)
 
     INTEGER, ALLOCATABLE :: temp(:)
-#ifdef __xlc__
-    INTEGER :: i, j
-#endif
+
+
+
     INTEGER :: m, n
 
 
@@ -188,15 +188,15 @@ CONTAINS
     owners(1:m) = PACK(indices(:), mask(:))
     temp(1:m) = dist_dir_get_owners(dist_dir, owners(1:m))
     ! xlf generates a BPT trap in the unpack code when compiled with -qcheck
-#ifndef __xlc__
+
     owners(1:n) = UNPACK(temp(1:m), mask(1:n), -1)
-#else
-    j = 1
-    DO i = 1, n
-      owners(i) = MERGE(temp(j), -1, mask(i))
-      j = j + MERGE(1, 0, mask(i))
-    END DO
-#endif
+
+
+
+
+
+
+
   END FUNCTION dist_dir_get_owners_subset
 
   SUBROUTINE distribute_indices(indices, recv_buffer, &

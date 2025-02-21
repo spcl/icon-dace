@@ -27,9 +27,9 @@ MODULE mo_update_dyn_scm
   USE mo_sync,               ONLY: SYNC_E, SYNC_C, sync_patch_array
   USE mo_dynamics_config,    ONLY: lcoriolis
   USE mo_impl_constants_grf, ONLY: grf_bdywidth_c, grf_bdywidth_e
-#ifdef _OPENACC
-  USE mo_mpi,                ONLY: i_am_accel_node
-#endif
+
+
+
 
   IMPLICIT NONE
 

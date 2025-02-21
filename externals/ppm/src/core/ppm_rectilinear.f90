@@ -37,7 +37,7 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 !> Utility routines to use array of extents as rectilinear descriptor
-#include "fc_feature_defs.inc"
+
 MODULE ppm_rectilinear
   USE ppm_base, ONLY: assertion, abort_ppm
   USE ppm_extents, ONLY: extent, extent_end, extent_size, extent_start, &
@@ -79,7 +79,7 @@ CONTAINS
     INTEGER :: i, n
 
     n = SIZE(rect)
-    CALL assertion(n > 0 .AND. SIZE(coord) == n, filename, __LINE__, &
+    CALL assertion(n > 0 .AND. SIZE(coord) == n, filename, 82, &
          'rect and coordinate must have identical, non-zero dimensions')
 
     idx = 1
@@ -99,7 +99,7 @@ CONTAINS
     INTEGER :: i, n
 
     n = SIZE(rect)
-    CALL assertion(n > 0 .AND. SIZE(coord) == n, filename, __LINE__, &
+    CALL assertion(n > 0 .AND. SIZE(coord) == n, filename, 102, &
          'rect and coordinate must have identical, non-zero dimensions')
 
     idx = 1
@@ -154,7 +154,7 @@ CONTAINS
     LOGICAL :: is_in_bounds
 
     n = SIZE(rect)
-    CALL assertion(SIZE(coord) == n, filename, __LINE__, &
+    CALL assertion(SIZE(coord) == n, filename, 157, &
          'rect and coordinate must have identical, non-zero dimensions')
     nnb = 0
     is_in_bounds = .TRUE.
@@ -167,7 +167,7 @@ CONTAINS
     END DO
     IF (.NOT. is_in_bounds) &
          CALL abort_ppm('coordinate must be contained in rect', filename, &
-         __LINE__)
+         170)
   END FUNCTION num_neighbours_of_rect_elem_e
 
   FUNCTION num_neighbours_of_rect_elem_i(rect, coord) RESULT(nnb)
@@ -179,7 +179,7 @@ CONTAINS
     LOGICAL :: is_in_bounds
 
     n = SIZE(rect)
-    CALL assertion(SIZE(coord) == n, filename, __LINE__, &
+    CALL assertion(SIZE(coord) == n, filename, 182, &
          'rect and coordinate must have identical, non-zero dimensions')
     nnb = 0
     is_in_bounds = .TRUE.
@@ -192,7 +192,7 @@ CONTAINS
     END DO
     IF (.NOT. is_in_bounds) &
          CALL abort_ppm('coordinate must be contained in rect', filename, &
-         __LINE__)
+         195)
   END FUNCTION num_neighbours_of_rect_elem_i
 
   SUBROUTINE lidx_nb_coords_e(rect, idx, nbcoord)
@@ -204,7 +204,7 @@ CONTAINS
     INTEGER(i4) :: coord(SIZE(rect))
 
     n = SIZE(rect)
-    CALL assertion(SIZE(nbcoord, 1) == n, filename, __LINE__, &
+    CALL assertion(SIZE(nbcoord, 1) == n, filename, 207, &
          'rect and neighbour coordinate(s) must have identical dimensions')
     coord = lidx2rlcoord(rect, idx)
     k = 1
@@ -231,7 +231,7 @@ CONTAINS
     INTEGER(i4) :: coord(SIZE(rect))
 
     n = SIZE(rect)
-    CALL assertion(SIZE(nbcoord, 1) == n, filename, __LINE__, &
+    CALL assertion(SIZE(nbcoord, 1) == n, filename, 234, &
          'rect and neighbour coordinate(s) must have identical dimensions')
     coord = lidx2rlcoord(rect, idx)
     k = 1

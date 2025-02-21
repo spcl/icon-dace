@@ -12,18 +12,6 @@
 ! ---------------------------------------------------------------
 PROGRAM icon
 
-#if defined (__INTEL_COMPILER) || defined (__PGI) || defined (NAGFOR)
-#ifdef VARLIST_INITIZIALIZE_WITH_NAN
-  USE, INTRINSIC :: ieee_features
-  USE, INTRINSIC :: ieee_arithmetic
-  USE, INTRINSIC :: ieee_exceptions
-
-  USE mo_kind, ONLY: wp
-#endif
-#endif
-#if defined (__INTEL_COMPILER) && ! defined (VARLIST_INITIZIALIZE_WITH_NAN)
-  USE, INTRINSIC :: ieee_arithmetic
-#endif
   USE mo_exception,           ONLY: message_text, message, finish, enable_logging
   USE mo_io_units,            ONLY: filename_max
   USE mo_mpi,                 ONLY: start_mpi , stop_mpi, my_process_is_global_root,    &
@@ -33,52 +21,25 @@ PROGRAM icon
     &                               atmo_process, ocean_process, ps_radiation_process,  &
     &                               hamocc_process, jsbach_process, icon_output_process,&
     &                               wave_process
-#ifndef __NO_ICON_TESTBED__
   USE mo_master_control,      ONLY: testbed_process
-#endif
   USE mo_time_config,         ONLY: time_config
   USE mtime,                  ONLY: OPERATOR(>)
   USE mo_util_vcs,            ONLY: show_version
 
-#ifndef __NO_ICON_OCEAN__
   USE mo_ocean_model,         ONLY: ocean_model
   USE mo_hamocc_model,        ONLY: hamocc_model
-#endif
 
-#ifndef __NO_ICON_WAVES__
   USE mo_wave_model,          ONLY: wave_model
-#endif
 
-#ifndef __NO_ICON_TESTBED__
   USE mo_icon_testbed,        ONLY: icon_testbed
-#endif
 
-#ifndef __NO_ICON_ATMO__
   USE mo_atmo_model,          ONLY: atmo_model
-#endif
 
-#ifndef __NO_JSBACH__
   USE mo_jsbach_model,        ONLY: jsbach_model
-#endif
 
-#ifndef __NO_ICON_OUTPUT_MODEL__
   USE mo_icon_output_model, ONLY: icon_output_driver
-#endif
 
-#if defined ICON_MEMORY_TRACING
-#  if ICON_MEMORY_TRACING == 1
-  USE mo_mtrace,            ONLY: start_memory_tracing
-#  endif
-#endif
 
-#ifndef __NO_ICON_COMIN__
-  USE mo_kind, ONLY: wp
-  USE comin_host_interface,  ONLY: comin_setup_check,      &
-    &                              comin_setup_errhandler, &
-    &                              t_comin_setup_version_info, &
-    &                              comin_setup_get_version,    &
-    &                              comin_setup_init
-#endif /* ifndef __NO_ICON_COMIN__ */
 
   IMPLICIT NONE
 
@@ -86,18 +47,7 @@ PROGRAM icon
   CHARACTER(len=filename_max) :: my_namelist_filename
   CHARACTER(len=filename_max) :: master_namelist_filename="icon_master.namelist"
 
-#if defined (__INTEL_COMPILER) || defined (__PGI) || defined (NAGFOR)
-#ifdef VARLIST_INITIZIALIZE_WITH_NAN
-  TYPE(ieee_status_type)      :: saved_fpscr
-  LOGICAL                     :: halting_mode,  current_flags(size(ieee_all))
-  REAL(wp)                    :: r
-#endif
-#endif
 
-#ifndef __NO_ICON_COMIN__
-  TYPE(t_comin_setup_version_info) :: comin_version
-  INTEGER                      :: ierr
-#endif /* ifndef __NO_ICON_COMIN__ */
 
   ! handling of comand-line arguments:
   TYPE t_cmdarg_option
@@ -123,24 +73,7 @@ PROGRAM icon
 
 
 !--------------------------------------------------------------------
-#if defined ICON_MEMORY_TRACING
-!  activate memory tracing with glibc mtrace?
-#  if ICON_MEMORY_TRACING == 1
-  ! trace malloc/memalign/calloc/free operations following this point
-  CALL start_memory_tracing
-#  endif
-#endif
-#if defined (__INTEL_COMPILER) || defined (__PGI) || defined (NAGFOR)
-#ifdef VARLIST_INITIZIALIZE_WITH_NAN
-  CALL ieee_get_status(saved_fpscr)
-  CALL ieee_set_halting_mode(ieee_all, .TRUE.)
-#endif
-#endif
 
-#if defined (__INTEL_COMPILER) && ! defined (VARLIST_INITIZIALIZE_WITH_NAN)
-  ! Important on Intel: disable underflow exceptions:
-  CALL ieee_set_halting_mode(ieee_underflow, .FALSE.)
-#endif
 
   !-------------------------------------------------------------------
   ! Initialize MPI, this should always be the first call
@@ -149,12 +82,6 @@ PROGRAM icon
   !-------------------------------------------------------------------
   !set up signal trapping on IBM: export USE_SIGNAL_HANDLING=yes
 
-#if defined (__INTEL_COMPILER) || defined (__PGI) || defined (NAGFOR)
-#ifdef VARLIST_INITIZIALIZE_WITH_NAN
-  WRITE(message_text,'(a,l1)') ' IEEE standard supported: ', ieee_support_standard(r)
-  CALL message('', message_text)
-#endif
-#endif
 
   ! print info on the current version:
   CALL show_version()
@@ -204,24 +131,6 @@ PROGRAM icon
 
   master_control_status = init_master_control(TRIM(master_namelist_filename))
 
-#ifndef __NO_ICON_COMIN__
-  !-------------------------------------------------------------------
-  ! Initialize ICON community interfaces - UNDER DEVELOPMENT
-  CALL comin_setup_init(my_process_is_stdio() , ierr)
-  IF (ierr /= 0) STOP
-  comin_version = comin_setup_get_version()
-  WRITE(message_text,'(2(a,i0))') &
-    &  "        linked to ICON Community Interface v", &
-    &  comin_version%version_no_major, ".", comin_version%version_no_minor
-  CALL message('', message_text)
-
-  CALL comin_setup_errhandler(finish, ierr)
-  IF (ierr /= 0) STOP
-  CALL comin_setup_check("icon", wp, ierr)
-  IF (ierr /= 0) STOP
-
-  CALL message('', '')
-#endif /* ifndef __NO_ICON_COMIN__ */
 
 
   my_namelist_filename = get_my_namelist_filename()
@@ -231,40 +140,26 @@ PROGRAM icon
 
   SELECT CASE (my_process_component)
 
-#ifndef __NO_ICON_ATMO__
   CASE (atmo_process)
     CALL atmo_model  (my_namelist_filename, TRIM(master_namelist_filename))
-#endif
 
-#ifndef __NO_ICON_OCEAN__
   CASE (ocean_process)
     CALL ocean_model (my_namelist_filename, TRIM(master_namelist_filename))
-#endif
 
-#ifndef __NO_ICON_OCEAN__
   CASE (hamocc_process)
     CALL hamocc_model (my_namelist_filename, TRIM(master_namelist_filename))
-#endif
 
-#ifndef __NO_ICON_WAVES__
   CASE (wave_process)
     CALL wave_model (my_namelist_filename, TRIM(master_namelist_filename))
-#endif
 
-#ifndef __NO_JSBACH__
   CASE (jsbach_process)
     CALL jsbach_model (my_namelist_filename, TRIM(master_namelist_filename))
-#endif
 
-#ifndef __NO_ICON_TESTBED__
   CASE (testbed_process)
     CALL icon_testbed(my_namelist_filename, TRIM(master_namelist_filename))
-#endif
 
-#ifndef __NO_ICON_OUTPUT_MODEL__
   CASE (icon_output_process)
     CALL icon_output_driver(my_namelist_filename, TRIM(master_namelist_filename))
-#endif
 
   CASE default
     CALL finish("icon","my_process_component is unknown")
@@ -287,10 +182,5 @@ PROGRAM icon
   ! Shut down MPI
   CALL stop_mpi
 
-#if defined (__INTEL_COMPILER) || defined (__PGI) || defined (NAGFOR)
-#ifdef VARLIST_INITIZIALIZE_WITH_NAN
-  CALL ieee_set_status(saved_fpscr)
-#endif
-#endif
 
 END PROGRAM icon

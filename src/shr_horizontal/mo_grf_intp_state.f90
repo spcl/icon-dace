@@ -18,9 +18,9 @@
 ! #ifdef __xlC__
 ! @PROCESS HOT
 ! #endif
-#ifdef __PGI
-!pgi$g opt=1
-#endif
+
+
+
 
 MODULE mo_grf_intp_state
 !-------------------------------------------------------------------------

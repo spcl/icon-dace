@@ -104,11 +104,11 @@ module radiation_ecckd
     procedure :: read_spectral_solar_cycle
 ! Vectorized version of the optical depth look-up performs better on
 ! NEC, but slower on x86
-#ifdef __SX__
-    procedure :: calc_optical_depth => calc_optical_depth_ckd_model_vec
-#else
+
+
+
     procedure :: calc_optical_depth => calc_optical_depth_ckd_model
-#endif
+
     procedure :: print => print_ckd_model
     procedure :: calc_planck_function
     procedure :: calc_incoming_sw

@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_intp_rbf
@@ -34,9 +44,6 @@ USE mo_model_domain,        ONLY: t_patch
 USE mo_loopindices,         ONLY: get_indices_c, get_indices_e, get_indices_v
 USE mo_intp_data_strc,      ONLY: t_int_state
 USE mo_fortran_tools,       ONLY: init
-#ifdef _OPENACC
-USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
 IMPLICIT NONE
 
@@ -162,13 +169,8 @@ DO jb = i_startblk, i_endblk
 
   !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
   !$ACC LOOP GANG VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-  DO jc = i_startidx, i_endidx
-    DO jk = slev, elev
-#else
   DO jk = slev, elev
     DO jc = i_startidx, i_endidx
-#endif
       p_u_out(jc,jk,jb) =  &
         ptr_coeff(1,1,jc,jb)*p_vn_in(iidx(1,jc,jb),jk,iblk(1,jc,jb)) + &
         ptr_coeff(2,1,jc,jb)*p_vn_in(iidx(2,jc,jb),jk,iblk(2,jc,jb)) + &
@@ -298,16 +300,14 @@ i_endblk   = ptr_patch%cells%end_blk(rl_end,i_nchdom)
 !$OMP PARALLEL
 
 IF (ptr_patch%id > 1) THEN
-#ifdef _OPENACC
-  !$ACC KERNELS ASYNC(1) IF(i_am_accel_node)
-  grad_x(:,:,1:i_startblk) = 0._wp
-  grad_y(:,:,1:i_startblk) = 0._wp
-  !$ACC END KERNELS
-#else
+
+
+
+
   CALL init(grad_x(:,:,1:i_startblk))
   CALL init(grad_y(:,:,1:i_startblk))
 !$OMP BARRIER
-#endif
+
 ENDIF
 
 !$ACC DATA PRESENT(p_cell_in, grad_x, grad_y, iidx, iblk, ptr_coeff) IF(i_am_accel_node)
@@ -321,15 +321,15 @@ DO jb = i_startblk, i_endblk
 
   !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
   !$ACC LOOP GANG
-#ifdef __LOOP_EXCHANGE
-  DO jc = i_startidx, i_endidx
-    !$ACC LOOP VECTOR
-    DO jk = slev, elev
-#else
+
+
+
+
+
   DO jk = slev, elev
     !$ACC LOOP VECTOR
     DO jc = i_startidx, i_endidx
-#endif
+
 
       grad_x(jc,jk,jb) =  &
         ptr_coeff(1,1,jc,jb)*p_cell_in(jc,jk,jb) + &
@@ -468,14 +468,14 @@ DO jb = i_startblk, i_endblk
                      i_startidx, i_endidx, rl_start, rl_end)
 
   !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-  DO jv = i_startidx, i_endidx
-    DO jk = slev, elev
-#else
+
+
+
+
 !$NEC outerloop_unroll(4)
   DO jk = slev, elev
     DO jv = i_startidx, i_endidx
-#endif
+
 
       p_u_out(jv,jk,jb) =  &
         ptr_coeff(1,1,jv,jb)*p_e_in(iidx(1,jv,jb),jk,iblk(1,jv,jb)) + &
@@ -603,14 +603,14 @@ DO jb = i_startblk, i_endblk
 
   !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
   !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-  DO jv = i_startidx, i_endidx
-    DO jk = slev, elev
-#else
+
+
+
+
 !$NEC outerloop_unroll(4)
   DO jk = slev, elev
     DO jv = i_startidx, i_endidx
-#endif
+
 
       p_u_out(jv,jk,jb) =  &
         ptr_coeff(1,1,jv,jb)*p_e_in(iidx(1,jv,jb),jk,iblk(1,jv,jb)) + &
@@ -741,13 +741,13 @@ i_endblk   = ptr_patch%edges%end_blk(rl_end,i_nchdom)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO je = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
+
+
+
+
     DO jk = slev, elev
       DO je = i_startidx, i_endidx
-#endif
+
 
         p_vt_out(je,jk,jb) =  &
           ptr_coeff(1,je,jb)*p_vn_in(iidx(1,je,jb),jk,iblk(1,je,jb)) + &

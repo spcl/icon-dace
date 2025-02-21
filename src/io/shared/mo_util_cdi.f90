@@ -1205,10 +1205,10 @@ CONTAINS
       ! Set local use SECTION 2
       CALL set_GRIB2_local_keys(vlistID, varID, gribout_config)
 
-#ifndef __NO_ICON_ATMO__
+
       ! Set tile-specific GRIB2 keys (if applicable)
       CALL set_GRIB2_tile_keys(vlistID, varID, info, i_lctype, gribout_config%grib2_template_tile)
-#endif
+
 
       ! Set further additional integer keys
       DO i=1,info%grib2%additional_keys%nint_keys

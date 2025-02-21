@@ -47,7 +47,7 @@ MODULE comin_errhandler_constants
     &       COMIN_ERROR_FATAL,                                        &
     &       COMIN_MSG_STR
 
-#include "comin_global.inc"
+
 
   !> define list of error points
   !> COMIN_ERROR_FATAL should always be the last entry
@@ -89,7 +89,7 @@ MODULE comin_errhandler_constants
       &           COMIN_ERROR_FATAL
   END ENUM
 
-  CHARACTER(LEN=MAX_LEN_ERR_MESSAGE), PARAMETER :: COMIN_MSG_STR(0:COMIN_ERROR_FATAL) = [ &
+  CHARACTER(LEN=96), PARAMETER :: COMIN_MSG_STR(0:COMIN_ERROR_FATAL) = [ &
     &  "Success                                                                                         ", &
     ! --- INFOS ---
     &  "Info                                                                                            ", &

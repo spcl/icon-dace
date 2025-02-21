@@ -30,9 +30,9 @@ MODULE mo_sppt_types
     ! a) fiels used to save the current state of prognostic variables
 
     REAL(wp), POINTER         &
-#ifdef HAVE_FC_ATTRIBUTE_CONTIGUOUS
-    , CONTIGUOUS              &
-#endif
+
+
+
     & ::                      &
     & temp_now(:,:,:),        &        ! current temperature  (nproma,nlev,nblks_c)    [K]
 

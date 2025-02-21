@@ -12,24 +12,24 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#include "handle_mpi_error.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 
 MODULE mo_packed_message
   USE ISO_C_BINDING, ONLY: c_ptr, C_LOC, C_F_POINTER, C_SIGNED_CHAR
-#if defined(__PGI)
-  USE ISO_C_BINDING, ONLY: C_SIZE_T, C_SIZEOF
-#endif
   USE mo_exception, ONLY: finish, message_text
   USE mo_impl_constants, ONLY: SUCCESS
   USE mo_kind, ONLY: sp, dp, i8
-#ifndef NOMPI
-  HANDLE_MPI_ERROR_USE
-  USE mo_mpi, ONLY: p_int, p_get_bcast_role, MPI_SUCCESS
-  USE mpi, ONLY: MPI_CHAR, MPI_STATUS_SIZE
-# ifndef NO_MPI_CHOICE_ARG
-  USE mpi, ONLY: MPI_Send, MPI_Recv, MPI_Bcast
-# endif
-#endif
+
 
   IMPLICIT NONE
   PRIVATE
@@ -38,16 +38,16 @@ MODULE mo_packed_message
 
   INTEGER, PARAMETER, PUBLIC :: kPackOp = 1
   INTEGER, PARAMETER, PUBLIC :: kUnpackOp = 2
-#if defined(__PGI)
-  INTEGER :: tbytes(7) = -1
-#else
+
+
+
 ! * obtain the storge size of supported data types in units of C_SIGNED_CHAR
 ! (pgf90 needs some workaround since STORAGE_SIZE appears to be broken)
   INTEGER, PARAMETER :: tbytes(7) = ([ STORAGE_SIZE(1), STORAGE_SIZE(1_i8), &
      & STORAGE_SIZE(1_C_SIGNED_CHAR), STORAGE_SIZE(.false.), &
      & STORAGE_SIZE(1._dp), STORAGE_SIZE(1._sp), STORAGE_SIZE('a') ] + &
      & STORAGE_SIZE(1_C_SIGNED_CHAR) - 1) / STORAGE_SIZE(1_C_SIGNED_CHAR)
-#endif
+
   ! A t_PackedMessage IS used to bundle a number of different values
   ! together into a single message, that can be communicated via a
   ! single CALL.  It IS possible to have ANY number of communication
@@ -55,7 +55,7 @@ MODULE mo_packed_message
   ! unpacks its own DATA), AND two (a PE recieves a packed message
   ! AND passes it on, possibly via a different communicator).
   !
-  ! If NOMPI IS defined, the communication routines are simply
+  ! If 1 IS defined, the communication routines are simply
   ! noops, the packing/unpacking still works as expected.
   !
   ! As an added bonus, this provides packerXXX() routines IN
@@ -174,34 +174,6 @@ MODULE mo_packed_message
 
 CONTAINS
 
-#if defined(__PGI)
-  SUBROUTINE init_tbytes()
-    INTEGER, PARAMETER :: crap_i(8) = 1
-    INTEGER(i8), PARAMETER :: crap_i8(8) = 1_i8
-    INTEGER(C_SIGNED_CHAR), PARAMETER :: crap_Cchar(8) = 1_C_SIGNED_CHAR
-    LOGICAL, PARAMETER :: crap_l(8) = .false.
-    REAL(dp), PARAMETER :: crap_dp(8) = 1._sp
-    REAL(sp), PARAMETER :: crap_sp(8) = 1._dp
-    CHARACTER(LEN=1), PARAMETER :: crap_c(8) = 'a'
-    INTEGER(C_SIZE_T) :: tmp, schar
-
-    schar = C_SIZEOF(crap_Cchar)
-    tmp = C_SIZEOF(crap_i) + schar - 1
-    tbytes(1) = INT(tmp) / schar
-    tmp = C_SIZEOF(crap_i8) + schar - 1
-    tbytes(2) = INT(tmp) / schar
-    tmp = C_SIZEOF(crap_Cchar) + schar - 1
-    tbytes(3) = INT(tmp) / schar
-    tmp = C_SIZEOF(crap_l) + schar - 1
-    tbytes(4) = INT(tmp) / schar
-    tmp = C_SIZEOF(crap_dp) + schar - 1
-    tbytes(5) = INT(tmp) / schar
-    tmp = C_SIZEOF(crap_sp) + schar - 1
-    tbytes(6) = INT(tmp) / schar
-    tmp = C_SIZEOF(crap_c) + schar - 1
-    tbytes(7) = INT(tmp) / schar
-  END SUBROUTINE init_tbytes
-#endif
 
   SUBROUTINE PackedMessage_reset(me)
     CLASS(t_PackedMessage), INTENT(INOUT) :: me
@@ -252,9 +224,6 @@ CONTAINS
     INTEGER(C_SIGNED_CHAR), POINTER :: vptr(:)
     INTEGER :: bsize
 
-#if defined(__PGI)
-    IF (tbytes(1) .EQ. -1) CALL init_tbytes()
-#endif
     bsize = asize * tbytes(tid)
     CALL me%ensureSpace(bsize)
     CALL C_F_POINTER(cptr, vptr, [bsize])
@@ -262,36 +231,29 @@ CONTAINS
     me%messageSize = me%messageSize + bsize
   END SUBROUTINE PackedMessage_packBlock
 
-#define PM_packScalar(__type, __tid) \
-    CLASS(t_PackedMessage), INTENT(INOUT) :: me; \
-    __type, INTENT(IN), TARGET :: scalar; \
-    TYPE(c_ptr) :: cptr; \
-    ; \
-    cptr = C_LOC(scalar); \
-    CALL me%packBlock(cptr, 1, __tid);
 
   SUBROUTINE PackedMessage_packIntScalar(me, scalar)
-  PM_packScalar(INTEGER , 1)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER , INTENT(IN), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%packBlock(cptr, 1,  1);
   END SUBROUTINE PackedMessage_packIntScalar
 
   SUBROUTINE PackedMessage_packLongScalar(me, scalar)
-  PM_packScalar(INTEGER(i8) , 2)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER(i8) , INTENT(IN), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%packBlock(cptr, 1,  2);
   END SUBROUTINE PackedMessage_packLongScalar
 
   SUBROUTINE PackedMessage_packDoubleScalar(me, scalar)
-  PM_packScalar(REAL(dp) , 5)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     REAL(dp) , INTENT(IN), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%packBlock(cptr, 1,  5);
   END SUBROUTINE PackedMessage_packDoubleScalar
 
   SUBROUTINE PackedMessage_packSingleScalar(me, scalar)
-  PM_packScalar(REAL(sp) , 6)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     REAL(sp) , INTENT(IN), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%packBlock(cptr, 1,  6);
   END SUBROUTINE PackedMessage_packSingleScalar
 
   SUBROUTINE PackedMessage_packLogicalScalar(me, scalar)
-  PM_packScalar(LOGICAL , 4)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     LOGICAL , INTENT(IN), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%packBlock(cptr, 1,  4);
   END SUBROUTINE PackedMessage_packLogicalScalar
 
   SUBROUTINE PackedMessage_packIntCcharScalar(me, scalar)
-  PM_packScalar(INTEGER(C_SIGNED_CHAR) , 3)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER(C_SIGNED_CHAR) , INTENT(IN), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%packBlock(cptr, 1,  3);
   END SUBROUTINE PackedMessage_packIntCcharScalar
 
   SUBROUTINE PackedMessage_packCharacterScalar(me, scalar)
@@ -303,48 +265,32 @@ CONTAINS
    CALL me%packBlock(cptr, LEN(scalar), 7)
   END SUBROUTINE PackedMessage_packCharacterScalar
 
-#undef PM_packScalar
 
-#define PM_packArray(__type, __tid) \
-    CLASS(t_PackedMessage), INTENT(INOUT) :: me; \
-    __type, ALLOCATABLE, INTENT(IN), TARGET :: array(:); \
-    TYPE(c_ptr) :: cptr; \
-    INTEGER, TARGET :: asize; \
-    ; \
-    asize = 0; \
-    IF (ALLOCATED(array)) asize = SIZE(array); \
-    cptr = C_LOC(asize); \
-    CALL me%packBlock(cptr, 1, 1); \
-    IF (asize .GT. 0)  THEN; \
-      cptr = C_LOC(array(1)); \
-      CALL me%packBlock(cptr, asize, __tid); \
-    END IF;
 
   SUBROUTINE PackedMessage_packIntArray(me, array)
-  PM_packArray(INTEGER, 1)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, ALLOCATABLE, INTENT(IN), TARGET :: array(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET :: asize;     ;     asize = 0;     IF (ALLOCATED(array)) asize = SIZE(array);     cptr = C_LOC(asize);     CALL me%packBlock(cptr, 1, 1);     IF (asize .GT. 0)  THEN;       cptr = C_LOC(array(1));       CALL me%packBlock(cptr, asize,  1);     END IF;
   END SUBROUTINE PackedMessage_packIntArray
 
   SUBROUTINE PackedMessage_packLongArray(me, array)
-  PM_packArray(INTEGER(i8), 2)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER(i8), ALLOCATABLE, INTENT(IN), TARGET :: array(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET :: asize;     ;     asize = 0;     IF (ALLOCATED(array)) asize = SIZE(array);     cptr = C_LOC(asize);     CALL me%packBlock(cptr, 1, 1);     IF (asize .GT. 0)  THEN;       cptr = C_LOC(array(1));       CALL me%packBlock(cptr, asize,  2);     END IF;
   END SUBROUTINE PackedMessage_packLongArray
 
   SUBROUTINE PackedMessage_packDoubleArray(me, array)
-  PM_packArray(REAL(dp), 5)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     REAL(dp), ALLOCATABLE, INTENT(IN), TARGET :: array(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET :: asize;     ;     asize = 0;     IF (ALLOCATED(array)) asize = SIZE(array);     cptr = C_LOC(asize);     CALL me%packBlock(cptr, 1, 1);     IF (asize .GT. 0)  THEN;       cptr = C_LOC(array(1));       CALL me%packBlock(cptr, asize,  5);     END IF;
   END SUBROUTINE PackedMessage_packDoubleArray
 
   SUBROUTINE PackedMessage_packSingleArray(me, array)
-  PM_packArray(REAL(sp), 6)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     REAL(sp), ALLOCATABLE, INTENT(IN), TARGET :: array(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET :: asize;     ;     asize = 0;     IF (ALLOCATED(array)) asize = SIZE(array);     cptr = C_LOC(asize);     CALL me%packBlock(cptr, 1, 1);     IF (asize .GT. 0)  THEN;       cptr = C_LOC(array(1));       CALL me%packBlock(cptr, asize,  6);     END IF;
   END SUBROUTINE PackedMessage_packSingleArray
 
   SUBROUTINE PackedMessage_packLogicalArray(me, array)
-  PM_packArray(LOGICAL, 4)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     LOGICAL, ALLOCATABLE, INTENT(IN), TARGET :: array(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET :: asize;     ;     asize = 0;     IF (ALLOCATED(array)) asize = SIZE(array);     cptr = C_LOC(asize);     CALL me%packBlock(cptr, 1, 1);     IF (asize .GT. 0)  THEN;       cptr = C_LOC(array(1));       CALL me%packBlock(cptr, asize,  4);     END IF;
   END SUBROUTINE PackedMessage_packLogicalArray
 
   SUBROUTINE PackedMessage_packIntCcharArray(me, array)
-  PM_packArray(INTEGER(C_SIGNED_CHAR), 3)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER(C_SIGNED_CHAR), ALLOCATABLE, INTENT(IN), TARGET :: array(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET :: asize;     ;     asize = 0;     IF (ALLOCATED(array)) asize = SIZE(array);     cptr = C_LOC(asize);     CALL me%packBlock(cptr, 1, 1);     IF (asize .GT. 0)  THEN;       cptr = C_LOC(array(1));       CALL me%packBlock(cptr, asize,  3);     END IF;
   END SUBROUTINE PackedMessage_packIntCcharArray
 
-#undef PM_packArray
 
 ! * see comment above PackedMessage_packBlock
 ! * you should not care.
@@ -357,9 +303,6 @@ CONTAINS
     INTEGER(C_SIGNED_CHAR), POINTER :: vptr(:)
     INTEGER :: bsize
 
-#if defined(__PGI)
-    IF (tbytes(1) .EQ. -1) CALL init_tbytes()
-#endif
     bsize = asize * tbytes(tid)
     IF (bsize + me%readPosition .GT. SIZE(me%messageBuffer)) THEN
       WRITE(message_text, "(4(a,i8))") "out of bounds read at ", &
@@ -372,36 +315,29 @@ CONTAINS
     me%readPosition = me%readPosition + bsize
   END SUBROUTINE PackedMessage_unpackBlock
 
-#define PM_unpackScalar(__type, __tid) \
-    CLASS(t_PackedMessage), INTENT(INOUT) :: me; \
-    __type , INTENT(OUT), TARGET :: scalar; \
-    TYPE(c_ptr) :: cptr; \
-    ; \
-    cptr = C_LOC(scalar); \
-    CALL me%unpackBlock(cptr, 1, __tid);
 
   SUBROUTINE PackedMessage_unpackIntScalar(me, scalar)
-  PM_unpackScalar(INTEGER, 1)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER , INTENT(OUT), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%unpackBlock(cptr, 1,  1);
   END SUBROUTINE PackedMessage_unpackIntScalar
 
   SUBROUTINE PackedMessage_unpackLongScalar(me, scalar)
-  PM_unpackScalar(INTEGER(i8), 2)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER(i8) , INTENT(OUT), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%unpackBlock(cptr, 1,  2);
   END SUBROUTINE PackedMessage_unpackLongScalar
 
   SUBROUTINE PackedMessage_unpackDoubleScalar(me, scalar)
-  PM_unpackScalar(REAL(dp), 5)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     REAL(dp) , INTENT(OUT), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%unpackBlock(cptr, 1,  5);
   END SUBROUTINE PackedMessage_unpackDoubleScalar
 
   SUBROUTINE PackedMessage_unpackSingleScalar(me, scalar)
-  PM_unpackScalar(REAL(sp), 6)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     REAL(sp) , INTENT(OUT), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%unpackBlock(cptr, 1,  6);
   END SUBROUTINE PackedMessage_unpackSingleScalar
 
   SUBROUTINE PackedMessage_unpackLogicalScalar(me, scalar)
-  PM_unpackScalar(LOGICAL, 4)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     LOGICAL , INTENT(OUT), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%unpackBlock(cptr, 1,  4);
   END SUBROUTINE PackedMessage_unpackLogicalScalar
 
   SUBROUTINE PackedMessage_unpackIntCcharScalar(me, scalar)
-  PM_unpackScalar(INTEGER(C_SIGNED_CHAR), 3)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER(C_SIGNED_CHAR) , INTENT(OUT), TARGET :: scalar;     TYPE(c_ptr) :: cptr;     ;     cptr = C_LOC(scalar);     CALL me%unpackBlock(cptr, 1,  3);
   END SUBROUTINE PackedMessage_unpackIntCcharScalar
 
   SUBROUTINE PackedMessage_unpackCharacterScalar(me, scalar)
@@ -413,128 +349,88 @@ CONTAINS
     CALL me%unpackBlock(cptr, LEN(scalar), 7)
   END SUBROUTINE PackedMessage_unpackCharacterScalar
 
-#undef PM_unpackScalar
 
-#define PM_unpackArray(__type, __tid) \
-    CLASS(t_PackedMessage), INTENT(INOUT) :: me; \
-    __type , ALLOCATABLE, INTENT(INOUT) :: array(:); \
-    __type , ALLOCATABLE, TARGET :: tmp(:); \
-    TYPE(c_ptr) :: cptr; \
-    INTEGER, TARGET:: asize; \
-    ; \
-    cptr = C_LOC(asize); \
-    CALL me%unpackBlock(cptr, 1, 1); \
-    IF (ALLOCATED(array)) DEALLOCATE(array); \
-    IF (asize .GT. 0) THEN; \
-      ALLOCATE(tmp(asize)); \
-      cptr = C_LOC(tmp(1)); \
-      CALL me%unpackBlock(cptr, asize, __tid); \
-      CALL MOVE_ALLOC(tmp, array); \
-    END IF;
 
   SUBROUTINE PackedMessage_unpackIntArray(me, array)
-  PM_unpackArray(INTEGER, 1)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER , ALLOCATABLE, INTENT(INOUT) :: array(:);     INTEGER , ALLOCATABLE, TARGET :: tmp(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET:: asize;     ;     cptr = C_LOC(asize);     CALL me%unpackBlock(cptr, 1, 1);     IF (ALLOCATED(array)) DEALLOCATE(array);     IF (asize .GT. 0) THEN;       ALLOCATE(tmp(asize));       cptr = C_LOC(tmp(1));       CALL me%unpackBlock(cptr, asize,  1);       CALL MOVE_ALLOC(tmp, array);     END IF;
   END SUBROUTINE PackedMessage_unpackIntArray
 
   SUBROUTINE PackedMessage_unpackLongArray(me, array)
-  PM_unpackArray(INTEGER(i8), 2)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER(i8) , ALLOCATABLE, INTENT(INOUT) :: array(:);     INTEGER(i8) , ALLOCATABLE, TARGET :: tmp(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET:: asize;     ;     cptr = C_LOC(asize);     CALL me%unpackBlock(cptr, 1, 1);     IF (ALLOCATED(array)) DEALLOCATE(array);     IF (asize .GT. 0) THEN;       ALLOCATE(tmp(asize));       cptr = C_LOC(tmp(1));       CALL me%unpackBlock(cptr, asize,  2);       CALL MOVE_ALLOC(tmp, array);     END IF;
   END SUBROUTINE PackedMessage_unpackLongArray
 
   SUBROUTINE PackedMessage_unpackDoubleArray(me, array)
-  PM_unpackArray(REAL(dp), 5)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     REAL(dp) , ALLOCATABLE, INTENT(INOUT) :: array(:);     REAL(dp) , ALLOCATABLE, TARGET :: tmp(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET:: asize;     ;     cptr = C_LOC(asize);     CALL me%unpackBlock(cptr, 1, 1);     IF (ALLOCATED(array)) DEALLOCATE(array);     IF (asize .GT. 0) THEN;       ALLOCATE(tmp(asize));       cptr = C_LOC(tmp(1));       CALL me%unpackBlock(cptr, asize,  5);       CALL MOVE_ALLOC(tmp, array);     END IF;
   END SUBROUTINE PackedMessage_unpackDoubleArray
 
   SUBROUTINE PackedMessage_unpackSingleArray(me, array)
-  PM_unpackArray(REAL(sp), 6)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     REAL(sp) , ALLOCATABLE, INTENT(INOUT) :: array(:);     REAL(sp) , ALLOCATABLE, TARGET :: tmp(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET:: asize;     ;     cptr = C_LOC(asize);     CALL me%unpackBlock(cptr, 1, 1);     IF (ALLOCATED(array)) DEALLOCATE(array);     IF (asize .GT. 0) THEN;       ALLOCATE(tmp(asize));       cptr = C_LOC(tmp(1));       CALL me%unpackBlock(cptr, asize,  6);       CALL MOVE_ALLOC(tmp, array);     END IF;
   END SUBROUTINE PackedMessage_unpackSingleArray
 
   SUBROUTINE PackedMessage_unpackLogicalArray(me, array)
-  PM_unpackArray(LOGICAL, 4)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     LOGICAL , ALLOCATABLE, INTENT(INOUT) :: array(:);     LOGICAL , ALLOCATABLE, TARGET :: tmp(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET:: asize;     ;     cptr = C_LOC(asize);     CALL me%unpackBlock(cptr, 1, 1);     IF (ALLOCATED(array)) DEALLOCATE(array);     IF (asize .GT. 0) THEN;       ALLOCATE(tmp(asize));       cptr = C_LOC(tmp(1));       CALL me%unpackBlock(cptr, asize,  4);       CALL MOVE_ALLOC(tmp, array);     END IF;
   END SUBROUTINE PackedMessage_unpackLogicalArray
 
   SUBROUTINE PackedMessage_unpackIntCcharArray(me, array)
-  PM_unpackArray(INTEGER(C_SIGNED_CHAR), 3)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER(C_SIGNED_CHAR) , ALLOCATABLE, INTENT(INOUT) :: array(:);     INTEGER(C_SIGNED_CHAR) , ALLOCATABLE, TARGET :: tmp(:);     TYPE(c_ptr) :: cptr;     INTEGER, TARGET:: asize;     ;     cptr = C_LOC(asize);     CALL me%unpackBlock(cptr, 1, 1);     IF (ALLOCATED(array)) DEALLOCATE(array);     IF (asize .GT. 0) THEN;       ALLOCATE(tmp(asize));       cptr = C_LOC(tmp(1));       CALL me%unpackBlock(cptr, asize,  3);       CALL MOVE_ALLOC(tmp, array);     END IF;
   END SUBROUTINE PackedMessage_unpackIntCcharArray
 
-#undef PM_unpackArray
 
-#define PM_packerScalar(__type) \
-    CLASS(t_PackedMessage), INTENT(INOUT) :: me; \
-    INTEGER, INTENT(IN) :: op; \
-    __type, INTENT(INOUT) :: scalar; \
-    ; \
-    IF (op .NE. kUnpackOp) THEN; \
-      CALL me%pack(scalar); \
-    ELSE; \
-      CALL me%unpack(scalar); \
-    END IF;
 
   SUBROUTINE PackedMessage_packerIntScalar(me, op, scalar)
-  PM_packerScalar(INTEGER)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     INTEGER, INTENT(INOUT) :: scalar;     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(scalar);     ELSE;       CALL me%unpack(scalar);     END IF;
   END SUBROUTINE PackedMessage_packerIntScalar
 
   SUBROUTINE PackedMessage_packerLongScalar(me, op, scalar)
-  PM_packerScalar(INTEGER(i8))
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     INTEGER(i8), INTENT(INOUT) :: scalar;     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(scalar);     ELSE;       CALL me%unpack(scalar);     END IF;
   END SUBROUTINE PackedMessage_packerLongScalar
 
   SUBROUTINE PackedMessage_packerDoubleScalar(me, op, scalar)
-  PM_packerScalar(REAL(dp))
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     REAL(dp), INTENT(INOUT) :: scalar;     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(scalar);     ELSE;       CALL me%unpack(scalar);     END IF;
   END SUBROUTINE PackedMessage_packerDoubleScalar
 
   SUBROUTINE PackedMessage_packerSingleScalar(me, op, scalar)
-  PM_packerScalar(REAL(sp))
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     REAL(sp), INTENT(INOUT) :: scalar;     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(scalar);     ELSE;       CALL me%unpack(scalar);     END IF;
   END SUBROUTINE PackedMessage_packerSingleScalar
 
   SUBROUTINE PackedMessage_packerLogicalScalar(me, op, scalar)
-  PM_packerScalar(LOGICAL)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     LOGICAL, INTENT(INOUT) :: scalar;     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(scalar);     ELSE;       CALL me%unpack(scalar);     END IF;
   END SUBROUTINE PackedMessage_packerLogicalScalar
 
   SUBROUTINE PackedMessage_packerIntCcharScalar(me, op, scalar)
-  PM_packerScalar(INTEGER(C_SIGNED_CHAR))
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     INTEGER(C_SIGNED_CHAR), INTENT(INOUT) :: scalar;     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(scalar);     ELSE;       CALL me%unpack(scalar);     END IF;
   END SUBROUTINE PackedMessage_packerIntCcharScalar
 
   SUBROUTINE PackedMessage_packerCharacterScalar(me, op, scalar)
-  PM_packerScalar(CHARACTER(*))
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     CHARACTER(*), INTENT(INOUT) :: scalar;     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(scalar);     ELSE;       CALL me%unpack(scalar);     END IF;
   END SUBROUTINE PackedMessage_packerCharacterScalar
 
-#undef PM_packerScalar
 
-#define PM_packerArray(__type) \
-    CLASS(t_PackedMessage), INTENT(INOUT) :: me; \
-    INTEGER, INTENT(IN) :: op; \
-    __type, ALLOCATABLE, INTENT(INOUT) :: array(:); \
-    ; \
-    IF (op .NE. kUnpackOp) THEN; \
-      CALL me%pack(array); \
-    ELSE; \
-      CALL me%unpack(array); \
-    END IF;
 
   SUBROUTINE PackedMessage_packerIntArray(me, op, array)
-  PM_packerArray(INTEGER)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     INTEGER, ALLOCATABLE, INTENT(INOUT) :: array(:);     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(array);     ELSE;       CALL me%unpack(array);     END IF;
   END SUBROUTINE PackedMessage_packerIntArray
 
   SUBROUTINE PackedMessage_packerLongArray(me, op, array)
-  PM_packerArray(INTEGER(i8))
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     INTEGER(i8), ALLOCATABLE, INTENT(INOUT) :: array(:);     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(array);     ELSE;       CALL me%unpack(array);     END IF;
   END SUBROUTINE PackedMessage_packerLongArray
 
   SUBROUTINE PackedMessage_packerDoubleArray(me, op, array)
-  PM_packerArray(REAL(dp))
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     REAL(dp), ALLOCATABLE, INTENT(INOUT) :: array(:);     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(array);     ELSE;       CALL me%unpack(array);     END IF;
   END SUBROUTINE PackedMessage_packerDoubleArray
 
   SUBROUTINE PackedMessage_packerSingleArray(me, op, array)
-  PM_packerArray(REAL(sp))
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     REAL(sp), ALLOCATABLE, INTENT(INOUT) :: array(:);     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(array);     ELSE;       CALL me%unpack(array);     END IF;
   END SUBROUTINE PackedMessage_packerSingleArray
 
   SUBROUTINE PackedMessage_packerLogicalArray(me, op, array)
-  PM_packerArray(LOGICAL)
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     LOGICAL, ALLOCATABLE, INTENT(INOUT) :: array(:);     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(array);     ELSE;       CALL me%unpack(array);     END IF;
   END SUBROUTINE PackedMessage_packerLogicalArray
 
   SUBROUTINE PackedMessage_packerIntCcharArray(me, op, array)
-  PM_packerArray(INTEGER(C_SIGNED_CHAR))
+  CLASS(t_PackedMessage), INTENT(INOUT) :: me;     INTEGER, INTENT(IN) :: op;     INTEGER(C_SIGNED_CHAR), ALLOCATABLE, INTENT(INOUT) :: array(:);     ;     IF (op .NE. kUnpackOp) THEN;       CALL me%pack(array);     ELSE;       CALL me%unpack(array);     END IF;
   END SUBROUTINE PackedMessage_packerIntCcharArray
 
-#undef PM_packerArray
 
   ! communication routines !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -544,59 +440,16 @@ CONTAINS
   SUBROUTINE PackedMessage_send(me, dest, tag, comm)
     CLASS(t_PackedMessage), INTENT(IN) :: me
     INTEGER, INTENT(IN) :: dest, tag, comm
-#ifndef NOMPI
-    INTEGER :: ierr
-    CHARACTER(*), PARAMETER :: routine = modname//":PackedMessage_send"
-
-    CALL MPI_Send(me%messageSize, 1, p_int, dest, tag, comm, ierr)
-    HANDLE_MPI_ERROR(ierr, "MPI_Send")
-    CALL MPI_Send(me%messageBuffer, INT(me%messageSize), MPI_CHAR, dest, tag, comm, ierr)
-    HANDLE_MPI_ERROR(ierr, "MPI_Send")
-#endif
   END SUBROUTINE PackedMessage_send
 
   SUBROUTINE PackedMessage_recv(me, source, tag, comm)
     CLASS(t_PackedMessage), INTENT(INOUT) :: me
     INTEGER, INTENT(IN) :: source, tag, comm
-#ifndef NOMPI
-    INTEGER :: ierr, msize, mstat(MPI_STATUS_SIZE)
-    CHARACTER(*), PARAMETER :: routine = modname//":PackedMessage_recv"
-
-    CALL me%reset()
-    CALL MPI_Recv(msize, 1, p_int, source, tag, comm, mstat, ierr)
-    HANDLE_MPI_ERROR(ierr, "MPI_Recv")
-    CALL me%ensureSpace(msize)
-    CALL MPI_Recv(me%messageBuffer, msize, MPI_CHAR, source, tag, comm, mstat, ierr)
-    HANDLE_MPI_ERROR(ierr, "MPI_Recv")
-    me%messageSize = msize
-#endif
   END SUBROUTINE PackedMessage_recv
 
   SUBROUTINE PackedMessage_bcast(me, root, comm)
     CLASS(t_PackedMessage), INTENT(INOUT) :: me
     INTEGER, INTENT(IN) :: root, comm
-#ifndef NOMPI
-    INTEGER :: ierr, msize
-    LOGICAL :: isSource, isDestination
-    CHARACTER(*), PARAMETER :: routine = modname//":PackedMessage_bcast"
-    INTEGER(C_SIGNED_CHAR) :: dummy_c(0)
-
-    CALL p_get_bcast_role(root, comm, isSource, isDestination)
-    msize = me%messageSize
-    CALL MPI_Bcast(msize, 1, p_int, root, comm, ierr)
-    HANDLE_MPI_ERROR(ierr, "MPI_Bcast")
-    IF (isDestination) THEN
-      CALL me%reset()
-      CALL me%ensureSpace(msize)
-    END IF
-    IF (isDestination .OR. isSource) THEN
-      CALL MPI_Bcast(me%messageBuffer, msize, MPI_CHAR, root, comm, ierr)
-    ELSE
-      CALL MPI_Bcast(dummy_c, 0, MPI_CHAR, root, comm, ierr)
-    END IF
-    HANDLE_MPI_ERROR(ierr, "MPI_Bcast")
-    IF(isDestination) me%messageSize = msize
-#endif
   END SUBROUTINE PackedMessage_bcast
 
 END MODULE mo_packed_message

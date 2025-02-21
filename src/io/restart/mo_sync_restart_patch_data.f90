@@ -123,9 +123,9 @@ CONTAINS
     DO i = 1, SIZE(me%varData)
       info => me%varData(i)%p%info
       IF(.NOT.has_valid_time_level(info, domain, nnow(domain), nnow_rcf(domain))) CYCLE
-#ifdef DEBUG
-      IF(is_mpi_workroot) write (0,*)' ... write '//TRIM(info%name)
-#endif
+
+
+
       gridSize = me%description%n_patch_elem_g(me%description%hmap(info%hgrid))
       gatherPattern => me%description%gpat(me%description%hmap(info%hgrid))%p
       ! get pointers to the local DATA

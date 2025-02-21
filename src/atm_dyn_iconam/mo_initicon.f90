@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_initicon
@@ -366,14 +376,8 @@ MODULE mo_initicon
     TYPE(t_lnd_state), INTENT(INOUT), OPTIONAL :: p_lnd_state(:)
 
     CHARACTER(LEN = *), PARAMETER :: routine = modname//":read_dwdana"
-#if !defined __GFORTRAN__ || __GNUC__ >= 6
 
     CHARACTER(LEN = :), ALLOCATABLE :: incrementsList(:)
-#else
-    CHARACTER(LEN = 9) :: incrementsList_IAU(21)
-    CHARACTER(LEN = 4) :: incrementsList_IAU_OLD(6)
-    CHARACTER(LEN = 1) :: incrementsList_DEFAULT(1)
-#endif
     CLASS(t_InputRequestList), POINTER :: requestList
     CHARACTER(LEN=filename_max) :: anaFilename_str(max_dom)
     INTEGER :: jg, jg1
@@ -445,7 +449,6 @@ MODULE mo_initicon
 ! Workaround for GNU compiler (<6.0), which still does not fully support deferred length character arrays
 ! Make use of deferred length character arrays if the GNU compiler is not used, or if 
 ! its version number is at least equal to 6.0.
-#if !defined __GFORTRAN__ || __GNUC__ >= 6
             SELECT CASE(init_mode)
                 CASE(MODE_IAU)
                     incrementsList = [CHARACTER(LEN=9) :: 'u', 'v', 'pres', 'temp', 'qv', 'qc', 'qi', 'qr', 'qs', 'qg', &
@@ -458,28 +461,6 @@ MODULE mo_initicon
             END SELECT
             CALL requestList%checkRuntypeAndUuids(incrementsList, gridUuids(p_patch), lIsFg = .FALSE., &
               lHardCheckUuids = .NOT.check_uuid_gracefully)
-#else
-            SELECT CASE(init_mode)
-                CASE(MODE_IAU)
-                    incrementsList_IAU = (/'u        ', 'v        ', 'pres     ', 'temp     ', 'qv       ', &
-                      &                    'qc       ', 'qi       ', 'qr       ', 'qs       ', 'qg       ', &
-                      &                    'qh       ', 'qnc      ', 'qni      ', 'qnr      ', 'qns      ', &
-                      &                    'qng      ', 'qnh      ', 'w_so     ', 'h_snow   ', 'freshsnow', &
-                      &                    't_2m' /)
-                    CALL requestList%checkRuntypeAndUuids(incrementsList_IAU, gridUuids(p_patch), lIsFg = .FALSE., &
-                      lHardCheckUuids = .NOT.check_uuid_gracefully)
-            write(0,*) "incrementsList_IAU: ", incrementsList_IAU
-                CASE(MODE_IAU_OLD)
-                    incrementsList_IAU_OLD = (/'u   ', 'v   ', 'pres', 'temp', 'qv  ', 'w_so'/)
-                    CALL requestList%checkRuntypeAndUuids(incrementsList_IAU_OLD, gridUuids(p_patch), lIsFg = .FALSE., &
-                      lHardCheckUuids = .NOT.check_uuid_gracefully)
-            write(0,*) "incrementsList_IAU_OLD: ", incrementsList_IAU_OLD
-                CASE DEFAULT
-                    incrementsList_DEFAULT = (/' '/)
-                    CALL requestList%checkRuntypeAndUuids(incrementsList_DEFAULT, gridUuids(p_patch), lIsFg = .FALSE., &
-                      lHardCheckUuids = .NOT.check_uuid_gracefully)
-            END SELECT
-#endif
         END IF
     END IF
 

@@ -39,9 +39,9 @@
 MODULE mo_stoch_deep
 
   USE netcdf
-#ifdef HAVE_ACM_LICENSE  
-  USE random_rewrite,        ONLY: random_Poisson
-#endif
+
+
+
   USE mo_kind,               ONLY: wp, i4
   USE mo_cuparameters, ONLY :                                    &
        & deep_k_wei, deep_alpha_mf, deep_beta_mf, deep_mean_mf, deep_mean_tau
@@ -177,29 +177,6 @@ MODULE mo_stoch_deep
     ! Retrieve streammax new random numbers to use in draw from Poisson distributions
     CALL random_number_generator%uniform_distribution(rn_u(1:streammax))
 
-#ifdef HAVE_ACM_LICENSE
-    ! Determine number of newborn clouds by drawing from Poisson distribution with given birth rate,
-    ! and add mass flux to grid cell total mass flux
-    idx=1
-    rn_poisson1 = random_Poisson(birth_rate(i)*ptsphy,idx,streammax,rn_u(1:streammax))
-    ! Safety check in case random_Poisson routine does not converge and runs out of random numbers to use
-    IF (idx > streammax) THEN
-       WRITE(6,*) 'idx for deep cld birth out of range',idx,birth_rate(i)*ptsphy, &
-            & rn_u(1),rn_u(idx),MINVAL(rn_u(1:streammax)),MAXVAL(rn_u(1:streammax))
-       idx=2
-    endif
-    
-    ! Determine number of dying clouds by drawing from Poisson distribution with given death rate,
-    ! and subtract mass flux from grid cell total mass flux
-    idx=50! Start at index 50, to make sure to use "fresh" random numbers
-    rn_poisson2 = random_Poisson(death_rate(i)*ptsphy,idx,streammax,rn_u(1:streammax))
-    IF (idx > streammax) THEN
-       write(6,*) 'idx for deep cloud death out of range',idx,death_rate(i)*ptsphy, &
-            & rn_u(1),rn_u(idx),MINVAL(rn_u(1:streammax)),MAXVAL(rn_u(1:streammax))
-       idx=3
-    ENDIF
-    idx=100
-#else
     ! Determine number of newborn active clouds by sampling a normal distribution
     ! (instead of Poisson) using the Box-Muller method, with given birth rate.
     idx=1 ! This index keeps track of which random numbers out of the 200 have already been used
@@ -213,7 +190,6 @@ MODULE mo_stoch_deep
     rn_poisson2 = MAX(0, INT(z0 * SQRT(death_rate(i)*ptsphy) + death_rate(i)*ptsphy))
     
     idx=100
-#endif
 
     ! Initialise diagnostic fields that keep track of how much mass flux is added by newborn clouds,
     ! and how much is removed by dying clouds

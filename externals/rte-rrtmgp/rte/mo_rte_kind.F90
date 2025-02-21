@@ -29,21 +29,21 @@ module mo_rte_kind
   !
   ! Floating point working precision
   !
-#ifdef RTE_USE_SP
-  integer, parameter :: wp = sp
-#else
+
+
+
   integer, parameter :: wp = dp
-#endif
+
 
   !
   ! Logical - for use with kernels
   !
   ! Note that c_boolians don't work with PGI compiler currently
   !
-#ifdef RTE_USE_CBOOL
-  integer, parameter :: wl = c_bool
-#else
+
+
+
   integer, parameter :: wl = kind(.true.)
-#endif
+
 
 end module mo_rte_kind

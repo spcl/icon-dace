@@ -571,9 +571,9 @@ MODULE mo_reff_main
 
     CASE(101)  ! RRTM
 
-#ifdef _OPENACC
-      CALL finish('calculate_reff:','CASE microph_param=101 not available on GPU')
-#endif
+
+
+
 
       r_max = reff_calc%r_max
       r_min = reff_calc%r_min
@@ -664,9 +664,9 @@ MODULE mo_reff_main
     SELECT CASE ( reff_calc%ncn_param ) ! Choose which microphys param
 
     CASE (0)      ! Constant number. Use cloud_num variable.
-#ifdef _OPENACC
-      CALL finish('calculate_ncn:','CASE ncn_param=0 not available on GPU')
-#endif
+
+
+
       DO k = k_start,k_end
         DO ic  = 1,n_ind(k)
           jc        = indices(ic,k)
@@ -733,9 +733,9 @@ MODULE mo_reff_main
 
 
     CASE (102) ! Use cloud_num (from radiation). This is current default for 1 mom microphysics.
-#ifdef _OPENACC
-      CALL finish('calculate_ncn:','CASE ncn_param=102 not available on GPU')
-#endif
+
+
+
       well_posed = ASSOCIATED(reff_calc%p_ncn2D)
       IF (.NOT. well_posed) THEN
         WRITE (message_text,*) 'Reff: surf_cloud needs to be provided to calculate cloud number calculate_ncn'

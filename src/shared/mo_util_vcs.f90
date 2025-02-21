@@ -204,14 +204,14 @@ CONTAINS
       END IF
       
       ! --- Cray compiler: print compiler version in use:
-#ifdef _CRAYFTN
-      WRITE(message_text,'(a,a)') 'Compiler  : ', _RELEASE_STRING
-      ! --- Nvidia compiler: use predefined macros because compiler_version() not available
-#elif __NVCOMPILER
-      WRITE(message_text,'(a,I2,a,I1)') 'Compiler  : ',__NVCOMPILER_MAJOR__,'.',__NVCOMPILER_MINOR__
-#else
+
+
+
+
+
+
       WRITE(message_text,'(a)') compiler_version()
-#endif
+
       CALL message('', message_text)
       
       CALL message('','')

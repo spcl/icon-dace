@@ -17,7 +17,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 !============================================================================
 module mo_ice_fem_evp
@@ -28,9 +38,6 @@ module mo_ice_fem_evp
   use mo_ice_fem_types
 
   USE mo_kind,    ONLY: wp
-#ifdef _OPENACC
-    USE openacc, ONLY : acc_is_present
-#endif
   USE mo_fortran_tools, ONLY: set_acc_host_or_device
 
   IMPLICIT NONE
@@ -55,9 +62,6 @@ CONTAINS
 
 subroutine index_si_elements(lacc)
 ! Replaces "if" checking of whether sea ice is actually present in a given cell/node
-#ifdef _OPENACC
-    USE openacc, ONLY : acc_is_present
-#endif
     IMPLICIT NONE
 
     LOGICAL, INTENT(IN), OPTIONAL :: lacc

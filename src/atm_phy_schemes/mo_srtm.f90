@@ -30,10 +30,21 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! Code has been modified for the use in ICON (and formerly in ECHAM)
 
-#if defined __xlC__ && !defined NOXLFPROCESS
-@PROCESS HOT
-#endif
-#include "consistent_fma.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! For runs that check result consistency we fix the different
+! contractions that the Intel compiler performs on some loops (at
+! least in version 16.0) for the vectorized part and the
+! non-vectorized parts
 MODULE mo_srtm
 
   USE mo_exception,   ONLY: finish
@@ -194,19 +205,8 @@ CONTAINS
     REAL(wp) :: zrmu0(kbdim)
     REAL(wp) :: ccmax, ccran, alpha, deltaz, ccrat
     LOGICAL  :: lcomp_fractions
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_colmol,z_co2mult,z_colch4,z_colco2,z_colh2o,z_colo3
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_coln2o,z_colo2,z_forfac,z_forfrac,z_selffrac,z_selffac
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_fac00,z_fac01,z_fac11,z_fac10,zfrcl,z_oneminus,bnd_wght
-!DIR$ ATTRIBUTES ALIGN : 64 :: ztauc,ztaua,zasyc,zasya,zomgc,zomga,zbbcd,zbbcu,zbbfd,zbbfu
-!DIR$ ATTRIBUTES ALIGN : 64 :: zsudu,zsuduc,zpm_fl_vr,ztk_fl_vr,zcol_dry_vr,zwkl_vr
-!DIR$ ATTRIBUTES ALIGN : 64 :: zflxd_sw,zflxd_sw_clr,zflxd_sw_cld,zflxu_sw,zflxu_sw_clr
-!DIR$ ATTRIBUTES ALIGN : 64 :: zflxu_sw_cld,i_laytrop,i_layswtch,i_laylow,indfor,indself
-!DIR$ ATTRIBUTES ALIGN : 64 :: jp,jt,jt1,zclear,zcloud,zfrcl_above,zalbd,zalbp,frc_vis
-!DIR$ ATTRIBUTES ALIGN : 64 :: frc_nir,zflxn_vis,zflxn,zflxd_vis,zflxd_nir,zflxd_par
-!DIR$ ATTRIBUTES ALIGN : 64 :: zflxd_diff,zflxd_vis_diff,zflxd_nir_diff,zflxd_par_diff
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrat_swdn,idx,zrmu0
-#endif
+
+
 
     !-----------------------------------------------------------------------
     !-- calculate information needed ny the radiative transfer routine
@@ -712,16 +712,6 @@ CONTAINS
     REAL(wp) :: rkindfor, rkindself
     REAL(wp) :: z_plog(kbdim),z_exptavel(kbdim),z_ptaveli(kbdim)
     INTEGER(i4) :: ic
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_plog,z_exptavel,z_ptaveli
-!DIR$ ASSUME_ALIGNED pavel:64,ptavel:64,pcoldry:64,pwkl:64
-!DIR$ ASSUME_ALIGNED klaytrop:64,klayswtch:64,klaylow:64,pco2mult:64
-!DIR$ ASSUME_ALIGNED pcolch4:64,pcolco2:64,pcolh2o:64,pcolmol:64
-!DIR$ ASSUME_ALIGNED pcoln2o:64,pcolo2:64,pcolo3:64,pforfac:64,pforfrac:64
-!DIR$ ASSUME_ALIGNED kindfor:64,pselffac:64,pselffrac:64,kindself:64
-!DIR$ ASSUME_ALIGNED pfac00:64,pfac01:64,pfac10:64,pfac11:64
-!DIR$ ASSUME_ALIGNED kjp:64,kjt:64,kjt1:64
-#endif
 
     z_stpfac = 296._wp/1013._wp
     i_nlayers = klev
@@ -885,9 +875,6 @@ CONTAINS
   END SUBROUTINE srtm_setcoef
   !-----------------------------------------------------------------------
 
-#if defined RS6K && !defined NOXLFPROCESS
-  @PROCESS HOT NOSTRICT
-#endif
   SUBROUTINE srtm_spcvrt                                               &
     !   input
     & ( icount,   kbdim    , klev      , ksw,                          &
@@ -1038,21 +1025,6 @@ CONTAINS
     REAL(wp) :: zrmu0i(kbdim)
     INTEGER(i4) :: ic
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: zdbt,zgcc,zgco,zomcc,zomco,zrdnd,zrdndc
-!DIR$ ATTRIBUTES ALIGN : 64 :: zref,zrefc,zrefo,zrefd,zrefdc,zrefdo,zrup,zrupd
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrupc,zrupdc,ztauc,ztauo,ztdbt,ztra,ztrac,ztrao
-!DIR$ ATTRIBUTES ALIGN : 64 :: ztrad,ztradc,ztrado,zdbtc,ztdbtc,zincflx,zincf14
-!DIR$ ATTRIBUTES ALIGN : 64 :: zinctot,zincflux,ztaug,ztaur,zsflxzen,zcd,zcu
-!DIR$ ATTRIBUTES ALIGN : 64 :: zfd,zfu,zrmu0i,llrtchk
-!DIR$ ASSUME_ALIGNED poneminus:64,palbd:64,palbp:64,zfrcl:64,ptauc:64,pasyc:64
-!DIR$ ASSUME_ALIGNED pomgc:64,ptaua:64,pasya:64,pomga:64,zrmu0:64,klaytrop:64
-!DIR$ ASSUME_ALIGNED pcolch4:64,pcolco2:64,pcolh2o:64,pcolmol:64,pcolo2:64,pcolo3:64
-!DIR$ ASSUME_ALIGNED pforfac:64,pforfrac:64,kindfor:64,pselffac:64,pselffrac:64
-!DIR$ ASSUME_ALIGNED kindself:64,pfac00:64,pfac01:64,pfac10:64,pfac11:64
-!DIR$ ASSUME_ALIGNED kjp:64,kjt:64,kjt1:64,pbbfd:64,pbbfu:64,pbbcd:64,pbbcu:64
-!DIR$ ASSUME_ALIGNED psudu:64,psuduc:64
-#endif
     !     ------------------------------------------------------------------
 
     !-- Two-stream model 1: Eddington, 2: PIFM, Zdunkowski et al., 3: discret ordinates
@@ -1469,11 +1441,6 @@ CONTAINS
     INTEGER(i4) :: ikp, ikx, jk, ic
 
     REAL(wp) :: zreflect
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: ztdn
-!DIR ASSUME_ALIGNED pref:64,prefd:64,ptra:64,ptrad:64,pdbt:64
-!DIR ASSUME_ALIGNED prdnd:64,prup:64,prupd:64,ptdbt:64,pfd:64,pfu:64
-#endif
 
     !------------------------------------------------------------------
     ! PREF(JK)   direct reflectance
@@ -1657,10 +1624,6 @@ CONTAINS
     REAL(wp) :: ztemp, zzz, zeps, zaux
     !------------------------------------------------------------------
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: idxt,idxf,idxc,idxn,zgamma1,zgamma2,zgamma3,zcrit
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrk,zem1,zem2,zep1,zep2
-#endif
 
 
     zeps = 1.e-20_wp
@@ -1678,7 +1641,7 @@ CONTAINS
       END DO
     END IF
 
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
     DO jk=1,klev
       IF (PRESENT(ldrtchk)) THEN
         ict = 0
@@ -1900,20 +1863,10 @@ CONTAINS
         END DO
       ENDIF
 
-#ifdef __INTEL_COMPILER
-!DIR$ IVDEP
-      DO ic = 1,icn
-        zep1(ic) = EXP(zep1(ic))
-        zep2(ic) = EXP(zep2(ic))
-        zem1(ic) = 1.0_wp/zep1(ic)
-        zem2(ic) = 1.0_wp/zep2(ic)
-      ENDDO
-#else
       zep1(1:icn) = EXP(zep1(1:icn))
       zep2(1:icn) = EXP(zep2(1:icn))
       zem1(1:icn) = 1.0_wp/zep1(1:icn)
       zem2(1:icn) = 1.0_wp/zep2(1:icn)
-#endif
 
       IF (icn == icount) THEN ! use direct addressing
 !$OMP SIMD

@@ -13,8 +13,131 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "icon_definitions.inc"
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !----------------------------
 MODULE mo_ocean_hamocc_interface
   !-------------------------------------------------------------------------
@@ -324,7 +447,7 @@ CONTAINS
       &  stretch_c_new(:,:),                   &
       &  draftave(:,:)  
 
-    start_timer(timer_exchange_ocean_hamocc,1)
+    IF (timers_level >= 1) CALL timer_start(timer_exchange_ocean_hamocc)
 
     ocean_to_hamocc_state => hamocc_ocean_state%ocean_to_hamocc_state
     ocean_transport_state => hamocc_ocean_state%ocean_transport_state
@@ -387,7 +510,7 @@ CONTAINS
       &  )
       
   
-    stop_timer(timer_exchange_ocean_hamocc,1)
+    IF (timers_level >= 1) CALL timer_stop(timer_exchange_ocean_hamocc)
 
   END SUBROUTINE exchange_ocean_to_hamocc_state
   !-------------------------------------------------------------------------
@@ -402,7 +525,7 @@ CONTAINS
       &  co2_flux(:,:)
 
     
-    start_timer(timer_exchange_ocean_hamocc,1)
+    IF (timers_level >= 1) CALL timer_start(timer_exchange_ocean_hamocc)
 
     hamocc_to_ocean_state => hamocc_ocean_state%hamocc_to_ocean_state
 
@@ -413,7 +536,7 @@ CONTAINS
       &  c_loc(co2_flux(1,1)),                        &
       &  c_loc(swr_frac(1,1,1)))
      
-    stop_timer(timer_exchange_ocean_hamocc,1)
+    IF (timers_level >= 1) CALL timer_stop(timer_exchange_ocean_hamocc)
 
     CALL dbg_print('swr_fraction', hamocc_to_ocean_state%swr_fraction , "from hamocc", 2,  &
        & hamocc_ocean_state%patch_3d%p_patch_2d(1)%cells%owned)

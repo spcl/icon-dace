@@ -226,9 +226,9 @@ END FUNCTION T_from_internal_energy
 
 !!!=============================================================================================
 
-#ifndef _OPENACC
+
 ELEMENTAL &
-#endif
+
 PURE FUNCTION potential_temperature(TK, pres)
 
   REAL(wp) :: potential_temperature

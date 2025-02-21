@@ -38,62 +38,62 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_std_type_kinds_mp
-#ifdef USE_MPI
-#include "mpi_fc_conf.inc"
-#endif
+
+
+
   USE ppm_base, ONLY: abort_ppm
-#ifndef HAVE_MPI_INTEGER4
+
   USE ppm_std_type_kinds, ONLY: pi4
-#endif
-#ifndef HAVE_MPI_INTEGER8
+
+
   USE ppm_std_type_kinds, ONLY: pi8
-#endif
-#if ! defined(HAVE_MPI_INTEGER4) || ! defined(HAVE_MPI_INTEGER8)
+
+
   USE ppm_std_type_kinds, ONLY: i4, i8
-#endif
-#ifndef HAVE_MPI_REAL4
+
+
   USE ppm_std_type_kinds, ONLY: ps, rs
-#endif
-#ifndef HAVE_MPI_REAL4
+
+
   USE ppm_std_type_kinds, ONLY: pd, rd
-#endif
-#if ! defined(HAVE_MPI_REAL4) || ! defined(HAVE_MPI_REAL8)
+
+
   USE ppm_std_type_kinds, ONLY: sp, dp
-#endif
-#ifdef USE_MPI_MOD
-  USE mpi
-#endif
+
+
+
+
   IMPLICIT NONE
   PRIVATE
-#if defined USE_MPI && ! defined USE_MPI_MOD
-  INCLUDE 'mpif.h'
-#endif
+
+
+
   !> MPI datatype corresponding to 4 byte integer
-#ifdef HAVE_MPI_INTEGER4
-  INTEGER, PARAMETER :: mp_i4 = mpi_integer4
-#else
+
+
+
   INTEGER, SAVE :: mp_i4
-#endif
+
   !> MPI datatype corresponding to 8 byte integer
-#ifdef HAVE_MPI_INTEGER8
-  INTEGER, PARAMETER :: mp_i8 = mpi_integer8
-#else
+
+
+
   INTEGER, SAVE :: mp_i8
-#endif
+
   !> MPI datatype corresponding to 4 byte float
-#ifdef HAVE_MPI_REAL4
-  INTEGER, PARAMETER :: mp_sp = mpi_real4
-#else
+
+
+
   INTEGER, SAVE :: mp_sp
-#endif
+
   !> MPI datatype corresponding to 8 byte float
-#ifdef HAVE_MPI_REAL8
-  INTEGER, PARAMETER :: mp_dp = mpi_real8
-#else
+
+
+
   INTEGER, SAVE :: mp_dp
-#endif
+
   INTEGER(mpi_address_kind), SAVE :: &
        mp_i4_extent, mp_i8_extent, mp_sp_extent, mp_dp_extent, mp_l_extent
   PUBLIC :: mp_i4, mp_i8, mp_sp, mp_dp
@@ -110,78 +110,78 @@ CONTAINS
     ! mpi_type_create_f90_* routines do not use a specific communicator
     CALL mpi_comm_get_errhandler(mpi_comm_world, default_errh, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_get_errhandler failed", filename, __LINE__)
+         CALL abort_ppm("mpi_comm_get_errhandler failed", filename, 113)
     ! the use of comm_world is a work-around for old OpenMPI versions
     comm_world = mpi_comm_world
     CALL mpi_comm_set_errhandler(comm_world, mpi_errors_return, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_set_errhandler failed", filename, __LINE__)
+         CALL abort_ppm("mpi_comm_set_errhandler failed", filename, 118)
     ! initialize C part
     CALL ppm_initialize_std_type_kinds_mp
 
-#ifndef HAVE_MPI_INTEGER4
+
     CALL mpi_type_create_f90_integer(pi4, mp_i4, ierror)
     IF (ierror /= mpi_success) &
          CALL type_create_fallback_int(pi4, mp_i4, ierror)
     IF (ierror /= mpi_success) &
          CALL abort_ppm("mpi_type_create_f90_integer failed", filename, &
-         __LINE__)
+         128)
     CALL mpi_type_commit(mp_i4, ierror)
-#endif
 
-#ifndef HAVE_MPI_INTEGER8
+
+
     CALL mpi_type_create_f90_integer(pi8, mp_i8, ierror)
     IF (ierror /= mpi_success) &
          CALL type_create_fallback_int(pi8, mp_i8, ierror)
     IF (ierror /= mpi_success) &
          CALL abort_ppm("mpi_type_create_f90_integer failed", filename, &
-         __LINE__)
+         138)
     CALL mpi_type_commit(mp_i8, ierror)
-#endif
 
-#ifndef HAVE_MPI_REAL4
+
+
     CALL mpi_type_create_f90_real(ps, rs, mp_sp, ierror)
     IF (ierror /= mpi_success) &
          CALL type_create_fallback_real(ps, rs, mp_sp, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_create_f90_real failed", filename, __LINE__)
+         CALL abort_ppm("mpi_type_create_f90_real failed", filename, 147)
     CALL mpi_type_commit(mp_sp, ierror)
-#endif
 
-#ifndef HAVE_MPI_REAL8
+
+
     CALL mpi_type_create_f90_real(pd, rd, mp_dp, ierror)
     IF (ierror /= mpi_success) &
          CALL type_create_fallback_real(pd, rd, mp_dp, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_create_f90_real failed", filename, __LINE__)
+         CALL abort_ppm("mpi_type_create_f90_real failed", filename, 156)
     CALL mpi_type_commit(mp_dp, ierror)
-#endif
+
     ! query extent of base datatypes
     CALL mpi_type_get_extent(mp_i4, lb, mp_i4_extent, ierror)
     IF (ierror /= mpi_success) &
          CALL abort_ppm("mpi_type_get_extent failed", &
-         filename, __LINE__)
+         filename, 163)
     CALL mpi_type_get_extent(mp_i8, lb, mp_i8_extent, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_get_extent failed", filename, __LINE__)
+         CALL abort_ppm("mpi_type_get_extent failed", filename, 166)
     CALL mpi_type_get_extent(mp_sp, lb, mp_sp_extent, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_get_extent failed", filename, __LINE__)
+         CALL abort_ppm("mpi_type_get_extent failed", filename, 169)
     CALL mpi_type_get_extent(mp_dp, lb, mp_dp_extent, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_get_extent failed", filename, __LINE__)
+         CALL abort_ppm("mpi_type_get_extent failed", filename, 172)
     CALL mpi_type_get_extent(mpi_logical, lb, mp_l_extent, ierror)
     IF (ierror /= mpi_success) CALL abort_ppm("mpi_type_get_extent failed", &
-         filename, __LINE__)
+         filename, 175)
 
     ! restore default error handler
     CALL mpi_comm_set_errhandler(comm_world, default_errh, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_set_errhandler failed", filename, __LINE__)
-#if ! defined(HAVE_MPI_INTEGER4) || ! defined(HAVE_MPI_INTEGER8) || ! defined(HAVE_MPI_REAL4) || ! defined(HAVE_MPI_REAL8)
+         CALL abort_ppm("mpi_comm_set_errhandler failed", filename, 180)
+
   CONTAINS
-#endif
-#if ! defined(HAVE_MPI_INTEGER4) || ! defined(HAVE_MPI_INTEGER8)
+
+
     SUBROUTINE type_create_fallback_int(r, dtype, ierror)
       INTEGER, INTENT(in) :: r
       INTEGER, INTENT(out) :: dtype, ierror
@@ -210,9 +210,9 @@ CONTAINS
       CALL mpi_type_match_size(mpi_typeclass_integer, io_bytes, dtype, ierror)
       IF (ierror /= mpi_success) RETURN
     END SUBROUTINE type_create_fallback_int
-#endif
 
-#if ! defined(HAVE_MPI_REAL4) || ! defined(HAVE_MPI_REAL8)
+
+
     SUBROUTINE type_create_fallback_real(p, r, dtype, ierror)
       INTEGER, INTENT(in) :: r, p
       INTEGER, INTENT(out) :: dtype, ierror
@@ -242,33 +242,33 @@ CONTAINS
       CALL mpi_type_match_size(mpi_typeclass_real, io_bytes, dtype, ierror)
       IF (ierror /= mpi_success) RETURN
     END SUBROUTINE type_create_fallback_real
-#endif
+
   END SUBROUTINE create_types_mp
 
   SUBROUTINE destroy_types_mp
-#if ! defined(HAVE_MPI_INTEGER4) || ! defined(HAVE_MPI_INTEGER8) || ! defined(HAVE_MPI_REAL4) || ! defined(HAVE_MPI_REAL8)
+
     INTEGER :: ierror
-#endif
-#ifndef HAVE_MPI_INTEGER4
+
+
     CALL mpi_type_free(mp_i4, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_free failed", filename, __LINE__)
-#endif
-#ifndef HAVE_MPI_INTEGER8
+         CALL abort_ppm("mpi_type_free failed", filename, 255)
+
+
     CALL mpi_type_free(mp_i8, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_free failed", filename, __LINE__)
-#endif
-#ifndef HAVE_MPI_REAL4
+         CALL abort_ppm("mpi_type_free failed", filename, 260)
+
+
     CALL mpi_type_free(mp_sp, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_free failed", filename, __LINE__)
-#endif
-#ifndef HAVE_MPI_REAL8
+         CALL abort_ppm("mpi_type_free failed", filename, 265)
+
+
     CALL mpi_type_free(mp_dp, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_free failed", filename, __LINE__)
-#endif
+         CALL abort_ppm("mpi_type_free failed", filename, 270)
+
     ! finalize C part
     CALL ppm_finalize_std_type_kinds_mp
 

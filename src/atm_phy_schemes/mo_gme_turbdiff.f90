@@ -30,11 +30,11 @@ MODULE mo_gme_turbdiff
 
   PUBLIC :: partura, parturs, progimp_turb, nearsfc
 
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
+
+
+
   LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
+
 
   CONTAINS
 

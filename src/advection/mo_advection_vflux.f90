@@ -24,7 +24,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_advection_vflux
 
@@ -51,9 +61,6 @@ MODULE mo_advection_vflux
   USE mo_mpi,                 ONLY: process_mpi_stdio_id, my_process_is_stdio, get_my_mpi_work_id, &
                                     get_glob_proc0, comm_lev
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
   USE mo_timer,               ONLY: timer_adv_vflx, timer_start, timer_stop
 
 
@@ -200,11 +207,7 @@ CONTAINS
         iadv_min_slev = advconf%ppm_v%iadv_min_slev
 
         ! CALL third order PPM/PSM (unrestricted timestep-version) (i.e. CFL>1)
-#ifdef _OPENACC
-        CALL upwind_vflux_ppm4gpu(                                       &
-#else
         CALL upwind_vflux_ppm(                                           &
-#endif
           &         p_patch             = p_patch,                       & !in
           &         p_cc                = p_cc(:,:,:,jt),                & !in
           &         p_iubc_adv          = advconf%iubc_adv,              & !in
@@ -604,14 +607,11 @@ CONTAINS
     REAL(wp) :: rdtime                   !< 1/dt
 
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_face,z_face_up,z_face_low,z_iflx
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_cflfrac,max_cfl_blk
-!DIR$ ATTRIBUTES ALIGN : 64 :: i_indlist,i_levlist,i_listdim
-!DIR$ ATTRIBUTES ALIGN : 64 :: jk_shifted
-!DIR$ ATTRIBUTES ALIGN : 64 :: zq_ubc,max_cfl_lay
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_aux,max_cfl_lay_tot
-#endif
+
+
+
+
+
     !-----------------------------------------------------------------------
 
     ! inverse of time step for computational efficiency
@@ -947,14 +947,6 @@ CONTAINS
         ! index of top half level
         ikm1 = jk -1
 
-#ifdef __INTEL_COMPILER
-! DR: not sure whether this is still required for this modified version of the loop
-! DR: retained for safety reasons
-!
-! HB: for some strange reason this loop introduces a decomposition dependency if
-! vectorized... threfore inhibit vectorization here
-!DIR$ NOVECTOR
-#endif
         DO jc = i_startidx, i_endidx
           q_up  = MERGE(p_cc(jc,ik,jb)  , p_cc(jc,ikm1,jb)         , p_mflx_contra_v(jc,jk,jb) >= 0._wp)
           dq_up = MERGE(z_delta_q(jc,ik), -1._wp*z_delta_q(jc,ikm1), p_mflx_contra_v(jc,jk,jb) >= 0._wp)
@@ -1816,7 +1808,6 @@ CONTAINS
 
 
 
-#ifndef _OPENACC
 ! These diagnostics are not viable on GPU
     !
     ! If desired, print maximum vertical CFL number
@@ -1870,7 +1861,6 @@ CONTAINS
       ENDIF
 
     END IF
-#endif
 
     !$ACC WAIT
     !$ACC END DATA
@@ -2327,10 +2317,8 @@ CONTAINS
     REAL(wp) ::   &                  !< auxiliaries for optimization
       &  zfac, zfac_m1
 
-#ifndef _OPENACC
     REAL(wp) ::   &                  !< auxiliary field for optimization
       &  zfac_n(nproma)
-#endif
 
     REAL(wp) ::   &                  !< geometric factors
       &  zgeo1, zgeo2, zgeo3, zgeo4
@@ -2353,12 +2341,10 @@ CONTAINS
     z_slope(i_startidx:i_endidx,slev) = 0._wp
     !$ACC END KERNELS
 
-#ifndef _OPENACC
     ! Initialize zfac_n for jk=slev
     zfac_n(i_startidx:i_endidx) = (p_cc(i_startidx:i_endidx,slevp1) - p_cc(i_startidx:i_endidx,slev)) &
       &                         /( p_cellhgt_mc_now(i_startidx:i_endidx,slevp1)                       &
       &                          + p_cellhgt_mc_now(i_startidx:i_endidx,slev) )
-#endif
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR PRIVATE(ikm1, ikp1, zfac, zfac_m1) COLLAPSE(2)
@@ -2370,12 +2356,7 @@ CONTAINS
         ! index of bottom half level
         ikp1    = MIN( jk+1, elev )
 
-#ifndef _OPENACC
         zfac_m1 = zfac_n(jc)
-#else
-        zfac_m1 = (p_cc(jc,jk) - p_cc(jc,ikm1))  &
-          &     / (p_cellhgt_mc_now(jc,jk) + p_cellhgt_mc_now(jc,ikm1))
-#endif
 
         zfac = (p_cc(jc,ikp1) - p_cc(jc,jk)) &
           &  / (p_cellhgt_mc_now(jc,ikp1) + p_cellhgt_mc_now(jc,jk))
@@ -2386,9 +2367,7 @@ CONTAINS
           &  * ( (2._wp * p_cellhgt_mc_now(jc,ikm1) + p_cellhgt_mc_now(jc,jk)) * zfac    &
           &  + (p_cellhgt_mc_now(jc,jk) + 2._wp * p_cellhgt_mc_now(jc,ikp1)) * zfac_m1)
 
-#ifndef _OPENACC
         zfac_n(jc) = zfac
-#endif
       END DO  ! jc
 
     END DO  ! jk

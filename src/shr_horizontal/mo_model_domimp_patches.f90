@@ -17,7 +17,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_model_domimp_patches
@@ -72,45 +82,16 @@ MODULE mo_model_domimp_patches
     &                              p_comm_work_test, p_comm_work,         &
     &                              my_process_is_stdio
   USE mo_complete_subdivision, ONLY: generate_comm_pat_cvec1
-#ifndef NOMPI
-  USE mo_complete_subdivision, ONLY: create_work2test_patterns
-#endif
   USE mo_read_netcdf_distributed, ONLY: setup_distrib_read
   USE mo_read_interface, ONLY: t_stream_id, p_t_patch, openInputFile, &
     &                          closeFile, on_cells, on_edges, on_vertices, &
     &                          read_2D, read_2D_int, read_2D_extdim, &
     &                          read_2D_extdim_int
-#ifndef __NO_ICON_ATMO__
   USE mo_interpol_config,    ONLY: nudge_zone_width
-#endif
   USE ppm_distributed_array,  ONLY: dist_mult_array_local_ptr, &
     &                               dist_mult_array_expose
   USE mo_fortran_tools, ONLY: t_ptr_2d, t_ptr_2d_int, t_ptr_3d, t_ptr_3d_int
-#ifndef NOMPI
-  ! The USE statement below lets this module use the routines from
-  ! mo_netcdf_parallel where only 1 processor is reading and
-  ! broadcasting the results
-#ifndef HAVE_PARALLEL_NETCDF
-  USE mo_netcdf_parallel, ONLY:                      &
-    & nf_nowrite, nf_global, nf_noerr,  &
-    & nf_inq_attid        => p_nf_inq_attid,          &
-    & nf_open             => p_nf_open,               &
-    & nf_close            => p_nf_close,              &
-    & nf_inq_dimid        => p_nf_inq_dimid,          &
-    & nf_inq_dimlen       => p_nf_inq_dimlen,         &
-    & nf_inq_varid        => p_nf_inq_varid,          &
-    & nf_get_att_text     => p_nf_get_att_text,       &
-    & nf_get_att_int      => p_nf_get_att_int,        &
-    & nf_get_var_int      => p_nf_get_var_int,        &
-    & nf_get_vara_int     => p_nf_get_vara_int,       &
-    & nf_get_vara_double  => p_nf_get_vara_double_
-#endif
-#endif
-#ifndef NOMPI
-    USE mpi, ONLY: MPI_INFO_NULL
-#endif
 
-#if defined(NOMPI) || defined(HAVE_PARALLEL_NETCDF)
   USE mo_netcdf, ONLY: &
     & nf_nowrite, nf_global, nf_noerr, nf_mpiio, &
     & nf_inq_attid, &
@@ -125,7 +106,6 @@ MODULE mo_model_domimp_patches
     & nf_get_var_int, &
     & nf_get_vara_int, &
     & nf_get_vara_double
-#endif
 
   IMPLICIT NONE
 
@@ -580,11 +560,6 @@ CONTAINS
     ! complete_parallel_setup)
     CALL generate_comm_pat_cvec1(patch, is_ocean_decomposition)
 
-#ifndef NOMPI
-    DO jg = n_dom_start, n_dom
-      IF (p_test_run) CALL create_work2test_patterns(patch(jg))
-    END DO
-#endif
 
     IF (.not. my_process_is_oceanic()) THEN
       DO jg = n_dom_start, n_dom
@@ -1040,19 +1015,7 @@ CONTAINS
     CALL message ('', TRIM(message_text))
 
     tlen = LEN_TRIM(patch_pre%grid_filename)
-#if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-    ierr = nf_open_par(patch_pre%grid_filename(1:tlen), &
-       &               IOR(nf_nowrite, nf_mpiio), &
-       &               p_comm_work, MPI_INFO_NULL, ncid)
-    IF (ierr /= nf_noerr) THEN
-#endif
       CALL nf(nf_open(patch_pre%grid_filename(1:tlen), nf_nowrite, ncid), routine)
-#if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-      WRITE(message_text,'(2a)')  'warning: falling back to serial semantics for&
-           & opening netcdf file ', patch_pre%grid_filename(1:tlen)
-      CALL message(routine,message_text)
-    END IF
-#endif
 
     ! Test, if grid refinement information is available in the NetCDF
     ! file. If not, try to open "patch_pre%grid_filename_grfinfo":
@@ -1061,20 +1024,8 @@ CONTAINS
       WRITE(message_text,'(a,a)') 'Read gridref info from file ', TRIM(patch_pre%grid_filename_grfinfo)
       CALL message ('', TRIM(message_text))
       tlen = LEN_TRIM(patch_pre%grid_filename_grfinfo)
-#if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-      ierr = nf_open_par(patch_pre%grid_filename_grfinfo(1:tlen), &
-         &               IOR(nf_nowrite, nf_mpiio), p_comm_work, &
-         &               MPI_INFO_NULL, ncid_grf)
-      IF (ierr /= nf_noerr) THEN
-#endif
         CALL nf(nf_open(patch_pre%grid_filename_grfinfo(1:tlen), nf_nowrite, &
              ncid_grf), routine)
-#if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-        WRITE(message_text,'(2a)')  'warning: falling back to serial semantics for&
-             & opening netcdf file ', patch_pre%grid_filename_grfinfo(1:tlen)
-        CALL message(routine,message_text)
-      END IF
-#endif
     ELSE
       ncid_grf = ncid
     END IF
@@ -1630,7 +1581,6 @@ CONTAINS
     max_verts_connectivity = patch%verts%max_connectivity
 
     patch%boundary_depth_index = 0
-#ifndef __NO_ICON_ATMO__
     patch%boundary_depth_index = nudge_zone_width
     return_status = nf_inq_attid(ncid, nf_global, 'boundary_depth_index', varid)
     IF (return_status == nf_noerr) THEN
@@ -1643,7 +1593,6 @@ CONTAINS
 !           & 'nudge_zone_width > patch%boundary_depth_index - 4')
 !       ENDIF
     ENDIF
-#endif
 
     IF (max_cell_connectivity /= 3) & ! not triangular grid
       CALL message ('read_remaining_patch',&
@@ -1751,102 +1700,56 @@ CONTAINS
     CALL read_2D(stream_id, on_edges, 'edge_system_orientation', n_lp+1, &
       &          multivar_2d_data_wp(:))
 
-#ifdef __GNUC__
     DO ip = 0, n_lp
       ALLOCATE(multivar_2d_data_wp(ip)%p(nproma, patches(ip)%p%nblks_e))
       multivar_2d_data_wp(ip)%p(:,:) = 0.0_wp
     END DO
-#endif
 
     ! p_p%edges%center(:,:)%lon
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p => patches(ip)%p%edges%center(:,:)%lon
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'lon_edge_centre', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%center(:,:)%lon = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! p_p%edges%center(:,:)%lat
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p => patches(ip)%p%edges%center(:,:)%lat
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'lat_edge_centre', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%center(:,:)%lat = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! p_p%edges%primal_normal(:,:)%v1
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p => patches(ip)%p%edges%primal_normal(:,:)%v1
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'zonal_normal_primal_edge', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%primal_normal(:,:)%v1 = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! p_p%edges%primal_normal(:,:)%v2
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p => patches(ip)%p%edges%primal_normal(:,:)%v2
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'meridional_normal_primal_edge', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%primal_normal(:,:)%v2 = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! p_p%edges%dual_normal(:,:)%v1
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p => patches(ip)%p%edges%dual_normal(:,:)%v1
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'zonal_normal_dual_edge', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%dual_normal(:,:)%v1 = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! p_p%edges%dual_normal(:,:)%v2
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p => patches(ip)%p%edges%dual_normal(:,:)%v2
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'meridional_normal_dual_edge', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%dual_normal(:,:)%v2 = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
-#ifdef __GNUC__
     DO ip = 0, n_lp
       DEALLOCATE(multivar_2d_data_wp(ip)%p)
     END DO
-#endif
 
     ! p_p%edges%primal_edge_length(:,:)
     DO ip = 0, n_lp
@@ -2199,326 +2102,175 @@ CONTAINS
 
     TYPE(t_ptr_2d)  :: multivar_2d_data_wp(0:n_lp)
     INTEGER :: ip
-#ifdef __GNUC__
     INTEGER :: nblks
-#endif
 
     CHARACTER(LEN=*), PARAMETER :: routine = modname//':read_cartesian_positions'
     !-----------------------------------------------------------------------
 
-#ifdef __GNUC__
     DO ip = 0, n_lp
       nblks = patches(ip)%p%alloc_cell_blocks
       ALLOCATE(multivar_2d_data_wp(ip)%p(nproma, nblks))
       multivar_2d_data_wp(ip)%p(:,:) = 0.0_wp
     END DO
-#endif
 
     ! patches%cells%cartesian_center(:,:)%x(1)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%cells%cartesian_center(:,:)%x(1)
-    END DO
-#endif
     CALL read_2D(stream_id, on_cells, 'cell_circumcenter_cartesian_x', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%cells%cartesian_center(:,:)%x(1) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%cells%cartesian_center(:,:)%x(2)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%cells%cartesian_center(:,:)%x(2)
-    END DO
-#endif
     CALL read_2D(stream_id, on_cells, 'cell_circumcenter_cartesian_y', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%cells%cartesian_center(:,:)%x(2) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%cells%cartesian_center(:,:)%x(3)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%cells%cartesian_center(:,:)%x(3)
-    END DO
-#endif
     CALL read_2D(stream_id, on_cells, 'cell_circumcenter_cartesian_z', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%cells%cartesian_center(:,:)%x(3) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
-#ifdef __GNUC__
     DO ip = 0, n_lp
       DEALLOCATE(multivar_2d_data_wp(ip)%p)
       ALLOCATE(multivar_2d_data_wp(ip)%p(nproma,patches(ip)%p%nblks_e))
       multivar_2d_data_wp(ip)%p(:,:) = 0.0_wp
     END DO
-#endif
 
     ! patches%edges%cartesian_center(:,:)%x(1)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%cartesian_center(:,:)%x(1)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_middle_cartesian_x', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%cartesian_center(:,:)%x(1) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%cartesian_center(:,:)%x(2)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%cartesian_center(:,:)%x(2)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_middle_cartesian_y', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%cartesian_center(:,:)%x(2) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%cartesian_center(:,:)%x(3)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%cartesian_center(:,:)%x(3)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_middle_cartesian_z', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%cartesian_center(:,:)%x(3) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%cartesian_dual_middle(:,:)%x(1)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%cartesian_dual_middle(:,:)%x(1)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_dual_middle_cartesian_x', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%cartesian_dual_middle(:,:)%x(1) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%cartesian_dual_middle(:,:)%x(2)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%cartesian_dual_middle(:,:)%x(2)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_dual_middle_cartesian_y', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%cartesian_dual_middle(:,:)%x(2) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%cartesian_dual_middle(:,:)%x(3)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%cartesian_dual_middle(:,:)%x(3)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_dual_middle_cartesian_z', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%cartesian_dual_middle(:,:)%x(3) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%primal_cart_normal(:,:)%x(1)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%primal_cart_normal(:,:)%x(1)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_primal_normal_cartesian_x', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%primal_cart_normal(:,:)%x(1) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%primal_cart_normal(:,:)%x(2)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%primal_cart_normal(:,:)%x(2)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_primal_normal_cartesian_y', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%primal_cart_normal(:,:)%x(2) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%primal_cart_normal(:,:)%x(3)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%primal_cart_normal(:,:)%x(3)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_primal_normal_cartesian_z', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%primal_cart_normal(:,:)%x(3) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%dual_cart_normal(:,:)%x(1)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%dual_cart_normal(:,:)%x(1)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_dual_normal_cartesian_x', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%dual_cart_normal(:,:)%x(1) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%dual_cart_normal(:,:)%x(2)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%dual_cart_normal(:,:)%x(2)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_dual_normal_cartesian_y', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%dual_cart_normal(:,:)%x(2) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%edges%dual_cart_normal(:,:)%x(3)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p &
-        => patches(ip)%p%edges%dual_cart_normal(:,:)%x(3)
-    END DO
-#endif
     CALL read_2D(stream_id, on_edges, 'edge_dual_normal_cartesian_z', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%edges%dual_cart_normal(:,:)%x(3) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
-#ifdef __GNUC__
     DO ip = 0, n_lp
       DEALLOCATE(multivar_2d_data_wp(ip)%p)
       nblks =  patches(ip)%p%nblks_v
       ALLOCATE(multivar_2d_data_wp(ip)%p(nproma,nblks))
       multivar_2d_data_wp(ip)%p(:,:) = 0.0_wp
     END DO
-#endif
 
     ! patches%verts%cartesian(:,:)%x(1)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p => patches(ip)%p%verts%cartesian(:,:)%x(1)
-    END DO
-#endif
     CALL read_2D(stream_id, on_vertices, 'cartesian_x_vertices', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%verts%cartesian(:,:)%x(1) &
         = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%verts%cartesian(:,:)%x(2)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p => patches(ip)%p%verts%cartesian(:,:)%x(2)
-    END DO
-#endif
     CALL read_2D(stream_id, on_vertices, 'cartesian_y_vertices', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%verts%cartesian(:,:)%x(2) = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
     ! patches%verts%cartesian(:,:)%x(3)
-#ifndef __GNUC__
-    DO ip = 0, n_lp
-      multivar_2d_data_wp(ip)%p => patches(ip)%p%verts%cartesian(:,:)%x(3)
-    END DO
-#endif
     CALL read_2D(stream_id, on_vertices, 'cartesian_z_vertices', n_lp+1, &
       &          multivar_2d_data_wp(:))
-#ifdef __GNUC__
     DO ip = 0, n_lp
       patches(ip)%p%verts%cartesian(:,:)%x(3) = multivar_2d_data_wp(ip)%p(:,:)
     END DO
-#endif
 
-#ifdef __GNUC__
     DO ip = 0, n_lp
       DEALLOCATE(multivar_2d_data_wp(ip)%p)
     END DO
-#endif
 
   END SUBROUTINE read_cartesian_positions
   !-------------------------------------------------------------------------

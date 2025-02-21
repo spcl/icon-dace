@@ -14,10 +14,19 @@
 !
 !  D. Salmond, CRAY (UK), August 1991, original code
 
-#if defined __xlC__ && !defined NOXLFPROCESS
-@PROCESS HOT
-#endif
-#include "fsel.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 MODULE mo_convect_tables
 
   USE mo_kind,               ONLY: wp
@@ -140,19 +149,10 @@ MODULE mo_convect_tables
   REAL(wp) :: tlucu(1:2,lucupmin-2:lucupmax+1)     ! fused table
   REAL(wp) :: tlucuw(1:2,lucupmin-2:lucupmax+1)    ! fused table
 
-#ifdef __SPLINE_TEST__
-  REAL(wp) :: ztemp(jptlucu1+1:jptlucu2-1)
-  REAL(wp) :: ua(jptlucu1+1:jptlucu2-1)
-  REAL(wp) :: dua(jptlucu1+1:jptlucu2-1)
-  REAL(wp) :: uaw(jptlucu1+1:jptlucu2-1)
-  REAL(wp) :: duaw(jptlucu1+1:jptlucu2-1)
-  REAL(wp) :: sa(jptlucu1+1:jptlucu2-1)
-  REAL(wp) :: dsa(jptlucu1+1:jptlucu2-1)
-  REAL(wp) :: saw(jptlucu1+1:jptlucu2-1)
-  REAL(wp) :: dsaw(jptlucu1+1:jptlucu2-1)
-  INTEGER  :: tmp_idx(jptlucu1+1:jptlucu2-1)
-  REAL(wp) :: za(jptlucu1+1:jptlucu2-1)
-#endif
+
+
+
+
 
   !------------------------------------------------------------------------------
 
@@ -181,10 +181,10 @@ CONTAINS
     REAL(wp) :: zcvm3, zcvm4, zcvm5
     REAL(wp) :: zavm1, zavm2, zavm3, zavm4, zavm5
     REAL(wp) :: zminner,zdminner,zlinner,zdlinner
-#ifdef __SPLINE_TEST__
-    REAL(wp) :: max_dua,max_ua,ua_eps,dua_eps
-    REAL(wp) :: max_duaw,max_uaw,uaw_eps,duaw_eps
-#endif
+
+
+
+
     INTEGER :: it
 
     z5alvcp = c5les*alv/cpd
@@ -294,97 +294,6 @@ CONTAINS
       tlucuw(2,it) = 0.05_wp*zdlinner*EXP(zlinner)*rd/rv
     END DO
 
-#ifdef __SPLINE_TEST__
-
-    DO it = jptlucu1-1, jptlucu2-1
-      ztemp(it) = 0.001_wp*it
-    END DO
-
-    CALL prepare_ua_index('setup1',jptlucu2-jptlucu1-2,ztemp(jptlucu1+1),tmp_idx(jptlucu1+1))
-    CALL lookup_ua(jptlucu2-jptlucu1-2,tmp_idx(jptlucu1+1),ua(jptlucu1+1),dua(jptlucu1+1))
-    CALL lookup_uaw(jptlucu2-jptlucu1-2,tmp_idx(jptlucu1+1),uaw(jptlucu1+1),duaw(jptlucu1+1))
-
-    max_ua   = 1.e-20_wp
-    max_dua  = 1.e-20_wp
-    max_uaw  = 1.e-20_wp
-    max_duaw = 1.e-20_wp
-
-    DO it = jptlucu1+1, jptlucu2-1
-
-      ua_eps = ABS(tlucua(it) - ua(it))/tlucua(it)
-      max_ua = MAX(max_ua,ua_eps)
-
-      uaw_eps = ABS(tlucuaw(it) - uaw(it))/tlucuaw(it)
-      max_uaw = MAX(max_uaw,uaw_eps)
-
-      dua_eps = ABS(tlucuad(it) - dua(it))/tlucuad(it)
-      max_dua = MAX(max_dua,dua_eps)
-
-      duaw_eps = ABS(tlucuawd(it) - duaw(it))/tlucuawd(it)
-      max_duaw = MAX(max_duaw,duaw_eps)
-
-      WRITE (1,*) 0.001_wp*it, tlucua(it),   ua(it),   ua_eps
-      WRITE (2,*) 0.001_wp*it, tlucuaw(it),  uaw(it),  uaw_eps
-      WRITE (3,*) 0.001_wp*it, tlucuad(it),  dua(it),  dua_eps
-      WRITE (4,*) 0.001_wp*it, tlucuawd(it), duaw(it), duaw_eps
-
-    END DO
-
-    WRITE (0,*) 'max_ua   epsilon',max_ua
-    WRITE (0,*) 'max_dua  epsilon',max_dua
-    WRITE (0,*) 'max_uaw  epsilon',max_uaw
-    WRITE (0,*) 'max_duaw epsilon',max_duaw
-
-    !-------------------------------------------------------------------------
-
-    CALL prepare_ua_index_spline('setup2',1,jptlucu2-jptlucu1-2,ztemp(jptlucu1+1), &
-         &                       tmp_idx(jptlucu1+1),za(jptlucu1+1))
-    CALL lookup_ua_spline(jptlucu2-jptlucu1-2,tmp_idx(jptlucu1+1),za(jptlucu1+1),sa(jptlucu1+1), dsa(jptlucu1+1))
-    CALL lookup_uaw_spline(jptlucu2-jptlucu1-2,tmp_idx(jptlucu1+1),za(jptlucu1+1),saw(jptlucu1+1),dsaw(jptlucu1+1))
-
-    max_ua   = 1.e-20_wp
-    max_dua  = 1.e-20_wp
-    max_uaw  = 1.e-20_wp
-    max_duaw = 1.e-20_wp
-
-    DO it = jptlucu1+1, jptlucu2-1
-
-      ua_eps = ABS(tlucua(it) - sa(it))/tlucua(it)
-      max_ua = MAX(max_ua,ua_eps)
-
-      uaw_eps = ABS(tlucuaw(it) - saw(it))/tlucuaw(it)
-      max_uaw = MAX(max_uaw,uaw_eps)
-
-      dua_eps = ABS(tlucuad(it) - dsa(it))/tlucuad(it)
-      max_dua = MAX(max_dua,dua_eps)
-
-      duaw_eps = ABS(tlucuawd(it) - dsaw(it))/tlucuawd(it)
-      max_duaw = MAX(max_duaw,duaw_eps)
-
-      WRITE (11,*) 0.001_wp*it, tlucua(it),   sa(it),   ua_eps
-      WRITE (12,*) 0.001_wp*it, tlucuaw(it),  saw(it),  uaw_eps
-      WRITE (13,*) 0.001_wp*it, tlucuad(it),  dsa(it),  dua_eps
-      WRITE (14,*) 0.001_wp*it, tlucuawd(it), dsaw(it), duaw_eps
-
-    END DO
-
-    WRITE (0,*) 'max_ua   epsilon',max_ua
-    WRITE (0,*) 'max_dua  epsilon',max_dua
-    WRITE (0,*) 'max_uaw  epsilon',max_uaw
-    WRITE (0,*) 'max_duaw epsilon',max_duaw
-
-    DO it = lucupmin, lucupmax
-      IF (it < 27315/5) THEN
-        WRITE (21,*) 0.05*(it+1), tlucu(1,it)
-        WRITE (23,*) 0.05*(it+1), 20.0_wp*tlucu(2,it)
-      ELSE
-        WRITE (21,*) 0.05*it, tlucu(1,it)
-        WRITE (23,*) 0.05*it, 20.0_wp*tlucu(2,it)
-      ENDIF
-    ENDDO
-
-    STOP 'lookup tables printed'
-#endif
 
     !$ACC ENTER DATA COPYIN(tlucu, tlucuw)
 
@@ -412,16 +321,16 @@ CONTAINS
     IF (PRESENT(uc)) THEN
 !IBM* NOVECTOR
       DO jl = 1,size
-        zcvm4  = FSEL(tmelt-temp(jl),c4ies,c4les)
-        zcvm5  = FSEL(tmelt-temp(jl),z5alscp,z5alvcp)
-        uc(jl) = FSEL(tmelt-temp(jl),zalsdcp,zalvdcp)
+        zcvm4  = MERGE(c4ies,c4les,(tmelt-temp(jl)).GE.0._wp)
+        zcvm5  = MERGE(z5alscp,z5alvcp,(tmelt-temp(jl)).GE.0._wp)
+        uc(jl) = MERGE(zalsdcp,zalvdcp,(tmelt-temp(jl)).GE.0._wp)
         ub(jl) = zcvm5/(temp(jl)-zcvm4)**2
       END DO
     ELSE
 !IBM* NOVECTOR
       DO jl = 1,size
-        zcvm4  = FSEL(tmelt-temp(jl),c4ies,c4les)
-        zcvm5  = FSEL(tmelt-temp(jl),z5alscp,z5alvcp)
+        zcvm4  = MERGE(c4ies,c4les,(tmelt-temp(jl)).GE.0._wp)
+        zcvm5  = MERGE(z5alscp,z5alvcp,(tmelt-temp(jl)).GE.0._wp)
         ub(jl) = zcvm5/(temp(jl)-zcvm4)**2
       END DO
     END IF
@@ -454,9 +363,9 @@ CONTAINS
 !IBM* ASSERT(NODEPS)
       DO nl = 1,kidx
         jl = list(nl)
-        zcvm4  = FSEL(tmelt-temp(jl),c4ies,c4les)
-        zcvm5  = FSEL(tmelt-temp(jl),z5alscp,z5alvcp)
-        uc(nl) = FSEL(tmelt-temp(jl),zalsdcp,zalvdcp)
+        zcvm4  = MERGE(c4ies,c4les,(tmelt-temp(jl)).GE.0._wp)
+        zcvm5  = MERGE(z5alscp,z5alvcp,(tmelt-temp(jl)).GE.0._wp)
+        uc(nl) = MERGE(zalsdcp,zalvdcp,(tmelt-temp(jl)).GE.0._wp)
         ub(nl) = zcvm5/(temp(jl)-zcvm4)**2
       END DO
     ELSE
@@ -465,8 +374,8 @@ CONTAINS
 !IBM* ASSERT(NODEPS)
       DO nl = 1,kidx
         jl = list(nl)
-        zcvm4  = FSEL(tmelt-temp(jl),c4ies,c4les)
-        zcvm5  = FSEL(tmelt-temp(jl),z5alscp,z5alvcp)
+        zcvm4  = MERGE(c4ies,c4les,(tmelt-temp(jl)).GE.0._wp)
+        zcvm5  = MERGE(z5alscp,z5alvcp,(tmelt-temp(jl)).GE.0._wp)
         ub(nl) = zcvm5/(temp(jl)-zcvm4)**2
       END DO
     END IF
@@ -847,22 +756,22 @@ CONTAINS
       !$ACC   REDUCTION(+: znphase) REDUCTION(*: zinbounds) ASYNC(1)
       DO jl = jcs,size
 
-        ztshft = FSEL(temp(jl)-tmelt,0._wp,1._wp)
+        ztshft = MERGE(0._wp,1._wp,(temp(jl)-tmelt).GE.0._wp)
         ztt = 20._wp*temp(jl)
         zalpha(jl) = ztt - DINT(ztt)
         idx(jl) = INT(ztt-ztshft)
 
-        zinbounds = FSEL(ztmin-ztt,0._wp,zinbounds)
-        zinbounds = FSEL(ztt-ztmax,0._wp,zinbounds)
+        zinbounds = MERGE(0._wp,zinbounds,(ztmin-ztt).GE.0._wp)
+        zinbounds = MERGE(0._wp,zinbounds,(ztt-ztmax).GE.0._wp)
 
         ! check dual phase conditions
 
         !          lo2         = (ptm1(jl,jk) .LT. cthomi) .OR.                   &
         !                      (ptm1(jl,jk) .LT. tmelt .AND. zxised .GT. csecfrl)
 
-        ztest = FSEL(temp(jl)-tmelt ,0._wp,1.0_wp)
-        ztest = FSEL(csecfrl-xi(jl) ,0._wp,ztest)
-        ztest = FSEL(temp(jl)-cthomi,ztest,1.0_wp)
+        ztest = MERGE(0._wp,1.0_wp,(temp(jl)-tmelt ).GE.0._wp)
+        ztest = MERGE(0._wp,ztest,(csecfrl-xi(jl) ).GE.0._wp)
+        ztest = MERGE(ztest,1.0_wp,(temp(jl)-cthomi).GE.0._wp)
 
         ! normalize ztest to 0 and 1
 
@@ -878,13 +787,13 @@ CONTAINS
       !$ACC   REDUCTION(*: zinbounds) ASYNC(1)
       DO jl = jcs,size
 
-        ztshft = FSEL(temp(jl)-tmelt,0._wp,1._wp)
+        ztshft = MERGE(0._wp,1._wp,(temp(jl)-tmelt).GE.0._wp)
         ztt = 20._wp*temp(jl)
         zalpha(jl) = ztt - DINT(ztt)
         idx(jl) = INT(ztt-ztshft)
 
-        zinbounds = FSEL(ztmin-ztt,0._wp,zinbounds)
-        zinbounds = FSEL(ztt-ztmax,0._wp,zinbounds)
+        zinbounds = MERGE(0._wp,zinbounds,(ztmin-ztt).GE.0._wp)
+        zinbounds = MERGE(0._wp,zinbounds,(ztt-ztmax).GE.0._wp)
       END DO
       !$ACC END PARALLEL LOOP
     END IF
@@ -961,17 +870,17 @@ CONTAINS
         ztt = DNINT(1000._wp*temp(jl))
         idx(jl) = INT(ztt)
 
-        zinbounds(jl) = FSEL(ztmin-ztt,0._wp,zinbounds(jl))
-        zinbounds(jl) = FSEL(ztt-ztmax,0._wp,zinbounds(jl))
+        zinbounds(jl) = MERGE(0._wp,zinbounds(jl),(ztmin-ztt).GE.0._wp)
+        zinbounds(jl) = MERGE(0._wp,zinbounds(jl),(ztt-ztmax).GE.0._wp)
 
         ! check dual phase conditions
 
         !          lo2         = (ptm1(jl,jk) .LT. cthomi) .OR.                   &
         !                      (ptm1(jl,jk) .LT. tmelt .AND. zxised .GT. csecfrl)
 
-        ztest(jl) = FSEL(temp(jl)-tmelt ,0._wp,1.0_wp)
-        ztest(jl) = FSEL(csecfrl-xi(jl) ,0._wp,ztest(jl))
-        ztest(jl) = FSEL(temp(jl)-cthomi,ztest(jl),1.0_wp)
+        ztest(jl) = MERGE(0._wp,1.0_wp,(temp(jl)-tmelt ).GE.0._wp)
+        ztest(jl) = MERGE(0._wp,ztest(jl),(csecfrl-xi(jl) ).GE.0._wp)
+        ztest(jl) = MERGE(ztest(jl),1.0_wp,(temp(jl)-cthomi).GE.0._wp)
 
         ! normalize ztest to 0 and 1
 
@@ -989,8 +898,8 @@ CONTAINS
         ztt = DNINT(1000.0_wp*temp(jl))
         idx(jl) = INT(ztt)
 
-        zinbounds(jl) = FSEL(ztmin-ztt,0._wp,zinbounds(jl))
-        zinbounds(jl) = FSEL(ztt-ztmax,0._wp,zinbounds(jl))
+        zinbounds(jl) = MERGE(0._wp,zinbounds(jl),(ztmin-ztt).GE.0._wp)
+        zinbounds(jl) = MERGE(0._wp,zinbounds(jl),(ztt-ztmax).GE.0._wp)
 
       END DO
     END IF
@@ -1030,13 +939,13 @@ CONTAINS
     DO nl = 1,size
       jl = list(nl)
 
-      ztshft = FSEL(temp(jl)-tmelt,0._wp,1._wp)
+      ztshft = MERGE(0._wp,1._wp,(temp(jl)-tmelt).GE.0._wp)
       ztt = 20._wp*temp(jl)
       zalpha(nl) = ztt - DINT(ztt)
       idx(nl) = INT(ztt-ztshft)
 
-      zinbounds = FSEL(ztmin-ztt,0._wp,zinbounds)
-      zinbounds = FSEL(ztt-ztmax,0._wp,zinbounds)
+      zinbounds = MERGE(0._wp,zinbounds,(ztmin-ztt).GE.0._wp)
+      zinbounds = MERGE(0._wp,zinbounds,(ztt-ztmax).GE.0._wp)
     END DO
 
     ! if one index was out of bounds -> print error and exit
@@ -1078,13 +987,13 @@ CONTAINS
     !$ACC   REDUCTION(*: zinbounds) ASYNC(1)
     DO nl = 1, kidx
       jl = list(nl)
-      ztshft = FSEL(tmelt-temp(jl),1.0_wp,0.0_wp)
+      ztshft = MERGE(1.0_wp,0.0_wp,(tmelt-temp(jl)).GE.0._wp)
 ! TODO: original code ztt = rsdeltat*temp(jl) and rsdeltat=40._wp
       ztt = 20._wp*temp(jl)
       zalpha(nl) = ztt - AINT(ztt)
       idx(nl) = INT(ztt-ztshft)
-      zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
-      zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
+      zinbounds = MERGE(0.0_wp,zinbounds,(ztmin-ztt).GE.0._wp)
+      zinbounds = MERGE(0.0_wp,zinbounds,(ztt-ztmax).GE.0._wp)
     END DO
     !$ACC END PARALLEL LOOP
 
@@ -1144,8 +1053,8 @@ CONTAINS
       ztt = DNINT(1000._wp*temp(jl))
       idx(nl) = INT(ztt)
 
-      zinbounds(jl) = FSEL(ztmin-ztt,0._wp,zinbounds(jl))
-      zinbounds(jl) = FSEL(ztt-ztmax,0._wp,zinbounds(jl))
+      zinbounds(jl) = MERGE(0._wp,zinbounds(jl),(ztmin-ztt).GE.0._wp)
+      zinbounds(jl) = MERGE(0._wp,zinbounds(jl),(ztt-ztmax).GE.0._wp)
     END DO
 
     ! if one index was out of bounds -> print error and exit
@@ -1186,13 +1095,13 @@ CONTAINS
 
       jl = list(nl)
 
-      ztshft = FSEL(temp(jl)-tmelt,0._wp,1._wp)
+      ztshft = MERGE(0._wp,1._wp,(temp(jl)-tmelt).GE.0._wp)
       ztt = 20._wp*temp(jl)
       zalpha(nl) = ztt - DINT(ztt)
       idx(nl) = INT(ztt-ztshft)
 
-      zinbounds = FSEL(ztmin-ztt,0._wp,zinbounds)
-      zinbounds = FSEL(ztt-ztmax,0._wp,zinbounds)
+      zinbounds = MERGE(0._wp,zinbounds,(ztmin-ztt).GE.0._wp)
+      zinbounds = MERGE(0._wp,zinbounds,(ztt-ztmax).GE.0._wp)
     END DO
 
     ! if one index was out of bounds -> print error and exit
@@ -1234,8 +1143,8 @@ CONTAINS
       ztt = DNINT(1000._wp*temp(jl))
       idx(nl) = INT(ztt)
 
-      zinbounds = FSEL(ztmin-ztt,0._wp,zinbounds)
-      zinbounds = FSEL(ztt-ztmax,0._wp,zinbounds)
+      zinbounds = MERGE(0._wp,zinbounds,(ztmin-ztt).GE.0._wp)
+      zinbounds = MERGE(0._wp,zinbounds,(ztt-ztmax).GE.0._wp)
     END DO
 
     ! if one index was out of bounds -> print error and exit

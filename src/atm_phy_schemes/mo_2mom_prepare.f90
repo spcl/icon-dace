@@ -15,7 +15,19 @@ MODULE mo_2mom_prepare
   USE mo_kind,            ONLY: wp
   USE mo_exception,       ONLY: finish, message, message_text
   USE mo_2mom_mcrph_main, ONLY: particle, particle_lwf, atmosphere
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   IMPLICIT NONE
   PUBLIC :: prepare_twomoment, post_twomoment
@@ -81,12 +93,10 @@ CONTAINS
         IF (lprogin) THEN
           ninpot(ii,kk)  = rho(ii,kk) * ninpot(ii,kk)
         END IF
-#ifndef _OPENACC
         IF (lprogmelt) THEN
           qgl(ii,kk)  = rho(ii,kk) * qgl(ii,kk)
           qhl(ii,kk)  = rho(ii,kk) * qhl(ii,kk)
         END IF
-#endif
 
       END DO
     END DO
@@ -110,13 +120,13 @@ CONTAINS
       atmo%tke=>NULL()
     END IF
 
-    __acc_attach(atmo%w)
-    __acc_attach(atmo%T)
-    __acc_attach(atmo%p)
-    __acc_attach(atmo%qv)
-    __acc_attach(atmo%rho)
-    __acc_attach(atmo%zh)
-    __acc_attach(atmo%tke)
+    
+    
+    
+    
+    
+    
+    
 
     cloud%rho_v   => rhocld
     rain%rho_v    => rhocorr
@@ -148,24 +158,24 @@ CONTAINS
        hail%l    => qhl
     END SELECT
 
-    __acc_attach(ice%rho_v)
-    __acc_attach(graupel%rho_v)
-    __acc_attach(snow%rho_v)
-    __acc_attach(hail%rho_v)
-    __acc_attach(cloud%rho_v)
-    __acc_attach(rain%rho_v)
-    __acc_attach(ice%q)
-    __acc_attach(ice%n)
-    __acc_attach(snow%q)
-    __acc_attach(snow%n)
-    __acc_attach(graupel%q)
-    __acc_attach(graupel%n)
-    __acc_attach(hail%q)
-    __acc_attach(hail%n)
-    __acc_attach(cloud%q)
-    __acc_attach(cloud%n)
-    __acc_attach(rain%q)
-    __acc_attach(rain%n)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     ! enforce upper and lower bounds for number concentrations
     ! (may not be necessary or only at initial time)
@@ -303,12 +313,10 @@ CONTAINS
         IF (lprogin) THEN
           ninpot(ii,kk)  = hlp * ninpot(ii,kk)
         END IF
-#ifndef _OPENACC
         IF (lprogmelt) THEN
           qgl(ii,kk)  = hlp * qgl(ii,kk)
           qhl(ii,kk)  = hlp * qhl(ii,kk)
         END IF
-#endif
 
       ENDDO
     ENDDO

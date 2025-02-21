@@ -586,8 +586,8 @@ END MODULE mo_nudging_config
   !
   !               nominal height z
   ! 
-  !                     /|\
-  !                      |
+  !                     /|  !                      |
+
   !                      |
   !         top_height ---    *                         . 
   !                      |    *                         . 
@@ -623,8 +623,8 @@ END MODULE mo_nudging_config
   !
   !               nominal height z
   ! 
-  !                     /|\
-  !                      |
+  !                     /|  !                      |
+
   !                      |
   !         top_height ---    *                         .
   !                      |    *                         . 
@@ -658,8 +658,8 @@ END MODULE mo_nudging_config
   !
   !               nominal height z
   ! 
-  !                     /|\
-  !                      |
+  !                     /|  !                      |
+
   !                      |
   !         top_height ---    *                         .
   !                      |    *                         . 
@@ -693,8 +693,8 @@ END MODULE mo_nudging_config
   !
   !               nominal height z
   ! 
-  !                     /|\
-  !                      |
+  !                     /|  !                      |
+
   !                      |
   !         top_height ---    *                         .
   !                      |    *                         . 

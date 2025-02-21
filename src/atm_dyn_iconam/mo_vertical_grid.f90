@@ -20,7 +20,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 
@@ -132,12 +142,6 @@ MODULE mo_vertical_grid
     LOGICAL :: l_found(nproma), lfound_all, is_les_phy
     INTEGER :: error_status
 
-#ifdef INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: ica,z_help,z_temp,z_aux1,z_aux2,l_found
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_ifv,z_me,z_maxslp,z_maxhgtd,z_shift,z_ddxt_z_half_e
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_ddxn_z_half_e,z_aux_c,z_aux_c2,z_aux_e
-!DIR$ ATTRIBUTES ALIGN : 64 :: flat_idx,imask,icount
-#endif
     !------------------------------------------------------------------------
 
     DO jg = 1,n_dom
@@ -296,13 +300,11 @@ MODULE mo_vertical_grid
 
       CALL sync_patch_array_mult(SYNC_E,p_patch(jg),2,z_ddxt_z_half_e, &
         z_ddxn_z_half_e)
-#ifndef __NO_ICON_LES__
       IF (atm_phy_nwp_config(jg)%is_les_phy) THEN
         ! remark: ddxt_z_half_e, ddxn_z_half_e in p_nh(jg)%metrics are optionally single precision
         p_nh(jg)%metrics%ddxt_z_half_e(:,:,:) = z_ddxt_z_half_e(:,:,:)
         p_nh(jg)%metrics%ddxn_z_half_e(:,:,:) = z_ddxn_z_half_e(:,:,:)
       ENDIF
-#endif
       IF (aes_vdf_config(jg)%turb == VDIFF_TURB_3DSMAGORINSKY) THEN
         ! remark: ddxt_z_half_e, ddxn_z_half_e in p_nh(jg)%metrics are optionally single precision
         p_nh(jg)%metrics%ddxt_z_half_e(:,:,:) = z_ddxt_z_half_e(:,:,:)
@@ -1707,9 +1709,7 @@ MODULE mo_vertical_grid
         ELSE
           is_les_phy = .FALSE.
         ENDIF
-#ifndef __NO_ICON_LES__
         is_les_phy = atm_phy_nwp_config(jg)%is_les_phy .OR. is_les_phy
-#endif
         IF (.NOT. ALLOCATED(z_me)) THEN 
           ALLOCATE(z_me(nproma,nlev,nblks_e), STAT=error_status)
           IF (error_status /= SUCCESS) CALL finish(routine, 'Allocation of z_me failed')
@@ -1742,11 +1742,11 @@ MODULE mo_vertical_grid
 
     !PREPARE LES, Anurag Dipankar MPIM (2013-04)
     DO jg = 1 , n_dom
-#ifndef __NO_ICON_LES__
+
       IF(atm_phy_nwp_config(jg)%is_les_phy .OR. aes_vdf_config(1)%turb == VDIFF_TURB_3DSMAGORINSKY) THEN
-#else
-      IF(aes_vdf_config(1)%turb == VDIFF_TURB_3DSMAGORINSKY) THEN
-#endif
+
+
+
         CALL prepare_les_model(p_patch(jg), p_nh(jg), p_int(jg), jg)
       END IF
     END DO
@@ -1806,10 +1806,10 @@ MODULE mo_vertical_grid
     INTEGER  :: nbidx(nproma,p_patch%nlev,p_patch%nblks_c,3)
 
     INTEGER,  DIMENSION(:,:,:), POINTER :: iidx, iblk
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: i_listreduce,i_masklist,k_start,k_end,i_indlist,i_blklist
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_vintcoeff,z_maxslp_avg,z_maxhgtd_avg,nbidx
-#endif
+
+
+
+
 
     nblks_c    = p_patch%nblks_c
 
@@ -2094,9 +2094,9 @@ MODULE mo_vertical_grid
 
     INTEGER :: jk, jb, jc, je, nblks_c, nblks_e, nlen, i_startidx, i_endidx, npromz_c
     INTEGER :: nlev, nlevp1, i_startblk
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_aux
-#endif
+
+
+
 
     IF ( aes_vdf_config(1)%turb == VDIFF_TURB_3DSMAGORINSKY ) THEN
       smag_constant  = aes_vdf_config(jg)%smag_constant

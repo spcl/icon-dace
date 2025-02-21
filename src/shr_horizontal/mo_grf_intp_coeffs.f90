@@ -18,12 +18,22 @@
 ! #ifdef __xlC__
 ! @PROCESS HOT
 ! #endif
-#ifdef __PGI
-!pgi$g opt=1
-#endif
+
+
+
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_grf_intp_coeffs
@@ -76,7 +86,127 @@ CHARACTER(LEN=*), PARAMETER :: modname = 'mo_grf_intp_coeffs'
 
 CONTAINS
 
-#include "intp_functions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+!-------------------------------------------------------------------------   
+!>
+!! Gaussian kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=e^{-r^2}@f$
+!! 
+FUNCTION gaussi (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = -1._wp * p_rbf_val * p_rbf_val
+p_rbf_val = EXP(p_rbf_val)
+
+END FUNCTION gaussi
+
+
+
+!-------------------------------------------------------------------------
+!
+!  
+!>
+!! Multiquadric kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=(1+r^2)^{\frac{1}{2}}@f$
+!! 
+FUNCTION multiq (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = p_rbf_val * p_rbf_val
+p_rbf_val = SQRT(1._wp + p_rbf_val)
+
+END FUNCTION multiq
+
+!-------------------------------------------------------------------------
+!
+!  
+!>
+!! Inverse multiquadric kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=(1+r^2)^{-\frac{1}{2}}@f$
+!! 
+FUNCTION inv_multiq (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = p_rbf_val * p_rbf_val
+p_rbf_val = SQRT(1._wp + p_rbf_val)
+p_rbf_val = 1._wp / p_rbf_val
+
+END FUNCTION inv_multiq
+
+!-------------------------------------------------------------------------
+!
+!  
+!>
+!! Weighting function for IDW interpolation.
+!! 
+!! @f$\phi(r)=\frac{1}{(r)^p_{exp}}@f$
+!! 
+FUNCTION invdwgt (p_x, p_exp)  RESULT (wgtfac)
+REAL(wp) , INTENT(in) :: p_x            ! radial distance
+REAL(wp) , INTENT(in) :: p_exp          ! exponent
+
+REAL(wp)              :: wgtfac       ! weighting factor
+
+!-----------------------------------------------------------------------  
+
+  wgtfac = 1._wp/max(1.e-10_wp , p_x**p_exp)
+
+END FUNCTION invdwgt
+
+
+!-------------------------------------------------------------------------  
+!
+!  
+!>
+!! Modified inverse multiquadric kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=(1+r^2)^{-1}@f$
+!! 
+FUNCTION inv_multiq2 (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = p_rbf_val * p_rbf_val
+p_rbf_val = 1._wp / (1._wp + p_rbf_val)
+
+END FUNCTION inv_multiq2
+
 
 !-------------------------------------------------------------------------
 !
@@ -1214,11 +1344,7 @@ LEV_LOOP: DO jg = n_dom_start, n_dom-1
 
       ! apply Cholesky decomposition to matrix
       !
-#ifdef __SX__
-      CALL choldec_v(i_startidx,i_endidx,istencil,max_points,z_rbfmat,z_diag)
-#else
       CALL choldec_v(i_startidx,i_endidx,istencil,           z_rbfmat,z_diag)
-#endif
 !$NEC ivdep
       DO je = i_startidx, i_endidx
 
@@ -1276,13 +1402,8 @@ LEV_LOOP: DO jg = n_dom_start, n_dom-1
       !
       ! compute vector coefficients
       !
-#ifdef __SX__
-      CALL solve_chol_v(i_startidx, i_endidx, istencil, max_points, z_rbfmat, &
-                        z_diag, z_rbfval, ptr_coeff(:,:,jb))
-#else
       CALL solve_chol_v(i_startidx, i_endidx, istencil,             z_rbfmat, &
                         z_diag, z_rbfval, ptr_coeff(:,:,jb))
-#endif
 
       DO je = i_startidx, i_endidx
 
@@ -1317,35 +1438,8 @@ LEV_LOOP: DO jg = n_dom_start, n_dom-1
   ENDDO CE_LOOP
 
 ! Optional debug output for RBF coefficients
-#ifdef DEBUG_COEFF
-  i_startblk = ptr_patch(jg)%edges%start_blk(grf_bdyintp_start_e,jcd)
-  i_endblk   = ptr_patch(jg)%edges%end_blk(min_rledge_int,jcd)
-
-  DO jb =  i_startblk, i_endblk
-
-    CALL get_indices_e(ptr_patch(jg), jb, i_startblk, i_endblk, &
-                       i_startidx, i_endidx, grf_bdyintp_start_e, min_rledge_int)
-
-    DO je = i_startidx, i_endidx
-
-      istencil(je) = ptr_grf%grf_vec_stencil_1a(je,jb)
-      write(570+jg,'(2i5,25f12.6)') jb,je,ptr_grf%grf_vec_coeff_1a(1:istencil(je),je,jb)
-      istencil(je) = ptr_grf%grf_vec_stencil_1b(je,jb)
-      write(570+jg,'(2i5,25f12.6)') jb,je,ptr_grf%grf_vec_coeff_1b(1:istencil(je),je,jb)
-      istencil(je) = ptr_grf%grf_vec_stencil_2a(je,jb)
-      write(570+jg,'(2i5,25f12.6)') jb,je,ptr_grf%grf_vec_coeff_2a(1:istencil(je),je,jb)
-      IF (ptr_ep%refin_ctrl(je,jb) == -1) CYCLE
-      istencil(je) = ptr_grf%grf_vec_stencil_2b(je,jb)
-      write(570+jg,'(2i5,25f12.6)') jb,je,ptr_grf%grf_vec_coeff_2b(1:istencil(je),je,jb)
-
-    END DO
-  END DO
-#endif
 
  END DO CD_LOOP
-#ifdef DEBUG_COEFF
-  CLOSE (570+jg)
-#endif
 END DO LEV_LOOP
 
 END SUBROUTINE rbf_compute_coeff_grf_e

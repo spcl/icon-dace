@@ -370,9 +370,9 @@ CONTAINS
     !$ACC ENTER DATA COPYIN(config_zml_soil)
 
     !Check if target GPU configuration is supported
-#ifdef _OPENACC
-    IF(lmulti_snow) CALL finish(routine, "GPU version not available for lmulti_snow == .TRUE.")
-#endif
+
+
+
 
     !----------------------------------------------------
     ! 5. Fill the configuration state

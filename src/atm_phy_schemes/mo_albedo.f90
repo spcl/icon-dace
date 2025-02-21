@@ -17,7 +17,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_albedo
@@ -120,9 +130,6 @@ CONTAINS
       RETURN
     END IF
 
-#ifdef _OPENACC
-    IF (lacc) CALL finish('mo_albedo:sfc_albedo','sfc_albedo not ported to gpu')
-#endif
 
     i_nchdom  = MAX(1,pt_patch%n_childdom)
 
@@ -1389,9 +1396,6 @@ CONTAINS
         ! Albedo is already up-to-date.
 
       ELSE  ! surface model switched OFF
-#ifdef _OPENACC
-        if (lacc) CALL finish('sfc_albedo_modis', 'Switched OFF surface model is not supported by openACC')
-#endif
         DO jc = i_startidx, i_endidx
           
           ist = ist_seaice
@@ -1502,9 +1506,6 @@ CONTAINS
 
     REAL(wp) :: alb_dir
 
-#ifdef _OPENACC
-    !$ACC ROUTINE SEQ
-#endif
   !------------------------------------------------------------------------------
 
      alb_dir = MIN(0.999_wp,( 1.0_wp                             &
@@ -1526,9 +1527,8 @@ CONTAINS
 
     REAL(wp) :: alb_dir
 
-#ifdef _OPENACC
-    !$ACC ROUTINE SEQ
-#endif
+
+
   !------------------------------------------------------------------------------
 
     alb_dir = MAX( 1.E-10_wp,                                    &
@@ -1564,9 +1564,9 @@ CONTAINS
     REAL(wp) :: zalbdirlim                   !< limit, which the computed albedo must not exceed
     REAL(wp) :: zalbdirfac                   !< factor for limit computation
 
-#ifdef _OPENACC
-    !$ACC ROUTINE SEQ
-#endif
+
+
+
   !------------------------------------------------------------------------------
 
     ! unlimited direct beam albedo according to Ritter-Geleyn's formulation
@@ -1603,9 +1603,9 @@ CONTAINS
 
     REAL(wp) :: alb_dir
 
-#ifdef _OPENACC
-    !$ACC ROUTINE SEQ
-#endif
+
+
+
   !------------------------------------------------------------------------------
 
      alb_dir = MIN(0.999_wp, alb_dif*( 1.0_wp + 1.14_wp)/(1._wp + 1.48*cosmu0) )
@@ -1644,9 +1644,9 @@ CONTAINS
 
     REAL(wp) :: alb_dir
 
-#ifdef _OPENACC
-    !$ACC ROUTINE SEQ
-#endif
+
+
+
   !------------------------------------------------------------------------------
 
      d       = MERGE(0.4_wp,0.1_wp,z0<=0.15_wp)

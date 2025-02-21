@@ -14,9 +14,130 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "icon_definitions.inc"
-#include "omp_definitions.inc"
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+!---------------------
+! mappings
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !----------------------------
 MODULE mo_ocean_pressure_bc_conditions
   !-------------------------------------------------------------------------
@@ -75,9 +196,6 @@ CONTAINS
     all_cells => patch_2d%cells%all
     !------------------------------------------------------------------------
     IF (use_tides .OR. use_tides_SAL) THEN
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(routine, 'use_tides not ported')
-#endif
       ! compute tidal potential
       CALL calculate_tides_potential(patch_3d,current_time,ocean_state%p_diag%rho, ocean_state%p_prog(nold(1))%h, &
            ocean_state%p_aux%bc_tides_potential, ocean_state%p_aux%bc_SAL_potential)

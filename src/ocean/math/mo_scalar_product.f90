@@ -18,8 +18,37 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
 !----------------------------
 MODULE mo_scalar_product
   !-------------------------------------------------------------------------
@@ -81,11 +110,7 @@ MODULE mo_scalar_product
 !   END INTERFACE
 
   INTERFACE nonlinear_coriolis_3d_fast
-#if defined(__LVECTOR__) && !defined(__LVEC_BITID__)
-    MODULE PROCEDURE nonlinear_coriolis_3d_fast_vector
-#else
     MODULE PROCEDURE nonlinear_coriolis_3d_fast_scalar
-#endif
   END INTERFACE
 
   INTERFACE map_edges2edges_viacell_3d_const_z
@@ -146,27 +171,27 @@ CONTAINS
     startLevel = 1
     endLevel = n_zlev
 
-    start_detail_timer(timer_extra25,5)
+    IF (timers_level >= 5) CALL timer_start(timer_extra25)
     CALL map_edges2vert_3d(patch_3d%p_patch_2d(1), vn_e, operators_coefficients%edge2vert_coeff_cc, &
       & p_diag%p_vn_dual, lacc = lzacc)
-    stop_detail_timer(timer_extra25,5)
+    IF (timers_level >= 5) CALL timer_stop(timer_extra25)
 
-    start_detail_timer(timer_extra26,5)
+    IF (timers_level >= 5) CALL timer_start(timer_extra26)
     !Step 1: Calculation of Pv in cartesian coordinates and of kinetic energy
     CALL map_edges2cell_3d(patch_3d, vn_e, operators_coefficients, p_diag%p_vn, lacc = lzacc) !, subset_range=cells_in_domain)
-    stop_detail_timer(timer_extra26,5)
+    IF (timers_level >= 5) CALL timer_stop(timer_extra26)
 
-    start_detail_timer(timer_extra27,5)
+    IF (timers_level >= 5) CALL timer_start(timer_extra27)
     CALL map_edges2edges_viacell_3d_const_z( patch_3D,       &
                                     & vn_e,                  &
                                     & operators_coefficients,&
                                     & p_diag%ptp_vn,         &
                                     & lacc = lzacc )
-    stop_detail_timer(timer_extra27,5)
+    IF (timers_level >= 5) CALL timer_stop(timer_extra27)
 
     CALL sync_patch_array(sync_e, patch_2d, p_diag%ptp_vn)
 
-    start_detail_timer(timer_extra28,5)
+    IF (timers_level >= 5) CALL timer_start(timer_extra28)
     !--------------------------------------------------------------
     !calculate kinetic energy
     ! First option is our default configuration
@@ -298,19 +323,19 @@ CONTAINS
 
     END SELECT
 
-    stop_detail_timer(timer_extra28,5)
+    IF (timers_level >= 5) CALL timer_stop(timer_extra28)
 !       CALL sync_patch_array(sync_c, patch_2d,p_diag%kin)
 
       !convert cartesian velocity vector p_diag%p_vn(cell_index,level,blockNo)%x to geographical coordinate system
       !for output, sea-ice and coupling
-    start_detail_timer(timer_extra29,5)
+    IF (timers_level >= 5) CALL timer_start(timer_extra29)
     CALL Get3DVectorTo2DLocal_array3D(vector=p_diag%p_vn, &
       & position_local=patch_2d%cells%center, &
       & levels=patch_3d%p_patch_1d(1)%dolic_c, &
       & subset=all_cells,                      &
       & geometry_info=patch_2d%geometry_info, &
       & x=p_diag%u, y=p_diag%v, lacc=lzacc)
-    stop_detail_timer(timer_extra29,5)
+    IF (timers_level >= 5) CALL timer_stop(timer_extra29)
 
 !       DO cell_index =  start_cell_index, end_cell_index
 !         DO level = startLevel, patch_3d%p_patch_1d(1)%dolic_c(cell_index,blockNo)
@@ -788,9 +813,6 @@ CONTAINS
         RETURN
       ENDIF
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, 'OpenACC version for fast_performance_level <= 10 currently not tested/validated')
-#endif
 
     !-----------------------------------------------------------------------
     patch_2d   => patch_3d%p_patch_2d(1)
@@ -943,9 +965,6 @@ CONTAINS
       RETURN
     ENDIF
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, 'OpenACC version for no_primal_edges /= 3 currently not tested/validated')
-#endif
 
     !-----------------------------------------------------------------------
     patch_2d   => patch_3d%p_patch_2d(1)
@@ -1101,16 +1120,8 @@ CONTAINS
       max_level = MIN(MAXVAL(dolic_c(start_cell_index:end_cell_index,blockNo)),endLevel)
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-#if defined(__LVECTOR__) && !defined(__LVEC_BITID__)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2) &
-      !$ACC   PRIVATE(edge_1_index, edge_1_block, edge_2_index, edge_2_block, edge_3_index, edge_3_block)
-      DO level = startLevel, max_level
-        DO cell_index = start_cell_index, end_cell_index
-          IF (dolic_c(cell_index,blockNo) < level) CYCLE
-#else
       !$ACC LOOP GANG VECTOR
       DO cell_index = start_cell_index, end_cell_index
-#endif
 
         edge_1_index = patch_2d%cells%edge_idx(cell_index,blockNo,1)
         edge_1_block = patch_2d%cells%edge_blk(cell_index,blockNo,1)
@@ -1119,11 +1130,8 @@ CONTAINS
         edge_3_index = patch_2d%cells%edge_idx(cell_index,blockNo,3)
         edge_3_block = patch_2d%cells%edge_blk(cell_index,blockNo,3)
 
-#if defined(__LVECTOR__) && !defined(__LVEC_BITID__)
-#else
         !$ACC LOOP SEQ
         DO level = startLevel, MIN(dolic_c(cell_index,blockNo), endLevel)
-#endif
 
           p_vn_c(cell_index,level,blockNo)%x =                                            &
             & (  operators_coefficients%edge2cell_coeff_cc(cell_index,level,blockNo,1)%x  &
@@ -1364,9 +1372,6 @@ CONTAINS
       RETURN
     ENDIF
     !-----------------------------------------------------------------------
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, 'OpenACC version for max_connectivity /=3 or perf_level currently not tested/validated')
-#endif
 
     edges_inDomain => patch_2d%edges%in_domain
     startLevel = 1
@@ -1737,9 +1742,6 @@ CONTAINS
       ENDIF
     ENDIF
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, 'OpenACC version for max_connectivity /= 3 currently not tested/validated')
-#endif
 
     !-----------------------------------------------------------------------
     edges_inDomain => patch_2d%edges%in_domain
@@ -1902,25 +1904,9 @@ CONTAINS
 
 ! Note that this loop structure is currenlty suboptimal on Aurora
 
-#ifdef __LVECTOR__
-      max_dolic_e = -1
-      !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) REDUCTION(MAX: max_dolic_e) IF(lzacc)
-      DO je = start_edge_index, end_edge_index
-        max_dolic_e = MAX(max_dolic_e, dolic_e(je,blockNo))
-      END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC WAIT(1)
-
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-      DO level = startLevel, max_dolic_e
-        DO je = start_edge_index, end_edge_index
-          IF (dolic_e(je,blockNo) < level) CYCLE
-#else           
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR
       DO je =  start_edge_index, end_edge_index
-#endif
         cell_1_index = cell_idx(je,blockNo,1)
         cell_1_block = cell_blk(je,blockNo,1)
         cell_2_index = cell_idx(je,blockNo,2)
@@ -1940,10 +1926,8 @@ CONTAINS
         edge_22_block = edge_blk(cell_2_index, cell_2_block, 2)
         edge_23_block = edge_blk(cell_2_index, cell_2_block, 3)
 
-#ifndef __LVECTOR__
         ! levels
         DO level = startLevel, dolic_e(je,blockNo)
-#endif
           out_vn_e(je, level, blockNo) =  &
             & (  vn_e(edge_11_index, level, edge_11_block) * coeffs(je, level, blockNo, 1)      &
             &    * prism_thick_e(edge_11_index, level, edge_11_block)    &
@@ -2146,9 +2130,6 @@ CONTAINS
     ENDIF
     !-----------------------------------------------------------------------
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, 'OpenACC version currently not tested/validated')
-#endif
 
     edges_inDomain => patch_2d%edges%in_domain
     startLevel = 1

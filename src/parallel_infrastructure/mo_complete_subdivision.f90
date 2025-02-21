@@ -29,12 +29,12 @@ MODULE mo_complete_subdivision
     &                              uniform_partition
   USE mo_mpi,                ONLY: proc_split, p_sum
   USE mo_util_string,        ONLY: int2string
-#ifndef NOMPI
-  USE mpi
-  USE mo_mpi,                ONLY: mpi_comm_null
-  USE mo_parallel_config,    ONLY: p_test_run, nproma, proc0_offloading, proc0_shift
-  USE ppm_extents,           ONLY: extent
-#endif
+
+
+
+
+
+
   USE mo_mpi,                ONLY: p_comm_work, my_process_is_mpi_test, &
     & my_process_is_mpi_seq, &
     & p_pe_work, p_n_work, p_bcast, &
@@ -54,11 +54,11 @@ MODULE mo_complete_subdivision
   USE mo_grid_config,         ONLY: n_dom, n_dom_start, n_phys_dom
   USE mo_dist_dir,            ONLY: dist_dir_get_owners
   USE ppm_distributed_array, ONLY: global_array_desc, dist_mult_array, &
-#ifdef HAVE_SLOW_PASSIVE_TARGET_ONESIDED
-       sync_mode_active_target, &
-#else
+
+
+
        sync_mode_passive_target, &
-#endif
+
        dist_mult_array_new, dist_mult_array_delete, &
        dist_mult_array_get, dist_mult_array_local_ptr, &
        dist_mult_array_expose
@@ -75,9 +75,9 @@ MODULE mo_complete_subdivision
   PUBLIC :: setup_phys_patches
   PUBLIC :: complete_parallel_setup
   PUBLIC :: generate_comm_pat_cvec1
-#ifndef NOMPI
-  PUBLIC :: create_work2test_patterns
-#endif
+
+
+
 
 CONTAINS
 
@@ -88,30 +88,6 @@ CONTAINS
 
     TYPE(t_patch), INTENT(INOUT) :: p_patch(n_dom_start:)
 
-#ifndef NOMPI
-    INTEGER :: ibuf(n_dom_start:n_dom+1,2), bcast_source
-    LOGICAL :: l_my_process_is_mpi_test
-
-    l_my_process_is_mpi_test = my_process_is_mpi_test()
-    IF (l_my_process_is_mpi_test) THEN
-      bcast_source=0
-    ELSE
-      IF (p_pe_work == 0) THEN
-        ibuf(n_dom_start:n_dom,1) = p_patch(:)%n_proc
-        ibuf(n_dom_start:n_dom,2) = p_patch(:)%proc0
-        ibuf(n_dom+1,1) = MERGE(1, 0, proc_split)
-        bcast_source=mpi_root
-      ELSE
-        bcast_source=mpi_proc_null
-      END IF
-    END IF
-    CALL p_bcast(ibuf, bcast_source, comm=p_comm_work_2_test)
-    IF (l_my_process_is_mpi_test) THEN
-      proc_split = ibuf(n_dom+1,1) == 1
-      p_patch(:)%n_proc = ibuf(n_dom_start:n_dom,1)
-      p_patch(:)%proc0  = ibuf(n_dom_start:n_dom,2)
-    END IF
-#endif
 
   END SUBROUTINE copy_processor_splitting
 
@@ -130,81 +106,6 @@ CONTAINS
       RETURN
     ENDIF
 
-#ifndef NOMPI
-    ! Default if processor set is not split
-
-    p_patch(:)%comm   = p_comm_work
-    p_patch(:)%rank   = p_pe_work
-
-    proc_split = .FALSE.
-
-    IF(p_patch(1)%n_childdom <= 1) RETURN ! No splitting for 0 or 1 childs
-
-    ! Check if the processor set is split for childs of root
-
-    ALLOCATE(patch_no(0:p_n_work-1))
-
-    n_proc_total = 0
-    patch_no(:) = 0
-    DO jc = 1, p_patch(1)%n_childdom
-      jgc = p_patch(1)%child_id(jc)
-      n_proc_total = n_proc_total + p_patch(jgc)%n_proc
-      patch_no(p_patch(jgc)%proc0 : p_patch(jgc)%proc0+p_patch(jgc)%n_proc-1) = jc
-      IF (proc0_offloading .AND. patch_no(proc0_shift) == jc) THEN
-        patch_no(0:proc0_shift-1) = patch_no(proc0_shift)
-        n_proc_total = n_proc_total+proc0_shift
-      ENDIF
-    ENDDO
-
-    ! if any processor has no patch assigned, this is an error
-
-    IF(ANY(patch_no == 0)) &
-      CALL finish('set_patch_communicators','Unknown patch split mode (1)')
-
-    IF(n_proc_total == p_n_work) THEN
-
-      proc_split = .TRUE.
-
-      ! Split communicator among childs of root patch
-
-      CALL MPI_Comm_split(p_comm_work, patch_no(p_pe_work), p_pe_work, comm, mpierr)
-
-      ! Set comm and rank for childs of root patch
-
-      DO jc = 1, p_patch(1)%n_childdom
-        jgc = p_patch(1)%child_id(jc)
-        IF(patch_no(p_pe_work) == jc) THEN
-          p_patch(jgc)%comm = comm
-          CALL MPI_Comm_rank(comm, p_patch(jgc)%rank, mpierr)
-        ELSE
-          p_patch(jgc)%comm = MPI_COMM_NULL ! We should never use this comm
-          p_patch(jgc)%rank = -1
-        ENDIF
-      ENDDO
-
-      ! and for deeper level descandants
-
-      DO jg = 2, n_dom
-
-        jgp = p_patch(jg)%parent_id
-
-        IF(jgp /= 1) THEN
-          p_patch(jg)%comm   = p_patch(jgp)%comm
-          p_patch(jg)%rank   = p_patch(jgp)%rank
-        ENDIF
-
-      ENDDO
-
-    ELSEIF(n_proc_total /= p_patch(1)%n_childdom * p_n_work) THEN
-
-      ! If the processor is not split and n_proc_totalindicates that not
-      ! every processor is working on every patch, this is an error
-      CALL finish('set_patch_communicators','Unknown patch split mode (2)')
-
-    ENDIF
-
-    DEALLOCATE(patch_no)
-#endif
 
   END SUBROUTINE set_patch_communicators
 
@@ -265,14 +166,6 @@ CONTAINS
       CALL set_comm_pat_gather(patch(jg))
 
       ! Create communication pattern with test processes
-#ifndef NOMPI
-      IF (p_test_run) THEN
-        DO i = 1, 3
-          CALL delete_comm_pattern(patch(jg)%comm_pat_work2test(i)%p)
-        END DO
-        CALL create_work2test_patterns(patch(jg))
-      END IF
-#endif
       IF (jg > n_dom_start) THEN
 
         CALL delete_comm_pattern(p_patch_local_parent(jg)%comm_pat_c)
@@ -738,208 +631,6 @@ CONTAINS
     DEALLOCATE(owner, mask)
   END SUBROUTINE set_glb_loc_comm
 
-#ifndef NOMPI
-  SUBROUTINE create_work2test_patterns(patch)
-    TYPE(t_patch), INTENT(INOUT) :: patch
-    LOGICAL :: is_mpi_test
-    REAL(wp), ALLOCATABLE :: test_data(:,:,:)
-    is_mpi_test = my_process_is_mpi_test()
-    CALL create_work2test_pattern(patch%n_patch_cells_g, &
-         patch%cells%decomp_info, is_mpi_test, p_comm_work_2_test, &
-         patch%comm_pat_work2test(grid_cell)%p)
-    ALLOCATE(test_data(nproma, 1, patch%nblks_c))
-    test_data = 1.0_wp
-    CALL sync_patch_array(sync_c, patch, test_data)
-    CALL create_work2test_pattern(patch%n_patch_verts_g, &
-         patch%verts%decomp_info, is_mpi_test, p_comm_work_2_test, &
-         patch%comm_pat_work2test(grid_vertex)%p)
-    CALL create_work2test_pattern(patch%n_patch_edges_g, &
-         patch%edges%decomp_info, is_mpi_test, p_comm_work_2_test, &
-         patch%comm_pat_work2test(grid_edge)%p)
-  END SUBROUTINE create_work2test_patterns
-
-  SUBROUTINE create_work2test_pattern(n_g, decomp_info, is_mpi_test, &
-       intercomm, p_pat)
-    INTEGER, INTENT(in) :: n_g, intercomm
-    TYPE(t_grid_domain_decomp_info), INTENT(in) :: decomp_info
-    LOGICAL, INTENT(in) :: is_mpi_test
-    CLASS(t_comm_pattern), POINTER, INTENT(INOUT) :: p_pat
-    TYPE(global_array_desc) :: dist_owner_glob(1)
-    TYPE(dist_mult_array) :: dist_owner_work
-    INTEGER, ALLOCATABLE :: test2send2(:), send_counts(:), recv_counts(:), &
-         rowned(:), rowner(:), glb_index_sendbuf(:), sofs(:)
-    TYPE(xfer_list), ALLOCATABLE :: list_recv(:), list_send(:)
-    TYPE(extent) :: glob_range, local_range(1,1)
-    INTEGER :: rank, jl, n_l, part_idx, p_n_send, ierror, dummy, &
-         ofs, rcount, scount, syncmode, coord(1), np_recv, np_send, i
-    INTEGER, POINTER :: rowner_dist(:)
-    CHARACTER(len=*), PARAMETER :: routine &
-         = "mo_complete_subdivision::create_work2test_pattern"
-    glob_range = extent(1, n_g)
-    IF (is_mpi_test) THEN
-      ! 1. for a regular decomposition of n_g over the test processes,
-      !    a. figure out how many owners in the remote group need to send
-      !       remote owner information to this rank
-      ! number of work processes to potentially receive from
-      p_n_send = p_comm_remote_size(intercomm)
-      ! for which and...
-      local_range(1,1) = uniform_partition(glob_range, p_n_work, p_pe_work+1)
-      ! ... how many indices to build a local lookup index for
-      n_l = local_range(1,1)%size
-      ALLOCATE(recv_counts(0:p_n_send-1), rowned(n_l))
-      ! receive from every rank in remote group for how many indices
-      ! in local_range it is the owner
-      CALL mpi_alltoall(dummy, 0, mpi_integer, &
-           recv_counts, 1, mpi_integer, intercomm, ierror)
-      IF (ierror /=  mpi_success) CALL finish(routine, 'Error in mpi_alltoall!')
-      IF (SUM(recv_counts) /= local_range(1,1)%size) &
-           CALL finish(routine, 'mismatch in bucket sizes!')
-      ! receive global indices each remote rank is owner of
-      ofs = 1
-      DO rank = 0, p_n_send-1
-        rcount = recv_counts(rank)
-        IF (rcount > 0) THEN
-          CALL p_irecv(rowned(ofs:ofs+rcount-1), rank, 777, recv_counts(rank),&
-               intercomm)
-          ofs = ofs + rcount
-        END IF
-      END DO
-      CALL p_wait
-      ! transform localized information into shared, distributed array
-      dist_owner_glob(1)%a_rank = 1
-      dist_owner_glob(1)%element_dt = mpi_integer
-      dist_owner_glob(1)%rect(1) = glob_range
-#ifdef HAVE_SLOW_PASSIVE_TARGET_ONESIDED
-      syncmode = sync_mode_active_target
-#else
-      syncmode = sync_mode_passive_target
-#endif
-      dist_owner_work = dist_mult_array_new(dist_owner_glob, local_range, &
-           p_comm_work, 16, syncmode)
-      CALL dist_mult_array_local_ptr(dist_owner_work, 1, rowner_dist)
-      ofs = 0
-      DO rank = 0, p_n_send-1
-        rcount = recv_counts(rank)
-        DO jl = 1, rcount
-          rowner_dist(rowned(ofs+jl)) = rank
-        END DO
-        ofs = ofs + rcount
-      END DO
-      CALL dist_mult_array_expose(dist_owner_work)
-      ! use shared, distributed array to retrieve remote owner of the indices
-      ! stored on this rank
-      n_l = SIZE(decomp_info%owner_local)
-      DEALLOCATE(rowned) ; ALLOCATE(rowner(n_l), rowned(n_l))
-      
-      DO jl = 1, n_l
-        IF (decomp_info%owner_local(jl) == p_pe_work) THEN
-          coord(1) = decomp_info%glb_index(jl)
-          CALL dist_mult_array_get(dist_owner_work, 1, coord, rowner(jl))
-        END IF
-      END DO
-      CALL dist_mult_array_delete(dist_owner_work)
-      ! tell remote group how many indices this rank will receive from each
-      ! remote rank
-      recv_counts = 0
-      DO jl = 1, n_l
-        IF (decomp_info%owner_local(jl) == p_pe_work) THEN
-          rank = rowner(jl)
-          recv_counts(rank) = recv_counts(rank) + 1
-        END IF
-      END DO
-      CALL mpi_alltoall(recv_counts, 1, mpi_integer, &
-           dummy, 0, mpi_integer, intercomm, ierror)
-      IF (ierror /=  mpi_success) CALL finish(routine, 'Error in mpi_alltoall!')
-
-      ! create list of messages
-      np_recv = COUNT(recv_counts > 0)
-      ALLOCATE(list_send(0), list_recv(np_recv))
-      rank = 0
-      DO i = 1, np_recv
-        DO WHILE(recv_counts(rank) == 0)
-          rank = rank + 1
-        END DO
-        list_recv(i)%rank = rank
-        ALLOCATE(list_recv(i)%glob_idx(recv_counts(rank)))
-        ofs = 1
-        list_recv(i)%glob_idx = PACK(decomp_info%glb_index, rowner == rank &
-          .AND. decomp_info%owner_local == p_pe_work)
-        ! and also tell remote side what to send
-        CALL p_isend(list_recv(i)%glob_idx, list_recv(i)%rank, 778, &
-             recv_counts(rank), intercomm)
-        rank = rank + 1
-      END DO
-    ELSE
-      ! this is a work rank
-      ! number of locally stored cells/edges/vertices
-      n_l = SIZE(decomp_info%owner_local)
-      ALLOCATE(test2send2(n_l), send_counts(0:num_test_procs-1))
-      send_counts = 0
-      DO jl = 1, n_l
-        IF (decomp_info%owner_local(jl) == p_pe_work) THEN
-          part_idx = partidx_of_elem_uniform_deco(glob_range, num_test_procs, &
-               decomp_info%glb_index(jl)) - 1
-          test2send2(jl) = part_idx
-          send_counts(part_idx) = send_counts(part_idx) + 1
-        ELSE
-          test2send2(jl) = -1
-        END IF
-      END DO
-      CALL mpi_alltoall(send_counts, 1, mpi_integer, &
-           dummy, 0, mpi_integer, intercomm, ierror)
-      IF (ierror /=  mpi_success) CALL finish(routine, 'Error in mpi_alltoall!')
-      ALLOCATE(sofs(0:num_test_procs), glb_index_sendbuf(n_l))
-      sofs(0) = 0
-      ofs = 0
-      DO rank = 1, num_test_procs
-        ofs = ofs + send_counts(rank-1)
-        sofs(rank) = ofs
-      END DO
-      send_counts = 0
-      DO jl = 1, n_l
-        rank = test2send2(jl)
-        IF (rank >= 0) THEN
-          ofs = send_counts(rank) + 1
-          glb_index_sendbuf(sofs(rank) + ofs) = decomp_info%glb_index(jl)
-          send_counts(rank) = ofs
-        END IF
-      END DO
-      DO rank = 0, num_test_procs-1
-        scount = send_counts(rank)
-        IF (scount > 0) THEN
-          ofs = sofs(rank)
-          CALL p_isend(glb_index_sendbuf(ofs+1:ofs+scount), &
-               rank, 777, scount, comm=intercomm)
-        END IF
-      END DO
-      CALL p_wait
-      CALL mpi_alltoall(dummy, 0, mpi_integer, &
-           send_counts, 1, mpi_integer, intercomm, ierror)
-      IF (ierror /= mpi_success) CALL finish(routine, 'Error in mpi_alltoall!')
-      np_send = COUNT(send_counts > 0)
-      ALLOCATE(list_send(np_send), list_recv(0))
-      ! recv what indices to send data for
-      rank = 0
-      DO i = 1, np_send
-        DO WHILE(send_counts(rank) == 0)
-          rank = rank + 1
-        END DO
-        list_send(i)%rank = rank
-        ALLOCATE(list_send(i)%glob_idx(send_counts(rank)))
-        ofs = 1
-        CALL p_irecv(list_send(i)%glob_idx, list_send(i)%rank, 778, &
-             send_counts(rank), intercomm)
-        rank = rank + 1
-      END DO
-    END IF
-    CALL p_wait
-    ! create pattern
-    ! actually one of the glb2loc_index arguments is unused so we pass
-    ! the same to both dummy arguments
-    CALL setup_comm_pattern2(p_pat, intercomm, list_recv, list_send, &
-         decomp_info%glb2loc_index, decomp_info%glb2loc_index)
-  END SUBROUTINE create_work2test_pattern
-#endif
   !-------------------------------------------------------------------------
   !>
   !! This routine sets up a the physical patches

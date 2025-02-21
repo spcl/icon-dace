@@ -19,9 +19,9 @@
 !! I can't say why xlf takes ages to optimize this file,
 !! but since it contains declarations only, it's sufficient to leave
 !! it unoptimized
-#ifdef __xlC__
-@PROCESS NOOPTimize
-#endif
+
+
+
 MODULE mo_model_domain
   !-------------------------------------------------------------------------
   !

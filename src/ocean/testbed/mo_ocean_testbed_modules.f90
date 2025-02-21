@@ -10,8 +10,134 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 
 MODULE mo_ocean_testbed_modules
   !-------------------------------------------------------------------------
@@ -973,13 +1099,6 @@ CONTAINS
       mtime_current = mtime_current + model_time_step
       jstep = jstep + 1
       IF (mtime_current > time_config%tc_stopdate) then
-#ifdef _MTIME_DEBUG
-        ! consistency check: compare step counter to expected end step
-        if (jstep /= (jstep0+nsteps)) then
-           call finish(routine, 'Step counter does not match expected end step: '//int2string(jstep,'(i0)')&
-               &//' /= '//int2string((jstep0+nsteps),'(i0)'))
-        end if
-#endif
         ! leave time loop
         EXIT TIME_LOOP
       END IF

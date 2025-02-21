@@ -13,7 +13,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 MODULE mo_load_singlefile_restart
   USE mo_exception,          ONLY: message, warning, finish
   USE mo_impl_constants,     ONLY: SINGLE_T, REAL_T, INT_T
@@ -165,9 +175,6 @@ CONTAINS
       END SELECT
       IF (timers_level >= 7) CALL timer_stop(timer_load_restart_io)
       nread = nread + 1
-#ifdef DEBUG
-      IF (my_process_is_mpi_workroot()) WRITE (0,*) ' ... read ' // TRIM(vDat(iV)%p%info%name)
-#endif
     END DO
     IF (my_process_is_mpi_workroot()) WRITE (0,'(a,i5,a)') ' ... read ', nread, ' variables'
     CALL distrib_nf_close(fID)

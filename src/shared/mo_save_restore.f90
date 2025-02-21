@@ -35,9 +35,9 @@ MODULE mo_save_restore
   USE mo_util_string,             ONLY: pretty_print_string_list
   USE mo_fortran_tools,           ONLY: copy, init
 
-#if defined(__PGI) || defined(__FLANG)
-  USE mo_util_texthash,           ONLY: t_char_workaround
-#endif
+
+
+
 
   IMPLICIT NONE
 
@@ -121,9 +121,9 @@ CONTAINS
     CHARACTER(len=vname_len) :: savedGroup(1000)
     INTEGER :: savedGroupSize
     INTEGER :: i, jg
-#if defined(__PGI) || defined(__FLANG)
-    TYPE(t_char_workaround), POINTER :: key_p
-#endif
+
+
+
 
 
     ! skip patch, if inactive
@@ -206,13 +206,13 @@ CONTAINS
         CALL message(routine,message_text)
       ENDIF
 
-#if defined(__PGI) || defined(__FLANG)
-      ALLOCATE(key_p)
-      key_p%c = TRIM(get_var_name(var%info))
-      key => key_p
-#else
+
+
+
+
+
       ALLOCATE(key, SOURCE=TRIM(get_var_name(var%info)))
-#endif
+
       ALLOCATE(field)
 
       SELECT CASE (var%info%data_type)

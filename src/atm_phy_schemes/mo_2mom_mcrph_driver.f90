@@ -257,13 +257,13 @@ CONTAINS
     lprogin   = PRESENT(ninpot)
     lprogmelt = PRESENT(qgl)
     
-#ifdef _OPENACC
-    IF (ldass_lhn) THEN
-      CALL finish(routine, 'LHN not available on GPU for two-moment microphysics')
-    ELSEIF (lprogmelt) THEN
-      CALL finish(routine, 'lprogmelt not available on GPU for two-moment microphysics')
-    ENDIF
-#endif
+
+
+
+
+
+
+
 
     IF (msg_level>5) CALL message (TRIM(routine), "called two_moment_mcrph")
 
@@ -405,9 +405,9 @@ CONTAINS
 
     IF (cfg_params%i2mom_solver.eq.0) THEN
 
-#ifdef _OPENACC
-      IF(PRESENT(dtemp)) CALL finish('clouds_twomoment:','dtemp not available on GPU')
-#endif
+
+
+
       ! ... save old variables for latent heat calculation
       !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT)
       !$ACC LOOP GANG COLLAPSE(2)
@@ -436,9 +436,9 @@ CONTAINS
        IF (timers_level > 10) CALL timer_stop(timer_phys_2mom_proc) 
 
        IF (lprogccn) THEN
-#ifdef _OPENACC
-        CALL finish('clouds_twomoment:','lprogccn not available on GPU')
-#endif
+
+
+
         WHERE(qc(its:ite,kts:kte) == 0.0_wp) cloud%n(its:ite,kts:kte) = 0.0_wp
        END IF
 
@@ -627,13 +627,13 @@ CONTAINS
 
       logical, parameter :: lmicro_impl = .true.  ! microphysics within semi-implicit sedimentation loop?
 
-#ifdef _OPENACC
-    IF (ldass_lhn) THEN
-      CALL finish(routine, 'LHN not available on GPU for two-moment microphysics')
-    ELSEIF (lprogmelt) THEN
-      CALL finish(routine, 'lprogmelt not available on GPU for two-moment microphysics')
-    ENDIF
-#endif
+
+
+
+
+
+
+
 
       !$ACC DATA &
       !$ACC   CREATE(qr_flux_now, qr_flux_new, qr_sum, vr_sedq_new, vr_sedq_now, qr_impl, xr_now) &
@@ -650,9 +650,9 @@ CONTAINS
       !$ACC   CREATE(lg_flux_now, lg_flux_new, lg_sum, vg_sedl_new, vg_sedl_now, lg_impl, rdzdt)
 
       if (.not.lmicro_impl) then
-#ifdef _OPENACC
-        CALL finish('clouds_twomoment_implicit', 'routine without lmicro_impl not available on GPU')
-#endif        
+
+
+
 
         ! ... save old variables for latent heat calculation
         if (lprogmelt) then
@@ -846,9 +846,9 @@ CONTAINS
           DO ii = its, ite
             q_vap_old(ii,k) = qv(ii,k)
             if (lprogmelt) then
-#ifndef _OPENACC
+
               q_liq_old(ii,k) = qr(ii,k) + qc(ii,k) + qgl(ii,k) + qhl(ii,k)
-#endif
+
             else
               q_liq_old(ii,k) = qc(ii,k) + qr(ii,k)
             end if
@@ -879,9 +879,9 @@ CONTAINS
 
             q_vap_new  = qv(ii,k)
             if (lprogmelt) then
-#ifndef _OPENACC
+
               q_liq_new = qr(ii,k) + qc(ii,k) + qgl(ii,k) + qhl(ii,k)
-#endif
+
             else
               q_liq_new = qr(ii,k) + qc(ii,k)
             end if
@@ -959,13 +959,13 @@ CONTAINS
      REAL(wp) :: cmax, rdzmaxdt
      REAL(wp) :: prec3D_tmp(isize,ke)
 
-#ifdef _OPENACC
-    IF (ldass_lhn) THEN
-      CALL finish(routine, 'LHN not available on GPU for two-moment microphysics')
-    ELSEIF (lprogmelt) THEN
-      CALL finish(routine, 'lprogmelt not available on GPU for two-moment microphysics')
-    ENDIF
-#endif
+
+
+
+
+
+
+
 
     !$ACC DATA CREATE(prec3D_tmp)
 
@@ -989,36 +989,36 @@ CONTAINS
      CALL init(prec_h, opt_acc_async=.TRUE.)
 
      ! The following IF ANY conditions are important only for performance on CPU and don't work with OpenACC
-#ifndef _OPENACC
+
      IF (ANY(qr(its:ite,kts:kte)>0._wp)) THEN
-#endif
+
        IF (ldass_lhn) prec3D_tmp(:,:) = 0.0_wp
        DO ii=1,ntsedi_rain
          CALL sedi_icon_rain(rain,rain_coeffs,qr,qnr,prec_r,prec3D_tmp,qc,rhocorr, &
            & rdz,dt/ntsedi_rain,its,ite,kts,kte,cmax,lacc=.TRUE.)
        END DO
        IF (ldass_lhn) qrsflux(:,:) = qrsflux(:,:) + prec3D_tmp(:,:)
-#ifndef _OPENACC
+
      END IF
 
      IF (ANY(qi(its:ite,kts:kte)>0._wp)) THEN
-#endif
+
        IF (ldass_lhn) prec3D_tmp(:,:) = 0.0_wp
        CALL sedi_icon_sphere(ice,ice_coeffs,qi,qni,prec_i,prec3D_tmp,rhocorr,rdz,dt,its,ite,kts,kte,lacc=.TRUE.)
        IF (ldass_lhn) qrsflux(:,:) = qrsflux(:,:) + prec3D_tmp(:,:)
-#ifndef _OPENACC
+
      END IF
 
      IF (ANY(qs(its:ite,kts:kte)>0._wp)) THEN
-#endif
+
        IF (ldass_lhn) prec3D_tmp(:,:) = 0.0_wp
        CALL sedi_icon_sphere(snow,snow_coeffs,qs,qns,prec_s,prec3D_tmp,rhocorr,rdz,dt,its,ite,kts,kte,lacc=.TRUE.)
        IF (ldass_lhn) qrsflux(:,:) = qrsflux(:,:) + prec3D_tmp(:,:)
-#ifndef _OPENACC
+
      END IF
 
      IF (ANY(qg(its:ite,kts:kte)>0._wp)) THEN
-#endif
+
        IF (ldass_lhn) prec3D_tmp(:,:) = 0.0_wp
        IF (lprogmelt) THEN
          DO ii=1,ntsedi_graupel
@@ -1032,11 +1032,11 @@ CONTAINS
          END DO
        END IF
        IF (ldass_lhn) qrsflux(:,:) = qrsflux(:,:) + prec3D_tmp(:,:)
-#ifndef _OPENACC
+
      END IF
 
      IF (ANY(qh(its:ite,kts:kte)>0._wp)) THEN
-#endif
+
        IF (ldass_lhn) prec3D_tmp(:,:) = 0.0_wp
        IF (lprogmelt) THEN
          DO ii=1,ntsedi_hail
@@ -1050,9 +1050,9 @@ CONTAINS
          END DO
        END IF
        IF (ldass_lhn) qrsflux(:,:) = qrsflux(:,:) + prec3D_tmp(:,:)
-#ifndef _OPENACC
+
      END IF
-#endif
+
      
      IF (msg_level > 100)THEN
        WRITE (message_text,'(1X,A,f8.2)') ' sedimentation_explicit  cmax = ',cmax

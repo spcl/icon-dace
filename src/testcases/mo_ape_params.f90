@@ -18,9 +18,9 @@ MODULE mo_ape_params
 
   USE mo_math_constants,     ONLY: pi
   USE mo_physical_constants, ONLY: tmelt
-#ifndef __NO_ICON_ATMO__
+
   USE mo_nh_testcases_nml,   ONLY: ape_sst_val
-#endif
+
   USE mo_impl_constants,     ONLY: max_char_length
   USE mo_exception,          ONLY: finish
 
@@ -174,11 +174,11 @@ CONTAINS
 
     REAL(wp) :: sst
 
-#ifndef __NO_ICON_ATMO__
+
     sst = tmelt + ape_sst_val
-#else
-    sst = tmelt + 29.0_wp
-#endif
+
+
+
 
   END FUNCTION ape_sst_const
 

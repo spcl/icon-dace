@@ -13,7 +13,26 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
 !----------------------------
 MODULE mo_ocean_testbed_zstar
   !-------------------------------------------------------------------------
@@ -704,22 +723,22 @@ CONTAINS
 !      CALL message (TRIM(routine), message_text)
 !     
 !      !! Get kinetic energy
-!      start_timer(timer_scalar_prod_veloc,2)
+!      IF (timers_level >= 2) CALL timer_start(timer_scalar_prod_veloc)
 !      CALL calc_scalar_product_veloc_3d( patch_3d,  &
 !        & ocean_state(jg)%p_prog(nold(1))%vn,         &
 !        & ocean_state(jg)%p_diag,                     &
 !        & operators_coefficients)
-!       stop_timer(timer_scalar_prod_veloc,2)
+!       IF (timers_level >= 2) CALL timer_stop(timer_scalar_prod_veloc)
 !     
 !      !! Updates velocity, tracer boundary condition
 !      !! Changes height based on ice etc
 !      !! Ice eqn sends back heat fluxes and volume fluxes
 !      !! Tracer relaxation and surface flux boundary conditions
-!      start_timer(timer_upd_flx,3)
+!      IF (timers_level >= 3) CALL timer_start(timer_upd_flx)
 !      CALL update_ocean_surface_refactor( patch_3d, ocean_state(jg), p_as, sea_ice, p_atm_f, p_oce_sfc, &
 !           & current_time, operators_coefficients, ocean_state(jg)%p_prog(nold(1))%eta_c, &
 !           & ocean_state(jg)%p_prog(nold(1))%stretch_c)
-!      stop_timer(timer_upd_flx,3)
+!      IF (timers_level >= 3) CALL timer_stop(timer_upd_flx)
 !
 !      !------------------------------------------------------------------
 ! 
@@ -764,13 +783,13 @@ CONTAINS
 !      !------------------------------------------------------------------------
 !      ! solve for new free surface
 !      !------------------------------------------------------------------------
-!      start_timer(timer_solve_ab,1)
+!      IF (timers_level >= 1) CALL timer_start(timer_solve_ab)
 !      CALL solve_free_surface_eq_zstar( patch_3d, ocean_state, p_ext_data,  &
 !        & p_oce_sfc , p_as, p_phys_param, operators_coefficients, solvercoeff_sp, &
 !        & jstep, ocean_state(jg)%p_prog(nold(1))%eta_c, ocean_state(jg)%p_prog(nold(1))%stretch_c, &
 !        & stretch_e, ocean_state(jg)%p_prog(nnew(1))%eta_c, ocean_state(jg)%p_prog(nnew(1))%stretch_c)
 !
-!      stop_timer(timer_solve_ab,1)
+!      IF (timers_level >= 1) CALL timer_stop(timer_solve_ab)
 !
 !      !------------------------------------------------------------------------
 !      ! Step 4: calculate final normal velocity from predicted horizontal

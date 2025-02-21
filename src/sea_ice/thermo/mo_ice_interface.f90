@@ -13,7 +13,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_ice_interface
   !-------------------------------------------------------------------------
@@ -287,26 +297,22 @@ CONTAINS
     !-----------------------------------------------------------------------
     p_patch         => p_patch_3D%p_patch_2D(1)
 
-#ifndef _OPENMP
     !---------DEBUG DIAGNOSTICS-------------------------------------------
     CALL dbg_print('bef.icethm: hi  ',p_ice%hi    ,str_module,2, in_subset=p_patch%cells%owned)
     CALL dbg_print('bef.icethm: hs  ',p_ice%hs    ,str_module,2, in_subset=p_patch%cells%owned)
     CALL dbg_print('bef.icethm: conc',p_ice%conc  ,str_module,2, in_subset=p_patch%cells%owned)
     !---------------------------------------------------------------------
-#endif
 
     !---------------------------------------------------------------------
     ! (2) --------------- Slow sea ice thermodynamics --------------------
     !---------------------------------------------------------------------
     CALL ice_slow_thermo(p_patch_3D, p_os, atmos_fluxes, p_ice, p_oce_sfc, lacc=lzacc)
 
-#ifndef _OPENMP
     !---------DEBUG DIAGNOSTICS-------------------------------------------
     CALL dbg_print('aft.icethm: hi  ',p_ice%hi    ,str_module,2, in_subset=p_patch%cells%owned)
     CALL dbg_print('aft.icethm: hs  ',p_ice%hs    ,str_module,2, in_subset=p_patch%cells%owned)
     CALL dbg_print('aft.icethm: conc',p_ice%conc  ,str_module,2, in_subset=p_patch%cells%owned)
     !---------------------------------------------------------------------
-#endif
 
   END SUBROUTINE ice_thermodynamics
 
@@ -401,7 +407,6 @@ CONTAINS
 
     !$ACC END DATA
 
-#ifndef _OPENMP
     !---------DEBUG DIAGNOSTICS-------------------------------------------
     CALL dbg_print('ice_fast: hi     ',p_ice%hi       ,str_module,3, in_subset=p_patch%cells%owned)
     CALL dbg_print('ice_fast: hs     ',p_ice%hs       ,str_module,3, in_subset=p_patch%cells%owned)
@@ -410,7 +415,6 @@ CONTAINS
     CALL dbg_print('aft.fast: Qtop   ',p_ice%Qtop     ,str_module,3, in_subset=p_patch%cells%owned)
     CALL dbg_print('aft.fast: Qbot   ',p_ice%Qbot     ,str_module,3, in_subset=p_patch%cells%owned)
     !---------------------------------------------------------------------
-#endif
 
   END SUBROUTINE ice_fast_interface
 

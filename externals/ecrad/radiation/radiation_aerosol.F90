@@ -56,10 +56,10 @@ module radiation_aerosol
      procedure :: allocate_direct => allocate_aerosol_arrays_direct
      procedure :: deallocate      => deallocate_aerosol_arrays
      procedure :: out_of_physical_bounds
-#ifdef _OPENACC
-     procedure :: update_host
-     procedure :: update_device
-#endif
+
+
+
+
   end type aerosol_type
 
 contains
@@ -85,10 +85,10 @@ contains
     this%istartlev = istartlev
     this%iendlev   = iendlev
 
-#ifdef _OPENACC
-    write(nulerr,'(a)') '*** Error: radiation_aerosol:allocate aerosol%is_direct==.false. is not ported to GPU'
-    call radiation_abort()
-#endif
+
+
+
+
 
     if (lhook) call dr_hook('radiation_aerosol:allocate',1,hook_handle)
 
@@ -231,38 +231,5 @@ contains
 
   end function out_of_physical_bounds
 
-#ifdef _OPENACC
-  !---------------------------------------------------------------------
-  ! updates fields on host
-  subroutine update_host(this)
-
-    class(aerosol_type), intent(inout) :: this
-
-    !$ACC UPDATE HOST(this%mixing_ratio) IF(allocated(this%mixing_ratio))
-    !$ACC UPDATE HOST(this%od_sw) IF(allocated(this%od_sw))
-    !$ACC UPDATE HOST(this%ssa_sw) IF(allocated(this%ssa_sw))
-    !$ACC UPDATE HOST(this%g_sw) IF(allocated(this%g_sw))
-    !$ACC UPDATE HOST(this%od_lw) IF(allocated(this%od_lw))
-    !$ACC UPDATE HOST(this%ssa_lw) IF(allocated(this%ssa_lw))
-    !$ACC UPDATE HOST(this%g_lw) IF(allocated(this%g_lw))
-
-  end subroutine update_host
-
-  !---------------------------------------------------------------------
-  ! updates fields on device
-  subroutine update_device(this)
-
-    class(aerosol_type), intent(inout) :: this
-
-    !$ACC UPDATE DEVICE(this%mixing_ratio) IF(allocated(this%mixing_ratio))
-    !$ACC UPDATE DEVICE(this%od_sw) IF(allocated(this%od_sw))
-    !$ACC UPDATE DEVICE(this%ssa_sw) IF(allocated(this%ssa_sw))
-    !$ACC UPDATE DEVICE(this%g_sw) IF(allocated(this%g_sw))
-    !$ACC UPDATE DEVICE(this%od_lw) IF(allocated(this%od_lw))
-    !$ACC UPDATE DEVICE(this%ssa_lw) IF(allocated(this%ssa_lw))
-    !$ACC UPDATE DEVICE(this%g_lw) IF(allocated(this%g_lw))
-
-  end subroutine update_device
-#endif 
   
 end module radiation_aerosol

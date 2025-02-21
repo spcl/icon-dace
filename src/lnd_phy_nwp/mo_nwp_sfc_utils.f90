@@ -13,11 +13,18 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
-#if defined __xlC__
-@PROCESS SPILL(564)
-#endif
 MODULE mo_nwp_sfc_utils
 
   USE mo_kind,                ONLY: wp
@@ -73,10 +80,6 @@ MODULE mo_nwp_sfc_utils
 
 
 
-#ifdef __SX__
-! parameter for loop unrolling
-INTEGER, PARAMETER :: nlsoil= 8
-#endif
 
 
   PUBLIC :: nwp_surface_init
@@ -93,11 +96,8 @@ INTEGER, PARAMETER :: nlsoil= 8
   PUBLIC :: copy_lnd_prog_now2new
   PUBLIC :: seaice_albedo_coldstart
 
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
   LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
+
 
 
 
@@ -1375,9 +1375,9 @@ CONTAINS
         !$ACC END PARALLEL
 
         IF (lmulti_snow) THEN
-#ifdef _OPENACC
-          CALL finish('aggregate_landvars', 'lmulti_snow is not ported to openACC.')
-#endif
+
+
+
           DO jk=1,nlev_snow
             DO jc = i_startidx, i_endidx
               lnd_diag%t_snow_mult  (jc,jk,jb) = lnd_prog%t_snow_mult_t(jc,jk,jb,1)
@@ -1454,9 +1454,9 @@ CONTAINS
         !$ACC END PARALLEL
 
         IF (lmulti_snow) THEN
-#ifdef _OPENACC
-          CALL finish('aggregate_landvars', 'lmulti_snow is not ported to openACC.')
-#endif        
+
+
+
           DO jk = 1, nlev_snow+1
             DO jc = i_startidx, i_endidx
               lnd_diag%t_snow_mult  (jc,jk,jb) = 0._wp
@@ -1962,7 +1962,7 @@ CONTAINS
 
         ENDDO  ! ic
 
-#ifndef __SX__
+
         ! Sanity check
         ! Check whether fractions of seaice and non-seaice covered tiles sum up to total sea fraction. 
         DO ic = 1, i_count_sea
@@ -1976,7 +1976,7 @@ CONTAINS
             CALL finish(routine, 'sea-ice + water fractions do not sum up to total sea fraction')
           END IF
         ENDDO  ! jc
-#endif
+
       ENDIF   ! IF (ntiles_total == 1)
 
     ENDDO  ! jb
@@ -2396,9 +2396,9 @@ CONTAINS
     ! Loop over old sea-ice points, only
 
     IF ( ntiles_total == 1 ) THEN  ! no tile approach
-#ifdef _OPENACC
-      CALL finish('update_idx_lists_sea', "The code path without tiling is not tested on GPU")
-#endif
+
+
+
       !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) &
       !$ACC   PRESENT(list_seawtr_count, list_seaice_count) ! these are entries of vectors that are present on device
       list_seaice_count = 0 ! do the reset on accelerator if using OpenACC
@@ -2785,9 +2785,9 @@ CONTAINS
 
     IF (lseaice) THEN
 
-#ifdef _OPENACC
-      CALL finish(routine, 'The branch for lseaice==.TRUE. is not supported by OpenACC.')
-#endif
+
+
+
 
       ! allocate index lists for seaice and open water points
       !

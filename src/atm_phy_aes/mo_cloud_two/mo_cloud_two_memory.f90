@@ -43,7 +43,19 @@ MODULE mo_cloud_two_memory
   USE mo_cloud_two_types         ,ONLY: t_cloud_two_input, t_cloud_two_output
 
   ! include definition for "__acc_attach(ptr)"
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -232,7 +244,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_constant                                           ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%jcs)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='jce_two') ) THEN
@@ -252,7 +264,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_constant                                           ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%jce)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='msg_level_two') ) THEN
@@ -272,7 +284,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_constant                                           ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%msg_level)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pdtime_two') ) THEN
@@ -292,7 +304,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_constant                                           ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%pdtime)
+       
     END IF
 
     !
@@ -323,7 +335,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%dz)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='zh_two') ) THEN
@@ -346,7 +358,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin_nlevp1)       ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%zh)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='rho_two') ) THEN
@@ -369,7 +381,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%rho)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pf_two') ) THEN
@@ -392,7 +404,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%pf)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='cpair_two') ) THEN
@@ -416,7 +428,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%cpair)
+       
     END IF
     !
     ! Input fields (2)
@@ -446,7 +458,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%ta)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qv_two') ) THEN
@@ -469,7 +481,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qv)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qc_two') ) THEN
@@ -493,7 +505,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qc)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qi_two') ) THEN
@@ -517,7 +529,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qi)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qr_two') ) THEN
@@ -541,7 +553,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qr)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qs_two') ) THEN
@@ -565,7 +577,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qs)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qg_two') ) THEN
@@ -589,7 +601,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qg)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qh_two') ) THEN
@@ -613,7 +625,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qg)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qnc_two') ) THEN
@@ -637,7 +649,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qnc)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qni_two') ) THEN
@@ -661,7 +673,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qni)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qnr_two') ) THEN
@@ -685,7 +697,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qnr)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qns_two') ) THEN
@@ -709,7 +721,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qns)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qng_two') ) THEN
@@ -733,7 +745,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qng)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_qnh_two') ) THEN
@@ -757,7 +769,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%qng)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_ninact_two') ) THEN
@@ -781,7 +793,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%ninact)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='in_w_two') ) THEN
@@ -804,7 +816,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%w)
+       
     END IF
 
 
@@ -841,7 +853,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_ta_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -868,7 +880,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qv_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -897,7 +909,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qc_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -926,7 +938,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qi_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -955,7 +967,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qr_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -984,7 +996,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qs_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -1013,7 +1025,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qg_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -1042,7 +1054,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qh_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -1071,7 +1083,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qnc_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -1100,7 +1112,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qni_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -1129,7 +1141,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qnr_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -1158,7 +1170,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qns_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -1187,7 +1199,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qng_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -1216,7 +1228,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_qnh_two)
+       
     END IF
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_dyn .OR.                                                 &
@@ -1245,7 +1257,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%tend_ninact_two)
+       
     END IF
     ! INTENT-INOUT variables of the parameterization
     !
@@ -1269,7 +1281,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%ta)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qv_two') ) THEN
@@ -1292,7 +1304,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qv)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qc_two') ) THEN
@@ -1316,7 +1328,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qc)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qi_two') ) THEN
@@ -1340,7 +1352,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qi)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qr_two') ) THEN
@@ -1364,7 +1376,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qr)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qs_two') ) THEN
@@ -1388,7 +1400,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qs)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qg_two') ) THEN
@@ -1412,7 +1424,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qg)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qh_two') ) THEN
@@ -1436,7 +1448,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qg)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qnc_two') ) THEN
@@ -1460,7 +1472,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qnc)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qni_two') ) THEN
@@ -1484,7 +1496,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qni)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qnr_two') ) THEN
@@ -1508,7 +1520,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qnr)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qns_two') ) THEN
@@ -1532,7 +1544,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qns)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qng_two') ) THEN
@@ -1556,7 +1568,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qng)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_qnh_two') ) THEN
@@ -1580,7 +1592,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%qng)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_ninact_two') ) THEN
@@ -1604,7 +1616,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%ninact)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='out_w_two') ) THEN
@@ -1627,7 +1639,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%w)
+       
     END IF
     !
     ! fluxes at the surface
@@ -1650,7 +1662,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_instant                                            ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%pr_rain)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pr_ice') ) THEN
@@ -1671,7 +1683,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_instant                                            ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%pr_ice)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pr_snow') ) THEN
@@ -1692,7 +1704,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_instant                                            ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%pr_snow)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pr_grpl') ) THEN
@@ -1713,7 +1725,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_instant                                            ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%pr_grpl)
+       
    END IF
     !
     IF ( is_variable_in_output(var_name='pr_hail') ) THEN
@@ -1734,7 +1746,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_instant                                            ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_output%pr_hail)
+       
    END IF
     !
 

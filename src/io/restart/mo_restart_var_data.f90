@@ -19,18 +19,18 @@ MODULE mo_restart_var_data
   USE mo_fortran_tools,      ONLY: insert_dimension
   USE mo_grid_config,        ONLY: l_limited_area
   USE mo_impl_constants,     ONLY: INH_ATMOSPHERE, TLEV_NNOW, TLEV_NNOW_RCF, SUCCESS
-#ifdef DEBUG
-  USE mo_io_units,           ONLY: nerr
-#endif
+
+
+
   USE mo_kind,               ONLY: dp, sp
   USE mo_util_string,        ONLY: int2string
   USE mo_var,                ONLY: t_var
   USE mo_var_metadata_types, ONLY: t_var_metadata
   USE mo_var_metadata,       ONLY: get_var_timelevel
-#ifdef _OPENACC
-  USE mo_mpi,                       ONLY: i_am_accel_node
-  USE openacc, ONLY: acc_is_present
-#endif
+
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -88,12 +88,12 @@ CONTAINS
       CALL finish(routine, "'"//TRIM(vd%info%NAME)//"': "//&
            & TRIM(int2string(vd%info%ndims))//"d arrays not handled yet")
     END SELECT
-#ifdef _OPENACC
-    if(i_am_accel_node .AND. ( vd%info%lopenacc .NEQV. acc_is_present(r_ptr_3d) )) then
-      print *, "in restart: ", TRIM(vd%info%NAME), vd%info%lopenacc, acc_is_present(r_ptr_3d)
-      CALL finish(routine, "lopenacc and acc_is_present are inconsistent for '"//TRIM(vd%info%NAME)//"'")
-    endif
-#endif
+
+
+
+
+
+
     !$ACC UPDATE HOST(r_ptr_3d) ASYNC(1) IF(i_am_accel_node .AND. vd%info%lopenacc)
     !$ACC WAIT(1) IF(i_am_accel_node)
   END SUBROUTINE get_var_3d_ptr_dp
@@ -139,12 +139,12 @@ CONTAINS
       CALL finish(routine, "'"//TRIM(vd%info%NAME)//"': "//&
            & TRIM(int2string(vd%info%ndims))//"d arrays not handled yet")
     END SELECT
-#ifdef _OPENACC
-    if(i_am_accel_node .AND. ( vd%info%lopenacc .NEQV. acc_is_present(s_ptr_3d) )) then
-      print *, "in restart: ", TRIM(vd%info%NAME), vd%info%lopenacc, acc_is_present(s_ptr_3d)
-      CALL finish(routine, "lopenacc and acc_is_present are inconsistent for '"//TRIM(vd%info%NAME)//"'")
-    endif
-#endif
+
+
+
+
+
+
     !$ACC UPDATE HOST(s_ptr_3d) ASYNC(1) IF(i_am_accel_node .AND. vd%info%lopenacc)
     !$ACC WAIT(1) IF(i_am_accel_node)
   END SUBROUTINE get_var_3d_ptr_sp
@@ -190,12 +190,12 @@ CONTAINS
       CALL finish(routine, "'"//TRIM(vd%info%NAME)//"': "//&
            & TRIM(int2string(vd%info%ndims))//"d arrays not handled yet")
     END SELECT
-#ifdef _OPENACC
-    if(i_am_accel_node .AND. ( vd%info%lopenacc .NEQV. acc_is_present(i_ptr_3d) )) then
-      print *, "in restart: ", TRIM(vd%info%NAME), vd%info%lopenacc, acc_is_present(i_ptr_3d)
-      CALL finish(routine, "lopenacc and acc_is_present are inconsistent for '"//TRIM(vd%info%NAME)//"'")
-    endif
-#endif
+
+
+
+
+
+
     !$ACC UPDATE HOST(i_ptr_3d) ASYNC(1) IF(i_am_accel_node .AND. vd%info%lopenacc)
     !$ACC WAIT(1) IF(i_am_accel_node)
   END SUBROUTINE get_var_3d_ptr_int
@@ -213,7 +213,7 @@ CONTAINS
     ! check if this variable potentially needs to be written to the restart file
     IF (.NOT. p_info%lrestart) RETURN
 
-#ifndef __NO_ICON_ATMO__
+
     lskip_timelev = .FALSE.
     lskip_extra_timelevs = iequations == INH_ATMOSPHERE .AND. &
       &                    .NOT. (l_limited_area .AND. patch_id == 1)
@@ -244,7 +244,7 @@ CONTAINS
     ENDIF
     !
     IF ( lskip_timelev ) RETURN
-#endif
+
     has_vtl = .TRUE.
   END FUNCTION has_valid_time_level
 

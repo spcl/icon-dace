@@ -9,9 +9,9 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#endif
+
+
+
 
 MODULE mo_ocean_solve_trivial_transfer
   USE mo_kind, ONLY: wp, sp
@@ -70,9 +70,9 @@ CONTAINS
       & "::trivial_transfer_construct()"
     INTEGER, ALLOCATABLE, DIMENSION(:,:) :: gID_tmp
     INTEGER :: iidx, iblk, nidx
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: gID_tmp
-#endif
+
+
+
 
     IF (this%is_init) RETURN
     IF (ltimer) THEN
@@ -298,18 +298,18 @@ CONTAINS
     !$ACC   COPYOUT(data_out) IF(lzacc)
 
     IF (ltimer) CALL timer_start(this%timer_in(tt))
-#ifdef _OPENMP
-!$OMP PARALLEL DO SCHEDULE(STATIC)
-#endif
+
+
+
     DO i = 1, SIZE(data_in, 3)
       !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       data_out(:,:,i) = data_in(:,:,i)
       !$ACC END KERNELS
       !$ACC WAIT(1)
     END DO
-#ifdef _OPENMP
-!$OMP END PARALLEL DO
-#endif
+
+
+
     IF (ltimer) CALL timer_stop(this%timer_in(tt))
 
     !$ACC END DATA
@@ -332,9 +332,9 @@ CONTAINS
     !$ACC   COPYOUT(data_out_idx, data_out_blk) IF(lzacc)
 
     IF (ltimer) CALL timer_start(this%timer_in(tt))
-#ifdef _OPENMP
-!$OMP PARALLEL DO SCHEDULE(STATIC)
-#endif
+
+
+
     DO i = 1, SIZE(data_in_idx, 3)
       !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       data_out_idx(:,:,i) = data_in_idx(:,:,i)
@@ -342,9 +342,9 @@ CONTAINS
       !$ACC END KERNELS
       !$ACC WAIT(1)
     END DO
-#ifdef _OPENMP
-!$OMP END PARALLEL DO
-#endif
+
+
+
     IF (ltimer) CALL timer_stop(this%timer_in(tt))
 
     !$ACC END DATA

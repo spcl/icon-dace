@@ -66,11 +66,11 @@ MODULE mo_cloud_gas_profiles
 
   TYPE (t_gas), TARGET   :: gas(ngases,max_dom)
   REAL(wp), PARAMETER    :: missing_value=-999999._wp
-#ifdef _OPENACC
-  LOGICAL, PARAMETER     :: use_acc = .TRUE.
-#else  
+
+
+
   LOGICAL, PARAMETER     :: use_acc = .FALSE.
-#endif
+
 
 CONTAINS
 

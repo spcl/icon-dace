@@ -36,25 +36,25 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 !> basic routines and data structures for handling partitions
-#include "fc_feature_defs.inc"
+
 MODULE ppm_set_partition_base
   USE ppm_std_type_kinds, ONLY: dp, i4, i8
-#ifdef USE_MPI
-  USE ppm_std_type_kinds_mp, ONLY: mp_i8, mp_dp
-  USE ppm_base, ONLY: ppm_default_comm
-#endif
+
+
+
+
   USE ppm_base, ONLY: assertion, abort_ppm
   USE ppm_extents, ONLY: extent, extent_start, extent_end, empty_extent, &
        iinterval, ASSIGNMENT(=)
   USE ppm_f90_io_lun, ONLY: next_free_unit
-#ifdef USE_MPI_MOD
-  USE mpi
-#endif
+
+
+
   IMPLICIT NONE
   PRIVATE
-#if defined USE_MPI && ! defined USE_MPI_MOD
-  INCLUDE 'mpif.h'
-#endif
+
+
+
   !> succinct representation of partitioning, where
   !! <tt>elements(start(p):start(p+1)-1)</tt> contains
   !! the indices \c i of partition \c p
@@ -114,12 +114,12 @@ MODULE ppm_set_partition_base
     MODULE PROCEDURE balance_of_max_weight_sums_dp
   END INTERFACE balance_of_max
 
-#ifdef USE_MPI
-  INTERFACE balance_of_max_mp
-    MODULE PROCEDURE balance_of_max_mp_i4
-    MODULE PROCEDURE balance_of_max_mp_dp
-  END INTERFACE balance_of_max_mp
-#endif
+
+
+
+
+
+
 
   INTERFACE partition_weight_sums
     MODULE PROCEDURE partition_weight_sums_i8i4
@@ -133,9 +133,9 @@ MODULE ppm_set_partition_base
   PUBLIC :: partition_vec, set_i4, partition_assignment, block_decomposition
   PUBLIC :: balance_of_max, OPERATOR(==), OPERATOR(/=), ASSIGNMENT(=)
   PUBLIC :: part_size
-#ifdef USE_MPI
-  PUBLIC :: balance_of_max_mp
-#endif
+
+
+
   PUBLIC :: partition_weight_sums
   ! these cannot be part of an generic assignment interface
   PUBLIC :: assign_set_i4_2_pv, assign_pv_2_set_i4
@@ -174,7 +174,7 @@ CONTAINS
     INTEGER :: nparts, i, p_lb, p_ub
 
     CALL assertion(ALLOCATED(a%start) .AND. ALLOCATED(a%elements), filename, &
-         __LINE__, "partition_vec must be initialized")
+         177, "partition_vec must be initialized")
     nparts = SIZE(b)
     p = nparts == SIZE(a%start) - 1
 
@@ -421,10 +421,10 @@ CONTAINS
     INTEGER :: i, j, lb, ub, num_parts
 
     num_parts = SIZE(partitioning%start) - 1
-    CALL assertion(num_parts == SIZE(weight_sums), filename, __LINE__, &
+    CALL assertion(num_parts == SIZE(weight_sums), filename, 424, &
          'number of partitions must match number of weight sums')
     CALL assertion(SIZE(partitioning%elements) == SIZE(weight), filename, &
-         __LINE__, 'number of elements must match number of weights')
+         427, 'number of elements must match number of weights')
 
     DO j = 1, num_parts
       lb = partitioning%start(j)
@@ -451,10 +451,10 @@ CONTAINS
     INTEGER :: i, j, lb, ub, num_parts
 
     num_parts = SIZE(partitioning%start) - 1
-    CALL assertion(num_parts == SIZE(weight_sums), filename, __LINE__, &
+    CALL assertion(num_parts == SIZE(weight_sums), filename, 454, &
          'number of partitions must match number of weight sums')
     CALL assertion(SIZE(partitioning%elements) == SIZE(weight), filename, &
-         __LINE__, 'number of elements must match number of weights')
+         457, 'number of elements must match number of weights')
 
     DO j = 1, num_parts
       lb = partitioning%start(j)
@@ -469,67 +469,6 @@ CONTAINS
          = SUM(weight_sums)/REAL(num_parts, dp)
   END SUBROUTINE partition_weight_sums_dpdp
 
-#ifdef USE_MPI
-  FUNCTION balance_of_max_mp_i4(weight, comm) RESULT(balance)
-    INTEGER(i4), INTENT(in) :: weight(:)
-    INTEGER, OPTIONAL, INTENT(in) :: comm
-    REAL :: balance
-
-    INTEGER :: part_comm, comm_size, comm_rank, ierror
-    INTEGER(i8), ALLOCATABLE :: weight_sums(:)
-    INTEGER(i8) :: my_weight_sum
-
-    part_comm = ppm_default_comm
-    IF (PRESENT(comm)) part_comm = comm
-    CALL mpi_comm_rank(part_comm, comm_rank, ierror)
-    IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_rank failed", filename, __LINE__)
-    CALL mpi_comm_size(part_comm, comm_size, ierror)
-    IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_size failed", filename, __LINE__)
-
-    my_weight_sum = SUM(INT(weight, i8))
-
-    ALLOCATE(weight_sums(comm_size))
-
-    CALL mpi_allgather(my_weight_sum, 1, mp_i8, weight_sums, 1, mp_i8, &
-         part_comm, ierror)
-    IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_gather failed", filename, __LINE__)
-    balance = balance_of_max(weight_sums)
-    DEALLOCATE(weight_sums)
-  END FUNCTION balance_of_max_mp_i4
-
-  FUNCTION balance_of_max_mp_dp(weight, comm) RESULT(balance)
-    REAL(dp), INTENT(in) :: weight(:)
-    INTEGER, OPTIONAL, INTENT(in) :: comm
-    REAL :: balance
-
-    INTEGER :: part_comm, comm_size, comm_rank, ierror
-    REAL(dp), ALLOCATABLE :: weight_sums(:)
-    REAL(dp) :: my_weight_sum
-
-    part_comm = ppm_default_comm
-    IF (PRESENT(comm)) part_comm = comm
-    CALL mpi_comm_rank(part_comm, comm_rank, ierror)
-    IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_rank failed", filename, __LINE__)
-    CALL mpi_comm_size(part_comm, comm_size, ierror)
-    IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_size failed", filename, __LINE__)
-
-    my_weight_sum = SUM(weight)
-
-    ALLOCATE(weight_sums(comm_size))
-
-    CALL mpi_allgather(my_weight_sum, 1, mp_dp, weight_sums, 1, mp_dp, &
-         part_comm, ierror)
-    IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_gather failed", filename, __LINE__)
-    balance = balance_of_max(weight_sums)
-    DEALLOCATE(weight_sums)
-  END FUNCTION balance_of_max_mp_dp
-#endif
 
   ELEMENTAL SUBROUTINE assign_pa2pvec(pvec, pa)
     TYPE(partition_vec), INTENT(out) :: pvec
@@ -739,7 +678,7 @@ CONTAINS
     LOGICAL :: p
 
     ierr = -1
-    CALL assertion(ALLOCATED(partition%assigned), filename, __LINE__, &
+    CALL assertion(ALLOCATED(partition%assigned), filename, 742, &
          'invalid partition argument')
     DO i = 1, 1
       unit = next_free_unit()
@@ -754,7 +693,7 @@ CONTAINS
     ELSE IF (ierr /= 0) THEN
       INQUIRE(unit=unit, opened=p)
       IF (p) CLOSE(unit)
-      CALL abort_ppm('file error when writing partition', filename, __LINE__)
+      CALL abort_ppm('file error when writing partition', filename, 757)
     END IF
   END SUBROUTINE write_partition_pa
 

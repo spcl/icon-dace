@@ -39,17 +39,17 @@ MODULE mo_alloc_patches
   USE mo_parallel_config,         ONLY: nproma, num_dist_array_replicas
   USE mo_grid_config,             ONLY: n_dom_start, n_dom
   USE mo_mpi,                     ONLY: p_pe_work, p_comm_work, p_n_work
-#ifndef NOMPI
-  USE mpi
-#endif
+
+
+
   USE mo_read_netcdf_distributed, ONLY: delete_distrib_read
   USE ppm_distributed_array,      ONLY: global_array_desc,                           &
     &                                   dist_mult_array_new,                         &
     &                                   dist_mult_array_delete,                      &
     &                                   ppm_int, ppm_real_dp
-#ifdef HAVE_SLOW_PASSIVE_TARGET_ONESIDED 
-  USE ppm_distributed_array,      ONLY: sync_mode_active_target
-#endif
+
+
+
   USE ppm_extents,                ONLY: extent, extent_start, extent_size
   USE mo_communication,           ONLY: delete_comm_pattern,                         &
     &                                   delete_comm_gather_pattern
@@ -732,12 +732,12 @@ CONTAINS
     num_replicas = MAX(1, MIN(num_dist_array_replicas, p_n_work))
     replica_idx = partidx_of_elem_uniform_deco(process_space, num_replicas, &
       &                                        p_pe_work+1)
-#ifndef NOMPI
-    CALL MPI_Comm_split(p_comm_work, replica_idx, p_pe_work, dist_array_comm, &
-      &                 mpierr)
-#else
+
+
+
+
     dist_array_comm = p_comm_work
-#endif
+
     p_patch_pre%dist_array_pes = &
       uniform_partition(process_space, num_replicas, replica_idx)
     p_patch_pre%dist_array_comm = dist_array_comm
@@ -770,11 +770,11 @@ CONTAINS
 
     p_patch_pre%cells%dist = dist_mult_array_new( &
          dist_cell_desc, local_cell_chunks, dist_array_comm, &
-#ifdef HAVE_SLOW_PASSIVE_TARGET_ONESIDED
-         sync_mode=sync_mode_active_target &
-#else
+
+
+
          cache_size=MIN(10, p_n_work) &
-#endif
+
          )
     ALLOCATE( p_patch_pre%cells%start(min_rlcell:max_rlcell) )
     ALLOCATE( p_patch_pre%cells%end(min_rlcell:max_rlcell) )
@@ -791,11 +791,11 @@ CONTAINS
 
     p_patch_pre%edges%dist = dist_mult_array_new( &
       dist_edge_desc, local_edge_chunks, dist_array_comm, &
-#ifdef HAVE_SLOW_PASSIVE_TARGET_ONESIDED
-         sync_mode=sync_mode_active_target &
-#else
+
+
+
          cache_size=MIN(10, p_n_work) &
-#endif
+
          )
     ALLOCATE( p_patch_pre%edges%start(min_rledge:max_rledge) )
     ALLOCATE( p_patch_pre%edges%end(min_rledge:max_rledge) )
@@ -812,11 +812,11 @@ CONTAINS
 
     p_patch_pre%verts%dist = dist_mult_array_new( &
       dist_vert_desc, local_vert_chunks, dist_array_comm, &
-#ifdef HAVE_SLOW_PASSIVE_TARGET_ONESIDED
-         sync_mode=sync_mode_active_target &
-#else
+
+
+
          cache_size=MIN(10, p_n_work) &
-#endif
+
          )
     ALLOCATE( p_patch_pre%verts%start(min_rlvert:max_rlvert) )
     ALLOCATE( p_patch_pre%verts%end(min_rlvert:max_rlvert) )
@@ -948,9 +948,9 @@ CONTAINS
     CALL dist_mult_array_delete(p_patch_pre%verts%dist)
     DEALLOCATE( p_patch_pre%verts%start )
     DEALLOCATE( p_patch_pre%verts%end )
-#ifndef NOMPI
-    CALL MPI_Comm_free(p_patch_pre%dist_array_comm, mpierr)
-#endif
+
+
+
   END SUBROUTINE deallocate_pre_patch
   !-------------------------------------------------------------------------
 

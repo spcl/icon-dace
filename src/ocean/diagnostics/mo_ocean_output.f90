@@ -115,11 +115,11 @@ CONTAINS
     WRITE(message_text,'(a,a)') 'Write output at:', TRIM(datestring)
     CALL message (TRIM(routine),message_text)
 
-#ifdef _OPENACC
-    IF (output_mode%l_nml) CALL write_name_list_output(out_step, lacc=i_am_accel_node)
-#else
+
+
+
     IF (output_mode%l_nml) CALL write_name_list_output(out_step)
-#endif
+
 
   END SUBROUTINE output_ocean
   !-------------------------------------------------------------------------

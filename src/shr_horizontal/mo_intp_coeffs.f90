@@ -14,18 +14,28 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
   
-#ifdef __xlC__
-! @PROCESS nosmp
-! @PROCESS NOOPTimize
-! @PROCESS smp=noopt
-@process noopt
-#endif
+
+
+
+
+
+
 !#ifdef __PGI
 ! !pgi$g opt=1
 !#endif
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_intp_coeffs
@@ -350,9 +360,6 @@ CONTAINS
     INTEGER, DIMENSION(nproma,ptr_patch%nblks_c,3) :: inv_neighbor_id
     REAL(wp), DIMENSION(nproma,ptr_patch%nblks_c,3) :: z_inv_neighbor_id
 
-#ifdef DEBUG_COEFF
-    REAL(wp) :: sum1
-#endif
     CHARACTER(LEN=*), PARAMETER :: method_name = 'mo_intp_coeffs:force_mass_conservation_to_cellavg_wgt'
 
     ! write(0,*) "force_mass_conservation_to_cellavg_wgt, processing ", ptr_patch%grid_filename
@@ -892,57 +899,6 @@ CONTAINS
     ENDDO ! iteration loop
 
     ! Optional debug output for bilinear averaging coefficients
-#ifdef DEBUG_COEFF
-
-    rl_start = 2
-    rl_end = min_rlcell
-    i_startblk = ptr_patch%cells%start_blk(rl_start,1)
-    i_endblk   = ptr_patch%cells%end_blk(rl_end,i_nchdom)
-
-    sum1 = 0._wp
-    wgt_loc_sum = 1._wp
-
-    DO jb = i_startblk, i_endblk
-
-      CALL get_indices_c(ptr_patch, jb, i_startblk, i_endblk, &
-        & i_startidx, i_endidx, rl_start, rl_end)
-
-      DO jc = i_startidx, i_endidx
-
-        sum1 = sum1 + resid(jc,jb)**2
-        wgt_loc_sum(jc,jb) = SUM(ptr_int%c_bln_avg(jc,1:4,jb))
-
-        WRITE(710+ptr_patch%id,'(2i5,5f12.6,e13.5)') jb,jc,ptr_int%c_bln_avg(jc,1:4,jb),&
-          & wgt_loc_sum(jc,jb),resid(jc,jb)
-
-      END DO
-    END DO
-    WRITE(710+ptr_patch%id,'(4e13.5)') MAXVAL(resid),SQRT(sum1/ptr_patch%n_patch_cells),&
-      & MAXVAL(wgt_loc_sum)-1._wp,MINVAL(wgt_loc_sum)-1._wp
-    CLOSE (710+ptr_patch%id)
-
-    ! Debug output for mass flux averaging weights
-
-    rl_start = 5
-    rl_end = min_rledge
-    i_startblk = ptr_patch%edges%start_blk(rl_start,1)
-    i_endblk   = ptr_patch%edges%end_blk(rl_end,i_nchdom)
-
-    DO jb = i_startblk, i_endblk
-
-      CALL get_indices_e(ptr_patch, jb, i_startblk, i_endblk, &
-        & i_startidx, i_endidx, rl_start, rl_end)
-
-      DO je = i_startidx, i_endidx
-
-        WRITE(720+ptr_patch%id,'(2i5,6f12.6)') jb,je,ptr_int%e_flx_avg(je,1:5,jb),&
-          & checksum(je,jb)
-
-      END DO
-    END DO
-    CLOSE (720+ptr_patch%id)
-
-#endif
 
   END SUBROUTINE force_mass_conservation_to_cellavg_wgt
   !-------------------------------------------------------------------------
@@ -2620,9 +2576,6 @@ CONTAINS
   !!   - no "projection error" added to cell center
   !!
   SUBROUTINE init_tplane_c_sphere (ptr_patch, ptr_int)
-#ifdef __INTEL_COMPILER
-!DIR$ OPTIMIZE:2
-#endif
     TYPE(t_patch),     INTENT(inout) :: ptr_patch  !< patch
 
     TYPE(t_int_state), INTENT(inout) :: ptr_int    !< interpolation state

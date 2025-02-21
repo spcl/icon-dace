@@ -17,7 +17,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_phys_nest_utilities
@@ -655,24 +665,14 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
       END IF
     ENDIF
 
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-      DO jk = 1, nlev
-        jk1 = jk + nshift
-#else
-#ifndef _OPENACC
     DO jk = 1, nlev
       jk1 = jk + nshift
       DO jc = i_startidx, i_endidx
-#else
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jk1) ! see comment_collapse
-    DO jk = 1, nlev
-      DO jc = i_startidx, i_endidx
-        jk1 = jk + nshift
-#endif
-#endif
+
+
+
+
+
         p_pres_ifc(jc,jk1,jb) =                                        &
           pres_ifc(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &
           pres_ifc(iidx(jc,jb,2),jk,iblk(jc,jb,2))*p_fbkwgt(jc,jb,2) + &
@@ -727,22 +727,22 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
           aeq5(iidx(jc,jb,3),jk,iblk(jc,jb,3))*p_fbkwgt(jc,jb,3) + &
           aeq5(iidx(jc,jb,4),jk,iblk(jc,jb,4))*p_fbkwgt(jc,jb,4)
 
-#ifndef _OPENACC
+
       ENDDO
     ENDDO
 
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-      DO jk = 1, nlev
-        jk1 = jk + nshift
-#else
+
+
+
+
+
+
     DO jk = 1, nlev
       jk1 = jk + nshift
 !NEC$ ivdep
       DO jc = i_startidx, i_endidx
-#endif
-#endif
+
+
 
         p_clc(jc,jk1,jb) =                                        &
           clc(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &
@@ -764,25 +764,17 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
 ! Effective Radius upscaling
     IF ( l_upsc_reff ) THEN
       
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-        DO jk = 1, nlev
-          jk1 = jk + nshift
-#else
-#ifndef _OPENACC
+
+
+
+
+
+
+
       DO jk = 1, nlev
         jk1 = jk + nshift
 !NEC$ ivdep
         DO jc = i_startidx, i_endidx
-#else
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jk1) ! see comment_collapse
-      DO jk = 1, nlev
-        DO jc = i_startidx, i_endidx
-        jk1 = jk + nshift
-#endif
-#endif
 
 ! Store the sum of extinctions SUM (q/r) in p_reff_liq. 
           p_reff_liq(jc,jk1,jb) =                                                                 &
@@ -832,24 +824,10 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP SEQ
       DO jf = 1, input_extra_flds%ntot
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-          DO jk = 1, nlev
-            jk1 = jk + nshift
-#else
-#ifndef _OPENACC
         DO jk = 1, nlev
           jk1 = jk + nshift
 !NEC$ ivdep
           DO jc = i_startidx, i_endidx
-#else
-        !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jk1) ! see comment_collapse
-        DO jk = 1, nlev
-          DO jc = i_startidx, i_endidx
-          jk1 = jk + nshift
-#endif    
-#endif    
             p_extra_flds(jc,jk1,jb,jf) =                                       &
              input_extra_flds%field(jf)%p(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &
              input_extra_flds%field(jf)%p(iidx(jc,jb,2),jk,iblk(jc,jb,2))*p_fbkwgt(jc,jb,2) + &
@@ -869,25 +847,10 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
          nullify(p_reff)
          p_q    => input_extra_flds%field(assoc_hyd)%p  ! Extra Hydrometeor (qr,qg,qs)
          p_reff => input_extra_reff%field(jf)%p         ! Reff to be calculated
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-          DO jk = 1, nlev
-            jk1 = jk + nshift
-#else
-#ifndef _OPENACC
         DO jk = 1, nlev
           jk1 = jk + nshift
 !NEC$ ivdep
           DO jc = i_startidx, i_endidx
-#else
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jk1) ! see comment_collapse
-        DO jk = 1, nlev
-          DO jc = i_startidx, i_endidx
-            jk1 = jk + nshift
-#endif
-#endif
 ! Store the sum of extinctions SUM (q/r) in p_extra_reff. 
             p_extra_reff(jc,jk1,jb,jf) =                                                     &
               p_q(iidx(jc,jb,1),jk,iblk(jc,jb,1)) /                                          &
@@ -912,24 +875,10 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
       END DO
     END IF
 
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-      DO jk = 1, nlev
-        jk1 = jk + nshift
-#else
-#ifndef _OPENACC
     DO jk = 1, nlev
       jk1 = jk + nshift
 !NEC$ ivdep
       DO jc = i_startidx, i_endidx
-#else
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jk1) ! see comment_collapse
-    DO jk = 1, nlev
-      DO jc = i_startidx, i_endidx
-        jk1 = jk + nshift
-#endif
-#endif
 
         ! enhance averaged QC and QI in order to be more consistent with cloud cover scheme
         IF (p_clc(jc,jk1,jb) > 0._wp .AND. p_clc(jc,jk1,jb) < 0.95_wp) THEN
@@ -1466,9 +1415,6 @@ SUBROUTINE downscale_rad_output(jg, jgp, nlev_rg, rg_aclcov, rg_lwflxall,   &
     p_swflx_dn_clr => rg_swflx_dn_clr
   
 !$OMP PARALLEL
-#ifdef _OPENACC
-    CALL init(zrg_trdiffsolall(:,:,:), opt_acc_async=.TRUE.)
-#endif
     CALL init(zrg_aux3d(:,1:nshift,:), opt_acc_async=.TRUE.)
     CALL copy(rg_aclcov(:,:), zrg_aux3d(:,iclcov,:), opt_acc_async=.TRUE.)
     CALL copy(tsfc_rg(:,:), zrg_aux3d(:,itsfc,:), opt_acc_async=.TRUE.)
@@ -1887,18 +1833,6 @@ SUBROUTINE downscale_rad_output(jg, jgp, nlev_rg, rg_aclcov, rg_lwflxall,   &
 
     ! Now apply the corrections
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-      jc1 = iidx(jc,jb,1)
-      jc2 = iidx(jc,jb,2)
-      jc3 = iidx(jc,jb,3)
-      jc4 = iidx(jc,jb,4)
-      jb1 = iblk(jc,jb,1)
-      jb2 = iblk(jc,jb,2)
-      jb3 = iblk(jc,jb,3)
-      jb4 = iblk(jc,jb,4)
-      DO jk = 1,nlevp1
-#else
 !$NEC novector
     !$ACC LOOP SEQ
     DO jk = 1,nlevp1
@@ -1913,7 +1847,6 @@ SUBROUTINE downscale_rad_output(jg, jgp, nlev_rg, rg_aclcov, rg_lwflxall,   &
         jb2 = iblk(jc,jb,2)
         jb3 = iblk(jc,jb,3)
         jb4 = iblk(jc,jb,4)
-#endif
 
         trsolall(jc1,jk,jb1) = MAX(trsolall(jc1,jk,jb1) + dtrans_o_dalb_all(jc,jk)* &
           ( albdif(jc1,jb1) - alb_backintp(jc1,jb1) ), 0._wp)
@@ -2600,9 +2533,6 @@ SUBROUTINE interpol_phys_grf (ext_data, jg, jgc, jn, lacc)
       !$ACC END PARALLEL
 
       IF (lmulti_snow) THEN
-#ifdef _OPENACC
-        CALL finish ('interpol_phys_grf', 'lmulti_snow: OpenACC version currently not implemented')
-#endif
         DO jc = i_startidx, i_endidx
           ptr_ldiagc%t_snow_mult(jc,nlev_snow+1,jb) = z_aux3dl2_c(jc,13,jb)
         ENDDO
@@ -2718,9 +2648,6 @@ SUBROUTINE interpol_phys_grf (ext_data, jg, jgc, jn, lacc)
       !$ACC END PARALLEL
 
       IF (lmulti_snow) THEN
-#ifdef _OPENACC
-        CALL finish ('interpol_phys_grf', 'lmulti_snow: OpenACC version currently not implemented')
-#endif
         DO jk = 1, nlev_snow
           DO jc = i_startidx, i_endidx
             ptr_ldiagc%t_snow_mult(jc,jk,jb)   = z_aux3dsn_c(jc,5*(jk-1)+1,jb)

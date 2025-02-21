@@ -97,7 +97,7 @@ REAL(KIND=JPRB)   :: colco(KIDIA:KFDIA,KLEV) !left =0 for now,not passed from rr
     INTEGER(KIND=JPIM) :: ich, icl, ixc0, ixp, jc, jl
 
 
-#define MOD1(x) ((x) - AINT((x)))
+
 
     !$ACC DATA PRESENT(taug, P_TAUAERL, fac00, fac01, fac10, fac11, jp, jt, jt1, &
     !$ACC             colh2o, coln2o, colco2, colo3, coldry, laytrop, selffac, &
@@ -114,7 +114,7 @@ REAL(KIND=JPRB)   :: colco(KIDIA:KFDIA,KLEV) !left =0 for now,not passed from rr
     end do
     !$ACC END PARALLEL 
 
-#ifndef _OPENACC
+
     laytrop_min = MINVAL(laytrop)
     laytrop_max = MAXVAL(laytrop)
 
@@ -137,17 +137,6 @@ REAL(KIND=JPRB)   :: colco(KIDIA:KFDIA,KLEV) !left =0 for now,not passed from rr
       enddo
       ixc(lay) = icl
     enddo
-#else
-    laytrop_min = HUGE(laytrop_min) 
-    laytrop_max = -HUGE(laytrop_max)
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR REDUCTION(min:laytrop_min) REDUCTION(max:laytrop_max)
-    do jc = KIDIA,KFDIA
-      laytrop_min = MIN(laytrop_min, laytrop(jc))
-      laytrop_max = MAX(laytrop_max, laytrop(jc))
-    end do
-    !$ACC END PARALLEL
-#endif
  
       ! P = 473.420 mb (Level 5)
       refrat_planck_a = chi_mls(1,5)/chi_mls(4,5)
@@ -180,19 +169,19 @@ REAL(KIND=JPRB)   :: colco(KIDIA:KFDIA,KLEV) !left =0 for now,not passed from rr
           specparm = MIN(colh2o(jl,lay)/speccomb,oneminus)
           specmult = 8._JPRB*(specparm)
           js = 1 + int(specmult)
-          fs = MOD1(specmult)
+          fs = ((specmult) - AINT((specmult)))
 
           speccomb1 = colh2o(jl,lay) + rat_h2on2o_1(jl,lay)*coln2o(jl,lay)
           specparm1 = MIN(colh2o(jl,lay)/speccomb1,oneminus)
           specmult1 = 8._JPRB*(specparm1)
           js1 = 1 + int(specmult1)
-          fs1 = MOD1(specmult1)
+          fs1 = ((specmult1) - AINT((specmult1)))
 
           speccomb_mco2 = colh2o(jl,lay) + refrat_m_a*coln2o(jl,lay)
           specparm_mco2 = MIN(colh2o(jl,lay)/speccomb_mco2,oneminus)
           specmult_mco2 = 8._JPRB*specparm_mco2
           jmco2 = 1 + int(specmult_mco2)
-          fmco2 = MOD1(specmult_mco2)
+          fmco2 = ((specmult_mco2) - AINT((specmult_mco2)))
 
           !  In atmospheres where the amount of CO2 is too great to be considered
           !  a minor species, adjust the column amount of CO2 by an empirical factor
@@ -210,13 +199,13 @@ REAL(KIND=JPRB)   :: colco(KIDIA:KFDIA,KLEV) !left =0 for now,not passed from rr
           specparm_mco = MIN(colh2o(jl,lay)/speccomb_mco,oneminus)
           specmult_mco = 8._JPRB*specparm_mco
           jmco = 1 + int(specmult_mco)
-          fmco = MOD1(specmult_mco)
+          fmco = ((specmult_mco) - AINT((specmult_mco)))
 
           speccomb_planck = colh2o(jl,lay)+refrat_planck_a*coln2o(jl,lay)
           specparm_planck = MIN(colh2o(jl,lay)/speccomb_planck,oneminus)
           specmult_planck = 8._JPRB*specparm_planck
           jpl = 1 + int(specmult_planck)
-          fpl = MOD1(specmult_planck)
+          fpl = ((specmult_planck) - AINT((specmult_planck)))
 
           ind0 = ((jp(jl,lay)-1)*5+(jt(jl,lay)-1))*nspa(13) + js
           ind1 = (jp(jl,lay)*5+(jt1(jl,lay)-1))*nspa(13) + js1
@@ -405,34 +394,29 @@ REAL(KIND=JPRB)   :: colco(KIDIA:KFDIA,KLEV) !left =0 for now,not passed from rr
         !$ACC   specmult_planck, jpl, fpl, ind0, ind1, inds, indf, indm, p, p4, fk0, fk1, fk2, fac000, fac100, fac200, &
         !$ACC   fac010, fac110, fac210, fac001, fac101, fac201, fac011, fac111, fac211, tau_major, tau_major1)
         do lay = laytrop_min+1, laytrop_max
-#ifdef _OPENACC
-          do jl = KIDIA, KFDIA
-            if ( lay <= laytrop(jl) ) then
-#else
           ixc0 = ixc(lay)
 
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixlow(ixp,lay)
-#endif
 
             speccomb = colh2o(jl,lay) + rat_h2on2o(jl,lay)*coln2o(jl,lay)
             specparm = MIN(colh2o(jl,lay)/speccomb,oneminus)
             specmult = 8._JPRB*(specparm)
             js = 1 + int(specmult)
-            fs = MOD1(specmult)
+            fs = ((specmult) - AINT((specmult)))
 
             speccomb1 = colh2o(jl,lay) + rat_h2on2o_1(jl,lay)*coln2o(jl,lay)
             specparm1 = MIN(colh2o(jl,lay)/speccomb1,oneminus)
             specmult1 = 8._JPRB*(specparm1)
             js1 = 1 + int(specmult1)
-            fs1 = MOD1(specmult1)
+            fs1 = ((specmult1) - AINT((specmult1)))
 
             speccomb_mco2 = colh2o(jl,lay) + refrat_m_a*coln2o(jl,lay)
             specparm_mco2 = MIN(colh2o(jl,lay)/speccomb_mco2,oneminus)
             specmult_mco2 = 8._JPRB*specparm_mco2
             jmco2 = 1 + int(specmult_mco2)
-            fmco2 = MOD1(specmult_mco2)
+            fmco2 = ((specmult_mco2) - AINT((specmult_mco2)))
 
             !  In atmospheres where the amount of CO2 is too great to be considered
             !  a minor species, adjust the column amount of CO2 by an empirical factor
@@ -450,13 +434,13 @@ REAL(KIND=JPRB)   :: colco(KIDIA:KFDIA,KLEV) !left =0 for now,not passed from rr
             specparm_mco = MIN(colh2o(jl,lay)/speccomb_mco,oneminus)
             specmult_mco = 8._JPRB*specparm_mco
             jmco = 1 + int(specmult_mco)
-            fmco = MOD1(specmult_mco)
+            fmco = ((specmult_mco) - AINT((specmult_mco)))
 
             speccomb_planck = colh2o(jl,lay)+refrat_planck_a*coln2o(jl,lay)
             specparm_planck = MIN(colh2o(jl,lay)/speccomb_planck,oneminus)
             specmult_planck = 8._JPRB*specparm_planck
             jpl = 1 + int(specmult_planck)
-            fpl = MOD1(specmult_planck)
+            fpl = ((specmult_planck) - AINT((specmult_planck)))
 
             ind0 = ((jp(jl,lay)-1)*5+(jt(jl,lay)-1))*nspa(13) + js
             ind1 = (jp(jl,lay)*5+(jt1(jl,lay)-1))*nspa(13) + js1
@@ -609,9 +593,6 @@ REAL(KIND=JPRB)   :: colco(KIDIA:KFDIA,KLEV) !left =0 for now,not passed from rr
               fracs(jl,ngs12+ig,lay) = fracrefa(ig,jpl) + fpl * &
                   (fracrefa(ig,jpl+1)-fracrefa(ig,jpl))
             enddo
-#ifdef _OPENACC
-         else
-#else
           enddo
 
           ! Upper atmosphere part
@@ -619,7 +600,6 @@ REAL(KIND=JPRB)   :: colco(KIDIA:KFDIA,KLEV) !left =0 for now,not passed from rr
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixhigh(ixp,lay)
-#endif
 
             indm = indminor(jl,lay)
 !$NEC unroll(NG13)
@@ -630,9 +610,6 @@ REAL(KIND=JPRB)   :: colco(KIDIA:KFDIA,KLEV) !left =0 for now,not passed from rr
               taug(jl,ngs12+ig,lay) = colo3(jl,lay)*abso3
               fracs(jl,ngs12+ig,lay) =  fracrefb(ig)
             enddo
-#ifdef _OPENACC
-           endif
-#endif
           enddo
 
         enddo

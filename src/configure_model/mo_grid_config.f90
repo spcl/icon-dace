@@ -23,22 +23,10 @@ MODULE mo_grid_config
   USE mo_mpi,                ONLY: my_process_is_stdio
   USE mo_util_string,        ONLY: t_keyword_list, associate_keyword, with_keywords
   USE mo_netcdf_errhandler,  ONLY: nf
-#ifndef NOMPI
-! The USE statement below lets this module use the routines from
-! mo_netcdf_parallel where only 1 processor is reading and
-! broadcasting the results
-USE mo_netcdf_parallel, ONLY:                     &
-   nf_nowrite, nf_global, nf_noerr, nf_strerror,  &
-   nf_open            => p_nf_open,               &
-   nf_close           => p_nf_close,              &
-   nf_get_att_int     => p_nf_get_att_int ,       &
-   nf_get_att_double  => p_nf_get_att_double
-#else
   USE mo_netcdf, ONLY: &
       & nf_nowrite, nf_global, nf_noerr, nf_strerror, nf_open, nf_close, &
       & nf_get_att_int => nfx_get_att, &
       & nf_get_att_double => nfx_get_att
-#endif
 
   IMPLICIT NONE
   PRIVATE

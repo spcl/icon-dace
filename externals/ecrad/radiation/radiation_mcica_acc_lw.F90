@@ -298,7 +298,7 @@ contains
     do jcol = istartcol,iendcol
 
       ! Clear-sky calculation
-#ifndef _OPENACC
+
       if (config%do_lw_aerosol_scattering) then
         ! Scattering case: first compute clear-sky reflectance,
         ! transmittance etc at each model level
@@ -315,7 +315,7 @@ contains
              &  flux_up_clear(:,:,jcol), flux_dn_clear(:,:,jcol))
         
       else
-#endif
+
         ! Non-scattering case: use simpler functions for
         ! transmission and emission
         !$ACC LOOP SEQ
@@ -341,9 +341,9 @@ contains
           end do
         end do
 
-#ifndef _OPENACC
+
       end if
-#endif
+
 
       ! Store total cloud cover
       total_cloud_cover = flux%cloud_cover_lw(jcol)
@@ -396,7 +396,7 @@ contains
               ! Scattering case: calculate reflectance and
               ! transmittance at each model level
 
-#ifndef _OPENACC
+
               if (config%do_lw_aerosol_scattering) then
                 ! In single precision we need to protect against the
                 ! case that od_total > 0.0 and ssa_total > 0.0 but
@@ -419,7 +419,7 @@ contains
                 end do
 
               else
-#endif
+
                 !$ACC LOOP WORKER VECTOR PRIVATE(scat_od)
                 do jg = 1,ng
                   if (od_total(jg) > 0.0_jprb) then
@@ -433,9 +433,9 @@ contains
                     end if
                   end if
                 end do
-#ifndef _OPENACC
+
               end if
-#endif
+
             
               ! Compute cloudy-sky reflectance, transmittance etc at
               ! each model level
@@ -466,7 +466,7 @@ contains
           end if
         end do
         
-#ifndef _OPENACC
+
         if (config%do_lw_aerosol_scattering) then
           ! Use adding method to compute fluxes for an overcast sky,
           ! allowing for scattering in all layers
@@ -474,9 +474,9 @@ contains
                &  emission(:,jcol), albedo(:,jcol), &
                &  flux_up(:,:,jcol), flux_dn(:,:,jcol))
         else if (config%do_lw_cloud_scattering) then
-#else
-        if(config%do_lw_cloud_scattering) then
-#endif
+
+
+
           ! Use adding method to compute fluxes but optimize for the
           ! presence of clear-sky layers
 !          call adding_ica_lw(ng, nlev, reflectance, transmittance, source_up, source_dn, &
@@ -507,7 +507,7 @@ contains
 
         ! Compute the longwave derivatives needed by Hogan and Bozzo
         ! (2015) approximate radiation update scheme
-#ifndef _OPENACC
+
         if (config%do_lw_derivatives) then
           call calc_lw_derivatives_ica(ng, nlev, jcol, transmittance, flux_up(:,nlev+1,jcol), &
                &                       flux%lw_derivatives)
@@ -517,7 +517,7 @@ contains
                  &                         1.0_jprb-total_cloud_cover, flux%lw_derivatives)
           end if
         end if
-#endif
+
 
       else
         ! No cloud in profile and clear-sky fluxes already
@@ -526,13 +526,13 @@ contains
         do jg = 1,ng
           flux%lw_dn_surf_g(jg,jcol) = flux%lw_dn_surf_clear_g(jg,jcol)
         end do
-#ifndef _OPENACC
+
         if (config%do_lw_derivatives) then
           call calc_lw_derivatives_ica(ng, nlev, jcol, trans_clear, flux_up_clear(:,nlev+1,jcol), &
                &                       flux%lw_derivatives)
  
         end if
-#endif
+
       end if ! Cloud is present in profile
     end do
     !$ACC END PARALLEL

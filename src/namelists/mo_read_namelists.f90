@@ -73,10 +73,10 @@ MODULE mo_read_namelists
   USE mo_sea_ice_nml         ,ONLY: read_sea_ice_namelist
 
   USE mo_name_list_output_init ,ONLY: read_name_list_output_namelists
-#ifndef __NO_ICON_LES__
+
   USE mo_les_nml             ,ONLY: read_les_namelist
   USE mo_ls_forcing_nml      ,ONLY: read_ls_forcing_namelist
-#endif
+
   USE mo_limarea_nml         ,ONLY: read_limarea_namelist
 
   USE mo_run_config          ,ONLY: iforcing
@@ -201,10 +201,10 @@ CONTAINS
 
        CALL read_art_namelist            (atm_namelist_filename(1:tlen))
        CALL read_2mom_mcrph_namelist     (atm_namelist_filename(1:tlen))
-#ifndef __NO_ICON_LES__
+
        CALL read_les_namelist            (atm_namelist_filename(1:tlen))
        CALL read_ls_forcing_namelist     (atm_namelist_filename(1:tlen))
-#endif
+
        CALL read_sppt_namelist           (atm_namelist_filename(1:tlen))
        !
     END SELECT

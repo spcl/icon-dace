@@ -32,11 +32,11 @@ MODULE mo_io_units
 
 ! Standard I/O-units
 
-#ifdef hpux
-  INTEGER, PARAMETER :: nerr = 7 ! error output
-#else
+
+
+
   INTEGER, PARAMETER :: nerr = 0 ! error output
-#endif
+
   INTEGER, PARAMETER :: nlog = 1 ! standard log file unit
   INTEGER, PARAMETER :: nnml = 2 ! standard namelist file unit
   INTEGER, PARAMETER :: nstat = 3 ! standard statistics file unit

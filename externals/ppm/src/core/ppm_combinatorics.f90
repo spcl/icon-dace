@@ -37,7 +37,7 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 !> gathers some base routines for combinatorial problems
-#include "fc_feature_defs.inc"
+
 MODULE ppm_combinatorics
   USE ppm_base, ONLY: assertion
   USE ppm_std_type_kinds, ONLY: i4, i8
@@ -153,9 +153,9 @@ CONTAINS
   !! @param a first array
   !! @param b second array
   !! @return \c .TRUE. if \c a is permutation of \c b
-#ifndef __G95__
+
   PURE &
-#endif
+
        FUNCTION is_permutation_of_array_i4(a, b) RESULT(p)
     LOGICAL :: p
     INTEGER(i4), INTENT(in) :: a(:), b(:)
@@ -193,7 +193,7 @@ CONTAINS
     TYPE(iinterval) :: range_left
 
     n = SIZE(selected)
-    CALL assertion(n < extent_size(range), filename, __LINE__, &
+    CALL assertion(n < extent_size(range), filename, 196, &
          "SIZE(selected) > extent_size(range)")
 
     range_left = range
@@ -228,7 +228,7 @@ CONTAINS
     n = extent_size(range)
     ssize = SIZE(selected)
     nssize = SIZE(not_selected)
-    CALL assertion(ssize + nssize == n, filename, __LINE__, &
+    CALL assertion(ssize + nssize == n, filename, 231, &
          "selected and not_selected must have complementary size")
 
     ofs = extent_start(range)

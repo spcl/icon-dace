@@ -17,18 +17,18 @@ MODULE mo_util_system
 
   PRIVATE
 
-#ifdef __XT3__
-  PUBLIC :: util_base_iobuf
-#endif
+
+
+
   PUBLIC :: util_exit
   PUBLIC :: util_abort
   PUBLIC :: util_system
 
   INTERFACE
-#ifdef __XT3__
-    SUBROUTINE util_base_iobuf() BIND(C)
-    END SUBROUTINE util_base_iobuf
-#endif
+
+
+
+
     SUBROUTINE util_exit(exit_no) BIND(C)
       IMPORT c_int
       INTEGER(c_int), VALUE :: exit_no

@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_initicon_io
@@ -2095,11 +2105,7 @@ MODULE mo_initicon_io
             my_ptr2d => initicon(jg)%sfc%sst(:,:)
             CALL fetch2d(params, 't_seasfc', 0.0_wp, jg, my_ptr2d)
             !
-#ifdef __PGI
-            IF (inputInstructions(jg)%ptr%fetchStatus('t_seasfc', .FALSE.) == kStateFailedFetch) THEN
-#else
             IF (inputInstructions(jg)%ptr%fetchStatus('t_seasfc', lIsFg=.FALSE.) == kStateFailedFetch) THEN
-#endif
               ! T_SO(0). Note that the file may contain a 3D field, of which we ONLY fetch the level at 0.0.
               lHaveFg = inputInstructions(jg)%ptr%sourceOfVar('t_so') == kInputSourceFg
               CALL fetch2d(params, 't_so', 0.0_wp, jg, my_ptr2d)
@@ -2305,7 +2311,6 @@ MODULE mo_initicon_io
   END SUBROUTINE fetch_dwdfg_jsb
 
   SUBROUTINE process_input_dwdfg_jsb
-#ifndef __NO_JSBACH__
     USE mo_impl_constants, ONLY: LSS_JSBACH
     USE mo_jsb_model_init, ONLY: jsbach_init_after_restart
     USE mo_atm_phy_nwp_config, ONLY: atm_phy_nwp_config
@@ -2329,7 +2334,6 @@ MODULE mo_initicon_io
       CALL jsbach_init_after_restart(jg)
     END DO
 
-#endif
   END SUBROUTINE process_input_dwdfg_jsb
 
 END MODULE mo_initicon_io

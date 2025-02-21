@@ -566,9 +566,9 @@ END SUBROUTINE gscp_set_coefficients
     SELECT CASE ( reff_calc%hydrometeor )   ! Select Hydrometeor
     CASE (0)   ! Cloud water from surface field cloud_num field or fixed
 
-#ifdef _OPENACC
-      CALL finish('one_moment_calculate_ncn:','CASE hydrometeor=0 not available on GPU')
-#endif
+
+
+
 
       IF (PRESENT(surf_cloud_num)) THEN
         
@@ -622,9 +622,9 @@ END SUBROUTINE gscp_set_coefficients
 
     CASE (2,4) ! Rain, Graupel done with 1 mom param. w. fixed N0
 
-#ifdef _OPENACC
-      CALL finish('one_moment_calculate_ncn:','CASE hydrometeor=2,4 not available on GPU')
-#endif
+
+
+
 
       well_posed = PRESENT(rho) .AND. PRESENT(q)
       IF (.NOT. well_posed) THEN
@@ -643,9 +643,9 @@ END SUBROUTINE gscp_set_coefficients
 
     CASE (3) ! Snow, complex parameterization of N0 (copy paste and adapt from graupel)
 
-#ifdef _OPENACC
-      CALL finish('one_moment_calculate_ncn:','CASE hydrometeor=3 not available on GPU')
-#endif
+
+
+
 
       well_posed = PRESENT(rho) .AND. PRESENT(q) .AND. PRESENT(t)
       IF (.NOT. well_posed) THEN

@@ -14,8 +14,37 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
 !----------------------------
 MODULE mo_ocean_tracer_transport_horz
   !-------------------------------------------------------------------------
@@ -94,7 +123,7 @@ CONTAINS
     LOGICAL :: lzacc
     !
     !-------------------------------------------------------------------------------    
-    start_timer(timer_adv_horz,2)
+    IF (timers_level >= 2) CALL timer_start(timer_adv_horz)
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
@@ -116,7 +145,7 @@ CONTAINS
       CALL finish("advect_horz","uknown tracer_HorizontalAdvection_type")
     END SELECT
 
-    stop_timer(timer_adv_horz,2)
+    IF (timers_level >= 2) CALL timer_stop(timer_adv_horz)
      
   END SUBROUTINE advect_horz
   !-------------------------------------------------------------------------------
@@ -147,7 +176,7 @@ CONTAINS
     LOGICAL :: lzacc
     !
     !-------------------------------------------------------------------------------    
-    start_timer(timer_dif_horz,3)
+    IF (timers_level >= 3) CALL timer_start(timer_dif_horz)
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
@@ -162,7 +191,7 @@ CONTAINS
       & lacc=lzacc) !,           &
       ! & horizontally_diffused_tracer)
     
-    stop_timer(timer_dif_horz,3)
+    IF (timers_level >= 3) CALL timer_stop(timer_dif_horz)
      
   END SUBROUTINE diffuse_horz
   !-------------------------------------------------------------------------------
@@ -422,13 +451,13 @@ CONTAINS
 
       ! vectorized for NEC
       !upwind serves as low order flux
-      start_detail_timer(timer_extra11,5)
+      IF (timers_level >= 5) CALL timer_start(timer_extra11)
       CALL upwind_hflux_oce( patch_3d,  &
         & trac_old,                       &
         & transport_state%mass_flux_e,         &
         & z_adv_flux_low,               &
         & lacc=lzacc)
-      stop_detail_timer(timer_extra11,5)
+      IF (timers_level >= 5) CALL timer_stop(timer_extra11)
             
     CASE DEFAULT
       CALL finish(method_name,"This low-order  option is not supported")   
@@ -458,7 +487,7 @@ CONTAINS
       ! inUse
       ! vectorized for NEC
       ! adv_flux_h=z_adv_flux_high
-      start_detail_timer(timer_extra13,4)
+      IF (timers_level >= 4) CALL timer_start(timer_extra13)
       CALL limiter_ocean_zalesak_horizontal( patch_3d,   &
         & transport_state%w,           &
         & trac_old,                              &
@@ -471,7 +500,7 @@ CONTAINS
         & h_old,                                 &
         & h_new,                                 &
         & lacc=lzacc)       
-      stop_detail_timer(timer_extra13,4)
+      IF (timers_level >= 4) CALL timer_stop(timer_extra13)
         
     CASE DEFAULT
      CALL finish('TRIM(flux_corr_transport_h)',"This limiter_type option is not supported")
@@ -547,25 +576,6 @@ CONTAINS
     DO blockNo = start_block, end_block
       CALL get_index_range(edges_in_domain, blockNo, start_index, end_index)
 
-#ifdef __LVECTOR__
-      max_dolic_e = -1
-      !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) REDUCTION(MAX: max_dolic_e) IF(lzacc)
-      DO edge_index = start_index, end_index
-        max_dolic_e = MAX(max_dolic_e, dolic_e(edge_index,blockNo))
-      END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC WAIT(1)
-
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-      DO level = start_level, max_dolic_e
-        DO edge_index = start_index, end_index
-          IF (dolic_e(edge_index,blockNo) < level) CYCLE
-          idx1 = cell_idx(edge_index,blockNo,1)
-          blk1 = cell_blk(edge_index,blockNo,1)
-          idx2 = cell_idx(edge_index,blockNo,2)
-          blk2 = cell_blk(edge_index,blockNo,2)            
-#else    
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR
       DO edge_index = start_index, end_index
@@ -575,7 +585,6 @@ CONTAINS
         blk2 = cell_blk(edge_index,blockNo,2)
 
         DO level = start_level, MIN(dolic_e(edge_index,blockNo), end_level)
-#endif
 
           ! compute the first order upwind flux; notice
           ! that multiplication by edge length is avoided to

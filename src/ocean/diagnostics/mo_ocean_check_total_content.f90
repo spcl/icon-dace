@@ -13,14 +13,21 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_ocean_check_total_content
   USE mo_master_control,     ONLY: get_my_process_name
   USE mo_kind,               ONLY: wp, dp, i8
-#ifdef _OPENMP
-  USE omp_lib
-#endif
   USE mo_grid_subset,        ONLY: t_subset_range, get_index_range, t_subset_indexed
   USE mo_grid_tools,         ONLY: get_oriented_edges_from_global_vertices, check_global_indexes
   USE mo_mpi,                ONLY: my_process_is_stdio, p_field_sum, get_my_mpi_work_id, &

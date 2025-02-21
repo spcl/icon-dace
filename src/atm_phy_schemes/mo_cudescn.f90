@@ -16,9 +16,21 @@
 !          CUMULUS DOWNDRAFTS AND SPECIFIES T,Q,U AND V VALUES
 ! *cuddrafn* THIS ROUTINE CALCULATES CUMULUS DOWNDRAFT DESCENT
 
-#if !defined _OPENMP && !defined _OPENACC
-#include "consistent_fma.inc"
-#endif
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! For runs that check result consistency we fix the different
+! contractions that the Intel compiler performs on some loops (at
+! least in version 16.0) for the vectorized part and the
+! non-vectorized parts
 
 MODULE mo_cudescn
 
@@ -217,7 +229,7 @@ CONTAINS
     !$ACC   CREATE(ikhsmin, ztenwb, zqenwb, zcond, zph, zhsmin, llo2) &
     !$ACC   IF(lacc)
 
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lacc)
 
@@ -307,9 +319,7 @@ CONTAINS
         !!                  FOR ENVIRONMENTAL AIR IN *CUADJTQ*
         !!                  -------------------------------------------
 
-#ifndef _OPENACC
         is=0
-#endif
         !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO jl=kidia,kfdia
           ztenwb(jl,jk)=ptenh(jl,jk)
@@ -318,17 +328,13 @@ CONTAINS
           llo2(jl)=ldcum(jl).AND.prfl(jl) > 0.0_JPRB.AND..NOT.lddraf(jl).AND.&
             & (jk < kcbot(jl).AND.jk > kctop(jl)).AND.&
             & jk >= ikhsmin(jl)
-#ifndef _OPENACC
           IF(llo2(jl))THEN
             is=is+1
           ENDIF
-#endif
         ENDDO
 
         !orig   IF(IS.EQ.0) GO TO 290
-#ifndef _OPENACC
         IF(is == 0) CYCLE
-#endif
 
         ik=jk
         icall=2
@@ -581,23 +587,17 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jk=ktdia+2,klev
 
-#ifndef _OPENACC
       is=0
-#endif
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO jl=kidia,kfdia
         zph(jl)=paph(jl,jk)
         llo2(jl)=lddraf(jl).AND.pmfd(jl,jk-1) < 0.0_JPRB
-#ifndef _OPENACC
         IF(llo2(jl)) THEN
           is=is+1
         ENDIF
-#endif
       ENDDO
 
-#ifndef _OPENACC
       IF(is == 0) CYCLE
-#endif
 
       !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zentr)
       DO jl=kidia,kfdia

@@ -92,14 +92,14 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,  &
     integer(KIND=JPIM) :: ixc(KLEV), ixlow(KFDIA,KLEV), ixhigh(KFDIA,KLEV)
     INTEGER(KIND=JPIM) :: ich, icl, ixc0, ixp, jc, jl
 
-#define MOD1(x) ((x) - AINT((x)))
+
 
     !$ACC DATA PRESENT(taug, P_TAUAERL, fac00, fac01, fac10, fac11, jp, jt, jt1, &
     !$ACC             colh2o, colo3, colco2, coldry, laytrop, selffac, selffrac, indself, fracs, &
     !$ACC             rat_h2oo3, rat_h2oo3_1, indfor, forfrac, forfac, &
     !$ACC             minorfrac, indminor)
 
-#ifndef _OPENACC
+
     laytrop_min = MINVAL(laytrop)
     laytrop_max = MAXVAL(laytrop)
 
@@ -122,17 +122,6 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,  &
       enddo
       ixc(lay) = icl
     enddo
-#else
-    laytrop_min = HUGE(laytrop_min) 
-    laytrop_max = -HUGE(laytrop_max)
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR REDUCTION(min:laytrop_min) REDUCTION(max:laytrop_max)
-    do jc = KIDIA,KFDIA
-      laytrop_min = MIN(laytrop_min, laytrop(jc))
-      laytrop_max = MAX(laytrop_max, laytrop(jc))
-    end do
-    !$ACC END PARALLEL
-#endif
 
 
       ! P = 706.2620 mb
@@ -161,20 +150,20 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,  &
           specparm = MIN(colh2o(jl,lay)/speccomb,oneminus)
           specmult = 8._JPRB*(specparm)
           js = 1 + int(specmult)
-          fs = MOD1(specmult)
+          fs = ((specmult) - AINT((specmult)))
 
           speccomb1 = colh2o(jl,lay) + rat_h2oo3_1(jl,lay)*colo3(jl,lay)
           specparm1 = MIN(colh2o(jl,lay)/speccomb1,oneminus)
           specmult1 = 8._JPRB*(specparm1)
           js1 = 1 + int(specmult1)
-          fs1 = MOD1(specmult1)
+          fs1 = ((specmult1) - AINT((specmult1)))
 
           speccomb_mco2 = colh2o(jl,lay) + refrat_m_a*colo3(jl,lay)
           specparm_mco2 = MIN(colh2o(jl,lay)/speccomb_mco2,oneminus)
           specmult_mco2 = 8._JPRB*specparm_mco2
 
           jmco2 = 1 + int(specmult_mco2)
-          fmco2 = MOD1(specmult_mco2)
+          fmco2 = ((specmult_mco2) - AINT((specmult_mco2)))
 
           !  In atmospheres where the amount of CO2 is too great to be considered
           !  a minor species, adjust the column amount of CO2 by an empirical factor
@@ -192,7 +181,7 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,  &
           specparm_planck = MIN(colh2o(jl,lay)/speccomb_planck,oneminus)
           specmult_planck = 8._JPRB*specparm_planck
           jpl = 1 + int(specmult_planck)
-          fpl = MOD1(specmult_planck)
+          fpl = ((specmult_planck) - AINT((specmult_planck)))
 
           ind0 = ((jp(jl,lay)-1)*5+(jt(jl,lay)-1))*nspa(7) + js
           ind1 = (jp(jl,lay)*5+(jt1(jl,lay)-1))*nspa(7) + js1
@@ -409,35 +398,30 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,  &
         !$ACC   indf, indm, p, p4, fk0, fk1, fk2, fac000, fac100, fac200, fac010, fac110, fac210, fac001, fac101, &
         !$ACC   fac201, fac011, fac111, fac211, tau_major, tau_major1)
         do lay = laytrop_min+1, laytrop_max
-#ifdef _OPENACC
-          do jl = KIDIA, KFDIA
-            if ( lay <= laytrop(jl) ) then
-#else
           ixc0 = ixc(lay)
 
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixlow(ixp,lay)
-#endif
 
             speccomb = colh2o(jl,lay) + rat_h2oo3(jl,lay)*colo3(jl,lay)
             specparm = MIN(colh2o(jl,lay)/speccomb,oneminus)
             specmult = 8._JPRB*(specparm)
             js = 1 + int(specmult)
-            fs = MOD1(specmult)
+            fs = ((specmult) - AINT((specmult)))
 
             speccomb1 = colh2o(jl,lay) + rat_h2oo3_1(jl,lay)*colo3(jl,lay)
             specparm1 = MIN(colh2o(jl,lay)/speccomb1,oneminus)
             specmult1 = 8._JPRB*(specparm1)
             js1 = 1 + int(specmult1)
-            fs1 = MOD1(specmult1)
+            fs1 = ((specmult1) - AINT((specmult1)))
 
             speccomb_mco2 = colh2o(jl,lay) + refrat_m_a*colo3(jl,lay)
             specparm_mco2 = MIN(colh2o(jl,lay)/speccomb_mco2,oneminus)
             specmult_mco2 = 8._JPRB*specparm_mco2
 
             jmco2 = 1 + int(specmult_mco2)
-            fmco2 = MOD1(specmult_mco2)
+            fmco2 = ((specmult_mco2) - AINT((specmult_mco2)))
 
             !  In atmospheres where the amount of CO2 is too great to be considered
             !  a minor species, adjust the column amount of CO2 by an empirical factor
@@ -455,7 +439,7 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,  &
             specparm_planck = MIN(colh2o(jl,lay)/speccomb_planck,oneminus)
             specmult_planck = 8._JPRB*specparm_planck
             jpl = 1 + int(specmult_planck)
-            fpl = MOD1(specmult_planck)
+            fpl = ((specmult_planck) - AINT((specmult_planck)))
 
             ind0 = ((jp(jl,lay)-1)*5+(jt(jl,lay)-1))*nspa(7) + js
             ind1 = (jp(jl,lay)*5+(jt1(jl,lay)-1))*nspa(7) + js1
@@ -602,9 +586,6 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,  &
               fracs(jl,ngs6+ig,lay) = fracrefa(ig,jpl) + fpl * &
                   (fracrefa(ig,jpl+1)-fracrefa(ig,jpl))
             enddo
-#ifdef _OPENACC
-         else
-#else
           enddo
 
           ! Upper atmosphere part
@@ -612,7 +593,6 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,  &
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixhigh(ixp,lay)
-#endif
 
             !  In atmospheres where the amount of CO2 is too great to be considered
             !  a minor species, adjust the column amount of CO2 by an empirical factor
@@ -642,7 +622,6 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,  &
                   + adjcolco2 * absco2
               fracs(jl,ngs6+ig,lay) = fracrefb(ig)
             enddo
-#ifndef _OPENACC
           enddo
 
           ! Empirical modification to code to improve stratospheric cooling rates
@@ -651,16 +630,12 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,  &
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixhigh(ixp,lay)
-#endif
             taug(jl,ngs6+6,lay)=taug(jl,ngs6+6,lay)*0.92_JPRB
             taug(jl,ngs6+7,lay)=taug(jl,ngs6+7,lay)*0.88_JPRB
             taug(jl,ngs6+8,lay)=taug(jl,ngs6+8,lay)*1.07_JPRB
             taug(jl,ngs6+9,lay)=taug(jl,ngs6+9,lay)*1.1_JPRB
             taug(jl,ngs6+10,lay)=taug(jl,ngs6+10,lay)*0.99_JPRB
             taug(jl,ngs6+11,lay)=taug(jl,ngs6+11,lay)*0.855_JPRB
-#ifdef _OPENACC
-           endif
-#endif
           enddo
 
         enddo

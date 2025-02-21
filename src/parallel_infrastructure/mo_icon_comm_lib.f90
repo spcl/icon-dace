@@ -13,11 +13,40 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#define GENERAL_3D DIMENSION(:,:,:)
-#define LEVELS_POSITION 2
+
+
 !#include "dsl_definitions.inc"
-#include "omp_definitions.inc"
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
 !----------------------------
 MODULE mo_icon_comm_lib
 
@@ -43,9 +72,6 @@ MODULE mo_icon_comm_lib
     & timer_start, timer_stop
 
   USE mo_master_control,  ONLY: get_my_process_name
-#ifndef NOMPI
-  USE mpi
-#endif
 
   USE mo_impl_constants,     ONLY: HALO_LEVELS_CEILING
 
@@ -54,9 +80,6 @@ MODULE mo_icon_comm_lib
 !     & min_rlvert, max_rlvert,                 & ! min_rlvert_int,
 !     & min_rledge, max_rledge, min_rledge_int
 
-#ifdef _OPENMP
-  USE omp_lib, ONLY: omp_in_parallel
-#endif
 
   IMPLICIT NONE
 
@@ -191,12 +214,12 @@ MODULE mo_icon_comm_lib
     INTEGER :: dim_4                           ! =no_of_variables
 
     REAL(wp), POINTER :: recv_values_2d(:,:)     ! nproma, nblocks
-!    REAL(wp), GENERAL_3D, POINTER :: recv_values_3d   ! if 3D: nproma, vertical layers, nblocks
+!    REAL(wp), DIMENSION(:,:,:), POINTER :: recv_values_3d   ! if 3D: nproma, vertical layers, nblocks
     REAL(wp), POINTER :: recv_values_3d(:,:,:)   ! if 3D: nproma, vertical layers, nblocks
     REAL(wp), POINTER :: recv_values_4d(:,:,:,:) ! nproma, vertical layers, nblocks
 
     REAL(wp), POINTER :: send_values_2d(:,:)     ! nproma, nblocks
-!    REAL(wp), GENERAL_3D, POINTER :: send_values_3d   ! if 3D: nproma, vertical layers, nblocks
+!    REAL(wp), DIMENSION(:,:,:), POINTER :: send_values_3d   ! if 3D: nproma, vertical layers, nblocks
     REAL(wp), POINTER :: send_values_3d(:,:,:)   ! if 3D: nproma, vertical layers, nblocks
     REAL(wp), POINTER :: send_values_4d(:,:,:,:) ! nproma, vertical layers, nblocks
 
@@ -287,10 +310,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: method_name = "destruct_icon_comm_lib"
 
     IF (this_is_mpi_sequential) RETURN
-#ifdef _OPENMP
-    IF (omp_in_parallel()) &
-      CALL finish(method_name, 'cannot be called from openmp parallel')
-#endif
 
     DEALLOCATE(send_buffer, recv_buffer)
     IF (log_file_id > 0) CLOSE(log_file_id)
@@ -312,10 +331,6 @@ CONTAINS
 
     IF(this_is_mpi_sequential) RETURN
 
-#ifdef _OPENMP
-    IF (omp_in_parallel()) &
-      CALL finish(method_name, 'cannot be called from openmp parallel')
-#endif
 
     IF ( comm_lib_is_initialized ) THEN
       CALL message(method_name, 'cannot be called more than once')
@@ -453,10 +468,6 @@ CONTAINS
 !     DO i = 1, max_comm_patterns
 !     ENDDO
 
-#ifdef _OPENMP
-    IF (omp_in_parallel()) &
-      CALL finish(method_name, 'cannot be called from openmp parallel')
-#endif
 
     ! halo cells comm_pattern
 !     CALL work_mpi_barrier()
@@ -591,224 +602,6 @@ CONTAINS
 
     CHARACTER(*), PARAMETER :: method_name = "setup_grid_comm_pattern"
 
-#ifndef NOMPI
-
-!     IF (my_mpi_work_id==1) CALL work_mpi_barrier()
-!     write(0,*) my_mpi_work_id, "my_global_index:", my_global_index
-!     write(0,*) my_mpi_work_id, "owner:", owner
-!     IF (my_mpi_work_id==0) CALL work_mpi_barrier()
-
-    ! check if we allow send and receve to oursevles
-    this_mpi_work_id = my_mpi_work_id
-    IF (PRESENT(allow_send_to_myself)) THEN
-      IF (allow_send_to_myself) THEN
-        this_mpi_work_id = MIN(-99,MINVAL(receive_from_owner(1:total_no_of_points)))
-      ENDIF
-    ENDIF
-
-    ! create the filtered_receive_from_owner, it contains -1 wherever we do not need to receive
-    IF(PRESENT(halo_level)) THEN
-      DO point_idx = 1, total_no_of_points
-        IF (halo_level(index_no(point_idx), block_no(point_idx)) < level_start .OR. &
-          & halo_level(index_no(point_idx), block_no(point_idx)) > level_end   .OR. &
-          & receive_from_owner(point_idx) == this_mpi_work_id )  THEN
-          filtered_receive_from_owner(point_idx) = -1
-        ELSE
-          filtered_receive_from_owner(point_idx) = receive_from_owner(point_idx)
-        ENDIF
-      ENDDO
-    ELSE
-      DO point_idx = 1, total_no_of_points
-        IF (receive_from_owner(point_idx) == this_mpi_work_id) THEN
-          filtered_receive_from_owner(point_idx) = -1
-        ELSE
-          filtered_receive_from_owner(point_idx) = receive_from_owner(point_idx)
-        ENDIF
-      ENDDO
-    ENDIF
-
-
-    ! count how many recv procs we have
-    ! and how many recv points per procs
-    comm_of_buffer_id(:) = -1
-    no_comm_procs=0
-    comm_points(:) = 0
-    DO point_idx = 1, total_no_of_points
-
-      owner_id = filtered_receive_from_owner(point_idx)
-      IF(owner_id < 0) CYCLE
-
-      bfid = get_recvbuffer_id_of_pid(owner_id)
-      IF (comm_points(bfid) == 0) THEN
-        no_comm_procs = no_comm_procs + 1
-        procs_id(no_comm_procs)  = owner_id
-        buffer_id(no_comm_procs) = bfid
-        comm_of_buffer_id(bfid)  = no_comm_procs
-      ENDIF
-      comm_points(bfid) = comm_points(bfid) + 1
-
-    ENDDO
-
-    ! allocate the recv patterns
-    grid_comm_pattern%no_of_recv_procs = no_comm_procs
-    ALLOCATE(grid_comm_pattern%recv(no_comm_procs),stat=return_status)
-    IF (return_status > 0) &
-      CALL finish (method_name, 'ALLOCATE(grid_comm_pattern%recv(no_comm_procs)')
-
-    DO i=1,no_comm_procs
-      p_comm_pattern => grid_comm_pattern%recv(i)
-      p_comm_pattern%pid          = procs_id(i)
-      p_comm_pattern%buffer_index = buffer_id(i)
-      no_of_points                = comm_points(buffer_id(i))
-      p_comm_pattern%no_of_points = 0 ! this will be used as a counter for filling
-         ! the pattern indexes. At the end will be checked against
-         ! comm_points(procs_comm_pattern%buffer_index) for consistency
-
-      ALLOCATE(p_comm_pattern%global_index(no_of_points), &
-        & p_comm_pattern%block_no(no_of_points), &
-        & p_comm_pattern%index_no(no_of_points), &
-        & stat=return_status)
-      IF (return_status > 0) &
-        CALL finish (method_name, 'ALLOCATE recv patterns')
-
-    ENDDO
-
-    ! fill the indexes of the recv patterns
-    DO point_idx = 1, total_no_of_points ! go through all entities
-
-      IF(filtered_receive_from_owner(point_idx) < 0) CYCLE
-
-      bfid = get_recvbuffer_id_of_pid(filtered_receive_from_owner(point_idx))
-      p_comm_pattern => grid_comm_pattern%recv(comm_of_buffer_id(bfid))
-
-      p_comm_pattern%no_of_points = p_comm_pattern%no_of_points + 1
-      p_comm_pattern%global_index(p_comm_pattern%no_of_points) = &
-        & my_global_index(point_idx)
-      p_comm_pattern%block_no(p_comm_pattern%no_of_points) = &
-        & block_no(point_idx)
-      p_comm_pattern%index_no(p_comm_pattern%no_of_points) = &
-        & index_no(point_idx)
-
-    ENDDO
-
-    ! Check if the p_comm_pattern%recv(i)%no_of_points
-    ! are consistent with comm_points(bfid)
-    ! Compute the max_comm_points
-    max_comm_points = 0
-    DO i=1,no_comm_procs
-      IF (grid_comm_pattern%recv(i)%no_of_points /= &
-        & comm_points(buffer_id(i))) THEN
-        CALL finish (method_name, 'incosistent recv comm_points')
-      ENDIF
-      max_comm_points = MAX(max_comm_points, grid_comm_pattern%recv(i)%no_of_points)
-    ENDDO
-
-    ! The receive patterns have been constructed
-    ! Next construct the send patterns from information
-    ! received from the requesting processes.
-
-
-
-    ! We use MPI_ALLREDUCE sum to calculate the total number
-    ! of requests for send
-    ! Not the best approach, but not the worst neither
-    ALLOCATE(recv_requests(0:my_work_comm_size-1),&
-      & total_requests(0:my_work_comm_size-1), stat=return_status)
-    IF (return_status > 0) &
-      CALL finish (method_name, 'ALLOCATE(recv_requests)')
-    recv_requests(:)=0
-    DO i=1,no_comm_procs
-      recv_requests(grid_comm_pattern%recv(i)%pid) = 1
-    ENDDO
-
-    CALL MPI_ALLREDUCE(recv_requests, total_requests, my_work_comm_size, &
-      & MPI_INTEGER, MPI_SUM, my_work_communicator, return_status)
-    IF (return_status /= MPI_SUCCESS) THEN
-      CALL finish (method_name, 'MPI_ALLREDUCE failed')
-    ENDIF
-
-    ! we have total_requests(my_mpi_work_id)
-    ! for this setup this should be equal to no_comm_procs
-    no_of_recv_requests = total_requests(my_mpi_work_id)
-    IF (no_of_recv_requests /= no_comm_procs) THEN
-      write(0,*) name, " no_of_recv_requests=", no_of_recv_requests,&
-        & "no_comm_procs", no_comm_procs
-      CALL warning (method_name, 'total_requests /= no_comm_procs')
-    ENDIF
-    DEALLOCATE(recv_requests, total_requests)
-
-    ! Allocate the buffers for sending and receiving the global indexes
-    max_buffer_size =  (max_comm_points * 2) + 16
-    ALLOCATE(recv_global_indexes(max_buffer_size, no_of_recv_requests),&
-      & send_global_indexes(max_buffer_size, no_comm_procs), stat=return_status)
-    IF (return_status > 0) &
-      CALL finish (method_name, 'ALLOCATE(recv_global_indexes)')
-
-    ! start receiving global indexes
-    DO i=1, no_of_recv_requests
-      CALL p_irecv(recv_global_indexes(:,i), MPI_ANY_SOURCE, &
-          & p_tag=internal_tag, p_count=max_buffer_size, comm=my_work_communicator)
-    ENDDO
-
-    ! Fill and sent global indexes
-    DO i=1, no_comm_procs
-      p_comm_pattern => grid_comm_pattern%recv(i)
-      no_of_points = p_comm_pattern%no_of_points
-      send_global_indexes(1,i) = my_mpi_work_id
-      send_global_indexes(2,i) = no_of_points
-      send_global_indexes(3:no_of_points+2,i) = p_comm_pattern%global_index(1:no_of_points)
-      CALL p_isend(send_global_indexes(:,i), p_comm_pattern%pid, &
-          & p_tag=internal_tag, p_count=no_of_points+2, comm=my_work_communicator)
-    ENDDO
-
-    ! Wait for all requests to finish
-    CALL p_wait
-
-    ! Make some room
-    DEALLOCATE(send_global_indexes)
-
-    ! Allocate the send patterns
-    grid_comm_pattern%no_of_send_procs = no_of_recv_requests
-    ALLOCATE(grid_comm_pattern%send(no_of_recv_requests),stat=return_status)
-    IF (return_status > 0) &
-      CALL finish (method_name, 'ALLOCATE(grid_comm_pattern%end(no_of_recv_requests))')
-
-    ! Fill the send patterns from the recv_global_indexes
-    DO i=1,no_of_recv_requests
-      p_comm_pattern => grid_comm_pattern%send(i)
-      p_comm_pattern%pid          = recv_global_indexes(1,i)
-      p_comm_pattern%no_of_points = recv_global_indexes(2,i)
-      p_comm_pattern%buffer_index = get_sendbuffer_id_of_pid(p_comm_pattern%pid)
-      ALLOCATE(p_comm_pattern%global_index(p_comm_pattern%no_of_points), &
-        & p_comm_pattern%block_no(p_comm_pattern%no_of_points), &
-        & p_comm_pattern%index_no(p_comm_pattern%no_of_points), &
-        & stat=return_status)
-      IF (return_status > 0) &
-        CALL finish (method_name, 'ALLOCATE send patterns')
-      ! fill the global_index
-      p_comm_pattern%global_index(1:p_comm_pattern%no_of_points) = &
-        & recv_global_indexes(3:p_comm_pattern%no_of_points+2,i)
-    ENDDO
-
-    ! calculate the local indexes
-    DO i=1,no_of_recv_requests
-      p_comm_pattern => grid_comm_pattern%send(i)
-      DO point_idx = 1, p_comm_pattern%no_of_points
-        local_idx = get_local_index(send_glb2loc_index, &
-          &                         p_comm_pattern%global_index(point_idx))
-        IF ( local_idx <= 0 ) &
-          & CALL finish(method_name,'Wrong local index')
-        p_comm_pattern%block_no(point_idx) = block_no(local_idx)
-        p_comm_pattern%index_no(point_idx) = index_no(local_idx)
-      ENDDO
-    ENDDO
-
-
-    DEALLOCATE(recv_global_indexes)
-
-    grid_comm_pattern%status = active
-    grid_comm_pattern%name   = TRIM(name)
-#endif
 
   END SUBROUTINE setup_grid_comm_pattern
   !-----------------------------------------------------------------------
@@ -1206,7 +999,7 @@ CONTAINS
 
     ! check the vertical_layers
     comm_variable(new_comm_var_r3d_recv_send)%vertical_layers =  &
-      & SIZE(recv_var,LEVELS_POSITION)
+      & SIZE(recv_var,2)
     IF ( PRESENT(vertical_layers) ) THEN
       IF ( vertical_layers <=  &
         & comm_variable(new_comm_var_r3d_recv_send)%vertical_layers) THEN
@@ -1383,10 +1176,6 @@ CONTAINS
 
     CHARACTER(*), PARAMETER :: method_name = "get_new_comm_variable"
 
-#ifdef _OPENMP
-    IF (omp_in_parallel()) &
-      CALL finish(method_name, 'cannot be called from openmp parallel');
-#endif
 
     IF ( .NOT. comm_lib_is_initialized ) &
       CALL finish(method_name, 'comm_lib is not initialized')
@@ -1424,10 +1213,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: method_name = "delete_icon_comm_variable"
 
 !     CALL check_active_comm_variable(comm_variable_id)
-#ifdef _OPENMP
-    IF (omp_in_parallel()) &
-      CALL finish(method_name, 'cannot be called from openmp parallel');
-#endif
     IF(this_is_mpi_sequential) RETURN
 
     comm_variable(comm_variable_id)%status = not_active
@@ -1610,10 +1395,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: method_name = "icon_comm_sync_all"
 
 
-#ifdef _OPENMP
-    IF (omp_in_parallel()) &
-      CALL finish(method_name, 'cannot be called from openmp parallel');
-#endif
 
     IF(this_is_mpi_sequential) RETURN
 
@@ -1628,7 +1409,7 @@ CONTAINS
 
     IF (.NOT. exist_communication_var) RETURN
 
-    start_sync_timer(timer_icon_comm_sync)
+    IF (activate_sync_timers) CALL timer_start(timer_icon_comm_sync)
 
     IF (buffer_comm_status == not_active) THEN
       ! no communication steps have been taken
@@ -1640,18 +1421,18 @@ CONTAINS
         CALL fill_send_buffers()
         CALL nonblocksent_all_data()
         ! Wait for all outstanding requests to finish
-        start_sync_timer(timer_icon_comm_wait)
+        IF (activate_sync_timers) CALL timer_start(timer_icon_comm_wait)
         CALL p_wait
-        stop_sync_timer(timer_icon_comm_wait)
+        IF (activate_sync_timers) CALL timer_stop(timer_icon_comm_wait)
         CALL fill_vars_from_recv_buffers()
 
       CASE(2,102)
         CALL nonblockrecv_all_data()
         CALL fill_and_nonblocksend_buffers()
         ! Wait for all outstanding requests to finish
-        start_sync_timer(timer_icon_comm_wait)
+        IF (activate_sync_timers) CALL timer_start(timer_icon_comm_wait)
         CALL p_wait
-        stop_sync_timer(timer_icon_comm_wait)
+        IF (activate_sync_timers) CALL timer_stop(timer_icon_comm_wait)
         CALL fill_vars_from_recv_buffers()
 
       CASE(3,103)
@@ -1659,9 +1440,9 @@ CONTAINS
         CALL fill_send_buffers()
         CALL blocksent_all_data()
         ! Wait for all outstanding requests to finish
-        start_sync_timer(timer_icon_comm_wait)
+        IF (activate_sync_timers) CALL timer_start(timer_icon_comm_wait)
         CALL p_wait
-        stop_sync_timer(timer_icon_comm_wait)
+        IF (activate_sync_timers) CALL timer_stop(timer_icon_comm_wait)
         CALL fill_vars_from_recv_buffers()
 
       CASE DEFAULT
@@ -1676,7 +1457,7 @@ CONTAINS
 
     ENDIF
 
-    stop_sync_timer(timer_icon_comm_sync)
+    IF (activate_sync_timers) CALL timer_stop(timer_icon_comm_sync)
 
     IF (sync_barrier_mode == 2) THEN
       CALL timer_start(timer_icon_comm_barrier_2)
@@ -1739,7 +1520,7 @@ CONTAINS
     INTEGER :: comm_var, var_no
 !     CHARACTER(*), PARAMETER :: method_name = "compute_send_buffer_sizes"
 
-    start_sync_timer(timer_icon_comm_fillsend)
+    IF (activate_sync_timers) CALL timer_start(timer_icon_comm_fillsend)
 
     CALL compute_send_buffer_sizes()
 
@@ -1752,7 +1533,7 @@ CONTAINS
         END DO
 
     END DO
-    stop_sync_timer(timer_icon_comm_fillsend)
+    IF (activate_sync_timers) CALL timer_stop(timer_icon_comm_fillsend)
 
   END SUBROUTINE fill_send_buffers
   !-----------------------------------------------------------------------
@@ -1764,7 +1545,7 @@ CONTAINS
     INTEGER :: comm_var, var_no, bfid, np, buffer_start, buffer_size,&
       & message_size, message_seq_id
 
-    start_sync_timer(timer_icon_comm_fillandsend)
+    IF (activate_sync_timers) CALL timer_start(timer_icon_comm_fillandsend)
 
     CALL compute_send_buffer_sizes()
 
@@ -1811,7 +1592,7 @@ CONTAINS
     ENDDO !bfid = 1, active_send_buffers
 !ICON_OMP_END_DO_NOWAIT
 !ICON_OMP_END_PARALLEL
-    stop_sync_timer(timer_icon_comm_fillandsend)
+    IF (activate_sync_timers) CALL timer_stop(timer_icon_comm_fillandsend)
 
   END SUBROUTINE fill_and_nonblocksend_buffers
   !-----------------------------------------------------------------------
@@ -1881,7 +1662,7 @@ CONTAINS
 
     TYPE(t_grid_comm_pattern), POINTER :: grid_comm_pattern
     REAL(wp), POINTER :: send_var_2d(:,:)
-    REAL(wp), GENERAL_3D, POINTER :: send_var_3d
+    REAL(wp), DIMENSION(:,:,:), POINTER :: send_var_3d
 
     INTEGER :: vertical_layers, np, bfid, var_send_size, current_buffer_index
     INTEGER :: i, k
@@ -1972,7 +1753,7 @@ CONTAINS
 
     TYPE(t_grid_comm_pattern), POINTER :: grid_comm_pattern
     REAL(wp), POINTER :: send_var_2d(:,:)
-    REAL(wp), GENERAL_3D, POINTER :: send_var_3d
+    REAL(wp), DIMENSION(:,:,:), POINTER :: send_var_3d
 
     INTEGER :: vertical_layers, np, var_send_size, current_buffer_index
     INTEGER :: i, k
@@ -2056,7 +1837,7 @@ CONTAINS
     INTEGER :: bfid, buffer_start, buffer_size, message_size, message_seq_id
 !     CHARACTER(*), PARAMETER :: method_name = "sent_all_buffers"
 
-    start_sync_timer(timer_icon_comm_isend)
+    IF (activate_sync_timers) CALL timer_start(timer_icon_comm_isend)
 
     DO bfid = 1, active_send_buffers
 
@@ -2077,7 +1858,7 @@ CONTAINS
 
     ENDDO
 
-    stop_sync_timer(timer_icon_comm_isend)
+    IF (activate_sync_timers) CALL timer_stop(timer_icon_comm_isend)
 
   END SUBROUTINE nonblocksent_all_data
   !-----------------------------------------------------------------------
@@ -2089,7 +1870,7 @@ CONTAINS
     INTEGER :: bfid, buffer_start, buffer_size, message_size, message_seq_id
 !     CHARACTER(*), PARAMETER :: method_name = "sent_all_buffers"
 
-    start_sync_timer(timer_icon_comm_send)
+    IF (activate_sync_timers) CALL timer_start(timer_icon_comm_send)
 
 !ICON_OMP_PARALLEL IF(icon_comm_openmp)
 !ICON_OMP_DO PRIVATE(bfid, buffer_start, buffer_size, message_seq_id, message_size)
@@ -2114,7 +1895,7 @@ CONTAINS
 !ICON_OMP_END_DO_NOWAIT
 !ICON_OMP_END_PARALLEL
 
-    stop_sync_timer(timer_icon_comm_send)
+    IF (activate_sync_timers) CALL timer_stop(timer_icon_comm_send)
 
   END SUBROUTINE blocksent_all_data
   !-----------------------------------------------------------------------
@@ -2127,7 +1908,7 @@ CONTAINS
 
     CALL compute_recv_buffer_sizes()
 
-    start_sync_timer(timer_icon_comm_ircv)
+    IF (activate_sync_timers) CALL timer_start(timer_icon_comm_ircv)
 
     ! start receive
     DO bfid = 1, active_recv_buffers
@@ -2148,7 +1929,7 @@ CONTAINS
       ENDDO
 
     ENDDO
-    stop_sync_timer(timer_icon_comm_ircv)
+    IF (activate_sync_timers) CALL timer_stop(timer_icon_comm_ircv)
 
   END SUBROUTINE nonblockrecv_all_data
   !-----------------------------------------------------------------------
@@ -2171,7 +1952,7 @@ CONTAINS
 
     INTEGER :: comm_var, var_no, bfid
 
-    start_sync_timer(timer_icon_comm_fillrecv)
+    IF (activate_sync_timers) CALL timer_start(timer_icon_comm_fillrecv)
 
     ! set the current recv index to start
     DO bfid = 1, active_recv_buffers
@@ -2187,7 +1968,7 @@ CONTAINS
         END DO
 
     ENDDO
-    stop_sync_timer(timer_icon_comm_fillrecv)
+    IF (activate_sync_timers) CALL timer_stop(timer_icon_comm_fillrecv)
 
   END SUBROUTINE fill_vars_from_recv_buffers
   !-----------------------------------------------------------------------
@@ -2198,7 +1979,7 @@ CONTAINS
 
     TYPE(t_grid_comm_pattern), POINTER :: grid_comm_pattern
     REAL(wp), POINTER :: recv_var_2d(:,:)
-    REAL(wp), GENERAL_3D, POINTER :: recv_var_3d
+    REAL(wp), DIMENSION(:,:,:), POINTER :: recv_var_3d
 
     INTEGER :: vertical_layers, np, bfid, var_recv_size, current_buffer_index
     INTEGER :: recv_var, recv_size
@@ -2458,23 +2239,6 @@ CONTAINS
     ! local variables:
     INTEGER  :: mpi_type(2), mpi_block(2), min_type, ierr, mintype_op
 
-#ifndef NOMPI
-    INTEGER(MPI_ADDRESS_KIND) :: typeLB, rextent, mpi_disp(2)
-
-    ! create a user-defined type for MPI allreduce operation:
-    mpi_type  = (/ p_real_dp, MPI_INTEGER /)
-    CALL MPI_TYPE_GET_EXTENT(p_real_dp, typeLB, rextent, ierr)
-    mpi_disp  = (/ 0_MPI_ADDRESS_KIND, rextent /)
-    mpi_block = (/ 1, 2 /)
-    CALL MPI_TYPE_CREATE_STRUCT(2, mpi_block, mpi_disp, mpi_type, min_type, ierr)
-    CALL MPI_TYPE_COMMIT(min_type, ierr)
-    ! register user-defined reduction operation
-    CALL MPI_OP_CREATE(mintype_minfct, .TRUE., mintype_op, ierr)
-
-    ! Temporarily introduce a timer to facilitate analyzing possible
-    ! load balance issues
-    CALL MPI_ALLREDUCE( MPI_IN_PLACE, in, total_dim, min_type, mintype_op, comm, ierr)
-#endif
 
   END SUBROUTINE mpi_reduce_mindistance_pts
 

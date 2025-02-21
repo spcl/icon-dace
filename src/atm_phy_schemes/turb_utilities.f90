@@ -124,14 +124,6 @@ MODULE  turb_utilities
 USE mo_kind,                ONLY: wp           ! KIND-type parameter for real variables
 
 USE turb_data , ONLY :   &
-#ifdef SCLM
-    nmvar,        & !  
-    u_m     ,     & ! zonale Geschw.komp. im Massenzentrum
-    v_m     ,     & ! meridionale  ,,      ,,     ,,
-    w_m     ,     & ! meridionale  ,,      ,,     ,,
-    tet_l   ,     & ! feucht-potentielle Temperatur
-    h2o_g   ,     & ! Gesamtwasseergehalt
-#endif
 
     impl_s,       & ! implicit weight near the surface (maximal value)
     impl_t,       & ! implicit weight near top of the atmosphere (minimal value)
@@ -247,23 +239,9 @@ USE mo_convect_tables, ONLY : &
 USE mo_lnd_nwp_config, ONLY: lterra_urb, itype_eisa
 !
 !------------------------------------------------------------------------------
-#ifdef SCLM
-USE data_1d_global,    ONLY : &
-!
-    lsclm, i_cal, imb, &
-!
-    UUA, VVA, UWA, VWA, WWA, UST, TWA, QWA, TTA, TQA, QQA, &
-    TKE_SCLM=>TKE, BOYPR, SHRPR, DISSI, TRANP
-#endif
 !SCLM---------------------------------------------------------------------------
 USE mo_fortran_tools, ONLY: set_acc_host_or_device
 
-#if defined(_OPENACC) && (__NVCOMPILER_MAJOR__ <= 21)
-
-! Legacy Nvidia compilers are buggy and fail with attach in bound_level_interp
-#define _PGI_LEGACY_WAR 1
-USE openacc
-#endif
 !==============================================================================
 
 IMPLICIT NONE
@@ -282,11 +260,7 @@ REAL (KIND=wp), PARAMETER :: &
     z1d2 = z1/z2 , &
     z1d3 = z1/z3
 
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
   LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
 
 !==============================================================================
 
@@ -792,10 +766,6 @@ SUBROUTINE adjust_satur_equil ( khi, ktp, &
    q_h2o, q_liq,                      &
    lacc, opt_acc_async_queue )
 
-#ifdef _OPENACC
-!Issue with Cray compiler (tested with 8.4.4), rutime error not present virt
-!DIR$ INLINENEVER adjust_satur_equil
-#endif
 
 INTEGER, INTENT(IN) :: &
   khi,        & !usual start index of vertical dimension (highest level)
@@ -1230,9 +1200,6 @@ SUBROUTINE solve_turb_budgets ( khi, it_s, it_start, &
 !
    tke, ediss,                       &
    fm2, fh2, ft2, lsm, lsh,          &
-#ifdef SCLM
-   grd,                              &
-#endif
    fcd, tls, tvt, avt, velmin,       &
    lacc, opt_acc_async_queue         )
 
@@ -1280,11 +1247,6 @@ REAL (KIND=wp), DIMENSION(:,khi:), TARGET, INTENT(IN) :: &
   fh2,  &  !squared frequency of thermal    forcing
   ft2      !squared frequency of pure turbulent shear
 
-#ifdef SCLM
-REAL (KIND=wp), DIMENSION(:,khi:,:), INTENT(IN) :: &
-!
-  grd      !vertical gradients (needed only for SUB 'turb_stat' during a SCM-run)
-#endif
 
 REAL (KIND=wp), DIMENSION(:,kcm:), OPTIONAL, INTENT(IN) :: &
 !
@@ -1754,16 +1716,6 @@ LOGICAL :: add_adv_inc, lvar_fcd, rogh_lay, alt_gama, corr
      END IF
 
 !------------------------------------------------------------------------------------
-#ifdef SCLM
-     IF (lsclm .AND. it_s.EQ.it_end) THEN
-        CALL turb_stat(k=k, &
-                       lsm=  lsm(imb,k), lsh=lsh(imb,k),      &
-                       fm2=fm2_e(imb,k), fh2=fh2(imb,k),      &
-                       tls=  tls(imb,k), tvs=tke(imb,k,ntur), &
-                       tvt=  tvt(imb,k), grd=grd(imb,k,:),    &
-                       d_m=dd(imb,0), d_h=d_h, a_m=1.0_wp/dd(imb,2))
-     END IF
-#endif
 !SCLM--------------------------------------------------------------------------------
 
 !    Sichern der TKE-Dissipation "edr=q**3/l_dis" u.a. als thermische Quelle:
@@ -1789,96 +1741,6 @@ END SUBROUTINE solve_turb_budgets
 !==============================================================================
 !==============================================================================
 
-#ifdef SCLM
-SUBROUTINE turb_stat (lsm, lsh, fm2, fh2, d_m, d_h, a_m, tls, tvs, tvt, grd, k)
-
-INTiEGER, INTENT(IN) :: &
-!
-    k         !vertical level index
-
-REAL (KIND=wp), INTENT(IN) :: &
-!
-    lsm,    & !turbulent length scale times value of stability function for momentum       [m]
-    lsh,    & !turbulent length scale times value of stability function for scalars (heat) [m]
-    fm2,    & !squared forcing frequency for momentum       [1/s2]
-    fh2,    & !squared forcing frequency for scalars (heat) [1/s2]
-    d_m,    & !dissipation parameter for momentum       [1]
-    d_h,    & !dissipation parameter for scalars (heat) [1]
-    a_m,    & !return-to-isotropy parameter for momentum [1]
-    tls,    & !turbulent length scale   [m]
-    tvs,    & !turbulent velocity scale [m/s]
-    tvt,    & !turbulent transport of turbulent velocity scale [m/s2]
-    grd(:)    !vector of vertical gradients of diffused (conserved) variables [{unit}/m]
-
-REAL (KIND=wp) ::  &
-!
-   tts,                  & !turbulent master time scale
-   ts_d,                 & !dissipation time scale [s]
-   ts_m,                 & !return-to-isotropy time scale for momentum [s]
-   tvs2,                 & !tvs**2 [m2/s2]
-   tkm, tkh,             & !turbulent diffusion coefficient for momentum and scalars (heat) [m2/s]
-   x1, x2, x3,           & !auxilary TKE source terme values [m2/s3]
-   cvar(nmvar+1,nmvar+1)   !covariance matrix  [{unit1}*{unit2}]
-
-   cvar(tet_l,tet_l)=d_h*tls*lsh*grd(tet_l)**2
-   cvar(h2o_g,h2o_g)=d_h*tls*lsh*grd(h2o_g)**2
-   cvar(tet_l,h2o_g)=d_h*tls*lsh*grd(tet_l)*grd(h2o_g)
-
-   tkm=lsm*tvs; tkh=lsh*tvs
-
-   cvar(u_m  ,w_m)=-tkm*grd(u_m)
-   cvar(v_m  ,w_m)=-tkm*grd(v_m)
-   cvar(tet_l,w_m)=-tkh*grd(tet_l)
-   cvar(h2o_g,w_m)=-tkh*grd(h2o_g)
-
-   TKE_SCLM%mod(k)%val=tvs        ; TKE_SCLM%mod(k)%vst=i_cal
-
-   !Achtung: TKE%mod(k)%val zeigt z.Z. noch auf die alte TKE-Zeitstufe.
-   !Somit wird also der alte TKE-Wert mit dem neuen ueberschrieben,
-   !was aber ohne Bedeutung ist, weil ab jetzt der alte tke-Wert nicht
-   !mehr benoetigt wird. Beachte, dass die Modelleinheit hier [m/s] ist.
-
-   tvs2=tvs**2
-   tts=tls/tvs
-   ts_d=d_m*tts
-   ts_m=a_m*tts
-
-   x1=cvar(u_m,w_m)*grd(u_m)
-   x2=cvar(v_m,w_m)*grd(v_m)
-   x3=-tkh*fh2
-
-   BOYPR%mod(k)%val=x3             ; BOYPR%mod(k)%vst=i_cal
-   SHRPR%mod(k)%val=-(x1+x2)       ; SHRPR%mod(k)%vst=i_cal
-   DISSI%mod(k)%val=tvs2/ts_d      ; DISSI%mod(k)%vst=i_cal
-   TRANP%mod(k)%val=tvs*tvt        ; TRANP%mod(k)%vst=i_cal
-
-   cvar(u_m,u_m)=z1d3*tvs2+ts_m*(-4.0_wp*x1+2.0_wp*x2-2.0_wp*x3)
-   cvar(v_m,v_m)=z1d3*tvs2+ts_m*(+2.0_wp*x1-4.0_wp*x2-2.0_wp*x3)
-   cvar(w_m,w_m)=tvs2-cvar(u_m,u_m)-cvar(v_m,v_m)
-
-   UWA%mod(k)%val=cvar(u_m  ,w_m)  ; UWA%mod(k)%vst=i_cal
-   VWA%mod(k)%val=cvar(v_m  ,w_m)  ; VWA%mod(k)%vst=i_cal
-   TWA%mod(k)%val=cvar(tet_l,w_m)  ; TWA%mod(k)%vst=i_cal
-   UST%mod(k)%val=SQRT(tkm*SQRT(fm2))
-                                     UST%mod(k)%vst=i_cal
- ! LMO%mod(0)%val=-UST%mod(k)%val**3/x3
- !                                   LMO%mod(0)%vst=i_cal
-
-   IF (cvar(u_m,u_m).GE.0.0_wp .AND. cvar(v_m,v_m).GE.0.0_wp .AND. &
-       cvar(u_m,u_m)+cvar(v_m,v_m).LE.tvs2) THEN
-
-      UUA%mod(k)%val=cvar(u_m,u_m)  ; UUA%mod(k)%vst=i_cal
-      VVA%mod(k)%val=cvar(v_m,v_m)  ; VVA%mod(k)%vst=i_cal
-      WWA%mod(k)%val=tvs2-UUA%mod(k)%val-VVA%mod(k)%val
-                                      WWA%mod(k)%vst=i_cal
-   END IF
-
-   TTA%mod(k)%val=cvar(tet_l,tet_l); TTA%mod(k)%vst=i_cal
-   QQA%mod(k)%val=cvar(h2o_g,h2o_g); QQA%mod(k)%vst=i_cal
-   TQA%mod(k)%val=cvar(h2o_g,h2o_g); TQA%mod(k)%vst=i_cal
-
-END SUBROUTINE turb_stat
-#endif
 !SCLM--------------------------------------------------------------------------
 
 !==============================================================================
@@ -3238,15 +3100,7 @@ LOGICAL :: ldepth, lrpdep, lauxil
    ! OpenACC attachment
    !$ACC DATA CREATE(pvar) ASYNC(1) IF(lzacc)
    DO n=1,nvars
-#ifdef _PGI_LEGACY_WAR
-      IF(lzacc) THEN
-         !$ACC WAIT(1)
-         CALL acc_attach(pvar(n)%bl)
-         CALL acc_attach(pvar(n)%ml)
-      END IF
-#else
       !$ACC ENTER DATA ATTACH(pvar(n)%bl, pvar(n)%ml) ASYNC(1) IF(lzacc)
-#endif
    END DO
    
    IF (ldepth) THEN !depth weighted interpolation
@@ -3330,14 +3184,7 @@ LOGICAL :: ldepth, lrpdep, lauxil
    END IF
    ! See comment above
    DO n=1,nvars
-#ifdef _PGI_LEGACY_WAR
-      IF(lzacc) THEN 
-         CALL acc_detach(pvar(n)%bl)
-         CALL acc_detach(pvar(n)%ml)
-      END IF
-#else
       !$ACC EXIT DATA DETACH(pvar(n)%bl, pvar(n)%ml) ASYNC(1) IF(lzacc)
-#endif
    END DO
    !$ACC WAIT(1)
    !$ACC END DATA

@@ -145,11 +145,11 @@ CONTAINS
     ! 8. consistency check
     !--------------------------------------------------------
 
-#ifndef __USE_RTTOV
+
     IF (ANY(lsynsat)) THEN
       CALL finish(routine, 'Switch "lsynsat": Model has not been configured for RTTOV library.')
     END IF
-#endif
+
 
   END SUBROUTINE read_synsat_namelist
 

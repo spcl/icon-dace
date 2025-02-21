@@ -38,9 +38,9 @@ MODULE mo_ocean_read_namelists
   USE mo_hamocc_nml          ,ONLY: read_hamocc_namelist
 
   USE mo_name_list_output_init,ONLY: read_name_list_output_namelists
-#ifndef __NO_ICON_ATMO__
+
   USE mo_coupling_nml        ,ONLY: read_coupling_namelist
-#endif
+
 
   IMPLICIT NONE
 
@@ -110,9 +110,9 @@ CONTAINS
 
     ! Coupling
     !
-#ifndef __NO_ICON_ATMO__
+
     CALL read_coupling_namelist       (TRIM(oce_namelist_filename))
-#endif
+
 
     ! More namelists from the old setup
     !

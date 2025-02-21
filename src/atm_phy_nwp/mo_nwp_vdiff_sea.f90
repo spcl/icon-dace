@@ -239,29 +239,7 @@ CONTAINS
 
     ! Asynchronous data regions are a too recent feature. We have to resort to unstructured ones.
     ! This crutch ensures that we don't forget to delete any variable.
-#   define LIST_CREATE \
-        s_hat_wtr, \
-        s_hat_ice, \
-        qsat_hat_wtr, \
-        qsat_hat_ice, \
-        qsen, \
-        qlat, \
-        qlwrnet, \
-        qsolnet, \
-        snow_rate, \
-        rain_rate, \
-        tice_p, \
-        hice_p, \
-        tsnow_p, \
-        hsnow_p, \
-        albsi_p, \
-        tice_n, \
-        hice_n, \
-        tsnow_n, \
-        hsnow_n, \
-        condhf, \
-        albsi_n
-    !$ACC ENTER DATA ASYNC(1) CREATE(LIST_CREATE)
+    !$ACC ENTER DATA ASYNC(1) CREATE(s_hat_wtr,         s_hat_ice,         qsat_hat_wtr,         qsat_hat_ice,         qsen,         qlat,         qlwrnet,         qsolnet,         snow_rate,         rain_rate,         tice_p,         hice_p,         tsnow_p,         hsnow_p,         albsi_p,         tice_n,         hice_n,         tsnow_n,         hsnow_n,         condhf,         albsi_n)
 
     IF (lseaice) THEN
 
@@ -524,8 +502,7 @@ CONTAINS
     !$ACC END PARALLEL
 
     !$ACC WAIT(1)
-    !$ACC EXIT DATA DELETE(LIST_CREATE)
-#   undef LIST_CREATE
+    !$ACC EXIT DATA DELETE(s_hat_wtr,         s_hat_ice,         qsat_hat_wtr,         qsat_hat_ice,         qsen,         qlat,         qlwrnet,         qsolnet,         snow_rate,         rain_rate,         tice_p,         hice_p,         tsnow_p,         hsnow_p,         albsi_p,         tice_n,         hice_n,         tsnow_n,         hsnow_n,         condhf,         albsi_n)
 
   END SUBROUTINE sea_model
 
@@ -1066,19 +1043,7 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#   define LIST_CREATE \
-        frsi, \
-        tice_p, \
-        hice_p, \
-        tsnow_p, \
-        hsnow_p, \
-        albsi_p, \
-        tice_n, \
-        hice_n, \
-        tsnow_n, \
-        hsnow_n, \
-        albsi_n
-    !$ACC ENTER DATA ASYNC(1) CREATE(LIST_CREATE) IF(lzacc)
+    !$ACC ENTER DATA ASYNC(1) CREATE(frsi,         tice_p,         hice_p,         tsnow_p,         hsnow_p,         albsi_p,         tice_n,         hice_n,         tsnow_n,         hsnow_n,         albsi_n) IF(lzacc)
 
     !$OMP PARALLEL
       !$OMP DO PRIVATE(iblk, i_count, ic, jc, frsi, tice_p, hice_p, tsnow_p, hsnow_p, albsi_p) &
@@ -1136,7 +1101,7 @@ CONTAINS
     !$OMP END PARALLEL
 
     !$ACC WAIT(1)
-    !$ACC EXIT DATA DELETE(LIST_CREATE) IF(lzacc)
+    !$ACC EXIT DATA DELETE(frsi,         tice_p,         hice_p,         tsnow_p,         hsnow_p,         albsi_p,         tice_n,         hice_n,         tsnow_n,         hsnow_n,         albsi_n) IF(lzacc)
 
   END SUBROUTINE nwp_vdiff_update_seaice_vars
 

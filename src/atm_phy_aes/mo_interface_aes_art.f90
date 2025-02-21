@@ -25,9 +25,9 @@ MODULE mo_interface_aes_art
   USE mo_nonhydro_state         ,ONLY: p_nh_state_lists
   USE mo_dynamics_config        ,ONLY: nnew_rcf
 
-#ifdef __ICON_ART
-  USE mo_art_reaction_interface ,ONLY: art_reaction_interface
-#endif
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -68,13 +68,13 @@ CONTAINS
        !
        IF ( is_active ) THEN
           !
-#ifdef __ICON_ART
-          CALL art_reaction_interface(jg,                                           & !> in
-               &                      datetime,                                     & !> in
-               &                      pdtime,                                       & !> in
-               &                      p_nh_state_lists(jg)%prog_list(nnew_rcf(jg)), & !> in
-               &                      field%qtrc_phy)
-#endif
+
+
+
+
+
+
+
           !
        END IF
        !

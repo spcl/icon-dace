@@ -566,15 +566,15 @@ CONTAINS
     ! local variables
     INTEGER               :: jc, jb, jt
     INTEGER               :: i_startidx_c, i_endidx_c
-#ifdef __LVECTOR__
-    REAL(wp)              :: dz_old
-    REAL(wp)              :: dz_new(nproma,n_zlev), z_change(nproma,n_zlev)
-    REAL(wp)              :: temp_stretch(nproma)
-    INTEGER               :: lev, max_lev
-#else
+
+
+
+
+
+
     REAL(wp)              :: dz_old(n_zlev), dz_new(n_zlev), z_change(n_zlev)
     REAL(wp)              :: temp_stretch
-#endif
+
     REAL(wp)              :: tdc_i
     LOGICAL               :: lzacc
 
@@ -660,129 +660,6 @@ CONTAINS
       CALL dbg_print('UpdSfc: eta-old', eta_c,    str_module, 1, in_subset=p_patch%cells%owned)
       
       ! apply volume flux to surface elevation
-#ifdef __LVECTOR__
-      DO jb = all_cells%start_block, all_cells%end_block
-        CALL get_index_range(all_cells, jb, i_startidx_c, i_endidx_c)
-
-        max_lev = MAXVAL(dolic_c(i_startidx_c:i_endidx_c, jb))
-
-        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) PRIVATE(dz_new, z_change, temp_stretch) ASYNC(1) IF(lzacc)
-        DO jc = i_startidx_c, i_endidx_c
-          IF (dolic_c(jc,jb) > 0) THEN
-
-            bt_lev = dolic_c(jc, jb)
-            d_c    = p_patch_3d%p_patch_1d(1)%depth_CellInterface(jc, bt_lev + 1, jb)
-
-            eta_c(jc,jb) = eta_c(jc,jb)               &
-              &           + p_oce_sfc%FrshFlux_VolumeTotal(jc,jb)*dtime &
-              &           + p_oce_sfc%FrshFlux_TotalIce(jc, jb)*dtime
-
-            !! Only change the stretching parameter if it is above a certain threshold
-            !! This avoids divide by 0
-            min_h = prism_thick_flat_sfc_c(jc,1,jb)
-
-            !! Update only if height is atleast dz
-            IF (d_c > min_h) THEN
-              temp_stretch(jc) = ( eta_c(jc, jb) + d_c)/( d_c )
-            ELSE
-              temp_stretch(jc) = stretch_c(jc, jb)
-            END IF
-
-            !! set dilution coefficient for HAMOCC
-            p_oce_sfc%top_dilution_coeff(jc,jb) = stretch_c(jc,jb)/temp_stretch(jc)
-
-            !! update zunderice
-            p_ice%zUnderIce(jc,jb) = prism_thick_flat_sfc_c(jc,1,jb) * temp_stretch(jc)
-
-            dz_old = prism_thick_flat_sfc_c(jc,bt_lev,jb) * stretch_c(jc,jb)
-            dz_new(jc,bt_lev) = prism_thick_flat_sfc_c(jc,bt_lev,jb) * temp_stretch(jc)
-            z_change(jc,bt_lev) = dz_new(jc,bt_lev) - dz_old
-          END IF
-        END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC WAIT(1)
-
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        !$ACC LOOP SEQ
-        DO jk = max_lev-1,1,-1
-          !$ACC LOOP GANG VECTOR
-          DO jc = i_startidx_c, i_endidx_c
-            IF (jk <= dolic_c(jc,jb) - 1) THEN
-              dz_old = prism_thick_flat_sfc_c(jc,jk,jb) * stretch_c(jc,jb)
-              dz_new(jc,jk) = prism_thick_flat_sfc_c(jc,jk,jb) * temp_stretch(jc)
-              z_change(jc,jk) = z_change(jc,jk+1) + dz_new(jc,jk) - dz_old
-            END IF
-          END DO
-        END DO
-
-        !$ACC LOOP GANG VECTOR
-        DO jc = i_startidx_c, i_endidx_c
-          IF (p_oce_sfc%top_dilution_coeff(jc,jb) > 1.0_wp .AND. 1 <= dolic_c(jc,jb)) THEN
-            dz_old = prism_thick_flat_sfc_c(jc,1,jb) * stretch_c(jc,jb)
-
-            !NEC$ unroll_complete
-            DO jt = 1, 2
-              IF (jt /= 1 .OR. .NOT. lfwflux_enters_with_sst) THEN
-                tracer(jc, 1, jb, jt) = tracer(jc, 1, jb, jt) * dz_old / ( dz_old + z_change(jc,1))
-              ENDIF
-            END DO
-          END IF
-        END DO
-
-        !$ACC LOOP SEQ
-        DO jk = 1, max_lev-1
-          lev = max_lev + 1 - jk ! reverse iteration (max_lev -> 2) for growing layers
-
-          !$ACC LOOP GANG VECTOR
-          DO jc = i_startidx_c, i_endidx_c
-            IF (p_oce_sfc%top_dilution_coeff(jc,jb) > 1.0_wp .AND. jk <= dolic_c(jc,jb)-1) THEN
-
-              !NEC$ unroll_complete
-              DO jt = 1, 2
-                tracer(jc, jk, jb, jt) = (tracer(jc, jk, jb, jt) &
-                  &   * (dz_new(jc,jk) + z_change(jc,jk+1)) &
-                  &   - z_change(jc,jk+1) * tracer(jc, jk+1, jb, jt))  &
-                  &   / dz_new(jc,jk)
-              END DO
-
-            ELSE IF (p_oce_sfc%top_dilution_coeff(jc,jb) < 1.0_wp .AND. lev <= dolic_c(jc,jb)) THEN
-
-              !NEC$ unroll_complete
-              DO jt = 1, 2
-                tracer(jc, lev, jb, jt) = (tracer(jc, lev, jb, jt) &
-                  &   * (dz_new(jc,lev) - z_change(jc,lev)) &
-                  &   + z_change(jc,lev) * tracer(jc, lev-1, jb, jt))  &
-                  &   / dz_new(jc,lev)
-              END DO
-
-            END IF
-          END DO ! jc
-        END DO ! jk, lev
-
-        !$ACC LOOP GANG VECTOR
-        DO jc = i_startidx_c, i_endidx_c
-          IF (p_oce_sfc%top_dilution_coeff(jc,jb) < 1.0_wp .AND. 1 <= dolic_c(jc,jb)) THEN
-            !NEC$ unroll_complete
-            DO jt = 1, 2
-              IF (jt /= 1 .OR. .NOT. lfwflux_enters_with_sst) THEN
-                tracer(jc, 1, jb, jt) = tracer(jc, 1, jb, jt) * &
-                    &  (dz_new(jc,1) - z_change(jc,1)) / dz_new(jc,1)
-              ENDIF
-            END DO
-          END IF
-        END DO
-
-        !! Now put salt from ice into the surface layer (sss aliases the first level of the tracer field!)
-        !$ACC LOOP GANG VECTOR
-        DO jc = i_startidx_c, i_endidx_c
-          IF (1 <= dolic_c(jc,jb)) THEN
-            p_oce_sfc%sss(jc,jb) = p_oce_sfc%sss(jc,jb) + p_oce_sfc%FrshFlux_IceSalt(jc,jb) * dtime / p_ice%zUnderIce(jc,jb)
-          END IF
-        END DO
-        !$ACC END PARALLEL
-        !$ACC WAIT(1)
-      END DO ! jb
-#else
       DO jb = all_cells%start_block, all_cells%end_block
         CALL get_index_range(all_cells, jb, i_startidx_c, i_endidx_c)
         !$ACC PARALLEL DEFAULT(PRESENT) PRIVATE(dz_old, dz_new, z_change) ASYNC(1) IF(lzacc)
@@ -882,7 +759,6 @@ CONTAINS
         !$ACC END PARALLEL
       END DO
       !$ACC WAIT(1)
-#endif
 
     ENDIF
 
@@ -989,9 +865,6 @@ CONTAINS
 
       ELSE   !  no sea ice
 
-#ifdef _OPENACC
-        IF (lzacc) CALL finish(routine, 'OpenACC version currently not tested/validated')
-#endif
 
         ! apply net surface heat flux in W/m2 for OMIP case, since these fluxes are calculated in calc_omip_budgets_oce
         DO jb = all_cells%start_block, all_cells%end_block
@@ -1058,9 +931,6 @@ CONTAINS
 
     CASE (Coupled_FluxFromAtmo)
 
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(routine, 'OpenACC version currently not tested/validated')
-#endif
 
       !  Driving the ocean in a coupled mode:
       !  nothing to be done, atmospheric fluxes are provided at the end of time stepping
@@ -1119,9 +989,6 @@ CONTAINS
 
 
     IF (zero_freshwater_flux) THEN
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(routine, 'OpenACC version currently not tested/validated')
-#endif
 
       DO jb = all_cells%start_block, all_cells%end_block
         CALL get_index_range(all_cells, jb, i_startidx_c, i_endidx_c)
@@ -1214,9 +1081,6 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, 'OpenACC version currently not tested/validated')
-#endif
 
     ! atmosphere fluxes for analytical testcased similar to mo_ocean_initial_conditions:
     SELECT CASE (atmos_flux_analytical_type)

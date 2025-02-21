@@ -65,13 +65,13 @@ REAL(wp), PARAMETER, DIMENSION(3,np) :: &
                       57.80_wp,  0.5_wp/3.0_wp, 1.e-12_wp, &
                       12.24_wp,  0.217_wp     , 1.e-08_wp] ,[3,np])
 
-#ifdef __INLINE_RESHAPE_WAR
-! Workaround for buggy -Minline=reshape
-REAL(wp), PARAMETER, DIMENSION(3) :: params_qr = params(:, lqr)
-REAL(wp), PARAMETER, DIMENSION(3) :: params_qi = params(:, lqi)
-REAL(wp), PARAMETER, DIMENSION(3) :: params_qs = params(:, lqs)
-REAL(wp), PARAMETER, DIMENSION(3) :: params_qg = params(:, lqg)
-#endif
+
+
+
+
+
+
+
 
 REAL(wp), PARAMETER :: &
    rho_00 = 1.225_wp        , & ! reference air density
@@ -325,28 +325,6 @@ CONTAINS
         zeta  = dt/(2.0_wp*dz(iv,k))
         xrho  = SQRT(rho_00/rho(iv,k))
 
-#ifdef __INLINE_RESHAPE_WAR
-        IF (k >= kmin(iv,lqr)) THEN
-          vc     = vel_scale_factor(lqr, xrho, rho(iv,k), t(iv,k), q(lqr)%x(iv,k))
-          update = precip(params_qr,zeta,vc,q(lqr)%p(iv),vt(iv,1),q(lqr)%x(iv,k),q(lqr)%x(iv,kp1),rho(iv,k))
-          q(lqr)%x(iv,k) = update(1); q(lqr)%p(iv) = update(2); vt(iv,1) = update(3)
-        END IF
-        IF (k >= kmin(iv,lqi)) THEN
-          vc     = vel_scale_factor(lqi, xrho, rho(iv,k), t(iv,k), q(lqi)%x(iv,k))
-          update = precip(params_qi,zeta,vc,q(lqi)%p(iv),vt(iv,2),q(lqi)%x(iv,k),q(lqi)%x(iv,kp1),rho(iv,k))
-          q(lqi)%x(iv,k) = update(1); q(lqi)%p(iv) = update(2); vt(iv,2) = update(3)
-        END IF
-        IF (k >= kmin(iv,lqs)) THEN
-          vc     = vel_scale_factor(lqs, xrho, rho(iv,k), t(iv,k), q(lqs)%x(iv,k))
-          update = precip(params_qs,zeta,vc,q(lqs)%p(iv),vt(iv,3),q(lqs)%x(iv,k),q(lqs)%x(iv,kp1),rho(iv,k))
-          q(lqs)%x(iv,k) = update(1); q(lqs)%p(iv) = update(2); vt(iv,3) = update(3)
-        END IF
-        IF (k >= kmin(iv,lqg)) THEN
-          vc     = vel_scale_factor(lqg, xrho, rho(iv,k), t(iv,k), q(lqg)%x(iv,k))
-          update = precip(params_qg,zeta,vc,q(lqg)%p(iv),vt(iv,4),q(lqg)%x(iv,k),q(lqg)%x(iv,kp1),rho(iv,k))
-          q(lqg)%x(iv,k) = update(1); q(lqg)%p(iv) = update(2); vt(iv,4) = update(3)
-        END IF
-#else
         !$ACC LOOP SEQ
         DO ix=1,np
           iqx = qp_ind(ix)
@@ -356,7 +334,6 @@ CONTAINS
             q(iqx)%x(iv,k) = update(1); q(iqx)%p(iv) = update(2); vt(iv,ix) = update(3)
           END IF
         END DO
-#endif
 
         pflx(iv,k) = q(lqs)%p(iv) + q(lqi)%p(iv) + q(lqg)%p(iv)
         eflx(iv)   = dt*( q(lqr)%p(iv) * (clw*t(iv,k)-cvd*t(iv,kp1) - lvc)  &

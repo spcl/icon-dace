@@ -79,7 +79,7 @@ REAL(KIND=JPRB) :: taufor,tauself,absco2
     !$ACC             indself, fracs, indfor, forfac, forfrac, minorfrac, &
     !$ACC             indminor)
 
-#ifndef _OPENACC
+
     laytrop_min = MINVAL(laytrop)
     laytrop_max = MAXVAL(laytrop)
 
@@ -102,17 +102,6 @@ REAL(KIND=JPRB) :: taufor,tauself,absco2
       enddo
       ixc(lay) = icl
     enddo
-#else
-    laytrop_min = HUGE(laytrop_min) 
-    laytrop_max = -HUGE(laytrop_max)
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR REDUCTION(min:laytrop_min) REDUCTION(max:laytrop_max)
-    do jc = KIDIA,KFDIA
-      laytrop_min = MIN(laytrop_min, laytrop(jc))
-      laytrop_max = MAX(laytrop_max, laytrop(jc))
-    end do
-    !$ACC END PARALLEL
-#endif
 
 ! Minor gas mapping level:
 !     lower - co2, p = 706.2720 mb, t = 294.2 k
@@ -193,15 +182,10 @@ REAL(KIND=JPRB) :: taufor,tauself,absco2
         !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(chi_co2, ratco2, adjfac, adjcolco2, ind0, ind1, inds, indf, indm)
         do lay = laytrop_min+1, laytrop_max
-#ifdef _OPENACC
-          do jl = KIDIA, KFDIA
-            if ( lay <= laytrop(jl) ) then
-#else
           ixc0 = ixc(lay)
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixlow(ixp,lay)
-#endif
 
             ! In atmospheres where the amount of CO2 is too great to be considered
             ! a minor species, adjust the column amount of CO2 by an empirical factor
@@ -240,31 +224,22 @@ REAL(KIND=JPRB) :: taufor,tauself,absco2
                   + wx(jl,3,lay) * cfc12(ig)
               fracs(jl,ngs5+ig,lay) = fracrefa(ig)
             enddo
-#ifdef _OPENACC
-         else
-#else
           enddo
 
           ! Upper atmosphere part
           ! Nothing important goes on above laytrop in this band.
           ixc0 = KFDIA - KIDIA + 1 - ixc0
-#endif
 
           !$ACC LOOP SEQ
           do ig = 1, ng6
-#ifndef _OPENACC
 !$NEC ivdep
             do ixp = 1, ixc0
               jl = ixhigh(ixp,lay)
-#endif
               taug(jl,ngs5+ig,lay) = 0.0_JPRB &
                   + wx(jl,2,lay) * cfc11adj(ig) &
                   + wx(jl,3,lay) * cfc12(ig)
               fracs(jl,ngs5+ig,lay) = fracrefa(ig)
             enddo
-#ifdef _OPENACC
-           endif
-#endif
           enddo
 
         enddo

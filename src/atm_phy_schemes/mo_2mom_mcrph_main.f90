@@ -580,9 +580,9 @@ CONTAINS
     IF (nuc_c_typ .EQ. 0) THEN
       IF (isdebug) CALL message(TRIM(routine),'  ... force constant cloud droplet number')
 
-#ifdef _OPENACC
-      CALL finish(routine,'nuc_c_typ=0 not supported on GPU')
-#endif
+
+
+
 
       cloud%n(:,:) = qnc_const
     ELSEIF (nuc_c_typ < 6) THEN
@@ -705,9 +705,9 @@ CONTAINS
       TYPE IS (particle_frozen)
         CALL graupel_melting(ik_slice,dt,graupel_coeffs,atmo,graupel,rain)
       TYPE IS (particle_lwf)
-#ifdef _OPENACC
-        CALL finish('graupel','particle_lwf not supported on GPU')
-#endif
+
+
+
         CALL prepare_melting_lwf(ik_slice, atmo, gmelting)
         CALL particle_melting_lwf(ik_slice, dt, graupel, rain, gmelting)
       END SELECT
@@ -715,9 +715,9 @@ CONTAINS
       TYPE IS (particle_frozen)
         CALL hail_melting_simple(ik_slice,dt,hail_coeffs,atmo,hail,rain)
       TYPE IS (particle_lwf)
-#ifdef _OPENACC
-        CALL finish('hail','particle_lwf not supported on GPU')
-#endif
+
+
+
         CALL particle_melting_lwf(ik_slice, dt, hail, rain, gmelting)
       END SELECT
       IF (ischeck) CALL check(ik_slice, 'melting',cloud,rain,ice,snow,graupel,hail)
@@ -734,16 +734,16 @@ CONTAINS
     ! warm rain processes
     ! (using something other than SB is somewhat inconsistent and not recommended)
     IF (auto_typ == 1) THEN
-#ifdef _OPENACC
-       CALL finish('warm_rain_processes','auto_typ == 1 not supported on GPU')
-#endif
+
+
+
        CALL autoconversionKB(ik_slice, dt, cloud, rain)   ! Beheng (1994)
        CALL accretionKB(ik_slice, dt, cloud, rain)
        CALL rain_selfcollectionSB(ik_slice, dt, atmo, rain)
     ELSE IF (auto_typ == 2) THEN
-#ifdef _OPENACC
-       CALL finish('warm_rain_processes','auto_typ == 2 not supported on GPU')
-#endif
+
+
+
        ! Khairoutdinov and Kogan (2000)
        ! (KK2000 originally assume a 25 micron size threshold)
        CALL autoconversionKK(ik_slice, dt, cloud, rain)
@@ -1382,47 +1382,14 @@ CONTAINS
     REAL(wp), PARAMETER  :: meps = -1e-12_wp
     CHARACTER(len=2), PARAMETER  :: qname(6) = (/ 'qc', 'qr', 'qi', 'qs', 'qg', 'qh' /)
 
-#ifdef _OPENACC
-    CALL finish(routine,'SUBROUTINE check not supported on GPU')
-#endif
+
+
+
     jcs    = ik_slice(1)
     jce    = ik_slice(2)
     kstart = ik_slice(3)
     kend   = ik_slice(4)
 
-#if defined (__SX__) || defined (__NEC_VH__) || defined (__NECSX__)
-
-    k_neg = -1
-    DO k = kstart,kend
-      IF (MINVAL(cloud%q(jcs:jce,k)) < meps) THEN
-        k_neg(1) = k
-      ENDIF
-      IF (MINVAL(rain%q(jcs:jce,k)) < meps) THEN
-        k_neg(2) = k
-      ENDIF
-      IF (MINVAL(ice%q(jcs:jce,k)) < meps) THEN
-        k_neg(3) = k
-      ENDIF
-      IF (MINVAL(snow%q(jcs:jce,k)) < meps) THEN
-        k_neg(4) = k
-      ENDIF
-      IF (MINVAL(graupel%q(jcs:jce,k)) < meps) THEN
-        k_neg(5) = k
-      ENDIF
-      IF (MINVAL(hail%q(jcs:jce,k)) < meps) THEN
-        k_neg(6) = k
-      ENDIF
-    END DO
-
-    DO k = 1, SIZE(k_neg)
-      IF (k_neg(k) > -1) THEN
-        WRITE (txt,'(1X,A,I4,A)') '  '//TRIM(qname(k))//' < 0 at k = ',k_neg(k),' after '//TRIM(mtxt)
-        CALL message(TRIM(routine),TRIM(txt))
-        CALL finish (TRIM(routine),TRIM(txt))
-      END IF
-    END DO
-
-#else
 
     DO k = kstart,kend
       IF (MINVAL(cloud%q(:,k)) < meps) THEN
@@ -1457,7 +1424,6 @@ CONTAINS
       ENDIF
     END DO
 
-#endif
 
   END SUBROUTINE check
 

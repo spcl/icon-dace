@@ -54,11 +54,11 @@ MODULE mo_rttov_interface
   USE mo_mpi,                 ONLY: p_pe, p_comm_work, p_io, num_work_procs, p_barrier, &
     &                               get_my_mpi_all_id
   USE mo_fortran_tools,       ONLY: assert_acc_device_only, assert_lacc_equals_i_am_accel_node
-#ifdef __USE_RTTOV
-  USE mo_rtifc,               ONLY: rtifc_set_opts, rtifc_init, rtifc_fill_input, &
-                                    rtifc_direct, rtifc_errmsg,                   &
-                                    NO_ERROR, default_gas_units, gas_unit_ppmvdry
-#endif
+
+
+
+
+
 
   IMPLICIT NONE
 
@@ -103,9 +103,9 @@ CONTAINS
     CHARACTER(LEN=vname_len) :: shortname
     CHARACTER(LEN=128)         :: longname
     INTEGER                    :: isens, ierrstat, k, isynsat, j
-#ifdef __USE_RTTOV
-    INTEGER                    :: istatus
-#endif
+
+
+
 
     ! --- determine, which of the satellite images have been actually
     !     requested by the user:
@@ -193,50 +193,6 @@ CONTAINS
 
     ! --- initialize RTTOV
 
-#ifdef __USE_RTTOV
-    IF (ANY(n_chans(1:num_sensors) > 0)) THEN    
-      IF (dbg_level > 2) THEN
-        CALL p_barrier(p_comm_work)
-        WRITE (0,*) routine, ": CALL to rttov_init"
-      END IF
-
-      DO isens = 1, num_sensors
-        CALL rtifc_set_opts(                  &
-          iopt           = rttov_indx(isens), &
-          new            = .true.,            &
-          addclouds      = .true.,            &
-          apply_reg_lims = .true.,            &
-          addsolar       = .false.,           &
-          addrefrac      = .true.,            &
-          addinterp      = .false.,           &
-          use_q2m        = .true.,            &
-          cloud_overlap  = 2,                 & !Simplified, much faster scheme
-          do_checkinput  = .false.,           & !do_checkinput is expensive on vector machine
-          init           = .true.)
-      END DO
-
-      CALL rtifc_init(  &
-        instruments,    &
-        channels,       &
-        n_chans,        &
-        chan_rtidx,     &
-        rttov_indx,     &
-        p_pe,           &
-        num_work_procs, &
-        p_io,           &
-        p_comm_work,    &
-        istatus      )
-
-      IF (istatus /= NO_ERROR) THEN
-        WRITE(message_text,'(a)') TRIM(rtifc_errmsg(istatus))
-        CALL finish(routine ,message_text)
-      ENDIF
-      IF (dbg_level > 2) THEN
-        CALL p_barrier(p_comm_work)
-        WRITE (0,*) routine, ": CALL to rttov_init done."
-      END IF
-    END IF
-#endif
   END SUBROUTINE rttov_initialize
 
 
@@ -338,10 +294,6 @@ SUBROUTINE rttov_driver (jg, jgp, nnow, lacc)
   ! distance of satellite from middle of the earth
   r_sat       = 35880.e3_wp + earth_radius
 
-#ifdef __USE_RTTOV
-  ! set backward compatibility mode for input unit of QV
-  default_gas_units = gas_unit_ppmvdry
-#endif
 
   ! Define RTTOV levels
   CALL define_rttov_levels (nlev_rttov, pres_rttov)
@@ -370,198 +322,6 @@ SUBROUTINE rttov_driver (jg, jgp, nnow, lacc)
   i_startblk = p_gcp%start_block(rlstart)
   i_endblk   = p_gcp%end_block(min_rlcell_int)
 
-#ifdef __USE_RTTOV
-  DO jb = i_startblk, i_endblk
-
-    CALL get_indices_c(p_pp, jb, i_startblk, i_endblk, is, ie, rlstart, min_rlcell_int)
-
-
-    ! Choices for RTTOV ice cloud scheme and ice crystal shape
-    idg(:) = iwc2effdiam ! McFarquhar et al. (2003); seems to the only numerically stable option
-    ish(:) = iceshape    ! hexagonal crystals
-
-    ! Copy input variables into RTTOV buffer
-    IF (dbg_level > 2)  WRITE (0,*) "Copy input variables into RTTOV buffer"
-
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-    !$ACC LOOP SEQ
-    DO jk = 1, nlev_rttov
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jc = is, ie
-        pres(jk,jc) = pres_rttov(jk)
-        temp(jk,jc) = temp_rttov(jc,jk,jb)
-        qv(jk,jc)   = qv_rttov(jc,jk,jb)
-      ENDDO
-    ENDDO
-
-    DO jk = 1, nlev_rttov-1
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jc = is, ie
-        ! cld(1) = stratiform cloud water, computed as total - convective
-        cld(1,jk,jc) = MAX(0._wp, qc_rttov(jc,jk,jb) - qcc_rttov(jc,jk,jb))
-        cld(2,jk,jc) = 0._wp
-        ! cld(3) = convective cloud water
-        cld(3,jk,jc) = qcc_rttov(jc,jk,jb)
-        cld(4,jk,jc) = 0._wp
-        cld(5,jk,jc) = 0._wp
-        ! cld(6) = cloud ice
-        cld(6,jk,jc) = qi_rttov(jc,jk,jb)
-        ! clc = cloud fraction
-
-        clc(jk,jc) = MIN(1._wp-1.e-8_wp,clc_rttov(jc,jk,jb))
-        IF (ANY(cld(:,jk,jc) > 0._wp)) THEN
-          clc(jk,jc) = MAX(1.e-8_wp,clc(jk,jc))
-        ENDIF
-
-      ENDDO
-    ENDDO
-    !$ACC END PARALLEL
-
-    !$ACC UPDATE ASYNC(1) &
-    !$ACC   HOST(pres, temp, qv, rg_t2m, rg_qv2m, rg_psfc, rg_hsfc, rg_u10m) &
-    !$ACC   HOST(rg_v10m, rg_tsfc, rg_stype, rg_wtype, rg_cosmu0, cld, clc)
-    !$ACC WAIT(1)
-
-    CALL rtifc_fill_input(                                &
-         istatus,                                         &
-         rttov_indx(1:num_sensors),                       &
-         press      = pres(:,is:ie) ,                     &
-         temp       = temp(:,is:ie),                      &
-         humi       = qv(:,is:ie),                        &
-         t2m        = rg_t2m(is:ie,jb),                   &
-         q2m        = rg_qv2m(is:ie,jb),                  &
-         psurf      = rg_psfc(is:ie,jb),                  &
-         hsurf      = rg_hsfc(is:ie,jb),                  &
-         u10m       = rg_u10m(is:ie,jb),                  &
-         v10m       = rg_v10m(is:ie,jb),                  &
-         stemp      = rg_tsfc(is:ie,jb),                  &
-         stype      = rg_stype(is:ie,jb),                 &
-         watertype  = rg_wtype(is:ie,jb),                 &
-         lat        = p_gcp%center(is:ie,jb)%lat*rad2deg, &
-         lon        = p_gcp%center(is:ie,jb)%lon*rad2deg, &
-         sat_zen    = (/(0.0_wp, jc=is,ie)/),             &
-         sun_zen    = rg_cosmu0(is:ie,jb),                & ! actually unused for addsolar=.false.
-         cloud      = cld(:,:,is:ie),                     &
-         cfrac      = clc(:,is:ie),                       &
-         ice_scheme = ish(is:ie),                         &
-         idg        = idg(is:ie),                         &
-         ivect      = 1,                                  &
-         pe         = p_pe)
-
-
-    IF (istatus /= NO_ERROR) THEN
-      WRITE(message_text,'(a)') TRIM(rtifc_errmsg(istatus))
-      CALL finish('RTTOV fill_input ERROR' ,message_text)
-    ENDIF
-
-    sensor_loop: DO isens = 1, num_sensors
-
-      ! Set up instrument, channel and profile numbers for RTTOV
-
-      n_profs = ie-is+1
-      ncalc = n_profs * numchans(isens)
-      DO j = 1, numchans(isens)
-        iprof(j:ncalc:numchans(isens)) = (/ (k, k=1,n_profs) /)
-        ! note: ichan contains the list of channel indices wrt. the
-        ! list provided to rttov_init:
-        ichan(j:ncalc:numchans(isens)) =  (/ (chan_rtidx(j,isens), k=1,n_profs) /)
-      ENDDO
-
-      ! Set/compute some sensor dependent quantities
-
-      DO jc = is, ie 
-        ! Since the emissitivy is intent(inout) in RTTOV, we have to 
-        ! reinitialize it
-        emiss(:, jc-is+1) = 0.
-        DO k = 1,  numchans(isens)
-          emiss(k, jc-is+1) = sat_compute(isens)%emissivity(chan_idx(k,isens))
-        ENDDO
-        lon = p_gcp%center(jc,jb)%lat - sat_compute(isens)%longitude
-        ! Calculate the satellite zenith angle 
-        alpha_e  = ACOS(COS(p_gcp%center(jc,jb)%lat) * COS(lon))
-        r_atm    = SQRT(r_sat**2 + earth_radius**2 -2*r_sat*earth_radius*COS(alpha_e))
-        sat_z(jc) = ASIN(SIN(alpha_e)*r_sat/r_atm) * rad2deg
-        sat_z(jc) = MIN(ABS(sat_z(jc)), zenmax10)
-
-        ! Calculate the satellite azimuth angle
-        sat_a(jc) = rad2deg * (1. + ATAN2(TAN(lon), SIN(p_gcp%center(jc,jb)%lat)))
-      ENDDO
-
-
-      IF (dbg_level > 2) THEN
-        WRITE (0,*) "PE ", get_my_mpi_all_id(), " :: CALL to rttov_direct_ifc: isens = ", isens, &
-          &         "; iprof = ", iprof(1:ncalc),                                                &
-          &         ", ichan=", ichan(1:ncalc), ", emiss=", emiss(1:numchans(isens), 1:n_profs), &
-          &         ", numchans=", numchans(isens)
-      END IF
-      CALL rtifc_direct(                                          &
-             rttov_indx(isens),                                   &
-             iprof(1:ncalc),                                      &
-             ichan(1:ncalc),                                      &
-             emiss(1:numchans(isens), 1:n_profs),                 &
-             T_b(1:numchans(isens), 1:n_profs),                   &
-             istatus,                                             &
-             sat_azi   = sat_a(is:ie),                            &
-             sat_zen   = sat_z(is:ie),                            &
-             T_b_clear = T_b_clear(1:numchans(isens), 1:n_profs), &
-             rad       = rad      (1:numchans(isens), 1:n_profs), &
-             radclear  = rad_clear(1:numchans(isens), 1:n_profs), &
-             pe        = p_pe)
-      IF (istatus /= NO_ERROR) THEN
-        WRITE(message_text,'(a)') TRIM(rtifc_errmsg(istatus))
-        CALL finish('RTTOV synsat calc ERROR' ,message_text)
-      ENDIF
-
-      IF (dbg_level > 2)  WRITE (0,*) "PE ", get_my_mpi_all_id(), " :: copy result into rg_synsat array"
-      IF (sat_compute(isens)%lcloud_tem) THEN
-        DO k = 1, numchans(isens)
-          isynsat = (chan_idx(k,isens)-1)*4+RTTOV_BT_CL
-          IF (lsynsat_product(isynsat)) THEN
-            IF (dbg_level > 2)  WRITE (0,*) "copy synsat product ", isynsat, " into place."
-            rg_synsat(is:ie, isynsat, jb) = T_b(k, 1:n_profs) 
-          ELSE
-            rg_synsat(is:ie, isynsat, jb) = 0._wp
-          END IF
-        ENDDO
-      ENDIF
-      IF (sat_compute(isens)%lclear_tem) THEN
-        DO k = 1, numchans(isens)
-          isynsat = (chan_idx(k,isens)-1)*4+RTTOV_BT_CS
-          IF (lsynsat_product(isynsat)) THEN
-            IF (dbg_level > 2)  WRITE (0,*) "copy synsat product ", isynsat, " into place."
-            rg_synsat(is:ie, isynsat, jb) = T_b_clear(k, 1:n_profs) 
-          ELSE
-            rg_synsat(is:ie, isynsat, jb) = 0._wp
-          END IF
-        ENDDO
-      ENDIF
-      IF (sat_compute(isens)%lcloud_rad) THEN
-        DO k = 1, numchans(isens)
-          isynsat = (chan_idx(k,isens)-1)*4+RTTOV_RAD_CL
-          IF (lsynsat_product(isynsat)) THEN
-            IF (dbg_level > 2)  WRITE (0,*) "copy synsat product ", isynsat, " into place."
-            rg_synsat(is:ie, isynsat, jb) = Rad(k, 1:n_profs) 
-          ELSE
-            rg_synsat(is:ie, isynsat, jb) = 0._wp
-          END IF
-        ENDDO
-      ENDIF
-      IF (sat_compute(isens)%lclear_rad) THEN
-        DO k = 1, numchans(isens)
-          isynsat = (chan_idx(k,isens)-1)*4+RTTOV_RAD_CS
-          IF (lsynsat_product(isynsat)) THEN
-            IF (dbg_level > 2)  WRITE (0,*) "copy synsat product ", isynsat, " into place."
-            rg_synsat(is:ie, isynsat, jb) = Rad_clear(k, 1:n_profs) 
-          ELSE
-            rg_synsat(is:ie, isynsat, jb) = 0._wp
-          END IF
-        ENDDO
-      ENDIF
-
-    END DO sensor_loop
-
-  ENDDO
-#endif
   !$ACC END DATA
 
   IF (dbg_level > 2) THEN
@@ -733,18 +493,11 @@ SUBROUTINE prepare_rttov_input(jg, jgp, nlev_rg, z_ifc, pres, dpres, temp, tot_c
         z_ifc(iidx(jc,jb,4),nlevp1,iblk(jc,jb,4))*p_fbkwgt(jc,jb,4)
     ENDDO
 
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-      DO jk = 1, nlev
-        jk1 = jk + nshift
-#else
     !$ACC LOOP SEQ
     DO jk = 1, nlev
       jk1 = jk + nshift
       !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(qv_aux, zrho, zdet_rate, zcon_upd)
       DO jc = i_startidx, i_endidx
-#endif
 
         rg_z_ifc(jc,jk1,jb) =                                       &
           z_ifc(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &

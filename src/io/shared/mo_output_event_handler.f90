@@ -107,9 +107,9 @@
 
 MODULE mo_output_event_handler
 
-#ifndef NOMPI
-  USE mpi
-#endif
+
+
+
 
   USE mo_kind,                   ONLY: i8, wp
   USE mo_impl_constants,         ONLY: SUCCESS, MAX_TIME_INTERVALS, &
@@ -170,9 +170,9 @@ MODULE mo_output_event_handler
   PUBLIC :: is_output_event_finished
   ! handshake routines (called after steps)
   PUBLIC :: pass_output_step
-#ifndef NOMPI
-  PUBLIC :: trigger_output_step_irecv
-#endif
+
+
+
   ! auxiliary functions
   PUBLIC :: print_output_event
   PUBLIC :: set_event_to_simstep
@@ -221,15 +221,6 @@ MODULE mo_output_event_handler
     MODULE PROCEDURE p_gatherv_event_data_1d1d
   END INTERFACE p_gatherv
 
-#ifndef NOMPI
-  INTERFACE p_send
-    MODULE PROCEDURE p_send_event_data_1d
-  END INTERFACE p_send
-
-  INTERFACE p_recv
-    MODULE PROCEDURE p_recv_event_data_1d
-  END INTERFACE p_recv
-#endif
 
   !---------------------------------------------------------------
   ! constants
@@ -257,9 +248,6 @@ MODULE mo_output_event_handler
   INTEGER, PARAMETER :: MAX_PRINTOUT          = 2000
 
 
-#ifndef NOMPI
-  INTEGER :: event_data_dt = mpi_datatype_null
-#endif
 CONTAINS
 
   !---------------------------------------------------------------
@@ -1140,9 +1128,6 @@ CONTAINS
     p_event%iroot         = 0
     p_event%irecv_nreq    = 0
     p_event%isend_req     = 0
-#ifndef NOMPI
-    p_event%isend_req     = MPI_REQUEST_NULL
-#endif
   END FUNCTION new_parallel_output_event
 
 
@@ -1219,23 +1204,6 @@ CONTAINS
         WRITE (0,*) "PE ",get_my_global_mpi_id(), ": local rank is ", &
              this_pe, "; icomm has size ", nranks
       END IF
-#ifndef NOMPI
-      IF (pio_type == pio_type_cdipio) THEN
-        IF (this_pe == root_outevent) THEN
-          CALL p_recv(num_all_events, 0, p_tag=156, comm=icomm)
-          ALLOCATE(evd_all(num_all_events), evd_rank(num_all_events), STAT=ierror)
-          IF (ierror /= 0) CALL finish (routine, 'ALLOCATE failed.')
-          CALL p_recv(evd_all, 0, p_tag=156, comm=icomm)
-          evd_rank = 0
-        ELSE IF (p_pe == p_work_pe0) THEN
-          CALL p_send(ievent_list_local, p_io_pe0, p_tag=156, comm=icomm)
-          CALL p_send(event_list_local, p_io_pe0, p_tag=156, comm=icomm)
-          num_all_events = 0
-        ELSE
-          num_all_events = 0
-        END IF
-      ELSE
-#endif
         CALL p_gatherv(event_list_local(1:ievent_list_local), evd_all, &
           &            root_outevent, counts=evd_counts, comm=icomm)
         IF (this_pe == root_outevent) THEN
@@ -1251,9 +1219,6 @@ CONTAINS
         ELSE
           num_all_events = 0
         END IF
-#ifndef NOMPI
-      END IF
-#endif
 
       IF (num_all_events > 0) THEN
         ! create the event steps from the received meta-data:
@@ -1553,24 +1518,7 @@ CONTAINS
     LOGICAL :: ret
     TYPE(t_par_output_event), INTENT(inout) :: event
     ! local variables
-#ifndef NOMPI
-    CHARACTER(LEN=*), PARAMETER :: routine = modname//"::is_output_step_complete"
-    INTEGER              :: ierrstat
-    ! INTEGER, ALLOCATABLE :: irecv_status(:,:)
-
     ret = .TRUE.
-    IF (event%irecv_nreq /= 0) THEN
-      ! ALLOCATE(irecv_status(MPI_STATUS_SIZE,event%irecv_nreq), STAT=ierrstat)
-      ! IF (ierrstat /= SUCCESS) CALL finish (routine, 'ALLOCATE failed.')
-      CALL MPI_TESTALL(event%irecv_nreq, event%irecv_req, ret, &
-        &              mpi_statuses_ignore, ierrstat)
-      IF (ierrstat /= mpi_success) CALL finish (routine, 'Error in MPI_TESTALL.')
-      ! DEALLOCATE(irecv_status, STAT=ierrstat)
-      ! IF (ierrstat /= SUCCESS) CALL finish (routine, 'DEALLOCATE failed.')
-    END IF
-#else
-    ret = .TRUE.
-#endif
   END FUNCTION is_output_step_complete
 
 
@@ -1767,32 +1715,13 @@ CONTAINS
     INTEGER, INTENT(IN),               OPTIONAL :: opt_icomm
     ! local variables
     CHARACTER(LEN=*), PARAMETER :: routine = modname//"::is_event_root_pe"
-#ifndef NOMPI
-    INTEGER :: this_pe, p_comm
-#endif
 
     ! at least one of the two arguments must be provided:
     IF (.NOT. PRESENT(opt_event) .AND. .NOT. PRESENT(opt_icomm)) THEN
       CALL finish(routine, "Internal error!")
     END IF
 
-#ifndef NOMPI
-    IF (PRESENT(opt_event)) THEN
-      p_comm = opt_event%icomm
-    ELSE
-      p_comm = opt_icomm
-    END IF
-    ! determine this PE's MPI rank wrt. the given MPI communicator and
-    ! return if this PE is not root PE for the given event:
-    this_pe = p_comm_rank(p_comm)
-    IF (PRESENT(opt_event)) THEN
-      is_event_root_pe = (this_pe == opt_event%iroot)
-    ELSE
-      is_event_root_pe = (this_pe == 0)
-    END IF
-#else
     is_event_root_pe = .TRUE.
-#endif
   END FUNCTION is_event_root_pe
 
 
@@ -1807,58 +1736,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
     INTEGER :: sum_counts
-#ifndef NOMPI
-    CHARACTER(len=*), PARAMETER :: &
-         routine = modname//"::p_gatherv_event_data_1d1d"
-    INTEGER, ALLOCATABLE :: displs(:)
-    INTEGER :: comm_rank, comm_size, p_comm, acc, i, ierror
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    comm_size = p_comm_size(p_comm)
-    comm_rank = p_comm_rank(p_comm)
-    IF (comm_rank == p_dest) THEN
-      IF (ALLOCATED(counts)) THEN
-        IF (SIZE(counts) /= comm_size) DEALLOCATE(counts)
-      END IF
-      IF (.NOT. ALLOCATED(counts)) THEN
-        ALLOCATE(counts(comm_size))
-        counts(1) = -1
-      END IF
-      ALLOCATE(displs(comm_size))
-    ELSE
-      IF (ALLOCATED(counts)) THEN
-        IF (SIZE(counts) < 1) DEALLOCATE(counts)
-      END IF
-      IF (.NOT. ALLOCATED(counts)) THEN
-        ALLOCATE(counts(1))
-        counts(1) = -1
-      END IF
-      ALLOCATE(displs(1))
-    END IF
-    IF (counts(1) < 0) CALL p_gather(SIZE(sbuf), counts, p_dest, p_comm)
-    IF (comm_rank == p_dest) THEN
-      acc = 0
-      DO i = 1, comm_size
-        displs(i) = acc
-        acc = acc + counts(i)
-      END DO
-      sum_counts = acc
-    ELSE
-      sum_counts = 1
-    END IF
-    IF (ALLOCATED(rbuf)) THEN
-      IF (SIZE(rbuf) < sum_counts) DEALLOCATE(rbuf)
-    END IF
-    IF (.NOT. ALLOCATED(rbuf)) ALLOCATE(rbuf(sum_counts))
-    IF (event_data_dt == mpi_datatype_null) CALL create_event_data_dt
-    CALL mpi_gatherv(sbuf, SIZE(sbuf), event_data_dt, &
-      &              rbuf, counts, displs, event_data_dt, &
-      &              p_dest, p_comm, ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_gatherv error')
-#else
     sum_counts = SIZE(sbuf)
     IF (ALLOCATED(counts)) THEN
       IF (SIZE(counts) /= 1) DEALLOCATE(counts)
@@ -1870,311 +1747,8 @@ CONTAINS
     END IF
     IF (.NOT. ALLOCATED(rbuf)) ALLOCATE(rbuf(sum_counts))
     rbuf(1:sum_counts) = sbuf
-#endif
   END SUBROUTINE p_gatherv_event_data_1d1d
 
-#ifndef NOMPI
-  SUBROUTINE p_send_event_data_1d(t_buffer, p_destination, p_tag, p_count, comm)
-    TYPE(t_event_data_local), INTENT(in) :: t_buffer(:)
-    INTEGER, INTENT(in) :: p_destination, p_tag
-    INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-    INTEGER :: p_comm, icount, ierror
-    CHARACTER(len=*), PARAMETER :: routine = modname//'::p_send_event_data_1d'
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-    IF (event_data_dt == mpi_datatype_null) CALL create_event_data_dt
-    CALL mpi_send(t_buffer, icount, event_data_dt, p_destination, p_tag, &
-            p_comm, ierror)
-    IF (ierror /= MPI_SUCCESS) THEN
-       WRITE (message_text,'(2(a,i4),a,i6,2a,i0)') 'mpi_send from ', p_pe, &
-         ' to ', p_destination, ' for tag ', p_tag, ' failed.', &
-         ' error code=', ierror
-       CALL finish(routine, message_text)
-    END IF
-  END SUBROUTINE p_send_event_data_1d
-
-  SUBROUTINE p_recv_event_data_1d(t_buffer, p_source, p_tag, p_count, comm)
-    TYPE(t_event_data_local), INTENT(out) :: t_buffer(:)
-    INTEGER, INTENT(in) :: p_source, p_tag
-    INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-    INTEGER :: p_comm, icount, ierror
-    CHARACTER(len=*), PARAMETER :: routine = modname//'::p_recv_event_data_1d'
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-    IF (event_data_dt == mpi_datatype_null) CALL create_event_data_dt
-    CALL mpi_recv(t_buffer, icount, event_data_dt, p_source, p_tag, &
-            p_comm, mpi_status_ignore, ierror)
-    IF (ierror /= MPI_SUCCESS) THEN
-       WRITE (message_text,'(2(a,i4),a,i6,2a,i0)') 'mpi_recv from ', p_source, &
-         ' to ', p_pe, ' for tag ', p_tag, ' failed.', &
-         ' error code=', ierror
-       CALL finish(routine, message_text)
-    END IF
-  END SUBROUTINE p_recv_event_data_1d
-
-
-  !> create mpi datatype for variables of type t_event_data_local
-  SUBROUTINE create_event_data_dt
-    INTEGER, PARAMETER :: num_dt_elem = 8
-    INTEGER(mpi_address_kind) :: base, displs(num_dt_elem), ext, stride
-    INTEGER :: elem_dt(num_dt_elem), i, ierror, resized_dt
-    CHARACTER(len=*), PARAMETER :: routine = modname//"::create_event_data_dt"
-    INTEGER, PARAMETER :: blocklens(num_dt_elem) &
-      = (/ 1, max_time_intervals, max_time_intervals, max_time_intervals, &
-      &    1, 1, 1, 1 /)
-    TYPE(t_event_data_local), TARGET :: dummy(2)
-    TYPE(datetime), POINTER :: temp_datetime
-    CALL mpi_type_contiguous(max_event_name_str_len, mpi_character, &
-      &                      elem_dt(1), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_type_contiguous error')
-    CALL mpi_type_contiguous(max_datetime_str_len, mpi_character, &
-      &                      elem_dt(2), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_type_contiguous error')
-    elem_dt(3) = elem_dt(2)
-    CALL mpi_type_contiguous(max_timedelta_str_len, mpi_character, &
-      &                      elem_dt(4), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_type_contiguous error')
-    elem_dt(5) = mpi_integer
-    elem_dt(6) = mpi_logical
-    CALL create_sim_step_info_dt(elem_dt(7))
-    CALL create_fname_metadata_dt(elem_dt(8))
-    CALL mpi_get_address(dummy(1), base, ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%name, displs(1), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%begin_str, displs(2), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%end_str, displs(3), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%intvl_str, displs(4), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%i_tag, displs(5), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%l_output_last, displs(6), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%sim_step_info, displs(7), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%fname_metadata, displs(8), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    displs = displs - base
-    CALL mpi_type_create_struct(num_dt_elem, blocklens, displs, elem_dt, &
-      &                         event_data_dt, ierror)
-    IF (ierror /= mpi_success) &
-         & CALL finish(routine, 'mpi_type_create_struct error')
-    CALL mpi_type_get_extent(event_data_dt, stride, ext, ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_type_get_extent error')
-    CALL mpi_get_address(dummy(2), stride, ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    stride = stride - base
-    IF (stride < ext) THEN
-      CALL finish(routine, 'fatal extent mismatch')
-    ELSE IF (stride > ext) THEN
-      CALL mpi_type_create_resized(event_data_dt, 0_mpi_address_kind, &
-        &                          stride, resized_dt, ierror)
-      IF (ierror /= mpi_success) &
-        CALL finish(routine, 'mpi_type_create_resized error')
-      CALL mpi_type_free(event_data_dt, ierror)
-      IF (ierror /= mpi_success) CALL finish(routine, 'mpi_type_free error')
-      event_data_dt = resized_dt
-    END IF
-    CALL mpi_type_commit(event_data_dt, ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_type_commit error')
-    DO i = 1, num_dt_elem
-      IF (i /= 3 .AND. i < 5 .OR. i > 6) THEN
-        CALL mpi_type_free(elem_dt(i), ierror)
-        IF (ierror /= mpi_success) CALL finish(routine, 'mpi_type_free error')
-      END IF
-    END DO
-    CALL memset_f(C_LOC(dummy(1)), 0, INT(2*stride, c_size_t))
-    dummy(1)%name = 'test_name'
-    dummy(1)%begin_str(1) = '1970-01-01'
-    dummy(1)%begin_str(2:) = ''
-    dummy(1)%end_str(1) = '1970-12-31'
-    dummy(1)%end_str(2:) = ''
-    dummy(1)%intvl_str(1) = '1month'
-    dummy(1)%intvl_str(2:) = ''
-    dummy(1)%i_tag = 700
-    dummy(1)%l_output_last = .TRUE.
-    temp_datetime => newDatetime('1969-01-01')
-    dummy(1)%sim_step_info%sim_start = temp_datetime
-    CALL deallocateDatetime(temp_datetime)
-    temp_datetime => newDatetime('1975-12-06')
-    dummy(1)%sim_step_info%sim_end = temp_datetime
-    CALL deallocateDatetime(temp_datetime)
-    temp_datetime => newDatetime('1970-01-01')
-    dummy(1)%sim_step_info%run_start = temp_datetime
-    CALL deallocateDatetime(temp_datetime)
-    dummy(1)%sim_step_info%restart_time = dummy(1)%sim_step_info%sim_end
-    dummy(1)%sim_step_info%dtime = 0.5_wp
-    temp_datetime => newDatetime('1970-01-02')
-    dummy(1)%sim_step_info%dom_start_time = temp_datetime
-    CALL deallocateDatetime(temp_datetime)
-    temp_datetime => newDatetime('1970-11-23')
-    dummy(1)%sim_step_info%dom_end_time = temp_datetime
-    CALL deallocateDatetime(temp_datetime)
-    dummy(1)%sim_step_info%jstep0 = 1
-    dummy(1)%fname_metadata%steps_per_file = 15
-    dummy(1)%fname_metadata%steps_per_file_inclfirst = .FALSE.
-    dummy(1)%fname_metadata%file_interval = '5days'
-    dummy(1)%fname_metadata%phys_patch_id = -25
-    dummy(1)%fname_metadata%ilev_type = 123456
-    dummy(1)%fname_metadata%filename_format = 'dummy.nc'
-    dummy(1)%fname_metadata%filename_pref = 'dummy-lalalal.nc'
-    dummy(1)%fname_metadata%extn = 'nc'
-    dummy(1)%fname_metadata%jfile_offset = 178
-    dummy(1)%fname_metadata%npartitions = 2
-    dummy(1)%fname_metadata%ifile_partition = 2
-    CALL mpi_sendrecv(dummy(1), 1, event_data_dt, 0, 178, &
-      &               dummy(2), 1, event_data_dt, 0, 178, &
-      &               mpi_comm_self, mpi_status_ignore, ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'transfer test error')
-    IF (memcmp_f(C_LOC(dummy(1)), C_LOC(dummy(2)), INT(stride, c_size_t))) &
-      CALL finish(routine, 'transfer test error')
-  END SUBROUTINE create_event_data_dt
-
-  SUBROUTINE create_sim_step_info_dt(dt)
-    INTEGER, INTENT(out) :: dt
-    INTEGER, PARAMETER :: num_dt_elem = 8
-    INTEGER(mpi_address_kind) :: base, displs(num_dt_elem)
-    INTEGER :: elem_dt(num_dt_elem), ierror
-    CHARACTER(len=*), PARAMETER :: routine &
-      = modname//"::create_sim_step_info_dt"
-    INTEGER, PARAMETER :: blocklens(num_dt_elem) = 1
-    TYPE(t_sim_step_info) :: dummy(1)
-    CALL create_datetime_dt(elem_dt(1))
-    elem_dt(2) = elem_dt(1)
-    elem_dt(3) = elem_dt(1)
-    elem_dt(4) = elem_dt(1)
-    elem_dt(5) = elem_dt(1)
-    elem_dt(6) = elem_dt(1)
-    elem_dt(7) = p_real
-    elem_dt(8) = mpi_integer
-    CALL mpi_get_address(dummy(1), base, ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%sim_start, displs(1), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%sim_end, displs(2), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%run_start, displs(3), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%restart_time, displs(4), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%dom_start_time, displs(5), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%dom_end_time, displs(6), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%dtime, displs(7), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%jstep0, displs(8), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    displs = displs - base
-    CALL mpi_type_create_struct(num_dt_elem, blocklens, displs, elem_dt, &
-      &                         dt, ierror)
-    IF (ierror /= mpi_success) &
-      & CALL finish(routine, 'mpi_type_create_struct error')
-    CALL mpi_type_free(elem_dt(1), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_type_free error')
-  END SUBROUTINE create_sim_step_info_dt
-
-  SUBROUTINE create_datetime_dt(dt)
-    INTEGER, INTENT(out) :: dt
-    TYPE(datetime) :: dummy(1)
-    INTEGER, PARAMETER :: num_dt_elem = 2
-    INTEGER(mpi_address_kind) :: base, displs(num_dt_elem)
-    INTEGER :: elem_dt(num_dt_elem), ierror
-    CHARACTER(len=*), PARAMETER :: routine &
-      = modname//"::create_datetime_dt"
-    INTEGER, PARAMETER :: blocklens(num_dt_elem) = (/ 1, 6 /)
-    elem_dt(1) = p_int_i8
-    elem_dt(2) = p_int_i4
-    CALL mpi_get_address(dummy(1), base, ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%date%year, displs(1), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%date%month, displs(2), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    displs = displs - base
-    CALL mpi_type_create_struct(num_dt_elem, blocklens, displs, elem_dt, &
-      &                         dt, ierror)
-    IF (ierror /= mpi_success) &
-      & CALL finish(routine, 'mpi_type_create_struct error')
-  END SUBROUTINE create_datetime_dt
-
-  SUBROUTINE create_fname_metadata_dt(dt)
-    INTEGER, INTENT(out) :: dt
-    INTEGER, PARAMETER :: num_dt_elem = 11
-    INTEGER(mpi_address_kind) :: base, displs(num_dt_elem)
-    INTEGER :: elem_dt(num_dt_elem), ierror
-    CHARACTER(len=*), PARAMETER :: routine &
-      = modname//"::create_fname_metadata_dt"
-    INTEGER, PARAMETER :: blocklens(num_dt_elem) &
-      = (/ 1, 1, MAX_TIMEDELTA_STR_LEN, 1, 1, FILENAME_MAX, FILENAME_MAX, 16, &
-      &    1, 1, 1 /)
-    TYPE(t_fname_metadata) :: dummy(2)
-    elem_dt(1) = mpi_integer
-    elem_dt(2) = mpi_logical
-    elem_dt(3) = mpi_character
-    elem_dt(4) = mpi_integer
-    elem_dt(5) = mpi_integer
-    elem_dt(6) = mpi_character
-    elem_dt(7) = mpi_character
-    elem_dt(8) = mpi_character
-    elem_dt(9) = mpi_integer
-    elem_dt(10) = mpi_integer
-    elem_dt(11) = mpi_integer
-    CALL mpi_get_address(dummy(1), base, ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%steps_per_file, displs(1), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%steps_per_file_inclfirst, displs(2), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%file_interval, displs(3), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%phys_patch_id, displs(4), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%ilev_type, displs(5), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%filename_format, displs(6), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%filename_pref, displs(7), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%extn, displs(8), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%jfile_offset, displs(9), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%npartitions, displs(10), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    CALL mpi_get_address(dummy(1)%ifile_partition, displs(11), ierror)
-    IF (ierror /= mpi_success) CALL finish(routine, 'mpi_get_address error')
-    displs = displs - base
-    CALL mpi_type_create_struct(num_dt_elem, blocklens, displs, elem_dt, &
-      &                         dt, ierror)
-    IF (ierror /= mpi_success) &
-      & CALL finish(routine, 'mpi_type_create_struct error')
-  END SUBROUTINE create_fname_metadata_dt
-#endif
 
 
 
@@ -2193,45 +1767,9 @@ CONTAINS
     ! local variables
     CHARACTER(LEN=*), PARAMETER :: routine = modname//"::pass_output_step"
     LOGICAL :: step_is_not_finished
-#ifndef NOMPI
-    INTEGER :: ierrstat, mstat(MPI_STATUS_SIZE), istep, i_tag
-#endif
 
     step_is_not_finished = .NOT. is_output_event_finished(event)
 
-#ifndef NOMPI
-    IF (use_async_name_list_io .AND. step_is_not_finished &
-         .AND. (event%icomm /= MPI_COMM_NULL)) THEN
-      ! wait for the last ISEND to be processed:
-      IF (ldebug) WRITE (0,'(i0,a)') p_pe, ": waiting for request handle."
-      CALL MPI_WAIT(event%isend_req, mstat, ierrstat)
-      IF (ierrstat /= mpi_success) CALL finish (routine, 'Error in MPI_WAIT.')
-      istep = event%output_event%i_event_step
-      IF (ldebug .AND. istep > 1) THEN
-        WRITE (0,'(i0,2(a,i0))') p_pe, ": completed request for rank ", &
-             event%iroot, ', tag ', &
-             event%output_event%event_step(istep-1)%event_step_data(1)%i_tag
-      END IF
-      ! launch a new non-blocking send:
-      i_tag = event%output_event%event_step(istep)%event_step_data(1)%i_tag
-      event%isend_buf = istep
-      event%isend_buf = event%output_event%event_step(istep)%i_sim_step
-      IF (ldebug) THEN
-        WRITE (0,'(a,4(a,i0))') routine, ": ", p_pe, &
-          &   ": sending message ", i_tag, " from ", get_my_global_mpi_id(), &
-          &   " to ", event%iroot
-      END IF
-      CALL MPI_IBSEND(event%isend_buf, 1, p_int, event%iroot, i_tag, &
-        &            event%icomm, event%isend_req, ierrstat)
-      IF (ierrstat /= mpi_success) CALL finish (routine, 'Error in MPI_ISEND.')
-      IF (ldebug) THEN
-        WRITE (0,'(4(i0,a))') p_pe, ": pass ", event%output_event%i_event_step,&
-          &         " (",  event%output_event%event_step(istep)%event_step_data(1)%jfile, &
-          &         " / ", event%output_event%event_step(istep)%event_step_data(1)%jpart, &
-          &         " )"
-      END IF
-    END IF
-#endif
 
     IF (step_is_not_finished) THEN
       ! increment step counter
@@ -2240,95 +1778,7 @@ CONTAINS
   END SUBROUTINE pass_output_step
 
 
-#ifndef NOMPI
-  !> Place MPI_IRECV calls, thereby asking all participating PEs for
-  !> acknowledging the completion of the output step.
-  !
-  !  @note We do not use the wrapper routines from "mo_mpi" here,
-  !        since we need direct control over the non-blocking P2P
-  !        requests.
-  !
-  SUBROUTINE trigger_output_step_irecv(event)
-    TYPE(t_par_output_event), INTENT(inout) :: event
-    ! local variables
-    CHARACTER(LEN=*), PARAMETER :: routine = modname//"::trigger_output_step_irecv"
-    INTEGER                     :: ierrstat
 
-    ! determine this PE's MPI rank wrt. the given MPI communicator and
-    ! return if this PE is not root PE for the given event:
-    IF (.NOT. is_event_root_pe(event))  RETURN
-
-    ! wait for the last IRECVs to be processed:
-    CALL wait_for_pending_irecvs(event)
-
-    IF (ALLOCATED(event%irecv_req)) THEN
-      DEALLOCATE(event%irecv_req, event%irecv_buf, STAT=ierrstat)
-      IF (ierrstat /= SUCCESS) CALL finish (routine, 'DEALLOCATE failed.')
-      event%irecv_nreq = 0
-    END IF
-    IF (.NOT. is_output_event_finished(event)) THEN
-      CALL start_event_step_irecvs(event%icomm, &
-           event%output_event%event_step(event%output_event%i_event_step), &
-           event%irecv_req, event%irecv_buf, event%irecv_nreq)
-    END IF
-  END SUBROUTINE trigger_output_step_irecv
-#endif
-
-#ifndef NOMPI
-  SUBROUTINE start_event_step_irecvs(icomm, event_step, &
-       irecv_req, irecv_buf, irecv_nreq)
-    INTEGER, INTENT(in) :: icomm
-    TYPE(t_event_step),    INTENT(in) :: event_step
-    INTEGER, ALLOCATABLE, INTENT(out) :: irecv_req(:), irecv_buf(:)
-    INTEGER, INTENT(out)              :: irecv_nreq
-
-    CHARACTER(LEN=*), PARAMETER :: routine = &
-         modname//"::start_event_step_irecvs"
-    INTEGER :: i, ierror, nreq, i_pe, i_tag
-    ! launch a couple of new non-blocking receives:
-    nreq = event_step%n_pes
-    irecv_nreq = nreq
-
-    ALLOCATE(irecv_req(nreq), irecv_buf(nreq), STAT=ierror)
-    IF (ierror /= SUCCESS) CALL finish (routine, 'ALLOCATE failed.')
-    irecv_req = MPI_REQUEST_NULL
-    DO i=1, nreq
-      i_pe  = event_step%event_step_data(i)%i_pe
-      i_tag = event_step%event_step_data(i)%i_tag
-      IF (ldebug) THEN
-        WRITE (0,'(a,3(a,i0))') routine, ": launching IRECV ", i_tag, " on ", get_my_global_mpi_id(), &
-          &         " from ", i_pe
-      END IF
-      CALL mpi_irecv(irecv_buf(i), 1, p_int, i_pe, &
-        &            i_tag, icomm, irecv_req(i), ierror)
-      IF (ierror /= mpi_success) CALL finish (routine, 'Error in MPI_IRECV.')
-    END DO
-  END SUBROUTINE start_event_step_irecvs
-
-
-  !> Utility routine: blocking wait for pending "output completed"
-  !> messages.
-  !
-  SUBROUTINE wait_for_pending_irecvs(event)
-    TYPE(t_par_output_event), INTENT(inout) :: event
-    ! local variables
-    CHARACTER(LEN=*), PARAMETER :: routine = modname//"::wait_for_pending_irecs"
-    INTEGER                     :: ierrstat
-    ! INTEGER, ALLOCATABLE        :: irecv_status(:,:)
-
-    ! wait for the last IRECVs to be processed:
-    IF (ALLOCATED(event%irecv_req)) THEN
-      ! ALLOCATE(irecv_status(MPI_STATUS_SIZE,event%irecv_nreq), STAT=ierrstat)
-      ! IF (ierrstat /= SUCCESS) CALL finish (routine, 'ALLOCATE failed.')
-      CALL MPI_WAITALL(event%irecv_nreq, event%irecv_req, mpi_statuses_ignore, ierrstat)
-      IF (ierrstat /= mpi_success) CALL finish(routine, 'Error in MPI_WAITALL.')
-      ! DEALLOCATE(irecv_status, STAT=ierrstat)
-      ! IF (ierrstat /= SUCCESS) CALL finish (routine, 'DEALLOCATE failed.')
-      ! increment event step counter:
-      event%output_event%i_event_step = event%output_event%i_event_step + 1
-    END IF
-  END SUBROUTINE wait_for_pending_irecvs
-#endif
 
 
   !> Utility routine: blocking wait for pending "output completed"
@@ -2337,48 +1787,6 @@ CONTAINS
   SUBROUTINE blocking_wait_for_irecvs(event)
     TYPE(t_par_output_event), POINTER :: event
     ! local variables
-#ifndef NOMPI
-    CHARACTER(LEN=*), PARAMETER :: routine = modname//"::blocking_wait_for_irecvs"
-    INTEGER                           :: ierrstat, nreq, ireq
-    INTEGER, ALLOCATABLE              :: irecv_req(:)
-    TYPE(t_par_output_event), POINTER :: ev
-
-    ! count the number of request handles
-    ev   =>  event
-    nreq = 0
-    DO WHILE (ASSOCIATED(ev))
-      IF (ALLOCATED(ev%irecv_req)) nreq = nreq + ev%irecv_nreq
-      ev => ev%next
-    END DO
-    IF (ldebug) WRITE (0,*) "Total ", nreq, " IRECV request handles."
-    IF (nreq > 0) THEN
-      ! collect the request handles
-      ALLOCATE(irecv_req(nreq), STAT=ierrstat)
-      IF (ierrstat /= SUCCESS) CALL finish (routine, 'ALLOCATE failed.')
-      ev   =>  event
-      ireq = 1
-      DO WHILE (ASSOCIATED(ev))
-        IF (ALLOCATED(ev%irecv_req)) &
-          irecv_req(ireq:(ireq+ev%irecv_nreq-1)) = ev%irecv_req(1:ev%irecv_nreq)
-        ireq = ireq + ev%irecv_nreq
-        ev => ev%next
-      END DO
-
-      ! wait for the last IRECVs to be processed:
-      CALL MPI_WAITALL(nreq, irecv_req, mpi_statuses_ignore, ierrstat)
-      IF (ierrstat /= mpi_success) CALL finish (routine, 'Error in MPI_WAITALL.')
-      DEALLOCATE(irecv_req, STAT=ierrstat)
-      IF (ierrstat /= SUCCESS) CALL finish (routine, 'DEALLOCATE failed.')
-
-      ! clear the request handles
-      ev => event
-      DO WHILE (ASSOCIATED(ev))
-        IF (ALLOCATED(ev%irecv_req)) &
-          ev%irecv_req(:) = MPI_REQUEST_NULL
-        ev => ev%next
-      END DO
-    END IF
-#endif
   END SUBROUTINE blocking_wait_for_irecvs
 
 

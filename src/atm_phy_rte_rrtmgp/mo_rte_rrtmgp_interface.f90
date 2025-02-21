@@ -44,9 +44,9 @@ MODULE mo_rte_rrtmgp_interface
   USE mtime,                         ONLY: datetime
 
 
-#ifdef RRTMGP_MERGE_DEBUG
-  USE mo_rte_rrtmgp_merge_debug, ONLY: write_record_interface_aes
-#endif
+
+
+
 
 ! These need to be sent once in the init phae from the atmo to the ps_rad
 !          zf(kbdim,klev),               & !< geometric height at full level in m
@@ -56,11 +56,11 @@ MODULE mo_rte_rrtmgp_interface
   IMPLICIT NONE
 
   PRIVATE
-#ifdef _OPENACC
-  LOGICAL, PARAMETER :: use_acc  = .TRUE.
-#else
+
+
+
   LOGICAL, PARAMETER :: use_acc  = .FALSE.
-#endif
+
 
   LOGICAL, PARAMETER :: top_at_1 = .true.
   LOGICAL            :: lneed_aerosols
@@ -113,9 +113,9 @@ CONTAINS
       & aer_aod_533     ,aer_ssa_533     ,aer_asy_533                      ,&
       & aer_aod_2325    ,aer_ssa_2325    ,aer_asy_2325                     ,&
       & aer_aod_9731                                                       )
-#ifdef __INTEL_COMPILER
-!DIR$ OPTIMIZE:1
-#endif
+
+
+
      !-------------------------------------------------------------------
 
     INTEGER,INTENT(IN) :: &
@@ -262,9 +262,9 @@ CONTAINS
       ! iaero=15: Stenchikov's volcanic aerosols are added to Kinne aerosols
       ! iaero=18: Stenchikov's volcanic aerosols are added to Kinne background
       !           aerosols (of natural origin, 1850)
-#ifdef _OPENACC
-        CALL warning('mo_rte_rrtmgp_interface/rte_rrtmgp_interface','Stenchikov aerosols ACC not implemented')
-#endif
+
+
+
         !$ACC UPDATE HOST(aer_tau_lw, aer_tau_sw, aer_ssa_sw, aer_asy_sw, dz, pp_fl) ASYNC(1)
         !$ACC WAIT(1)
         CALL add_bc_aeropt_stenchikov(this_datetime,    jg,               &
@@ -294,9 +294,9 @@ CONTAINS
       ! iaero=18: ... Stennchikov's volcanic aerosols and
       !               Kinne background aerosols (of natural origin, 1850)
       ! iaero=19: ... Kinne background aerosols (of natural origin, 1850)
-#ifdef _OPENACC
-        CALL warning('mo_rte_rrtmgp_interface/rte_rrtmgp_interface','Plumes ACC not implemented')
-#endif
+
+
+
         !$ACC UPDATE HOST(aer_tau_lw, aer_tau_sw, aer_ssa_sw, aer_asy_sw, zf, dz, zh(:,klev+1)) ASYNC(1)
         !$ACC WAIT(1)
         CALL add_bc_aeropt_splumes(                                      &
@@ -518,9 +518,9 @@ CONTAINS
        & vis_dn_dff_sfc, par_dn_dff_sfc, nir_dn_dff_sfc,     &
        & vis_up_sfc,     par_up_sfc,     nir_up_sfc          )
 
-#ifdef __INTEL_COMPILER
-!DIR$ OPTIMIZE:1
-#endif
+
+
+
 
     LOGICAL,INTENT(IN)  :: lclearsky                     !< flag for clear-sky computations
 
@@ -694,9 +694,9 @@ CONTAINS
       DO jl = 1, ncol
          IF (min(abs(cld_frc(jl,jk) - 1._wp), abs(cld_frc(jl,jk))) > cld_frc_thresh) THEN
             do_frac_cloudiness = .true.
-#ifndef _OPENACC
+
             EXIT
-#endif
+
          END IF
       END DO
     END DO
@@ -1416,21 +1416,6 @@ CONTAINS
         
     IF (ltimer) CALL timer_stop(timer_srtm)
 
-#ifdef RRTMGP_MERGE_DEBUG
-!$OMP CRITICAL (write_record)
-    CALL write_record_interface_aes(nproma, pcos_mu0, daylght_frc, &
-      rnseeds1, rnseeds2, alb_vis_dir, alb_nir_dir, alb_vis_dif, alb_nir_dif, &
-      tk_sfc, zf, zh, dz, pp_fl, pp_hl, tk_fl, tk_hl, &
-      play, plev, tlay, tlev, &
-      xvmr_vap, xvmr_co2, xvmr_ch4, xvmr_o2, xvmr_o3, xvmr_n2o, cdnc, &
-      cld_frc, &
-      flx_dnlw_clr, flx_uplw_clr, flx_dnsw_clr, flx_upsw_clr, &
-      flx_dnlw, flx_uplw, flx_dnsw, flx_upsw, &
-      vis_dn_dir_sfc, par_dn_dir_sfc, nir_dn_dir_sfc, &
-      vis_dn_dff_sfc, par_dn_dff_sfc, nir_dn_dff_sfc, &
-      vis_up_sfc,     par_up_sfc,     nir_up_sfc      )
-!$OMP END CRITICAL (write_record)
-#endif
 
   !$ACC END DATA
   END SUBROUTINE rte_rrtmgp_interface_onBlock
@@ -1751,25 +1736,7 @@ SUBROUTINE rearrange_bands2rrtmgp(nproma, klev, nbnd, field)
   REAL(wp) :: last
   INTEGER  :: jk, jl, jband, i
 
-#ifndef _OPENACC
   field(:,:,:) = field(:,:,[nbnd, (i, i = 1, nbnd-1)])
-#else
-  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-  !$ACC LOOP GANG VECTOR COLLAPSE(2)
-  DO jk=1,klev
-    DO jl=1,nproma
-      last = field(jl,jk,nbnd)
-
-      !$ACC LOOP SEQ
-      DO jband=nbnd, 2, -1
-        field(jl,jk,jband) = field(jl,jk,jband-1)
-      END DO
-
-      field(jl,jk,1) = last
-    END DO
-  END DO
-  !$ACC END PARALLEL
-#endif
 END SUBROUTINE rearrange_bands2rrtmgp
 
 END MODULE mo_rte_rrtmgp_interface

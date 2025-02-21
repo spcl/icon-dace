@@ -13,7 +13,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_atmo_coupling_frame
@@ -21,9 +31,7 @@ MODULE mo_atmo_coupling_frame
   USE mo_kind                ,ONLY: wp
   USE mo_model_domain        ,ONLY: t_patch
   USE mo_ext_data_state      ,ONLY: ext_data
-#ifndef __NO_AES__
   USE mo_aes_phy_memory      ,ONLY: prm_field
-#endif
   USE mo_atm_phy_nwp_config,  ONLY: atm_phy_nwp_config
 
   USE mo_parallel_config     ,ONLY: nproma
@@ -32,9 +40,7 @@ MODULE mo_atmo_coupling_frame
   USE mo_timer,               ONLY: timer_start, timer_stop, timer_coupling_init
   USE mo_impl_constants      ,ONLY: MAX_CHAR_LENGTH, inwp, iaes, LSS_JSBACH, SUCCESS
 
-#if !defined(__NO_JSBACH__) && !defined(__NO_JSBACH_HD__)
   USE mo_interface_hd_ocean  ,ONLY: jsb_fdef_hd_fields
-#endif
 
   USE mo_master_control      ,ONLY: get_my_process_name
 
@@ -65,16 +71,10 @@ MODULE mo_atmo_coupling_frame
   USE mtime                  ,ONLY: datetimeToString, MAX_DATETIME_STR_LEN, &
     &                               timedeltaToString, MAX_TIMEDELTA_STR_LEN
 
-#ifndef __NO_ICON_COMIN__
-  USE comin_host_interface, ONLY: comin_callback_context_call,     &
-       &                          EP_ATM_YAC_DEFCOMP_BEFORE,       &
-       &                          EP_ATM_YAC_DEFCOMP_AFTER,        &
-       &                          EP_ATM_YAC_SYNCDEF_BEFORE,       &
-       &                          EP_ATM_YAC_SYNCDEF_AFTER,        &
-       &                          EP_ATM_YAC_ENDDEF_BEFORE,        &
-       &                          EP_ATM_YAC_ENDDEF_AFTER,         &
-       &                          COMIN_DOMAIN_OUTSIDE_LOOP
-#endif
+
+
+
+
 
   USE mo_output_coupling     ,ONLY: construct_output_coupling, winnow_field_list
 
@@ -196,9 +196,9 @@ CONTAINS
     CALL yac_fdef_datetime ( start_datetime = TRIM(startdatestring), &
          &                   end_datetime   = TRIM(stopdatestring)   )
 
-#ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_YAC_DEFCOMP_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
-#endif
+
+
+
 
     ! Inform the coupler about what we are
     comp_name = TRIM(get_my_process_name())
@@ -208,9 +208,9 @@ CONTAINS
        CALL yac_fdef_comp ( TRIM(comp_name), comp_ids(1) )
     ENDIF
 
-#ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_YAC_DEFCOMP_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
-#endif
+
+
+
 
     ! Announce one grid (patch) to the coupler
     grid_name = "icon_atmos_grid"
@@ -429,10 +429,10 @@ CONTAINS
           CALL dbg_print('AtmFrame: fr_lake',ext_data(jg)%atm%fr_lake,str_module,3,in_subset=patch_horz%cells%owned)
 
         CASE ( iaes )
-#ifdef __NO_AES__
-          CALL finish ('mo_atmo_coupling_frame:construct_atmo_coupling', &
-              & 'coupled model needs aes; remove --disable-aes and reconfigure')
-#else
+
+
+
+
           !ICON_OMP_PARALLEL_DO PRIVATE(jb,jc) ICON_OMP_RUNTIME_SCHEDULE
           DO jb = 1, patch_horz%nblks_c
             DO jc = 1, nproma
@@ -480,7 +480,7 @@ CONTAINS
             ENDDO
             !ICON_OMP_END_PARALLEL_DO
           ENDIF
-#endif
+
          CASE DEFAULT
 
             CALL finish ('Please mask handling for new forcing in ' &
@@ -495,15 +495,15 @@ CONTAINS
         & is_valid,                 &
         & cell_mask_ids(1) )
 
-#ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_YAC_SYNCDEF_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
-#endif
+
+
+
 
     CALL yac_fsync_def ( )
 
-#ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_YAC_SYNCDEF_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
-#endif
+
+
+
 
       DO jc = 1, min_no_of_fields
         CALL yac_fdef_field_mask (       &
@@ -592,7 +592,7 @@ CONTAINS
         intermediate_no_of_fields = intermediate_no_of_fields + 10
       END IF
 
-#if !defined(__NO_JSBACH__) && !defined(__NO_JSBACH_HD__)
+
 
       ! Define coupling of runoff if HD model is present and interface is coded
       !  - discrimination between Proto2 (no HD) and Proto3 (with HD) is needed
@@ -654,7 +654,7 @@ CONTAINS
 
       ENDIF
 
-#endif
+
     ENDIF   ! Construct coupling frame for atmosphere-ocean
 
     IF ( is_coupled_to_hydrodisc() ) THEN
@@ -735,15 +735,15 @@ CONTAINS
 
     ! End definition of coupling fields and search
 
-#ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_YAC_ENDDEF_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
-#endif
+
+
+
 
     CALL yac_fenddef ( )
 
-#ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_YAC_ENDDEF_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
-#endif
+
+
+
 
     IF( is_coupled_to_output() ) &
          CALL winnow_field_list()

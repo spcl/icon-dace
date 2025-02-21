@@ -12,8 +12,132 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !=============================================================================================
 MODULE mo_ocean_GM_Redi
   !-------------------------------------------------------------------------
@@ -2610,8 +2734,8 @@ END SUBROUTINE vertical_GM
     TYPE(t_subset_range), POINTER :: cells_in_domain
     TYPE(t_patch), POINTER :: patch_2D
     
-!    onEdges                :: GMredi_flux_horz
-!    onCells_HalfLevels     :: GMredi_flux_vert
+!    REAL(wp), POINTER, DIMENSION(:,:,:)                :: GMredi_flux_horz
+!    REAL(wp), POINTER, DIMENSION(:,:,:)     :: GMredi_flux_vert
     !-------------------------------------------------------------------------------
     patch_2D         => patch_3d%p_patch_2d(1)
     cells_in_domain  => patch_2D%cells%in_domain   
@@ -2717,16 +2841,9 @@ END SUBROUTINE vertical_GM
 !ICON_OMP_PARALLEL_DO PRIVATE(start_cell_index, end_cell_index, cell_index, level, end_level, max_level) ICON_OMP_DEFAULT_SCHEDULE
     DO blockNo = cells_in_domain%start_block, cells_in_domain%end_block
       CALL get_index_range(cells_in_domain, blockNo, start_cell_index, end_cell_index)
-#ifdef __LVECTOR__
-      max_level = MAXVAL(patch_3D%p_patch_1D(1)%dolic_c(start_cell_index:end_cell_index,blockNo))
-      DO level = start_level, max_level
-        DO cell_index = start_cell_index, end_cell_index
-          IF (level > patch_3D%p_patch_1D(1)%dolic_c(cell_index,blockNo)) CYCLE
-#else
       DO cell_index = start_cell_index, end_cell_index
         end_level = patch_3d%p_patch_1d(1)%dolic_c(cell_index, blockNo)
         DO level = start_level, end_level
-#endif
           tracer_gradient_vert_center(cell_index, level, blockNo) &
             & = (1.0_wp/stretch_c(cell_index, blockNo)) * tracer_gradient_vert_center(cell_index, level, blockNo)
          END DO
@@ -2738,13 +2855,8 @@ END SUBROUTINE vertical_GM
 
     DO blockNo = all_cells%start_block, all_cells%end_block
       CALL get_index_range(all_cells, blockNo, start_cell_index, end_cell_index)
-#ifdef __LVECTOR__
-      DO level = 1, n_zlev
-        DO cell_index = start_cell_index, end_cell_index
-#else
       DO cell_index = start_cell_index, end_cell_index
         DO level = 1, n_zlev
-#endif
           flux_vec_horz_center(cell_index,level,blockNo)%x = 0.0_wp
         ENDDO
       ENDDO
@@ -2766,16 +2878,7 @@ END SUBROUTINE vertical_GM
           ! the top level flux_vert_center will be filled from the second level, if it exists
           flux_vert_center(cell_index,start_level,blockNo) = 0.0_wp
         ENDIF
-#ifdef __LVECTOR__
-     ENDDO
-
-     max_level = MAXVAL(patch_3D%p_patch_1D(1)%dolic_c(start_cell_index:end_cell_index,blockNo))
-     DO level = start_level+1, max_level
-       DO cell_index = start_cell_index, end_cell_index
-         IF (level > patch_3D%p_patch_1D(1)%dolic_c(cell_index,blockNo)) CYCLE
-#else
        DO level = start_level+1, patch_3D%p_patch_1D(1)%dolic_c(cell_index,blockNo)
-#endif
 
           !horizontal GM-Redi Flux
           IF(ocean_state%p_aux%slopes_squared(cell_index,level,blockNo)==0.0_wp)THEN
@@ -2817,15 +2920,8 @@ END SUBROUTINE vertical_GM
 !ICON_OMP_DO_PARALLEL PRIVATE(start_edge_index,end_edge_index, edge_index, level, max_level) ICON_OMP_DEFAULT_SCHEDULE
         DO blockNo = edges_in_domain%start_block, edges_in_domain%end_block
           CALL get_index_range(edges_in_domain, blockNo, start_edge_index, end_edge_index)
-#ifdef __LVECTOR__
-          max_level = MAXVAL(patch_3D%p_patch_1D(1)%dolic_e(start_edge_index:end_edge_index,blockNo))
-          DO level = start_level, max_level
-            DO edge_index = start_edge_index, end_edge_index
-              IF ( level > patch_3D%p_patch_1D(1)%dolic_e(edge_index,blockNo) ) CYCLE
-#else
           DO edge_index = start_edge_index, end_edge_index
             DO level = start_level, patch_3D%p_patch_1D(1)%dolic_e(edge_index,blockNo)
-#endif
               GMredi_flux_horz(edge_index,level,blockNo)   &
               & = GMredi_flux_horz(edge_index,level,blockNo)  &
               & * patch_3D%p_patch_1d(1)%prism_thick_e(edge_index,level,blockNo)  &
@@ -2865,15 +2961,8 @@ END SUBROUTINE vertical_GM
 !ICON_OMP_DO_PARALLEL PRIVATE(start_cell_index,end_cell_index, cell_index, level, max_level) ICON_OMP_DEFAULT_SCHEDULE
         DO blockNo = cells_in_domain%start_block, cells_in_domain%end_block
           CALL get_index_range(cells_in_domain, blockNo, start_cell_index, end_cell_index)
-#ifdef __LVECTOR__
-          max_level = MAXVAL(patch_3D%p_patch_1D(1)%dolic_c(start_cell_index:end_cell_index,blockNo))
-          DO level = start_level, max_level
-            DO cell_index = start_cell_index, end_cell_index
-              IF ( level > patch_3D%p_patch_1D(1)%dolic_c(cell_index,blockNo) ) CYCLE
-#else
           DO cell_index = start_cell_index, end_cell_index
             DO level = start_level, patch_3D%p_patch_1D(1)%dolic_c(cell_index,blockNo)
-#endif
               param%a_tracer_v(cell_index,level,blockNo, tracer_index) =  &
               & param%a_tracer_v(cell_index,level,blockNo, tracer_index) + &
               & ocean_state%p_diag%vertical_mixing_coeff_GMRedi_implicit(cell_index,level,blockNo)
@@ -2897,15 +2986,8 @@ END SUBROUTINE vertical_GM
         DO blockNo = cells_in_domain%start_block, cells_in_domain%end_block
 
           CALL get_index_range(cells_in_domain, blockNo, start_cell_index, end_cell_index)
-#ifdef __LVECTOR__
-          max_level = MAXVAL(patch_3D%p_patch_1D(1)%dolic_c(start_cell_index:end_cell_index,blockNo))
-          DO level = start_level+1, max_level
-            DO cell_index = start_cell_index, end_cell_index
-              IF ( level > patch_3D%p_patch_1D(1)%dolic_c(cell_index,blockNo) ) CYCLE
-#else
           DO cell_index = start_cell_index, end_cell_index
             DO level = start_level+1, patch_3D%p_patch_1D(1)%dolic_c(cell_index,blockNo)
-#endif
               !vertical GM-Redi Flux
                GMredi_flux_vert(cell_index,level,blockNo)   &
                 &=flux_vert_center(cell_index,level,blockNo) &

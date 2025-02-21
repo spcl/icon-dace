@@ -18,7 +18,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nwp_gw_interface
@@ -218,9 +228,6 @@ CONTAINS
 
       ELSE IF (lcall_sso_jg .AND. atm_phy_nwp_config(jg)%inwp_sso == 2) THEN
         ! SSO from IFS code 41r2
-#ifdef _OPENACC
-        CALL finish('nwp_gwdrag', 'inwp_sso=2 is not supported with ACC')
-#endif
         CALL gwdrag(                                       &
           & klon      =nproma                           ,  & !> in:  actual array size
           & klev      =nlev                             ,  & !< in:  actual array size

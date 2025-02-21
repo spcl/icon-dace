@@ -13,7 +13,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_vdf_diag_smag
@@ -479,9 +489,7 @@ CONTAINS
   !! stability_function_mom
   !! Taken from COSMO docs and Holstag & Boville 1992
   !!------------------------------------------------------------------------
-#ifndef _OPENACC
   ELEMENTAL &
-#endif
   PURE FUNCTION stability_function_mom(RIB, hz0, tc) RESULT(stab_fun)
      REAL(wp), INTENT(IN) :: RIB, hz0, tc
 
@@ -507,9 +515,7 @@ CONTAINS
   !
   ! stability_function_heat
   !------------------------------------------------------------------------
-#ifndef _OPENACC
   ELEMENTAL &
-#endif
   PURE FUNCTION stability_function_heat(RIB, hzh, tc) RESULT(stab_fun)
      REAL(wp), INTENT(IN) :: RIB, hzh, tc
 
@@ -539,9 +545,7 @@ CONTAINS
   ! Louis (1979) A Parametirc model of vertical eddy fluxes in the atmosphere
   ! and R. B. Stull's book
   !------------------------------------------------------------------------
-#ifndef _OPENACC
   ELEMENTAL &
-#endif
   PURE FUNCTION businger_mom(z0, z1, L) RESULT(factor)
     ! Use VALUE attribute in order to prevent 'Reference argument passing prevents parallelization' message by nvhpc
     REAL(wp), VALUE, INTENT(IN) :: z0, z1, L
@@ -587,9 +591,7 @@ CONTAINS
   ! Louis (1979) A Parametirc model of vertical eddy fluxes in the atmosphere
   ! and R. B. Stull's book
   !------------------------------------------------------------------------
-#ifndef _OPENACC
   ELEMENTAL &
-#endif
   PURE FUNCTION businger_heat(z0, z1, L) RESULT(factor)
     ! Use VALUE attribute in order to prevent 'Reference argument passing prevents parallelization' message by nvhpc
     REAL(wp), VALUE, INTENT(IN) :: z0, z1, L

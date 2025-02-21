@@ -27,10 +27,10 @@ MODULE mo_restart_util
   USE mo_netcdf_errhandler,  ONLY: nf
   USE mo_netcdf
   USE mo_mpi,                ONLY: my_process_is_stdio, p_io, p_comm_work, p_bcast
-#ifndef NOMPI
-  USE mo_mpi, ONLY: p_pe_work, my_process_is_restart
-  USE mpi, ONLY: MPI_PROC_NULL, MPI_ROOT
-#endif
+
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -67,12 +67,12 @@ CONTAINS
   ! PEs using p_comm_work_2_restart.
   INTEGER FUNCTION restartBcastRoot() RESULT(resultVar)
     resultVar = 0
-#ifndef NOMPI
-    ! Special root setting for intercommunicators:
-    ! The PE really sending must use MPI_ROOT, the others MPI_PROC_NULL.
-    IF (.NOT.my_process_is_restart()) &
-      & resultVar = MERGE(MPI_ROOT, MPI_PROC_NULL, p_pe_work == 0)
-#endif
+
+
+
+
+
+
   END FUNCTION restartBcastRoot
 
   SUBROUTINE getRestartFilename(baseName, jg, restartArgs, resultVar, date_dayas)

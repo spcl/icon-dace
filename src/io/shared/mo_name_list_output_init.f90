@@ -74,14 +74,14 @@ MODULE mo_name_list_output_init
   USE mo_time_config,                       ONLY: time_config
   USE mo_gribout_config,                    ONLY: gribout_config
 
-#ifndef __NO_ICON_ATMO__
+
   USE mo_nh_pzlev_config,                   ONLY: nh_pzlev_config
   USE mo_extpar_config,                     ONLY: i_lctype
   USE mo_lnd_nwp_config,                    ONLY: ntiles_lnd, ntiles_water, ntiles_total, tile_list, &
     &                                             isub_water, isub_lake, isub_seaice, lsnowtile
   USE mo_nwp_sfc_tiles,                     ONLY: setup_tile_list
   USE mo_meteogram_config,                  ONLY: meteogram_output_config
-#endif
+
   ! MPI Communication routines
   USE mo_mpi,                               ONLY: p_bcast, p_comm_work, p_comm_work_2_io,         &
     &                                             p_comm_io, p_comm_work_io,                      &
@@ -95,9 +95,9 @@ MODULE mo_name_list_output_init
     &                                             process_work_io0, p_allgather,        &
     &                                             process_mpi_io_size, p_n_work,  &
     &                                             p_pe_work, p_io_pe0, p_work_pe0, p_pe
-#ifdef NO_ASYNC_IO_RMA
-  USE mo_mpi,                               ONLY: p_int, num_work_procs
-#endif
+
+
+
   USE mo_communication,                     ONLY: idx_no, blk_no
   ! namelist handling
   USE mo_namelist,                          ONLY: position_nml, positioned, open_nml, close_nml
@@ -135,9 +135,9 @@ MODULE mo_name_list_output_init
     &                                             union_of_all_events,      &
     &                                             print_output_event,                             &
     &                                             set_event_to_simstep
-#ifndef NOMPI
-  USE mo_output_event_handler,              ONLY: trigger_output_step_irecv
-#endif
+
+
+
   ! name list output
   USE mo_reorder_info,                      ONLY: t_reorder_info, &
     mask2reorder_info, transfer_reorder_info
@@ -157,47 +157,32 @@ MODULE mo_name_list_output_init
   USE mo_name_list_output_zaxes,            ONLY: setup_ml_axes_atmo, setup_pl_axis_atmo,         &
     &                                             setup_hl_axis_atmo, setup_il_axis_atmo,         &
     &                                             setup_zaxes_oce
-#ifndef __NO_ICON_WAVES__
+
   USE mo_waves_vertical_axes,               ONLY: setup_zaxes_waves
-#endif
+
   USE mo_level_selection_types,             ONLY: t_level_selection
-#ifndef __NO_JSBACH__
+
   USE mo_atm_phy_nwp_config,                ONLY: atm_phy_nwp_config
   USE mo_impl_constants,                    ONLY: LSS_JSBACH
   USE mo_aes_phy_config,                    ONLY: aes_phy_config
   USE mo_jsb_vertical_axes,                 ONLY: setup_zaxes_jsbach
-#endif
+
   USE mo_name_list_output_zaxes_types,      ONLY: t_verticalAxisList, t_verticalAxis
   USE mo_name_list_output_printvars,        ONLY: print_var_list
   USE mo_util_vgrid_types,                  ONLY: vgrid_buffer
   USE mo_derived_variable_handling,         ONLY: init_statistics
 
-#ifndef __NO_ICON_ATMO__
-  USE mo_vertical_coord_table,              ONLY: vct
-#endif
 
-#if !defined (__NO_ICON_ATMO__) && !defined (__NO_ICON_OCEAN__)
+  USE mo_vertical_coord_table,              ONLY: vct
+
+
+
   USE mo_coupling_config,                   ONLY: is_coupled_run
   USE mo_master_control,                    ONLY: get_my_process_name
-#endif
-#ifdef HAVE_CDI_PIO
-  USE ppm_extents,                          ONLY: extent
-  USE mo_decomposition_tools,               ONLY: uniform_partition_start
-  USE mo_name_list_output_gridinfo,         ONLY: distribute_all_grid_info
-  USE yaxt,                                 ONLY: xt_idxlist, &
-       xt_idxvec_new, xt_idxlist_delete, xt_idxstripes_from_idxlist_new, &
-       xt_int_kind, xt_idxstripes_new, xt_idxempty_new, xt_stripe
-#ifdef YAC_coupling
-  USE mo_io_coupling_frame,     ONLY: construct_io_coupling
-#endif
-#endif
   IMPLICIT NONE
 
   PRIVATE
 
-#ifdef HAVE_CDI_PIO
-  INCLUDE 'cdipio.inc'
-#endif
   ! variables and data types
   PUBLIC :: out_varnames_dict
   PUBLIC :: varnames_dict
@@ -205,12 +190,6 @@ MODULE mo_name_list_output_init
   PUBLIC :: patch_info
   PUBLIC :: lonlat_info
   PUBLIC :: zonal_ri, profile_ri
-#ifdef NO_ASYNC_IO_RMA
-  PUBLIC :: req_send_metainfo
-  PUBLIC :: req_send_data
-  PUBLIC :: req_recv_data
-  PUBLIC :: recv_buffer_max_sizes ! Maximum sizes of receive buffer, per file
-#endif
   ! subroutines
   PUBLIC :: read_name_list_output_namelists
   PUBLIC :: parse_variable_groups
@@ -221,9 +200,6 @@ MODULE mo_name_list_output_init
   PUBLIC :: isRegistered
   PUBLIC :: nlevs_of_var
 
-#ifdef HAVE_CDI_PIO
-  PUBLIC :: init_cdipio_cb
-#endif
 
   !------------------------------------------------------------------------------------------------
 
@@ -244,12 +220,6 @@ MODULE mo_name_list_output_init
   INTEGER :: compute_dt
   PUBLIC  :: compute_dt
 
-#ifdef NO_ASYNC_IO_RMA
-  INTEGER, ALLOCATABLE :: req_send_metainfo(:)
-  INTEGER, ALLOCATABLE :: req_send_data(:)
-  INTEGER, ALLOCATABLE :: req_recv_data(:, :)
-  INTEGER, ALLOCATABLE :: recv_buffer_max_sizes(:)
-#endif
   !------------------------------------------------------------------------------------------------
   ! dictionaries for variable names:
   TYPE (t_dictionary) ::     &
@@ -361,7 +331,6 @@ CONTAINS
     ! level ordering: zlevels, plevels, ilevels must be ordered from
     ! TOA to bottom:
     !
-#ifndef __NO_ICON_ATMO__
     DO jg = 1, max_dom
       ! pressure levels:
       nh_pzlev_config(jg)%plevels%sort_smallest_first = .TRUE.
@@ -370,7 +339,6 @@ CONTAINS
       ! isentropic levels
       nh_pzlev_config(jg)%ilevels%sort_smallest_first = .FALSE.
     END DO
-#endif
 
     ! create variable of registering output variables. should be used later for
     ! triggering computation only in case of output request
@@ -401,17 +369,12 @@ CONTAINS
         ! too, then the user's namelist settings were inconsistent.
         !
         IF (.NOT. ASSOCIATED(first_output_name_list)) THEN
-#ifndef __NO_ICON_ATMO__
           IF (.NOT. ANY(meteogram_output_config(:)%lenabled)) THEN
             CALL message(routine, "No output definition found; disabling output.")
             output_mode%l_nml = .FALSE.
           ELSE
             CALL message(routine, "No output definition found; meteogram output only.")
           END IF
-#else
-          CALL message(routine, "No output definition found; disabling output.")
-          output_mode%l_nml = .FALSE.
-#endif
         END IF
 
         CALL close_nml
@@ -538,7 +501,6 @@ CONTAINS
 
       ! -- If "remap=1": lon-lat interpolation requested
 
-#ifndef __NO_ICON_ATMO__
       IF (remap == REMAP_REGULAR_LATLON) THEN
         ! define lon-lat grid specification
         new_grid%reg_lon_def(:) = reg_lon_def(:)
@@ -582,7 +544,6 @@ CONTAINS
           ENDDO DOM_LOOP
         END IF
       ENDIF
-#endif
 ! #ifndef __NO_ICON_ATMO__
 
       ! loop over domains and generate a separare copy of the namelist
@@ -722,7 +683,6 @@ CONTAINS
     TYPE(t_output_name_list), POINTER  :: onl
     INTEGER :: n_dom_out, jp, id
 
-#ifndef __NO_ICON_ATMO__
     ! Loop over the output namelists and create a union set of all requested vertical levels (per domain):
     onl => first_output_name_list
     n_dom_out = MERGE(n_phys_dom, n_dom, l_output_phys_patch)
@@ -754,7 +714,6 @@ CONTAINS
         & intp_name // "interpolation without specifying levels!")
     IF (nlevs > 0)  CALL merge_values_into_set(nlevs, levels, mergeset)
   END SUBROUTINE merge_set
-#endif
   END SUBROUTINE collect_requested_ipz_levels
 
 
@@ -904,9 +863,6 @@ CONTAINS
   SUBROUTINE init_name_list_output(sim_step_info, &
     &                              opt_lprintlist, opt_l_is_ocean)
 
-#ifndef NOMPI
-    USE mpi, ONLY: MPI_ROOT, MPI_PROC_NULL
-#endif
 
     !> Data structure containing all necessary data for mapping an
     !  output time stamp onto a corresponding simulation step index.
@@ -949,9 +905,7 @@ CONTAINS
       & (l_print_list .OR. (msg_level >= 15))) THEN
 
       this_i_lctype = 0
-#ifndef __NO_ICON_ATMO__
       this_i_lctype = i_lctype(print_patch_id)
-#endif
 
       CALL print_var_list(out_varnames_dict,              &
         &                 print_patch_id,                 &
@@ -964,21 +918,9 @@ CONTAINS
     ! We need dtime
     IF(dtime<=0._wp) CALL finish(routine, 'dtime must be set before reading output namelists')
 
-#ifndef NOMPI
-    ! Set broadcast root for intercommunicator broadcasts
-    IF (is_io) THEN
-      ! Root is proc 0 on the compute PEs
-      bcast_root = 0
-    ELSE
-      ! Special root setting for intercommunicators:
-      ! The PE really sending must use MPI_ROOT, the others MPI_PROC_NULL
-      bcast_root = MERGE(MPI_ROOT, MPI_PROC_NULL, p_pe_work == 0)
-    ENDIF
-#else
     ! bcast_root is not used in this case
     bcast_root = 0
-#endif
-! NOMPI
+! 1
 
     ! ---------------------------------------------------------------------------
 
@@ -1197,11 +1139,7 @@ CONTAINS
 
     ! ---------------------------------------------------------------------------
     ! If async IO is used, replicate data (mainly the variable lists) on IO procs
-#ifndef NOMPI
-    IF (use_async_name_list_io .AND. .NOT. is_mpi_test) &
-         CALL replicate_data_on_io_procs
-#endif
-! NOMPI
+! 1
 
     output_file(:)%cdiFileID  = CDI_UNDEFID ! i.e. not opened
     output_file(:)%cdiVlistID = CDI_UNDEFID ! i.e. not defined
@@ -1224,15 +1162,6 @@ CONTAINS
       ! locations of cells, edges, and vertices
 
       ! Only needed if no async name list io is used
-#ifdef HAVE_CDI_PIO
-      IF (pio_type == pio_type_cdipio) THEN
-        DO idom = 1, n_dom_out
-          ! logical domain ID
-          idom_log = patch_info(idom)%log_patch_id
-          CALL distribute_all_grid_info(p_patch(idom_log), patch_info(idom))
-        END DO
-      ELSE &
-#endif
       IF (.NOT. use_async_name_list_io) THEN
         ! Go over all output domains
         DO idom = 1, n_dom_out
@@ -1244,45 +1173,12 @@ CONTAINS
         END DO
       END IF
 
-#ifndef NOMPI
-      ! If async IO is used, replicate coordinate data on IO procs
-      IF (use_async_name_list_io) THEN
-        CALL replicate_coordinate_data_on_io_procs
-
-        ! Clear patch_info fields clon, clat, etc. (especially on work
-        ! PE 0) since they aren't needed there any longer.
-        IF (.NOT. is_io) THEN
-          ! Go over all output domains (deallocation is skipped if data
-          ! structures were not allocated)
-          DO idom = 1, n_dom_out
-            CALL deallocate_all_grid_info(patch_info(idom))
-          END DO
-        END IF
-      END IF
-#endif
-! NOMPI
+! 1
     END IF
 
     CALL create_event_data(sim_step_info)
 
     ! If async IO is used, initialize the memory window for communication
-#ifndef NOMPI
-    IF (use_async_name_list_io .AND. .NOT. is_mpi_test) &
-         CALL init_memory_window
-
-    ! Initial launch of non-blocking requests to all participating PEs
-    ! to acknowledge the completion of the next output event
-    IF (.NOT. is_mpi_test &
-      & .AND. (    (use_async_name_list_io .AND. my_process_is_mpi_ioroot()) &
-      &        .OR.(.NOT. use_async_name_list_io &
-      &             .AND. my_process_is_mpi_workroot()))) THEN
-      ev => all_events
-      DO WHILE (ASSOCIATED(ev))
-        CALL trigger_output_step_irecv(ev)
-        ev => ev%next
-      END DO
-    END IF
-#endif ! NOMPI
 
     CALL message(routine,'Done')
 
@@ -1554,9 +1450,6 @@ CONTAINS
     IF (.NOT. is_mpi_test) THEN
       IF ((      use_async_name_list_io .AND. my_process_is_mpi_ioroot()) .OR.  &
         & (.NOT. use_async_name_list_io .AND. my_process_is_mpi_workroot() &
-#ifdef HAVE_CDI_PIO
-        &  .AND. pio_type /= pio_type_cdipio &
-#endif
         &  )) THEN
         CALL print_output_event_table(dom_sim_step_info_jstep0)
       END IF
@@ -1566,14 +1459,11 @@ CONTAINS
   SUBROUTINE print_output_event_table(dom_sim_step_info_jstep0)
     INTEGER, INTENT(in) :: dom_sim_step_info_jstep0
     CHARACTER(len=max_filename_str_len) :: osched_fname
-#if !defined (__NO_ICON_ATMO__) && !defined (__NO_ICON_OCEAN__)
     CHARACTER(LEN=max_char_length)       :: comp_name
-#endif
 
     IF (ASSOCIATED(all_events)) THEN
       CALL print_output_event(all_events)                                       ! screen output
       IF (dom_sim_step_info_jstep0 > 0) THEN
-#if !defined (__NO_ICON_ATMO__) && !defined (__NO_ICON_OCEAN__)
         IF ( is_coupled_run() ) THEN
           comp_name = get_my_process_name()
           WRITE (osched_fname, '(3a,i0,a)') "output_schedule_", &
@@ -1582,12 +1472,7 @@ CONTAINS
           WRITE (osched_fname, '(a,i0,a)') "output_schedule_steps_", &
             dom_sim_step_info_jstep0, "+.txt"
         ENDIF
-#else
-        WRITE (osched_fname, '(a,i0,a)') "output_schedule_steps_", &
-          dom_sim_step_info_jstep0, "+.txt"
-#endif
       ELSE
-#if !defined (__NO_ICON_ATMO__) && !defined (__NO_ICON_OCEAN__)
         IF ( is_coupled_run() ) THEN
           comp_name = get_my_process_name()
           WRITE (osched_fname, '(3a)') "output_schedule_", &
@@ -1595,9 +1480,6 @@ CONTAINS
         ELSE
           osched_fname = "output_schedule.txt"
         ENDIF
-#else
-        osched_fname = "output_schedule.txt"
-#endif
       END IF
       CALL print_output_event(all_events, &
         ! ASCII file output:
@@ -1605,32 +1487,6 @@ CONTAINS
     END IF
   END SUBROUTINE print_output_event_table
 
-#ifdef HAVE_CDI_PIO
-  ! called by all CDI-PIO async ranks after the initialization of
-  ! communication replicates the output events on CDI PIO rank 0, so
-  ! that output rank 0 can write the ready files later
-  SUBROUTINE init_cdipio_cb
-    INTEGER :: dom_sim_step_info_jstep0
-    TYPE(t_event_data_local) :: event_list_dummy(1)
-    
-#ifdef YAC_coupling
-    CALL construct_io_coupling ( "dummy" )
-#endif
-
-    IF (p_pe_work == 0) THEN
-      CALL p_recv(dom_sim_step_info_jstep0, p_source=0, p_tag=156, &
-        &         comm=p_comm_work_io)
-      all_events => union_of_all_events(compute_matching_sim_steps, &
-           &                               generate_output_filenames, &
-           &                               p_comm_work_io, p_io_pe0, &
-           &                               event_list_dummy, 0)
-      IF (dom_sim_step_info_jstep0 > 0) &
-        &  CALL set_event_to_simstep(all_events, dom_sim_step_info_jstep0 + 1, &
-        &                            isRestart(), lrecover_open_file=.TRUE.)
-      CALL print_output_event_table(dom_sim_step_info_jstep0)
-    END IF
-  END SUBROUTINE init_cdipio_cb
-#endif
 
   FUNCTION add_out_event(of, i, local_i, sim_step_info, &
     &                    dom_sim_step_info_jstep0, &
@@ -1805,11 +1661,8 @@ CONTAINS
         SELECT CASE(p_of%ilev_type)
         CASE (level_type_ml)
           CALL setup_ml_axes_atmo(p_of%verticalAxisList, p_of%level_selection, p_of%log_patch_id)
-#ifndef __NO_JSBACH__
           IF (ANY(aes_phy_config(1:n_dom)%ljsb .OR. ANY(atm_phy_nwp_config(1:n_dom)%inwp_surface == LSS_JSBACH))) &
             &  CALL setup_zaxes_jsbach(p_of%verticalAxisList)
-#endif
-#ifndef __NO_ICON_ATMO__
         CASE (level_type_pl)
           CALL setup_pl_axis_atmo(p_of%verticalAxisList, nh_pzlev_config(p_of%log_patch_id)%plevels, &
             &                     p_of%level_selection)
@@ -1819,19 +1672,14 @@ CONTAINS
         CASE (level_type_il)
           CALL setup_il_axis_atmo(p_of%verticalAxisList, nh_pzlev_config(p_of%log_patch_id)%ilevels, &
             &                     p_of%level_selection)
-#endif
         CASE DEFAULT
           CALL finish(routine, "Internal error!")
         END SELECT
 
       ELSE IF (my_process_is_jsbach()) THEN
-#ifndef __NO_JSBACH__
         CALL setup_zaxes_jsbach(p_of%verticalAxisList)
-#endif
       ELSE IF (my_process_is_waves()) THEN
-#ifndef __NO_ICON_WAVES__
         CALL setup_zaxes_waves(p_of%verticalAxisList, p_of%level_selection, p_of%log_patch_id)
-#endif
       ENDIF
 
     END DO
@@ -2080,26 +1928,10 @@ CONTAINS
         patch_info(jp)%max_vertex_connectivity = p_patch(jl)%verts%max_connectivity
 
       ENDIF
-#ifndef NOMPI
-      IF (use_async_name_list_io .AND. .NOT. is_mpi_test) THEN
-        ! Transfer reorder_info to IO PEs
-        DO i = 1, 3 ! icell, iedge, ivert
-          CALL transfer_reorder_info(patch_info(jp)%ri(i), &
-            &                        is_io, bcast_root, p_comm_work_2_io)
-          CALL transfer_grid_info(patch_info(jp)%grid_info(i), patch_info(jp)%ri(i)%n_glb, patch_info(jp)%grid_info_mode)
-        END DO
-        CALL p_bcast(patch_info(jp)%grid_filename, bcast_root, p_comm_work_2_io)
-        CALL p_bcast(patch_info(jp)%grid_uuid%data, SIZE(patch_info(jp)%grid_uuid%data),  &
-          &          bcast_root, p_comm_work_2_io)
-        CALL p_bcast(patch_info(jp)%number_of_grid_used, bcast_root, p_comm_work_2_io)
-        CALL p_bcast(patch_info(jp)%ICON_grid_file_uri, bcast_root, p_comm_work_2_io)
-      ENDIF
-#endif
-! NOMPI
+! 1
 
     ENDDO ! jp
 
-#ifndef __NO_ICON_ATMO__
     ! A similar process as above - for the lon-lat grids
     DO jl = 1,lonlat_grids%ngrids
       DO jg = 1,n_dom
@@ -2110,18 +1942,9 @@ CONTAINS
             &                          lonlat_grids%list(jl)%intp(jg),  &
             &                          lonlat_info(jl,jg))
         ENDIF
-#ifndef NOMPI
-        IF (use_async_name_list_io .AND. .NOT. is_mpi_test) THEN
-          ! Transfer reorder_info to IO PEs
-          CALL transfer_reorder_info(lonlat_info(jl,jg)%ri, &
-            &    is_io, bcast_root, p_comm_work_2_io)
-          CALL transfer_grid_info(lonlat_info(jl,jg)%grid_info, lonlat_info(jl,jg)%ri%n_glb, lonlat_info(jl,jg)%grid_info_mode)
-        ENDIF
-#endif
-! NOMPI
+! 1
       END DO ! jg
     ENDDO ! jl
-#endif
 ! #ifndef __NO_ICON_ATMO__
     IF (.NOT. is_mpi_test) THEN
       CALL create_rank0only_ri(zonal_ri, nlat_moc, is_io)
@@ -2158,17 +1981,6 @@ CONTAINS
         ri%pe_off(jl) = n_pnt
         ri%pe_own(jl) = 0
       END DO
-#ifdef HAVE_CDI_PIO
-      IF (pio_type == pio_type_cdipio) THEN
-        ALLOCATE(ri%reorder_idxlst_xt(1))
-        IF (p_pe_work == 0) THEN
-          ri%reorder_idxlst_xt(1) = xt_idxstripes_new(xt_stripe(0_xt_int_kind,&
-               1,INT(n_pnt, xt_int_kind)))
-        ELSE
-          ri%reorder_idxlst_xt(1) = xt_idxempty_new()
-        END IF
-      END IF
-#endif
     END IF
     IF (use_async_name_list_io) THEN
       CALL transfer_reorder_info(ri, &
@@ -2287,7 +2099,6 @@ CONTAINS
   !------------------------------------------------------------------------------------------------
   !> Sets the reorder_info for lon-lat-grids
   !
-#ifndef __NO_ICON_ATMO__
   SUBROUTINE set_reorder_info_lonlat(grid, intp, patch_info_ll)
     TYPE(t_lon_lat_grid),  INTENT(IN)    :: grid
     TYPE(t_lon_lat_intp),  INTENT(IN)    :: intp
@@ -2295,10 +2106,6 @@ CONTAINS
 
     CHARACTER(LEN=*), PARAMETER :: routine = modname//"::set_reorder_info_lonlat"
     INTEGER :: ierrstat, i, n_own, n
-#ifdef HAVE_CDI_PIO
-    TYPE(xt_idxlist) :: idxvec
-    INTEGER(xt_int_kind), ALLOCATABLE :: reorder_index_own_pio(:)
-#endif
 
     ! Just for safety
     IF(my_process_is_io()) CALL finish(routine, 'Must not be called on IO PEs')
@@ -2336,20 +2143,6 @@ CONTAINS
       patch_info_ll%ri%reorder_index_own(i) = intp%global_idx(i)
     END DO
 
-#ifdef HAVE_CDI_PIO
-    IF (pio_type == pio_type_cdipio) THEN
-      ALLOCATE(reorder_index_own_pio(n_own),          &
-        &      patch_info_ll%ri%reorder_idxlst_xt(1), &
-        &      STAT=ierrstat)
-      IF (ierrstat /= SUCCESS) CALL finish (routine, 'ALLOCATE failed.')
-
-      ! CDI-PIO acts C like...
-      reorder_index_own_pio = patch_info_ll%ri%reorder_index_own - 1
-      idxvec = xt_idxvec_new(reorder_index_own_pio)
-      patch_info_ll%ri%reorder_idxlst_xt(1) = xt_idxstripes_from_idxlist_new(idxvec)
-      CALL xt_idxlist_delete(idxvec)
-    END IF
-#endif
 
     IF (patch_info_ll%grid_info_mode == GRID_INFO_FILE) THEN
       ! mapping between logical and physical patch is trivial for
@@ -2361,7 +2154,6 @@ CONTAINS
       patch_info_ll%grid_info%log_dom_counts(1) = patch_info_ll%ri%n_glb
     END IF
   END SUBROUTINE set_reorder_info_lonlat
-#endif
 
   !------------------------------------------------------------------------------------------------
   !> Sets up the vlist for a t_output_file structure
@@ -2388,11 +2180,6 @@ CONTAINS
     TYPE (t_lon_lat_grid), POINTER :: grid
     INTEGER                           :: taxisID
 
-#ifdef HAVE_CDI_PIO
-    TYPE(xt_idxlist)                  :: null_idxlist
-    INTEGER                           :: grid_deco_part(2)
-    TYPE(extent)                      :: grid_size_desc
-#endif
 
     gridtype = GRID_UNSTRUCTURED
 
@@ -2440,10 +2227,6 @@ CONTAINS
     iret = cdiDefAttTxt(of%cdiVlistID, CDI_GLOBAL, 'references',  &
          &                tlen, cf_global_info%references(1:tlen))
     comment = cf_global_info%comment
-#ifdef HAVE_CDI_PIO
-    IF (pio_type == pio_type_cdipio) &
-         CALL p_bcast(comment, 0, comm=p_comm_work)
-#endif
     tlen = LEN_TRIM(comment)
     iret = cdiDefAttTxt(of%cdiVlistID, CDI_GLOBAL, 'comment',     &
       &                 tlen, comment(1:tlen))
@@ -2451,7 +2234,6 @@ CONTAINS
     ! 3. add horizontal grid descriptions
 
     IF(of%name_list%remap == REMAP_REGULAR_LATLON) THEN
-#ifndef __NO_ICON_ATMO__
 
       ! Lon/Lat Interpolation requested
 
@@ -2536,31 +2318,12 @@ CONTAINS
 
       END IF
 
-#endif
 ! #ifndef __NO_ICON_ATMO__
     ELSE
 
       ! Cells
-#ifdef HAVE_CDI_PIO
-      IF (pio_type == pio_type_cdipio) THEN
-        grid_size_desc = extent(0, patch_info(i_dom)%ri(icell)%n_glb)
-        grid_deco_part(1) =   uniform_partition_start(grid_size_desc, &
-          &                                           p_n_work, p_pe_work+1)
-        grid_deco_part(2) =   uniform_partition_start(grid_size_desc, &
-          &                                           p_n_work, p_pe_work+2) &
-          &                 - grid_deco_part(1)
-        of%cdiCellGridID = &
-          cdiPioDistGridCreate(gridtype, patch_info(i_dom)%ri(icell)%n_glb, &
-          &             -1, -1, max_cell_connectivity, grid_deco_part, &
-          &             patch_info(i_dom)%ri(icell)%reorder_idxlst_xt(1), &
-          &             null_idxlist, null_idxlist)
-      ELSE
-#endif
         of%cdiCellGridID = gridCreate(gridtype, patch_info(i_dom)%ri(icell)%n_glb)
         CALL gridDefNvertex(of%cdiCellGridID, max_cell_connectivity)
-#ifdef HAVE_CDI_PIO
-      END IF
-#endif
       !
       CALL gridDefXname(of%cdiCellGridID, 'clon')
       CALL gridDefXlongname(of%cdiCellGridID, 'center longitude')
@@ -2603,26 +2366,8 @@ CONTAINS
       ! Verts
       nvert = MERGE(max_vertex_connectivity, 9-max_cell_connectivity, &
            my_process_is_oceanic())
-#ifdef HAVE_CDI_PIO
-      IF (pio_type == pio_type_cdipio) THEN
-        grid_size_desc = extent(0, patch_info(i_dom)%ri(ivert)%n_glb)
-        grid_deco_part(1) =   uniform_partition_start(grid_size_desc, &
-          &                                           p_n_work, p_pe_work+1)
-        grid_deco_part(2) =   uniform_partition_start(grid_size_desc, &
-          &                                           p_n_work, p_pe_work+2) &
-          &                 - grid_deco_part(1)
-        of%cdiVertGridID = &
-          cdiPioDistGridCreate(gridtype, patch_info(i_dom)%ri(ivert)%n_glb, &
-          &             -1, -1, nvert, grid_deco_part, &
-          &             patch_info(i_dom)%ri(ivert)%reorder_idxlst_xt(1), &
-          &             null_idxlist, null_idxlist)
-      ELSE
-#endif
         of%cdiVertGridID = gridCreate(gridtype, patch_info(i_dom)%ri(ivert)%n_glb)
         CALL gridDefNvertex(of%cdiVertGridID, nvert)
-#ifdef HAVE_CDI_PIO
-      ENDIF
-#endif
       !
       CALL gridDefXname(of%cdiVertGridID, 'vlon')
       CALL gridDefXlongname(of%cdiVertGridID, 'vertex longitude')
@@ -2642,27 +2387,9 @@ CONTAINS
       CALL gridDefPosition(of%cdiVertGridID, GRID_VERTEX)
 
       ! Edges
-#ifdef HAVE_CDI_PIO
-      IF (pio_type == pio_type_cdipio) THEN
-        grid_size_desc = extent(0, patch_info(i_dom)%ri(iedge)%n_glb)
-        grid_deco_part(1) =   uniform_partition_start(grid_size_desc, &
-          &                                           p_n_work, p_pe_work+1)
-        grid_deco_part(2) =   uniform_partition_start(grid_size_desc, &
-          &                                           p_n_work, p_pe_work+2) &
-          &                 - grid_deco_part(1)
-        of%cdiEdgeGridID = &
-          cdiPioDistGridCreate(gridtype, patch_info(i_dom)%ri(iedge)%n_glb, &
-          &             -1, -1, 4, grid_deco_part, &
-          &             patch_info(i_dom)%ri(iedge)%reorder_idxlst_xt(1), &
-          &             null_idxlist, null_idxlist)
-      ELSE
-#endif
 
         of%cdiEdgeGridID = gridCreate(gridtype, patch_info(i_dom)%ri(iedge)%n_glb)
         CALL gridDefNvertex(of%cdiEdgeGridID, 4)
-#ifdef HAVE_CDI_PIO
-      ENDIF
-#endif
       !
       CALL gridDefXname(of%cdiEdgeGridID, 'elon')
       CALL gridDefXlongname(of%cdiEdgeGridID, 'edge midpoint longitude')
@@ -2853,9 +2580,7 @@ CONTAINS
       END IF
 
       this_i_lctype = 0
-#ifndef __NO_ICON_ATMO__
       this_i_lctype = i_lctype(of%phys_patch_id)
-#endif
 
       info%cdiVarID = create_cdi_variable(vlistID, gridID, zaxisID,         &
         &                                 info, missval, of%output_type,    &
@@ -2894,170 +2619,6 @@ CONTAINS
   END SUBROUTINE transfer_grid_info
 
 
-#ifndef NOMPI
-  !-------------------------------------------------------------------------------------------------
-  !> Replicates data (mainly the variable lists) needed for async I/O on the I/O procs.
-  !  ATTENTION: The data is not completely replicated, only as far as needed for I/O.
-  !
-  !  This routine has to be called by all PEs (work and I/O)
-  !
-  SUBROUTINE replicate_data_on_io_procs()
-    CHARACTER(*), PARAMETER :: routine = modname//"::replicate_data_on_io_procs"
-    INTEGER :: ivct_len, nvgrid, ivgrid, temp(4), dummy, vgd_size, i, vgd_sloc
-    LOGICAL :: is_io
-    CHARACTER(LEN=vname_len) :: vgd_temp(MAX_GROUPS)
-    TYPE(t_output_name_list), POINTER :: p_onl
-
-    is_io = my_process_is_io()
-    !-----------------------------------------------------------------------------------------------
-    ! Replicate vertical coordinate table
-#ifndef __NO_ICON_ATMO__
-    IF (.NOT. is_io) THEN
-      IF (ALLOCATED(vct)) THEN
-        ivct_len = SIZE(vct)
-      ELSE
-        ivct_len = -1
-      END IF
-      temp(1) = ivct_len
-      temp(2) = nold(1)
-      temp(3) = nnow(1)
-      temp(4) = nnew(1)
-    END IF
-    CALL p_bcast(temp, bcast_root, p_comm_work_2_io)
-
-    IF (is_io) THEN
-      ivct_len = temp(1)
-      nold(1) = temp(2)
-      nnow(1) = temp(3)
-      nnew(1) = temp(4)
-    END IF
-    IF (ivct_len > 0) THEN
-      IF (is_io) ALLOCATE(vct(ivct_len))
-      CALL p_bcast(vct, bcast_root, p_comm_work_2_io)
-    END IF
-#endif
-! #ifndef __NO_ICON_ATMO__
-    !-----------------------------------------------------------------------------------------------
-    ! Replicate variable lists
-    CALL vlr_replicate(bcast_root, p_comm_work_2_io)
-    ! var_groups_dyn is required in function 'group_id', which is called in
-    ! parse_variable_groups. Thus, a broadcast of var_groups_dyn is required.
-    dummy = var_groups_dyn%group_id("ALL")
-    vgd_sloc = var_groups_dyn%get_n_grps()
-    vgd_size = vgd_sloc
-    CALL p_bcast(vgd_size, bcast_root, p_comm_work_2_io)
-    IF (.NOT. is_io) vgd_temp(1:vgd_size) = var_groups_dyn%gname(1:vgd_size)
-    CALL p_bcast(vgd_temp(1:vgd_size), bcast_root, p_comm_work_2_io)
-    IF (is_io .AND. vgd_size .GT. vgd_sloc) THEN
-      DO i = vgd_sloc + 1, vgd_size
-        dummy = var_groups_dyn%group_id(vgd_temp(i))
-      END DO
-    END IF
-
-    ! Copy the group-expanded and modified output namelists over to the IO procs.
-    p_onl => first_output_name_list
-    DO WHILE (ASSOCIATED(p_onl))
-      CALL p_bcast(p_onl%hl_varlist, bcast_root, comm=p_comm_work_2_io)
-      CALL p_bcast(p_onl%il_varlist, bcast_root, comm=p_comm_work_2_io)
-      CALL p_bcast(p_onl%ml_varlist, bcast_root, comm=p_comm_work_2_io)
-      CALL p_bcast(p_onl%pl_varlist, bcast_root, comm=p_comm_work_2_io)
-
-      p_onl => p_onl%next
-    END DO
-
-#ifndef __NO_ICON_ATMO__
-    ! Go over all output domains
-    !
-    ! from gribout config state
-    CALL p_bcast(gribout_config(1:n_dom_out)%generatingCenter,    bcast_root, p_comm_work_2_io)
-    CALL p_bcast(gribout_config(1:n_dom_out)%generatingSubcenter, bcast_root, p_comm_work_2_io)
-      ! from extpar config state
-    CALL p_bcast(i_lctype(1:n_dom_out)                          , bcast_root, p_comm_work_2_io)
-
-    IF (iforcing == INWP) THEN
-      ! from nwp land config state
-      CALL p_bcast(ntiles_water                              , bcast_root, p_comm_work_2_io)
-      CALL p_bcast(ntiles_total                              , bcast_root, p_comm_work_2_io)
-      CALL p_bcast(isub_water                                , bcast_root, p_comm_work_2_io)
-      CALL p_bcast(isub_lake                                 , bcast_root, p_comm_work_2_io)
-      CALL p_bcast(isub_seaice                               , bcast_root, p_comm_work_2_io)
-      IF (.NOT.ALLOCATED(tile_list%tile)) CALL setup_tile_list(tile_list, ntiles_lnd, lsnowtile, &
-                                                               isub_water, isub_lake, isub_seaice)
-    ENDIF
-#endif
-    ! allocate vgrid_buffer on asynchronous output PEs, for storing
-    ! the vertical grid UUID
-    !
-    ! get buffer size and broadcast
-    nvgrid = 0
-    IF (ALLOCATED(vgrid_buffer)) nvgrid = SIZE(vgrid_buffer)
-    CALL p_bcast(nvgrid, bcast_root, p_comm_work_2_io)
-    !
-    ! allocate on asynchronous PEs
-    IF (is_io)  ALLOCATE(vgrid_buffer(nvgrid))
-    ! broadcast
-    DO ivgrid = 1,nvgrid
-      CALL p_bcast(vgrid_buffer(ivgrid)%uuid%DATA, SIZE(vgrid_buffer(ivgrid)%uuid%DATA, 1), &
-        &          bcast_root, p_comm_work_2_io)
-    ENDDO
-  END SUBROUTINE replicate_data_on_io_procs
-
-  !-------------------------------------------------------------------------------------------------
-  !> Replicates coordinate data needed for async I/O on the I/O procs.
-  !  ATTENTION: The data is not completely replicated, only as far as needed for I/O.
-  !
-  !  This routine has to be called by all PEs (work and I/O)
-  !
-  SUBROUTINE replicate_coordinate_data_on_io_procs()
-
-    ! local variables
-    CHARACTER(len=*), PARAMETER :: routine = &
-      modname//"::replicate_coordinate_data_on_io_procs"
-    INTEGER                       :: idom
-
-    INTEGER :: idom_log, temp(5,n_dom_out)
-    LOGICAL :: keep_grid_info, is_io
-
-    is_io = my_process_is_io()
-    !-----------------------------------------------------------------------------------------------
-    ! Replicate coordinates of cells/edges/vertices:
-
-    ! Go over all output domains
-    IF (.NOT. is_io) THEN
-      DO idom = 1, n_dom_out
-        temp(1,idom) = patch_info(idom)%nblks_glb_c
-        temp(2,idom) = patch_info(idom)%nblks_glb_e
-        temp(3,idom) = patch_info(idom)%nblks_glb_v
-        temp(4,idom) = patch_info(idom)%max_cell_connectivity
-        temp(5,idom) = patch_info(idom)%max_vertex_connectivity
-      END DO
-    END IF
-    CALL p_bcast(temp, bcast_root, p_comm_work_2_io)
-    DO idom = 1, n_dom_out
-      IF (is_io) THEN
-        patch_info(idom)%nblks_glb_c = temp(1,idom)
-        patch_info(idom)%nblks_glb_e = temp(2,idom)
-        patch_info(idom)%nblks_glb_v = temp(3,idom)
-        patch_info(idom)%max_cell_connectivity = temp(4,idom)
-        patch_info(idom)%max_vertex_connectivity = temp(5,idom)
-      END IF
-      IF (patch_info(idom)%grid_info_mode == GRID_INFO_BCAST) THEN
-        ! logical domain ID
-        idom_log = patch_info(idom)%log_patch_id
-        keep_grid_info = is_io &
-          &           .AND. ANY(output_file(:)%io_proc_id == p_pe_work &
-          &                     .AND. output_file(:)%phys_patch_id == idom)
-        IF (.NOT. is_io) THEN
-          CALL allgather_grid_info(patch_info(idom), keep_grid_info, &
-            &                      p_patch(idom_log))
-        ELSE
-          CALL allgather_grid_info(patch_info(idom), keep_grid_info)
-        END IF
-      END IF
-    END DO
-
-  END SUBROUTINE replicate_coordinate_data_on_io_procs
-#endif
 
   SUBROUTINE registerOutputVariable(vname)
     CHARACTER(*), INTENT(IN) :: vname
@@ -3074,176 +2635,7 @@ CONTAINS
   END FUNCTION
 
 
-#ifndef NOMPI
-  !------------------------------------------------------------------------------------------------
-  !> Initializes the memory window for asynchronous IO
-  !
-  SUBROUTINE init_memory_window
-
-    USE mpi, ONLY: MPI_ADDRESS_KIND
-#ifdef NO_ASYNC_IO_RMA
-    USE mpi, ONLY: MPI_REQUEST_NULL, MPI_MAX
-# ifndef NO_MPI_CHOICE_ARG
-    USE mpi, ONLY: MPI_Allreduce
-# endif
-#endif
-
-    ! local variables
-    CHARACTER(LEN=*), PARAMETER     :: routine = modname//"::init_memory_window"
-
-    INTEGER                         :: jp, i, iv, nlevs, i_log_dom, &
-      &                                n_own, lonlat_id
-    INTEGER (KIND=MPI_ADDRESS_KIND) :: mem_size
-
-#ifdef NO_ASYNC_IO_RMA
-    INTEGER :: mpierr 
-    INTEGER, ALLOCATABLE :: local_recv_buffer_mem_sizes(:)
-
-    ! Allocate memory for metainfo requests
-    allocate(req_send_metainfo(1:SIZE(output_file)))
-    allocate(req_send_data(1:SIZE(output_file)))
-    allocate(req_recv_data(0:num_work_procs-1, 1:SIZE(output_file)))
-    req_send_metainfo(:) = MPI_REQUEST_NULL
-    req_send_data(:) = MPI_REQUEST_NULL
-    req_recv_data(:,:) = MPI_REQUEST_NULL
-    
-    ! Allocate memory for maximum requests sizes
-    allocate(recv_buffer_max_sizes(1:SIZE(output_file)))
-    allocate(local_recv_buffer_mem_sizes(1:SIZE(output_file)))
-    recv_buffer_max_sizes(:) = -1
-    local_recv_buffer_mem_sizes(:) = -1
-#endif
-
-    ! Go over all output files
-    OUT_FILE_LOOP : DO i = 1, SIZE(output_file)
-
-      ! Get size of the data for every output file
-      mem_size = 0_i8
-
-      ! Go over all name list variables for this output file
-      DO iv = 1, output_file(i)%num_vars
-
-        jp = output_file(i)%phys_patch_id
-
-        nlevs = nlevs_of_var(output_file(i)%var_desc(iv)%info, &
-          &                  output_file(i)%level_selection)
-
-        SELECT CASE (output_file(i)%var_desc(iv)%info%hgrid)
-        CASE (GRID_UNSTRUCTURED_CELL)
-          n_own = patch_info(jp)%ri(icell)%n_own
-        CASE (GRID_UNSTRUCTURED_EDGE)
-          n_own = patch_info(jp)%ri(iedge)%n_own
-        CASE (GRID_UNSTRUCTURED_VERT)
-          n_own = patch_info(jp)%ri(ivert)%n_own
-#ifndef __NO_ICON_ATMO__
-        CASE (GRID_REGULAR_LONLAT)
-          lonlat_id = output_file(i)%var_desc(iv)%info%hor_interp%lonlat_id
-          i_log_dom = output_file(i)%log_patch_id
-          n_own     = lonlat_info(lonlat_id, i_log_dom)%ri%n_own
-#endif
-        CASE (grid_zonal)
-          n_own = zonal_ri%n_own
-        CASE (grid_lonlat)
-          n_own = profile_ri%n_own
-        CASE DEFAULT
-          CALL finish(routine,'unknown grid type')
-        END SELECT
-        mem_size  = mem_size + INT(nlevs, i8) * INT(n_own, i8)
-
-      ENDDO ! vars
-
-      ! allocate amount of memory needed with MPI_Alloc_mem
-      ! When RMA is not used, this call allocates mem but not window
-      CALL allocate_mem_noncray(mem_size, output_file(i))
-
-      ! allocate memory window for meta-info communication between
-      ! PE#0 and the I/O PEs:
-      ! When RMA is not used, this call allocates mem but not window
-      CALL metainfo_allocate_memory_window(output_file(i)%mem_win, output_file(i)%num_vars) 
-
-#ifdef NO_ASYNC_IO_RMA
-      local_recv_buffer_mem_sizes(i) = mem_size
-#endif
-    ENDDO OUT_FILE_LOOP
-
-#ifdef NO_ASYNC_IO_RMA
-    call mpi_allreduce(local_recv_buffer_mem_sizes, recv_buffer_max_sizes, SIZE(output_file), p_int, MPI_MAX, p_comm_work_io, mpierr)
-    deallocate(local_recv_buffer_mem_sizes)
-#endif
-  END SUBROUTINE init_memory_window
-
-  !------------------------------------------------------------------------------------------------
-  !> allocate amount of memory needed with MPI_Alloc_mem
-  !
-  !  @note Implementation for non-Cray pointers
-  !
-  SUBROUTINE allocate_mem_noncray(mem_size, of)
-    USE mpi, ONLY: MPI_ADDRESS_KIND, MPI_INFO_NULL, MPI_Type_get_extent
-#ifndef NO_MPI_CHOICE_ARG
-    USE mpi, ONLY: MPI_Win_create
-#endif
-#ifndef NO_MPI_CPTR_ARG
-    USE mpi, ONLY: MPI_Alloc_mem
-#endif
-
-    INTEGER (KIND=MPI_ADDRESS_KIND), INTENT(IN)    :: mem_size
-    TYPE (t_output_file),            INTENT(INOUT) :: of
-    ! local variables
-    CHARACTER(LEN=*), PARAMETER :: routine = modname//"::allocate_mem_noncray"
-    TYPE(c_ptr)                     :: c_mem_ptr
-    INTEGER                         :: mpierr
-    INTEGER (KIND=MPI_ADDRESS_KIND) :: mem_bytes, typeLB, nbytes_real
-
-    ! Get the amount of bytes per REAL*8 or REAL*4 variable (as used in MPI
-    ! communication)
-    IF (use_dp_mpi2io) THEN
-      CALL MPI_TYPE_GET_EXTENT(p_real_dp, typeLB, nbytes_real, mpierr)
-    ELSE
-      CALL MPI_TYPE_GET_EXTENT(p_real_sp, typeLB, nbytes_real, mpierr)
-    ENDIF
-    IF (mpierr /= 0) CALL finish(routine, "MPI error!")
-
-    ! For the IO PEs the amount of memory needed is 0 - allocate at least 1 word there:
-    mem_bytes = MAX(mem_size,1_i8) * nbytes_real
-
-    CALL MPI_Alloc_mem(mem_bytes, MPI_INFO_NULL, c_mem_ptr, mpierr)
-    IF (mpierr /= 0) CALL finish(routine, "MPI error!")
-
-    ! The NEC requires a standard INTEGER array as 3rd argument for c_f_pointer,
-    ! although it would make more sense to have it of size MPI_ADDRESS_KIND.
-
-    NULLIFY(of%mem_win%mem_ptr_sp)
-    NULLIFY(of%mem_win%mem_ptr_dp)
-
-    IF (use_dp_mpi2io) THEN
-
-      CALL C_F_POINTER(c_mem_ptr, of%mem_win%mem_ptr_dp, (/ mem_size /) )
-      ! Create memory window for communication
-      of%mem_win%mem_ptr_dp(:) = 0._dp
-#ifndef NO_ASYNC_IO_RMA
-      ! Create memory window for MPI RMA
-      CALL MPI_Win_create( of%mem_win%mem_ptr_dp,mem_bytes, INT(nbytes_real), MPI_INFO_NULL,&
-        &                  p_comm_work_io,of%mem_win%mpi_win,mpierr )
-      IF (mpierr /= 0) CALL finish(routine, "MPI error!")
-
-#endif
-    ELSE
-
-      CALL C_F_POINTER(c_mem_ptr, of%mem_win%mem_ptr_sp, (/ mem_size /) )
-      ! Create memory window for communication
-      of%mem_win%mem_ptr_sp(:) = 0._sp
-#ifndef NO_ASYNC_IO_RMA
-      CALL MPI_Win_create( of%mem_win%mem_ptr_sp,mem_bytes, INT(nbytes_real), MPI_INFO_NULL,&
-        &                  p_comm_work_io,of%mem_win%mpi_win,mpierr )
-      IF (mpierr /= 0) CALL finish(routine, "MPI error!")
-
-#endif
-    ENDIF ! use_dp_mpi2io
-
-  END SUBROUTINE allocate_mem_noncray
-
-#endif
-! NOMPI
+! 1
 
 
   !> Utility routine: Strip date-time stamp (string) from modifiers,

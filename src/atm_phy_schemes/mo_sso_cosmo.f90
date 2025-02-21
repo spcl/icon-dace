@@ -788,9 +788,9 @@ SUBROUTINE sso_setup (                                      &
       END DO
 
 
-#ifndef _OPENACC
+
       mi3h = MIN(ke-2,MINVAL(kknu(istart:iend)))
-#endif
+
 
 !     Initialize various arrays
 !     =========================

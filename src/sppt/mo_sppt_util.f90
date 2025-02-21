@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_sppt_util 
@@ -186,146 +196,6 @@ MODULE mo_sppt_util
   !
   !---------------------------------------------------------------------
 
-#ifdef HAVE_ACM_LICENSE
-
-  SUBROUTINE random_normal_values(seed, values_range, values)
-
-    ! Subroutine arguments (in/out/inout)
-    INTEGER,            INTENT(IN)                           :: seed          ! seed to be used
-    REAL(wp),           INTENT(IN)                           :: values_range  ! allowed range of random numbers
-    REAL(wp),           DIMENSION(:), INTENT(INOUT)          :: values        ! array of value to be filled with random numbers
-
-    ! Local parameters
-    CHARACTER(LEN=*), PARAMETER                :: nm = 'random_normal_values: ' ! Tag
-
-    ! For random number generator
-    !     Constants used in the random number generators - note particularly
-    !     the values for A0, A and M. The type jpim is 4 bytes and jpib is 8 bytes.
-    !     This is because in the operation mod(A*X,M) we don't want A*X to overflow
-    !     or go negative.  The problem is avoided in C by the use of
-    !     unsigned integers where the appropriate value of M basically
-    !     represents overflow. If this operation can be done entirely with
-    !     4-byte integers performance would presumably be improved.
-    ! ... kind
-
-    INTEGER, PARAMETER            :: jprb = SELECTED_REAL_KIND(12,307)  ! corresponds to double precision
-    INTEGER, PARAMETER            :: jpim = SELECTED_INT_KIND(9)        ! at least 4 byte integer
-    INTEGER, PARAMETER            :: jpib = SELECTED_INT_KIND(14)       ! at least 8 byte integer
-
-    ! ... integer parameters
-    INTEGER(KIND=jpib), PARAMETER :: IMinstdA0    = 16807
-    INTEGER(KIND=jpib), PARAMETER :: IMinstdA     = 48271
-
-    ! ... real parameters
-    REAL(KIND=jprb), PARAMETER    :: IMinstdM     = 2147483647._jprb
-    REAL(KIND=jprb), PARAMETER    :: IMinstdScale = 1.0_jprb / IMinstdM
-
-    ! ... size of random numbers block
-    INTEGER(KIND=jpim), PARAMETER              :: nmaxstreams = 512
-
-    ! ... for normal distribution
-    REAL(KIND=jprb), PARAMETER                 :: ss = 0.449871_jprb
-    REAL(KIND=jprb), PARAMETER                 :: tt = -0.386595_jprb
-    REAL(KIND=jprb), PARAMETER                 :: aa = 0.19600_jprb
-    REAL(KIND=jprb), PARAMETER                 :: bb = 0.25472_jprb
-    REAL(KIND=jprb), PARAMETER                 :: r1 = 0.27597_jprb
-    REAL(KIND=jprb), PARAMETER                 :: r2 = 0.449871_jprb
-
-    ! Local variables
-    INTEGER(KIND=jpim)                         :: ii, jj
-    INTEGER(KIND=jpim)                         :: idx
-    REAL(KIND=jprb)                            :: rseed, rnd_init
-    REAL(KIND=jprb)                            :: uu, vv, xx, yy, qq
-    REAL(KIND=jprb), DIMENSION(nmaxstreams)    :: randnum, istate
-
-    ! -----------------------------------------------------------------------
-    ! Initialize a random number generator, by using the MINSTD linear
-    ! congruential generator (LCG). "nmaxstreams" indicates that random
-    ! numbers will be requested in blocks of this length. The generator
-    ! is seeded with "seed".
-    !-------------------------------------------------------------------------
-
-    rseed = REAL(ABS(seed), KIND=jprb)
-
-    DO ii = 1, nmaxstreams
-
-      rnd_init = NINT(                                                                                &
-                  MOD(rseed * ii * (1._jprb - 0.05_jprb*ii + 0.005_jprb*ii*ii) * IMinstdA0, IMinstdM), &
-                                                                                            KIND=jpib)
-      istate(ii) = MOD(IMinstdA * rnd_init, IMinstdM)
-
-    END DO
-
-    ! -------------------------------------------------------------------------
-    ! For each element of values, draw a random number from a normal distribution
-    ! -------------------------------------------------------------------------
-
-    values_loop:          &
-    DO ii = 1, SIZE(values)
-
-    ! Retrieve nmaxstreams new random numbers to use in draw from normal distribution
-    
-      DO jj = 1, nmaxstreams
-      istate(jj) = MOD(IMinstdA * istate(jj), IMinstdM)
-      randnum(jj) = IMinstdScale * istate(jj)
-      ENDDO
-
-    ! --------------------------------------------------------------------------  
-    ! Draw from normal distribution:
-    !
-    ! Generate normal distribution from uniform distribution:
-    ! P = (u,v) uniform in rectangle enclosing acceptance region
-    ! Occasionally random numbers are exactly zero >
-    !    log function lower down can't cope and a new draw is done
-    !---------------------------------------------------------------------------
-
-      idx = 1
-      DO
-        IF ( idx > nmaxstreams - 4 ) EXIT values_loop
-
-        uu = randnum(idx)
-        IF ( uu == 0. ) THEN
-          idx = idx + 1
-          uu = randnum(idx)
-        ENDIF
-        idx = idx + 1
-
-        vv = randnum(idx)
-        IF ( vv == 0. ) THEN
-          idx = idx + 1
-          vv = randnum(idx)
-        ENDIF
-        vv = 1.7156_jprb * (vv - 0.5_jprb)
-        idx = idx + 1
-
-        ! Evaluate the quadratic form
-        xx = uu - ss
-        yy = ABS(vv) - tt
-        qq = xx * xx + yy * (aa*yy - bb*xx)
-        ! Accept P if inside inner ellipse
-        IF ( qq < r1 ) EXIT
-        ! Reject P if outside outer ellipse
-        IF ( qq > r2 ) CYCLE
-        ! Reject P if outside acceptance region
-        IF ( vv * vv < -4.0_jprb * LOG(uu) * uu * uu ) EXIT
-      END DO
-
-      ! Assign value
-      values(ii) = REAL( vv / uu )
-
-    END DO values_loop
-
-  ! Limit random number range
-  WHERE     (values(:) > values_range)
-    values(:)  = values_range
-  ELSEWHERE (values(:) < -values_range)
-    values(:) = -values_range
-  END WHERE
-
-
-  END SUBROUTINE random_normal_values
-
-#endif  
 
   !---------------------------------------------------------------------
   ! Bilinear interpolation, c.f.
@@ -400,11 +270,7 @@ MODULE mo_sppt_util
     CALL set_seed_rand_numb(mtime_current, kconseed, seed_rn)
 
     ! Generate random numbers on coarse grid
-#ifdef HAVE_ACM_LICENSE
-    CALL random_normal_values(seed_rn, sppt_config%range_rn, rn_1d_coarse)
-#else
     CALL finish('mo_sppt_util.f90:', "SPPT requires the ACM Software License Agreement when configuring ICON")
-#endif
     rn_2d_coarse(:,:) = reshape(rn_1d_coarse, (/SIZE(rn_2d_coarse,1), SIZE(rn_2d_coarse,2)/))
 
    ! Interpolate form coarse to fine

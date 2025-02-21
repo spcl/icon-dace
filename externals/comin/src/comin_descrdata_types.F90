@@ -24,7 +24,7 @@ MODULE comin_descrdata_types
   PUBLIC :: t_comin_descrdata_simulation_interval
   PUBLIC :: comin_glb2loc_index_lookup_fct
 
-#include "comin_global.inc"
+
 
   ! ------------------------------------
   ! data types for descriptive data structures
@@ -277,10 +277,10 @@ MODULE comin_descrdata_types
   !> Simulation status information, sim_current contains current time step
   !! @ingroup common
   TYPE :: t_comin_descrdata_simulation_interval
-    CHARACTER(LEN=MAX_DATETIME_STR_LEN) :: exp_start
-    CHARACTER(LEN=MAX_DATETIME_STR_LEN) :: exp_stop
-    CHARACTER(LEN=MAX_DATETIME_STR_LEN) :: run_start
-    CHARACTER(LEN=MAX_DATETIME_STR_LEN) :: run_stop
+    CHARACTER(LEN=32) :: exp_start
+    CHARACTER(LEN=32) :: exp_stop
+    CHARACTER(LEN=32) :: run_start
+    CHARACTER(LEN=32) :: run_stop
   END TYPE t_comin_descrdata_simulation_interval
 
  INTERFACE

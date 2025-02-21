@@ -671,47 +671,6 @@ contains
              &                       this%reference_temperature)
       end if
 
-#ifdef USE_COARSE_MAPPING
-      ! In the processing that follows, we assume that the wavenumber
-      ! grid on which the g-points are defined in the spectral
-      ! definition is much finer than the albedo/emissivity intervals
-      ! that the user will provide.  This means that each wavenumber
-      ! is assigned to only one of the albedo/emissivity intervals.
-
-      ! By default set all wavenumbers to use first input
-      ! albedo/emissivity
-      i_input = 1
-      
-      ! All bounded intervals
-      do jint = 2,ninterval-1
-        wavenumber1_bound = 0.01_jprb / wavelength_bound(jint)
-        wavenumber2_bound = 0.01_jprb / wavelength_bound(jint-1)
-        where (wavenumber_mid > wavenumber1_bound &
-             & .and. wavenumber_mid <= wavenumber2_bound)
-          i_input = i_intervals(jint)
-        end where
-      end do
-
-      ! Final interval in wavelength space goes up to wavelength of
-      ! infinity (wavenumber of zero)
-      if (ninterval > 1) then
-        wavenumber2_bound = 0.01_jprb / wavelength_bound(ninterval-1)
-        where (wavenumber_mid <= wavenumber2_bound)
-          i_input = i_intervals(ninterval)
-        end where
-      end if
-
-      do jg = 1,this%ng
-        do jin = 1,ninput
-          mapping(jin,jg) = sum(this%gpoint_fraction(:,jg) * planck, &
-               &                 mask=(i_input==jin))
-          if (use_fluxes_local) then
-            mapping(jin,jg) = mapping(jin,jg) / sum(this%gpoint_fraction(:,jg) * planck)
-          end if
-        end do
-      end do
-
-#else
 
       ! Loop through all intervals
       do jint = 1,ninterval
@@ -754,7 +713,6 @@ contains
         end do
       end if
 
-#endif
       
     end if
 

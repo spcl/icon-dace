@@ -26,10 +26,62 @@ MODULE mo_rtifc_nort
 ! MACRO SETTINGS
 !---------------
 
-#include "mo_rtifc_macros.incf"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+!
+!+ Preprocessor macros for mo_rtifc_*.f90
+!
+!
+! Description:
+!   This file contains the Macro definitions
+!
+! Current Code Owner: DWD, Robin Faulwetter
+!    phone: +49 69 8062 2746
+!    fax:   +49 69 8062 3721
+!    email:  robin.faulwetter@dwd.de
+!
+! History:
+! Version      Date       Name
+! ------------ ---------- ----
+! @VERSION@    @DATE@     Robin Faulwetter
+!  Initial release
+!
+! Code Description:
+! Language: Fortran 2003.
+! Software Standards:
+!
+! Heritage: mo_rtifc_10.f90
+!=======================================================================
+
+
+!---------------
+! MACRO SETTINGS
+!---------------
+
+! Take into account _DACE_ and __DACE__
+
+! Icon without RTTOV
+
+! Set macros for RTTOV coefficient distribution
+
+! Select mpi routines to be used for coefficient distribution
+
+
+
+
+
+!-------------------------
+!--------------------------------
 
 !========================
-#if (_RTTOV_VERSION <= 0)
 !========================
 
 !-------------
@@ -37,9 +89,6 @@ MODULE mo_rtifc_nort
 !-------------
   use mo_rtifc_base
 
-#if defined(_DACE_)
-  use mo_rad,             only: t_radv             ! derived type to store radiance obs.
-#endif
 
 
   implicit none
@@ -69,9 +118,6 @@ MODULE mo_rtifc_nort
 
   interface rtifc_fill_input
     module procedure rtifc_fill_input_var
-#if defined(_DACE_)
-    module procedure rtifc_fill_input_rad
-#endif
   end interface
 
   type rttov_options
@@ -155,23 +201,6 @@ contains
 
 
 
-#if defined(_DACE_)
-  subroutine rtifc_fill_input_rad (status,rad,iopts,ivect,istart,iend, pe, &
-                                   wr_profs, wr_profs_fmt)
-    integer,             intent(out)          :: status
-    type(t_radv),        intent(in)           :: rad
-    integer,             intent(in), target   :: iopts(:)        ! options index
-    integer,             intent(in), optional :: ivect
-    integer,             intent(in), optional :: istart
-    integer,             intent(in), optional :: iend
-    integer,             intent(in), optional :: pe
-    integer,             intent(in), optional :: wr_profs(:)
-    character(len=*),    intent(in), optional :: wr_profs_fmt
-
-    status = ERR_NO_RTTOV_LIB
-
-  end subroutine rtifc_fill_input_rad
-#endif
 
 
   subroutine rtifc_fill_input_var (status,iopts,press,temp,humi,t2m,q2m,psurf,hsurf,&
@@ -328,7 +357,6 @@ contains
 
 
 !===============================
-#endif /* _RTTOV_VERSION <= 0 */
 !===============================
 
 end module mo_rtifc_nort

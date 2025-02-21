@@ -12,13 +12,13 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#ifdef __xlC__
-  @PROCESS smp=noopt
-  @PROCESS noopt
-#endif
-#ifdef __PGI
-  !pgi$g opt=1
-#endif
+
+
+
+
+
+
+
 
   MODULE mo_intp_lonlat
     !-------------------------------------------------------------------------
@@ -28,9 +28,9 @@
     !
     !-------------------------------------------------------------------------
     !
-#ifdef _OPENMP
-    USE OMP_LIB
-#endif
+
+
+
     USE mo_kind,                ONLY: wp
     USE mo_exception,           ONLY: message, message_text, finish
     USE mo_impl_constants,      ONLY: SUCCESS, min_rlcell_int,                                &
@@ -84,7 +84,127 @@
 
   CONTAINS
 
-#include "intp_functions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+!-------------------------------------------------------------------------   
+!>
+!! Gaussian kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=e^{-r^2}@f$
+!! 
+FUNCTION gaussi (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = -1._wp * p_rbf_val * p_rbf_val
+p_rbf_val = EXP(p_rbf_val)
+
+END FUNCTION gaussi
+
+
+
+!-------------------------------------------------------------------------
+!
+!  
+!>
+!! Multiquadric kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=(1+r^2)^{\frac{1}{2}}@f$
+!! 
+FUNCTION multiq (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = p_rbf_val * p_rbf_val
+p_rbf_val = SQRT(1._wp + p_rbf_val)
+
+END FUNCTION multiq
+
+!-------------------------------------------------------------------------
+!
+!  
+!>
+!! Inverse multiquadric kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=(1+r^2)^{-\frac{1}{2}}@f$
+!! 
+FUNCTION inv_multiq (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = p_rbf_val * p_rbf_val
+p_rbf_val = SQRT(1._wp + p_rbf_val)
+p_rbf_val = 1._wp / p_rbf_val
+
+END FUNCTION inv_multiq
+
+!-------------------------------------------------------------------------
+!
+!  
+!>
+!! Weighting function for IDW interpolation.
+!! 
+!! @f$\phi(r)=\frac{1}{(r)^p_{exp}}@f$
+!! 
+FUNCTION invdwgt (p_x, p_exp)  RESULT (wgtfac)
+REAL(wp) , INTENT(in) :: p_x            ! radial distance
+REAL(wp) , INTENT(in) :: p_exp          ! exponent
+
+REAL(wp)              :: wgtfac       ! weighting factor
+
+!-----------------------------------------------------------------------  
+
+  wgtfac = 1._wp/max(1.e-10_wp , p_x**p_exp)
+
+END FUNCTION invdwgt
+
+
+!-------------------------------------------------------------------------  
+!
+!  
+!>
+!! Modified inverse multiquadric kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=(1+r^2)^{-1}@f$
+!! 
+FUNCTION inv_multiq2 (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = p_rbf_val * p_rbf_val
+p_rbf_val = 1._wp / (1._wp + p_rbf_val)
+
+END FUNCTION inv_multiq2
+
 
 
     !---------------------------------------------------------------
@@ -106,9 +226,6 @@
       ! list of triangles containing lon-lat grid points (first dim: index and block)
       INTEGER, ALLOCATABLE  :: tri_idx(:,:,:) ! 2, nproma, nblks_lonlat
 
-#ifdef _OPENMP
-      DOUBLE PRECISION       :: time_s_total, toc
-#endif
 
       ! -----------------------------------------------------------
 
@@ -151,9 +268,6 @@
 
             ! compute weights for barycentric interpolation:
             IF (support_baryctr_intp) THEN
-#ifdef _OPENMP
-              time_s_total = omp_get_wtime()
-#endif
               
               ! --- try to read auxiliary triangulation from file:
               triangulation_read_from_file = try_triangulation_readin(p_patch(jg), tri_global, p_global)
@@ -172,12 +286,6 @@
                 CALL setup_barycentric_intp_lonlat(tri_global, p_global, lonlat_grids%list(i)%intp(jg))
 
               END IF
-#ifdef _OPENMP
-              toc = omp_get_wtime() - time_s_total
-              IF (my_process_is_stdio() .and. (dbg_level > 5)) THEN
-                WRITE (0,*) trim(routine), " :: total elapsed time: ", toc
-              END IF
-#endif
 
               CALL p_global%destructor()
               CALL tri_global%destructor()
@@ -550,11 +658,7 @@
 
         ! apply Cholesky decomposition to matrix
         !
-#ifdef __SX__
-        CALL choldec_v(i_startidx,i_endidx,istencil,rbf_vec_dim_c,z_rbfmat,z_diag)
-#else
         CALL choldec_v(i_startidx,i_endidx,istencil,              z_rbfmat,z_diag)
-#endif
 !$NEC ivdep
         DO jc = i_startidx, i_endidx
 
@@ -623,20 +727,10 @@
         END DO
 
         ! compute vector coefficients
-#ifdef __SX__
-        CALL solve_chol_v(i_startidx, i_endidx, istencil, rbf_vec_dim_c, z_rbfmat,  &
-          &               z_diag, z_rhs1, ptr_int_lonlat%rbf_vec%coeff(:,1,:,jb))
-#else
         CALL solve_chol_v(i_startidx, i_endidx, istencil,                z_rbfmat,  &
           &               z_diag, z_rhs1, ptr_int_lonlat%rbf_vec%coeff(:,1,:,jb))
-#endif
-#ifdef __SX__
-        CALL solve_chol_v(i_startidx, i_endidx, istencil, rbf_vec_dim_c, z_rbfmat,  &
-          &               z_diag, z_rhs2, ptr_int_lonlat%rbf_vec%coeff(:,2,:,jb))
-#else
         CALL solve_chol_v(i_startidx, i_endidx, istencil,                z_rbfmat,  &
           &               z_diag, z_rhs2, ptr_int_lonlat%rbf_vec%coeff(:,2,:,jb))
-#endif
 
         DO jc = i_startidx, i_endidx
 
@@ -774,11 +868,7 @@
 
         ! apply Cholesky decomposition to matrix
         !
-#ifdef __SX__
-        CALL choldec_v(i_startidx,i_endidx,istencil,rbf_dim_c2l,z_rbfmat,z_diag)
-#else
         CALL choldec_v(i_startidx,i_endidx,istencil,            z_rbfmat,z_diag)
-#endif
 
         ! compute RHS for coefficient computation
 !$NEC ivdep
@@ -818,13 +908,8 @@
         END DO
 
         ! compute vector coefficients
-#ifdef __SX__
-        CALL solve_chol_v(i_startidx, i_endidx, istencil, rbf_dim_c2l, z_rbfmat,  &
-          &               z_diag, z_rbfval, ptr_int_lonlat%rbf_c2l%coeff(:,:,jb))
-#else
         CALL solve_chol_v(i_startidx, i_endidx, istencil,              z_rbfmat,  &
           &               z_diag, z_rbfval, ptr_int_lonlat%rbf_c2l%coeff(:,:,jb))
-#endif
 
         DO jc = i_startidx, i_endidx
 
@@ -1178,9 +1263,6 @@
       REAL(gk)                         :: min_dist_pole
       REAL(wp)                         :: point(2),                               &
         &                                 max_dist, start_radius
-#ifdef _OPENMP
-      REAL                             :: time1
-#endif
       LOGICAL                          :: l_grid_is_unrotated, l_grid_contains_poles, &
            l_my_process_is_mpi_test
 
@@ -1278,9 +1360,6 @@
       tri_idx(1,:,:) = RESHAPE(pts_flags(:,:), (/ nproma, nblks_lonlat /), (/ INVALID_NODE /) )
       tri_idx(2,:,:) = 0
 
-#ifdef _OPENMP
-      time1 = REAL(omp_get_wtime())
-#endif
 
       ! Perform query. Note that for distributed patches we receive a
       ! local list of "in_points" actually located on this portion of the
@@ -1293,9 +1372,6 @@
         &                 nproma, nblks_lonlat, npromz_lonlat, start_radius,       &
         &                 p_test_run, tri_idx(:,:,:), min_dist(:,:))
 
-#ifdef _OPENMP
-      IF (l_measure_time) WRITE (0,*) "elapsed time (query): ",  REAL(omp_get_wtime()) - time1
-#endif
 
       !-- if we have a global, unrotated grid: copy the distance
       !   result for all points of the first and last latitude row:
@@ -1334,9 +1410,6 @@
         &                 min_dist, tri_idx(:,:,:), in_points(:,:,:),                    &
         &                 ptr_int_lonlat%global_idx(:), ptr_int_lonlat%nthis_local_pts)
 
-#ifdef _OPENMP
-      if (l_measure_time) WRITE (0,*) "elapsed time: ",  REAL(omp_get_wtime()) - time1
-#endif
 
       ! set local values for "nblks" and "npromz"
       nblks_lonlat  = ptr_int_lonlat%nblks_lonlat(nproma)

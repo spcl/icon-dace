@@ -37,7 +37,7 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 !> distributed data structures base module
-#include "fc_feature_defs.inc"
+
 MODULE ppm_distributed
   USE ppm_base, ONLY: assertion, abort_ppm
   USE ppm_std_type_kinds, ONLY: i4
@@ -46,14 +46,14 @@ MODULE ppm_distributed
   USE ppm_extents, ONLY: extent, extent_size
   USE ppm_rectilinear, ONLY: rlcoord2lidx, lidx_nb_indices, &
        num_neighbours_of_rect_elem, lidx2rlcoord
-#ifdef USE_MPI_MOD
-  USE mpi
-#endif
+
+
+
   IMPLICIT NONE
   PRIVATE
-#if defined USE_MPI && ! defined USE_MPI_MOD
-  INCLUDE 'mpif.h'
-#endif
+
+
+
   !> proxy object for distributed graph-structured data
   TYPE graph_csr_dist_i4
     !> number of nodes in global graph (or -1 if not yet computed)
@@ -111,7 +111,7 @@ CONTAINS
     INTEGER :: dims, i
 
     dims = SIZE(rect_g)
-    CALL assertion(dims == SIZE(rect_l), filename, __LINE__, &
+    CALL assertion(dims == SIZE(rect_l), filename, 114, &
          "distributed rectilinear descriptors must have same size")
     num_vertices_l = extent_size(rect_l)
     ! fixme: assert local rect is contained in global rect
@@ -152,7 +152,7 @@ CONTAINS
     TYPE(graph_csr_dist_i4), INTENT(in) :: csr_dist
     INTEGER(i4) :: n
 
-    CALL assertion(csr_dist%num_vertices_g /= -1, filename, __LINE__, &
+    CALL assertion(csr_dist%num_vertices_g /= -1, filename, 155, &
          'num_vertices_g must have previously been evaluated')
 
     n = csr_dist%num_vertices_g
@@ -174,7 +174,7 @@ CONTAINS
       CALL mpi_allreduce(num_nodes(csr_dist%edges_l), n, 1, mp_i4, mpi_sum, &
            comm, ierror)
       IF (ierror /= mpi_success) &
-           CALL abort_ppm("mpi_allreduce failed", filename, __LINE__)
+           CALL abort_ppm("mpi_allreduce failed", filename, 177)
       csr_dist%num_vertices_g = n
     ELSE
       n = csr_dist%num_vertices_g
@@ -197,7 +197,7 @@ CONTAINS
       CALL mpi_allreduce(num_edges(csr_dist%edges_l), n, 1, mp_i4, mpi_sum, &
            comm, ierror)
       IF (ierror /= mpi_success) &
-           CALL abort_ppm("mpi_allreduce failed", filename, __LINE__)
+           CALL abort_ppm("mpi_allreduce failed", filename, 200)
       csr_dist%num_edges_g = n
     ELSE
       n = csr_dist%num_edges_g
@@ -215,7 +215,7 @@ CONTAINS
     TYPE(graph_csr_dist_i4), INTENT(in) :: csr_dist
     INTEGER(i4) :: n
 
-    CALL assertion(csr_dist%num_edges_g /= -1, filename, __LINE__, &
+    CALL assertion(csr_dist%num_edges_g /= -1, filename, 218, &
          'num_edges_g must have previously been evaluated')
 
     n = csr_dist%num_edges_g
@@ -241,13 +241,13 @@ CONTAINS
 
     CALL mpi_comm_dup(comm, comm_gather, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_dup failed", filename, __LINE__)
+         CALL abort_ppm("mpi_comm_dup failed", filename, 244)
     CALL mpi_comm_rank(comm_gather, comm_rank, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_rank failed", filename, __LINE__)
+         CALL abort_ppm("mpi_comm_rank failed", filename, 247)
     CALL mpi_comm_size(comm_gather, comm_size, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_size failed", filename, __LINE__)
+         CALL abort_ppm("mpi_comm_size failed", filename, 250)
     ALLOCATE(part_sizes(2, 0:MERGE(0, comm_size - 1, comm_rank /= dest)), &
          buf(2))
     num_vertices_l = SIZE(graph_g_dist%edges_l%edges_of_vtx) - 1
@@ -257,9 +257,9 @@ CONTAINS
     CALL mpi_gather(buf, 2, mp_i4, &
          part_sizes, 2, mp_i4, dest, comm_gather, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_gather failed", filename, __LINE__)
+         CALL abort_ppm("mpi_gather failed", filename, 260)
     IF (comm_rank == dest) THEN
-      CALL assertion(PRESENT(graph_g_gather), filename, __LINE__, &
+      CALL assertion(PRESENT(graph_g_gather), filename, 262, &
            'output object must be present on dest process')
       num_vertices_g = SUM(part_sizes(1,:))
       num_edges_g = SUM(part_sizes(2,:))
@@ -275,7 +275,7 @@ CONTAINS
           CALL mpi_recv(buf, part_desc_size, mp_i4, j, 1, comm_gather, &
                mpi_status_ignore, ierror)
           IF (ierror /= mpi_success) &
-               CALL abort_ppm("mpi_recv failed", filename, __LINE__)
+               CALL abort_ppm("mpi_recv failed", filename, 278)
           num_other_vertices_l = part_sizes(1, j)
           q = 1
           DO i = 1, num_other_vertices_l
@@ -340,7 +340,7 @@ CONTAINS
       buf(2*num_vertices_l+1:part_desc_size) = graph_g_dist%edges_l%edges
       CALL mpi_send(buf, part_desc_size, mp_i4, dest, 1, comm_gather, ierror)
       IF (ierror /= mpi_success) &
-           CALL abort_ppm("mpi_send failed", filename, __LINE__)
+           CALL abort_ppm("mpi_send failed", filename, 343)
     ENDIF
     DEALLOCATE(part_sizes, buf)
     CALL mpi_comm_free(comm_gather, ierror)

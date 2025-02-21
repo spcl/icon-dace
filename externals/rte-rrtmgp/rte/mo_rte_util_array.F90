@@ -93,28 +93,9 @@ contains
 
     real(wp) :: minValue
 
-#ifdef _OPENMP
-    integer :: dim1, dim2, dim3, i, j, k
-    dim1 = size(array,1)
-    dim2 = size(array,2)
-    dim3 = size(array,3)
-    minValue = check_value + epsilon(check_value) ! initialize to some value
-    !$omp target teams map(to:array) &
-    !$omp defaultmap(tofrom:scalar) reduction(min:minValue)
-    !$omp distribute parallel do simd reduction(min:minValue)
-    do i = 1, dim1
-       do j = 1, dim2
-          do k = 1, dim3
-             minValue = min(minValue,array(i,j,k))
-          enddo
-       enddo
-    enddo
-    !$omp end target teams
-#else
     !$acc kernels copyin(array)
     minValue = minval(array)
     !$acc end kernels
-#endif
 
     any_vals_less_than_3D = (minValue < check_value)
 
@@ -216,31 +197,10 @@ contains
     real(wp) :: minValue, maxValue
 
 
-#ifdef _OPENMP
-    integer :: dim1, dim2, dim3, i, j, k
-    dim1 = size(array,1)
-    dim2 = size(array,2)
-    dim3 = size(array,3)
-    minValue = checkMin + epsilon(checkMin) ! initialize to some value
-    maxValue = checkMax - epsilon(checkMax) ! initialize to some value
-    !$omp target teams map(to:array) &
-    !$omp defaultmap(tofrom:scalar) reduction(min:minValue) reduction(max:maxValue)
-    !$omp distribute parallel do simd reduction(min:minValue) reduction(max:maxValue)
-    do i= 1, dim1
-       do j = 1, dim2
-          do k = 1, dim3
-             minValue = min(minValue,array(i,j,k))
-             maxValue = max(maxValue,array(i,j,k))
-          enddo
-       enddo
-    enddo
-    !$omp end target teams
-#else
     !$acc kernels copyin(array)
     minValue = minval(array)
     maxValue = maxval(array)
     !$acc end kernels
-#endif
 
     any_vals_outside_3D = minValue < checkMin .or. maxValue > checkMax
 

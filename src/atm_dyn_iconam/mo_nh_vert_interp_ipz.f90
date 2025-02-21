@@ -16,7 +16,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nh_vert_interp_ipz
@@ -45,9 +55,6 @@ MODULE mo_nh_vert_interp_ipz
     &                               temperature_intp, prepare_extrap_ifspp, pressure_intp
   USE mo_dynamics_config,     ONLY: ldeepatmo
   USE mo_deepatmo,            ONLY: deepatmo_htrafo
-#ifdef _OPENACC
-  USE openacc,                ONLY: acc_is_present
-#endif  
 
   IMPLICIT NONE
   PRIVATE
@@ -126,9 +133,6 @@ CONTAINS
     ELSE
       ptr_tempv => p_diag%temp(:,:,:)
     END IF
-#ifdef _OPENACC
-    IF(.NOT.acc_is_present(p_z3d_out)) CALL finish(routine, "p_z3d_out is expected to be available on GPU")
-#endif
     !$ACC DATA PRESENT(p_patch, p_diag, p_metrics, temp_z_out, pres_z_out, p_z3d_out) &
     !$ACC   CREATE(z_auxz, p_z3d_edge, z_me)
 
@@ -702,24 +706,20 @@ CONTAINS
               ENDIF
             ENDIF
           ENDDO
-#ifndef _OPENACC
           ! this optimization is not supported by OpenACC but also less important
           IF (ALL(l_found(1:nlen))) THEN
             lfound_all = .TRUE.
             EXIT
           ENDIF
-#endif
         ENDDO
         !$ACC END PARALLEL
-#ifdef _OPENACC
-        lfound_all = .TRUE.
-        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc) REDUCTION(.AND.: lfound_all)
-        DO jc = 1, nlen
-          lfound_all = lfound_all .AND. l_found(jc)
-        ENDDO
-        !$ACC END PARALLEL LOOP
-        !$ACC WAIT
-#endif
+
+
+
+
+
+
+
 
         IF (lfound_all) THEN
           jkm_start = MIN(minval_1d(idx0_ml(1:nlen, jkp), lacc=lzacc), nlevs_ml-1)
@@ -1082,24 +1082,15 @@ CONTAINS
               ENDIF
             ENDIF
           ENDDO
-#ifndef _OPENACC
+
           ! this optimization is not supported by OpenACC but also less important
           IF (ALL(l_found(1:nlen))) THEN
             lfound_all = .TRUE.
             EXIT
           ENDIF
-#endif
+
         ENDDO
         !$ACC END PARALLEL
-#ifdef _OPENACC
-        lfound_all = .TRUE.
-        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) REDUCTION(.AND.: lfound_all)
-        DO jc = 1, nlen
-          lfound_all = lfound_all .AND. l_found(jc)
-        ENDDO
-        !$ACC END PARALLEL LOOP
-        !$ACC WAIT
-#endif
         IF (lfound_all) THEN
           jkm_start = MIN(minval_1d(idx0_ml(1:nlen, jkt), lacc=.TRUE.), nlevs_ml-1)
         ELSE

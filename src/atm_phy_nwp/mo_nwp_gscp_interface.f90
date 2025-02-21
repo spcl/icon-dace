@@ -39,7 +39,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nwp_gscp_interface
@@ -72,9 +82,6 @@ MODULE mo_nwp_gscp_interface
                                      set_qnh_expPSD_N0const
   USE mo_sbm_driver,           ONLY: sbm
   USE mo_sbm_storage,          ONLY: t_sbm_storage, get_sbm_storage
-#ifdef __ICON_ART
-  USE mo_art_clouds_interface, ONLY: art_clouds_interface_2mom
-#endif
   USE mo_nwp_diagnosis,        ONLY: nwp_diag_output_minmax_micro
   USE gscp_data,               ONLY: cloud_num
   USE mo_cpl_aerosol_microphys,ONLY: specccn_segalkhain, ncn_from_tau_aerosol_speccnconst, &
@@ -549,35 +556,6 @@ CONTAINS
                        & l_cv=.TRUE.                        ,    &
                        & ithermo_water=atm_phy_nwp_config(jg)%ithermo_water ) !< in: latent heat choice
 
-#ifdef __ICON_ART
-        CASE(6)  ! two-moment scheme with prognostic cloud droplet number
-                 ! and chemical composition taken from the ART extension
-
-          CALL art_clouds_interface_2mom(                        &
-                       isize  = nproma,                          &!in: array size
-                       ke     = nlev,                            &!in: end level/array size
-                       jg     = jg,                              &!in: domain index
-                       jb     = jb,                              &!in: block index
-                       is     = i_startidx,                      &!in: start index
-                       ie     = i_endidx,                        &!in: end index
-                       ks     = kstart_moist(jg),                &!in: start level
-                       dt     = tcall_gscp_jg ,                  &!in: time step
-                       dz     = p_metrics%ddqz_z_full(:,:,jb),   &!in: vertical layer thickness
-                       rho    = p_prog%rho(:,:,jb  )       ,     &!in:  density
-                       pres   = p_diag%pres(:,:,jb  )      ,     &!in:  pressure
-                       tke    = ptr_tke_loc,                 &!in:  turbulent kinetik energy (on half levels, size nlev+1)
-                       p_trac = ptr_tracer (:,:,jb,:),           &!inout: all tracers
-                       tk     = p_diag%temp(:,:,jb),             &!inout: temp 
-                       w      = p_prog%w(:,:,jb),                &!inout: w (on half levels, size nlev+1)
-                       prec_r = prm_diag%rain_gsp_rate (:,jb),   &!inout precp rate rain
-                       prec_i = prm_diag%ice_gsp_rate (:,jb),    &!inout precp rate ice
-                       prec_s = prm_diag%snow_gsp_rate (:,jb),   &!inout precp rate snow
-                       prec_g = prm_diag%graupel_gsp_rate (:,jb),&!inout precp rate graupel
-                       prec_h = prm_diag%hail_gsp_rate (:,jb),   &!inout precp rate hail
-! not impl yet!        qrsflux= prm_diag%qrs_flux(:,:,jb),        & !inout: 3D precipitation flux for LHN
-                       tkvh   = prm_diag%tkvh(:,:,jb),           &!in: turbulent diffusion coefficients for heat     (m/s2 )
-                       l_cv=.TRUE.     )
-#endif
         CASE(7)  ! two-moment scheme with liquid water on graupel and hail (lwf scheme)
 
           CALL two_moment_mcrph(                       &
@@ -882,11 +860,7 @@ CONTAINS
         IF (timers_level > 10) CALL timer_start(timer_phys_micro_satad) 
         IF (lsatad) THEN
 
-#ifdef _OPENACC
-          CALL satad_v_3d_gpu(                             &
-#else
           CALL satad_v_3d(                                 &
-#endif
                & maxiter  = 10                            ,& !> IN
                & tol      = 1.e-3_wp                      ,& !> IN
                & te       = p_diag%temp       (:,:,jb)    ,& !> INOUT

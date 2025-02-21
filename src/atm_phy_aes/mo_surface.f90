@@ -14,12 +14,12 @@
 MODULE mo_surface
 
   USE mo_kind,              ONLY: wp, i1
-#ifdef _OPENACC
-  USE mo_exception,         ONLY: warning
-#endif
-#ifdef __NO_JSBACH__
-  USE mo_exception,         ONLY: finish
-#endif
+
+
+
+
+
+
 !#ifdef __NO_ICON_OCEAN__
   USE mo_exception,         ONLY: finish
 !#endif
@@ -37,19 +37,19 @@ MODULE mo_surface
   USE mo_surface_diag,      ONLY: wind_stress, surface_fluxes
   USE mo_index_list,        ONLY: generate_index_list_batched
   USE mtime,                ONLY: t_datetime => datetime
-#ifndef __NO_JSBACH__
+
   USE mo_jsb_interface,     ONLY: jsbach_interface
-#endif
+
   USE mo_aes_sfc_indices,   ONLY: nsfc_type
-#ifndef __NO_ICON_OCEAN__
+
   USE mo_ice_interface,     ONLY: ice_fast
   USE mo_ml_ocean,          ONLY: ml_ocean
-#endif
 
-#if defined(SERIALIZE) && (defined(SERIALIZE_JSBACH) || defined(SERIALIZE_ALL))
-  USE utils_ppser
-  USE m_serialize
-#endif
+
+
+
+
+
   USE mo_physical_constants,ONLY: cpd
   USE mo_nh_testcases_nml,  ONLY: isrfc_type, shflx, lhflx
   USE mo_physical_constants,ONLY: alv
@@ -431,7 +431,7 @@ CONTAINS
       !$ACC END PARALLEL LOOP
 
       ! If land is present, JSBACH is currently the only surface scheme supported by AES physcis package
-#ifndef __NO_JSBACH__
+
 
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
       DO jk = 1, kbdim
@@ -566,55 +566,6 @@ CONTAINS
           & ice_fract_lake    = lake_ice_frc(jcs:kproma)                                     & ! out
           )
 
-#if defined(SERIALIZE) && (defined(SERIALIZE_JSBACH) || defined(SERIALIZE_ALL))
-
-       !$ACC UPDATE HOST(ztsfc_lnd, ztsfc_lnd_eff, qsat_lnd, qsat_lwtr, qsat_lice) &
-       !$ACC   HOST(zcpt_lnd, zcpt_lwtr, zcpt_lice) &
-       !$ACC   HOST(pcair, pcsat, zevap_lnd, zlhflx_lnd) &
-       !$ACC   HOST(zshflx_lnd, zgrnd_hflx, zgrnd_hcap, z0h_lnd, z0m_tile) &
-       !$ACC   HOST(q_snocpymlt, albvisdir_tile, albnirdir_tile, albvisdif_tile) &
-       !$ACC   HOST(albnirdif_tile, ztsfc_lwtr, zevap_lwtr, zlhflx_lwtr) &
-       !$ACC   HOST(zshflx_lwtr, zalbedo_lwtr, ztsfc_lice, zevap_lice) &
-       !$ACC   HOST(zlhflx_lice, zshflx_lice, zalbedo_lice, lake_ice_frc) &
-       !$ACC   HOST(pco2_flux_tile) &
-       !$ACC   ASYNC(1)
-       !$ACC WAIT(1)
-
-       call fs_create_savepoint('jsb_interface_output1', ppser_savepoint)
-       call fs_write_field(ppser_serializer, ppser_savepoint, 't_eff_srf', ztsfc_lnd_eff(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_srf', qsat_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 's_srf', zcpt_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_q_air', pcair(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_qsat_srf', pcsat(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'evapotrans', zevap_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx', zlhflx_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx', zshflx_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hflx', zgrnd_hflx(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hcap', zgrnd_hcap(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_h_srf', z0h_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_m_srf', z0m_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'q_snocpymlt', q_snocpymlt(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dir', albvisdir_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dir', albnirdir_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dif', albvisdif_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dif', albnirdif_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'co2_flux', pco2_flux_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 't_lwtr', ztsfc_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_lwtr', qsat_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'zcpt_lwtr', zcpt_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'evapo_wtr', zevap_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx_wtr', zlhflx_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx_wtr', zshflx_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'albedo_lwtr', zalbedo_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 't_lice', ztsfc_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_lice', qsat_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'zcpt_lice', zcpt_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'evapo_ice', zevap_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx_ice', zlhflx_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx_ice', zshflx_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'albedo_lice', zalbedo_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'ice_fract_lake', lake_ice_frc(jcs:kproma))
-#endif
 
       ELSE
         CALL jsbach_interface ( jg, nblock, jcs, kproma,                                     & ! in
@@ -663,83 +614,10 @@ CONTAINS
         )
 
 
-#if defined(SERILIAZE) && (defined(SERIALIZE_JSBACH) || defined(SERIALIZE_ALL))
-        !$ACC UPDATE HOST(ztsfc_lnd, ztsfc_lnd_eff, qsat_lnd) &
-        !$ACC   HOST(zcpt_lnd, pcair, pcsat, zevap_lnd, zlhflx_lnd) &
-        !$ACC   HOST(zshflx_lnd, zgrnd_hflx, zgrnd_hcap, z0h_lnd, z0m_tile) &
-        !$ACC   HOST(q_snocpymlt, albvisdir_tile, albnirdir_tile, albvisdif_tile) &
-        !$ACC   HOST(albnirdif_tile, pco2_flux_tile) &
-        !$ACC   ASYNC(1)
-        !$ACC WAIT(1)
-
-        call fs_create_savepoint('jsb_interface_output1', ppser_savepoint)
-        call fs_write_field(ppser_serializer, ppser_savepoint, 't_srf', ztsfc_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 't_eff_srf', ztsfc_lnd_eff(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_srf', qsat_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 's_srf', zcpt_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_q_air', pcair(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_qsat_srf', pcsat(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'evapotrans', zevap_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx', zlhflx_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx', zshflx_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hflx', zgrnd_hflx(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hcap', zgrnd_hcap(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_h_srf', z0h_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_m_srf', z0m_tile(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'q_snocpymlt', q_snocpymlt(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dir', albvisdir_tile(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dir', albnirdir_tile(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dif', albvisdif_tile(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dif', albnirdif_tile(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'co2_flux', pco2_flux_tile(jcs:kproma,idx_lnd))
-#endif
 
       END IF ! llake
       END IF ! ljsb
 
-#ifdef _OPENACC
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-      DO jl = jcs,kproma
-        ! preliminary, dummy values
-        pco2_flux_tile(jl, idx_ice) = 0._wp
-
-        IF (aes_phy_config(jg)%ljsb ) THEN
-          ptsfc_tile(jl,idx_lnd) = ztsfc_lnd(jl)
-          pcpt_tile (jl,idx_lnd) = zcpt_lnd(jl)
-          pqsat_tile(jl,idx_lnd) = qsat_lnd(jl)
-        END IF
-        IF (aes_phy_config(jg)%llake) THEN
-          IF (idx_wtr <= ksfc_type) THEN
-            IF (alake(jl) > 0._wp) THEN
-              ptsfc_tile    (jl, idx_wtr) = ztsfc_lwtr   (jl)
-              pcpt_tile     (jl, idx_wtr) = zcpt_lwtr    (jl)
-              pqsat_tile    (jl, idx_wtr) = qsat_lwtr    (jl)
-              albvisdir_tile(jl, idx_wtr) = zalbedo_lwtr (jl)
-              albvisdif_tile(jl, idx_wtr) = zalbedo_lwtr (jl)
-              albnirdir_tile(jl, idx_wtr) = zalbedo_lwtr (jl)
-              albnirdif_tile(jl, idx_wtr) = zalbedo_lwtr (jl)
-              ! security reasons
-              pco2_flux_tile(jl, idx_wtr) =  0._wp
-            END IF
-          END IF
-          IF (idx_ice <= ksfc_type) THEN
-            IF (alake(jl) > 0._wp) THEN
-              ptsfc_tile    (jl, idx_ice) = ztsfc_lice   (jl)
-              pcpt_tile     (jl, idx_ice) = zcpt_lice    (jl)
-              pqsat_tile    (jl, idx_ice) = qsat_lice    (jl)
-              albvisdir_tile(jl, idx_ice) = zalbedo_lice (jl)
-              albvisdif_tile(jl, idx_ice) = zalbedo_lice (jl)
-              albnirdir_tile(jl, idx_ice) = zalbedo_lice (jl)
-              albnirdif_tile(jl, idx_ice) = zalbedo_lice (jl)
-            ELSE
-              lake_ice_frc(jl) = 0._wp
-            END IF
-          END IF
-        END IF
-      END DO
-      !$ACC END PARALLEL LOOP
-
-#else
       IF (aes_phy_config(jg)%ljsb ) THEN
         ptsfc_tile(jcs:kproma,idx_lnd) = ztsfc_lnd(jcs:kproma)
         pcpt_tile (jcs:kproma,idx_lnd) = zcpt_lnd(jcs:kproma)
@@ -773,7 +651,6 @@ CONTAINS
           ENDWHERE
         END IF
       END IF
-#endif
 
       ! Set the evapotranspiration coefficients, to be used later in
       ! blending and in diagnosing surface fluxes.
@@ -784,9 +661,6 @@ CONTAINS
         zcs(jl,idx_lnd) = pcsat(jl)
       END DO
       !$ACC END PARALLEL LOOP
-#else
-      CALL finish("mo_surface:update_surface", "The JSBACH component is not activated")
-#endif
     END IF ! idx_lnd
 
     !===================================================================
@@ -1007,7 +881,6 @@ CONTAINS
     !===========================================================================
     IF (idx_wtr <= ksfc_type) THEN
 
-#ifndef __NO_ICON_OCEAN__
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
       DO jl = jcs,kproma
         rsns(jl)      = rsds(jl) - rsus(jl)
@@ -1036,7 +909,6 @@ CONTAINS
         END DO
         !$ACC END PARALLEL LOOP
       END IF
-#endif
 
       ! Albedo model for the ocean
       ! TBD: This should be replaced by routine
@@ -1063,7 +935,6 @@ CONTAINS
       ! DA: wait while the other kernels are not async
       !$ACC WAIT
 
-#ifndef __NO_ICON_OCEAN__
       ! LL This is a temporary solution,
       ! we should restrcure ice thermodynamics in a more stand-alone way
 
@@ -1193,10 +1064,6 @@ CONTAINS
       ! (Switched off for now, should be used for implicit coupling)
       !pcpt_tile(jcs:kproma,idx_ice) = ptsfc_tile(jcs:kproma,idx_ice) * zt2s_conv(jcs:kproma,idx_ice)
 
-#else
-    ! __NO_ICON_OCEAN__
-      CALL finish("mo_surface:update_surface", "The ice process requires the ICON_OCEAN component")
-#endif
     ENDIF ! lice
 
    !-------------------------------------------------------------------

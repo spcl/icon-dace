@@ -20,11 +20,11 @@ MODULE mo_ocean_model
   USE mo_parallel_config,     ONLY: p_test_run, l_test_openmp, num_io_procs, &
        &                            pio_type, num_test_pe, num_prefetch_proc
   USE mo_mpi,                 ONLY: set_mpi_work_communicators
-#ifdef HAVE_CDI_PIO
-  USE mo_impl_constants,      ONLY: pio_type_cdipio
-  USE mo_cdi,                 ONLY: namespaceGetActive, namespaceSetActive
-  USE mo_cdi_pio_interface,   ONLY: nml_io_cdi_pio_namespace
-#endif
+
+
+
+
+
   USE mo_timer,               ONLY: init_timer, timer_start, timer_stop, print_timer, &
        &                            timer_model_init
   USE mo_memory_log,          ONLY: memory_log_terminate
@@ -112,24 +112,24 @@ MODULE mo_ocean_model
   USE mo_icon_output_tools,    ONLY: init_io_processes, prepare_output
   !-------------------------------------------------------------
   ! For the coupling
-#ifdef YAC_coupling
-  USE mo_ocean_coupling_frame, ONLY: construct_ocean_coupling, destruct_ocean_coupling
-#endif
+
+
+
   !-------------------------------------------------------------
 
   USE mo_ocean_hamocc_interface, ONLY: ocean_to_hamocc_construct, ocean_to_hamocc_init, ocean_to_hamocc_end
 
-#ifndef __NO_ICON_COMIN__
-  USE mo_mpi,               ONLY: p_comm_comin
-  USE comin_host_interface, ONLY: mpi_handshake_dummy
-#endif
+
+
+
+
 
   IMPLICIT NONE
 
   PRIVATE
-#ifdef HAVE_CDI_PIO
-  INCLUDE 'cdipio.inc'
-#endif
+
+
+
 
     PUBLIC :: ocean_model
     PUBLIC :: ocean_patch_3d, ocean_state, operators_coefficients
@@ -258,9 +258,9 @@ MODULE mo_ocean_model
     INTEGER :: error_status
 
 
-#ifdef HAVE_CDI_PIO
-    INTEGER :: prev_cdi_namespace
-#endif
+
+
+
 
     !------------------------------------------------------------------
     !  cleaning up process
@@ -310,19 +310,8 @@ MODULE mo_ocean_model
     ! Delete variable lists
 
     IF (output_mode%l_nml) CALL close_name_list_output
-#ifdef HAVE_CDI_PIO
-    IF (pio_type == pio_type_cdipio) THEN
-      prev_cdi_namespace = namespaceGetActive()
-      CALL namespaceSetActive(nml_io_cdi_pio_namespace)
-      CALL pioFinalize
-      CALL namespaceSetActive(prev_cdi_namespace)
-    END IF
-#endif
 
     CALL destruct_icon_communication()
-#ifdef YAC_coupling
-    CALL destruct_ocean_coupling ()
-#endif
 
     CALL destruct_operators_coefficients(operators_coefficients, solverCoefficients_sp)
     ! close memory logging files
@@ -397,10 +386,6 @@ MODULE mo_ocean_model
          &                pio_type, num_io_procs_radar,radar_flag_doms_model, num_dio_procs)
 !pa
 
-#ifndef __NO_ICON_COMIN__
-    ! we dont participate at comin (yet) but we need to be friendly and shake hands
-    CALL mpi_handshake_dummy(p_comm_comin)
-#endif
 
     !-------------------------------------------------------------------
     ! 3.2 Initialize various timers
@@ -574,9 +559,6 @@ MODULE mo_ocean_model
     CALL construct_atmos_fluxes(patch_3d%p_patch_2d(1), atmos_fluxes, kice)
 
     CALL construct_ocean_surface(patch_3d, p_oce_sfc)
-#ifdef YAC_coupling
-    CALL construct_ocean_coupling(ocean_patch_3d)
-#endif
 
     !------------------------------------------------------------------
     CALL construct_oce_diagnostics( ocean_patch_3d, ocean_state(1))

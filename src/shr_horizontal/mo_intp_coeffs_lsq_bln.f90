@@ -14,18 +14,19 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------  
 
-#ifdef __xlC__
-! @PROCESS nosmp
-! @PROCESS NOOPTimize
-! @PROCESS smp=noopt
-@PROCESS noopt
-#endif
-#ifdef __PGI
-!pgi$g opt=1
-#endif
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_intp_coeffs_lsq_bln
@@ -1021,27 +1022,6 @@ REAL(wp) :: za_debug(nproma,lsq_dim_c,lsq_dim_unk)
     ENDDO
 
 !!!!!DEBUG !!!
-#ifdef DEBUG_COEFF
-    za_debug(:,:,:)  = 0._wp
-    ! re-COMPUTE A:: U * SIGMA * TRANSPOSE(V)  !!! Funktioniert
-    DO jja = 1, lsq_dim_c
-      DO jjb = 1, lsq_dim_unk
-        DO jjk = 1, lsq_dim_unk  !lsq_dim_c
-          DO jc = i_startidx, i_endidx
-            za_debug(jc,jja,jjb) = za_debug(jc,jja,jjb)  &
-              &  + zu(jja,jjk,jc) * zs(jjk,jc) * zv_t(jjk,jjb,jc)
-          ENDDO
-        ENDDO
-      ENDDO
-    ENDDO
-
-    write(0,*) "za_debug(10,:,:)- z_lsq_mat_c(10,:,:)",za_debug(10,:,:)- z_lsq_mat_c(10,:,:)
-    write(0,*) "za_debug(55,:,:)- z_lsq_mat_c(55,:,:)",za_debug(55,:,:)- z_lsq_mat_c(55,:,:)
-    write(0,*) "zs(:,10) ",zs(:,10)
-    write(0,*) "zs(:,55) ",zs(:,55)
-    write(0,*) "ptr_int_lsq%lsq_weights_c(10,:,jb)",ptr_int_lsq%lsq_weights_c(10,:,jb)
-    write(0,*) "ptr_int_lsq%lsq_weights_c(55,:,jb)",ptr_int_lsq%lsq_weights_c(55,:,jb)
-#endif
 !!!! END DEBUG !!!
 
     ENDIF  ! llsq_svd
@@ -1746,27 +1726,6 @@ REAL(wp) :: za_debug(nproma,lsq_dim_c,lsq_dim_unk)
     ENDDO
 
 !!!!!DEBUG !!!
-#ifdef DEBUG_COEFF
-    za_debug(:,:,:)  = 0._wp
-    ! re-COMPUTE A:: U * SIGMA * TRANSPOSE(V)  !!! Funktioniert
-    DO jja = 1, lsq_dim_c
-      DO jjb = 1, lsq_dim_unk
-        DO jjk = 1, lsq_dim_unk  !lsq_dim_c
-          DO jc = i_startidx, i_endidx
-            za_debug(jc,jja,jjb) = za_debug(jc,jja,jjb)  &
-              &  + zu(jja,jjk,jc) * zs(jjk,jc) * zv_t(jjk,jjb,jc)
-          ENDDO
-        ENDDO
-      ENDDO
-    ENDDO
-
-    write(0,*) "za_debug(10,:,:)- z_lsq_mat_c(10,:,:)",za_debug(10,:,:)- z_lsq_mat_c(10,:,:)
-    write(0,*) "za_debug(55,:,:)- z_lsq_mat_c(55,:,:)",za_debug(55,:,:)- z_lsq_mat_c(55,:,:)
-    write(0,*) "zs(:,10) ",zs(:,10)
-    write(0,*) "zs(:,55) ",zs(:,55)
-    write(0,*) "ptr_int_lsq%lsq_weights_c(10,:,jb)",ptr_int_lsq%lsq_weights_c(10,:,jb)
-    write(0,*) "ptr_int_lsq%lsq_weights_c(55,:,jb)",ptr_int_lsq%lsq_weights_c(55,:,jb)
-#endif
 !!!! END DEBUG !!!
 
     ENDIF  ! llsq_svd

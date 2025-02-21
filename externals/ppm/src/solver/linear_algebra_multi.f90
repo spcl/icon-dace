@@ -59,30 +59,30 @@ END FUNCTION ARR_DOTPRODCUT1
 
 !> Array-wise dotproduct for two different matrices
 FUNCTION ARR_DOTPRODCUT2(x, y, global_opt) RESULT(ans)
-#ifdef BLASDOT
-  REAL(PREC) :: PDOT
-#endif
+
+
+
   REAL(PREC), INTENT(IN) :: x(:,:), y(:,:)
   LOGICAL, INTENT(IN), OPTIONAL :: global_opt
   REAL(PREC) :: ans
   REAL(PREC), ALLOCATABLE :: xy(:)
   LOGICAL :: global
   INTEGER :: j, je
-#ifdef BLASDOT
-  INTEGER :: ie
-#endif
+
+
+
   IF ( PRESENT(global_opt) ) THEN
     global = global_opt
   ELSE
     global = config%do_exchange
   ENDIF
 
-#ifdef BLASDOT
-  ie = SIZE(x,1)
-#endif
+
+
+
   je = SIZE(x,2)
 
-#ifndef BLASDOT
+
   ALLOCATE(xy(je))
 
   DO j=1,je
@@ -91,9 +91,9 @@ FUNCTION ARR_DOTPRODCUT2(x, y, global_opt) RESULT(ans)
 
   ans = SUM(xy)
   DEALLOCATE(xy)
-#else
-  ans = PDOT(ie*je, x, 1, y, 1)
-#endif
+
+
+
   IF (global) ans = global_sum(ans)
 
 END FUNCTION ARR_DOTPRODCUT2
@@ -117,24 +117,15 @@ END FUNCTION ARR_NORM_2
 
 ! Sums a variable globally up
 FUNCTION GLOBAL_SUM(summand, comm_opt) RESULT(all_sum)
-#ifdef USE_MPI
-  USE ppm_std_type_kinds_mp, ONLY: PREC_MPI_DT
-  USE ppm_base, ONLY: ppm_default_comm
-#endif
+
+
+
+
 
   REAL(PREC), INTENT(in) :: summand
   INTEGER, OPTIONAL, INTENT(in) :: comm_opt
   REAL(PREC) :: all_sum
-#ifdef USE_MPI
-  INTEGER :: comm, ierror
-
-  comm = ppm_default_comm
-  IF (PRESENT(comm_opt)) comm = comm_opt
-
-  CALL MPI_ALLREDUCE (summand, all_sum, 1, PREC_MPI_DT, MPI_SUM, comm, ierror)
-#else
   all_sum = summand
-#endif
 
 END FUNCTION GLOBAL_SUM
 

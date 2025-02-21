@@ -13,7 +13,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_tmx_surface_interface
@@ -29,10 +39,8 @@ MODULE mo_tmx_surface_interface
   USE mo_tmx_field_class, ONLY: t_domain, isfc_oce, isfc_ice, isfc_lnd
 
   ! If land is present, JSBACH is currently the only surface scheme supported by AES physcis package
-#ifndef __NO_JSBACH__
   ! USE mo_jsb_interface, ONLY: jsbach_interface
   USE mo_jsb_interface,     ONLY: jsbach_interface, jsbach_get_var
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -127,7 +135,6 @@ CONTAINS
     END IF
 !$OMP END PARALLEL
 
-#ifndef __NO_JSBACH__
 
     !$ACC DATA CREATE(dz_srf, rain_tmp, snow_tmp, rvds, rnds, rpds, fract_par_diffuse, t_acoef, t_bcoef, q_acoef, q_bcoef)
 
@@ -248,9 +255,6 @@ CONTAINS
 
     !$ACC END DATA
 
-#else
-    CALL finish(routine, "The JSBACH component is not activated")
-#endif
 
   END SUBROUTINE update_land
 
@@ -265,9 +269,7 @@ CONTAINS
     & new_tsfc, q_top, q_bot, &
     & albvisdir, albvisdif, albnirdir, albnirdif)
 
-#ifndef __NO_ICON_OCEAN__
   USE mo_ice_interface, ONLY: ice_fast
-#endif
   
     TYPE(t_domain), INTENT(in), POINTER :: domain
     REAL(wp), INTENT(in) :: dtime
@@ -313,7 +315,6 @@ CONTAINS
     CALL init(T2)
 !$OMP END PARALLEL
 
-#ifndef __NO_ICON_OCEAN__
 
     kice = 1
 
@@ -386,9 +387,8 @@ CONTAINS
 
     !$ACC END DATA
 
-#else
-    CALL finish(routine, "The ice process requires the ICON_OCEAN component")
-#endif
+
+
   
   END SUBROUTINE update_sea_ice
 
@@ -579,7 +579,7 @@ CONTAINS
 !$OMP END PARALLEL DO
 
     IF (isfc == isfc_lnd) THEN
-#ifndef __NO_JSBACH__
+
       CALL jsbach_get_var('turb_rough_m', 1, ptr2d=jsb_rough_m)
       CALL jsbach_get_var('turb_rough_h', 1, ptr2d=jsb_rough_h)
 !$OMP PARALLEL DO PRIVATE(jb, jls, js) ICON_OMP_DEFAULT_SCHEDULE
@@ -594,9 +594,9 @@ CONTAINS
       END DO
 !$OMP END PARALLEL DO
       NULLIFY(jsb_rough_m, jsb_rough_h)
-#else
-      CALL finish(routine, "The JSBACH component is not activated")
-#endif
+
+
+
     END IF
 
     !$ACC WAIT(1)
@@ -637,9 +637,9 @@ CONTAINS
     
     CHARACTER(len=*), PARAMETER :: routine = modname//':compute_sfc_sat_spec_humidity'
 
-#ifdef __NO_JSBACH__
-    IF (isfc == isfc_lnd) CALL finish(routine, "The JSBACH component is not activated")
-#endif
+
+
+
 
 !$OMP PARALLEL DO PRIVATE(jb, jls, js) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = domain%i_startblk_c,domain%i_endblk_c
@@ -663,7 +663,7 @@ CONTAINS
     END DO
 !$OMP END PARALLEL DO
 
-#ifndef __NO_JSBACH__
+
     IF (isfc == isfc_lnd .AND. .NOT. linit) THEN
       CALL jsbach_get_var('seb_qsat_star', 1, ptr2d=jsb_qsat)
 !$OMP PARALLEL DO PRIVATE(jb, jls, js) ICON_OMP_DEFAULT_SCHEDULE
@@ -678,7 +678,7 @@ CONTAINS
 !$OMP END PARALLEL DO
       NULLIFY(jsb_qsat)
     END IF
-#endif
+
 
     !$ACC WAIT(1)
 
@@ -764,16 +764,16 @@ CONTAINS
       RETURN
     END IF
 
-#ifdef __NO_JSBACH__
-    IF (isfc == isfc_lnd) CALL finish(routine, "The JSBACH component is not activated")
-#endif
+
+
+
 
     IF (isfc == isfc_lnd) THEN
-#ifndef __NO_JSBACH__
+
       CALL jsbach_get_var('hydro_evapotrans',  1, ptr2d=jsb_evapotrans_ptr)
       CALL jsbach_get_var('seb_latent_hflx',   1, ptr2d=jsb_latent_hflx_ptr)
       CALL jsbach_get_var('seb_sensible_hflx', 1, ptr2d=jsb_sensible_hflx_ptr)
-#endif
+
     END IF
 
 !$OMP PARALLEL DO PRIVATE(jb, jls, js) ICON_OMP_DEFAULT_SCHEDULE

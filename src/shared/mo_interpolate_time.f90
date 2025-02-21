@@ -10,7 +10,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_interpolate_time
 
@@ -32,9 +42,6 @@ MODULE mo_interpolate_time
        &                       process_mpi_root_id,        &
        &                       p_comm_work, p_bcast, p_pe_work
   USE mo_reader_abstract,   ONLY: t_abstract_reader
-#ifdef _OPENACC
-  USE mo_mpi,            ONLY: i_am_accel_node
-#endif
 
   IMPLICIT NONE
 

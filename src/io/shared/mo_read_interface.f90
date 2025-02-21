@@ -13,10 +13,10 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#define define_fill_target REAL(wp), TARGET, OPTIONAL
-#define define_return_pointer REAL(wp), POINTER, OPTIONAL
-#define define_fill_target_int INTEGER, TARGET, OPTIONAL
-#define define_return_pointer_int INTEGER, POINTER, OPTIONAL
+
+
+
+
 
 MODULE mo_read_interface
 
@@ -266,8 +266,8 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:)
-    define_return_pointer        :: return_pointer(:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:)
+    REAL(wp), POINTER, OPTIONAL        :: return_pointer(:)
 
     REAL(wp), POINTER            :: tmp_pointer(:)
     CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
@@ -294,8 +294,8 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:)
-    define_return_pointer        :: return_pointer(:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:)
+    REAL(wp), POINTER, OPTIONAL        :: return_pointer(:,:)
 
     REAL(wp), POINTER            :: tmp_pointer(:,:)
     CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
@@ -325,8 +325,8 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:,:)
-    define_return_pointer        :: return_pointer(:,:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:,:)
+    REAL(wp), POINTER, OPTIONAL        :: return_pointer(:,:,:)
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: dim_names(:)
     INTEGER, INTENT(IN), OPTIONAL:: start_timestep, end_timestep
 
@@ -359,8 +359,8 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:,:,:)
-    define_return_pointer        :: return_pointer(:,:,:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:,:,:)
+    REAL(wp), POINTER, OPTIONAL        :: return_pointer(:,:,:,:)
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: dim_names(:)
     INTEGER, INTENT(IN), OPTIONAL:: start_timestep, end_timestep
 
@@ -393,8 +393,8 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:,:,:)
-    define_return_pointer        :: return_pointer(:,:,:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:,:,:)
+    REAL(wp), POINTER, OPTIONAL        :: return_pointer(:,:,:,:)
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: dim_names(:)
     INTEGER, INTENT(IN), OPTIONAL:: start_extdim1, end_extdim1
 
@@ -506,8 +506,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT) :: stream_id
     INTEGER, INTENT(IN)              :: location
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
-    define_fill_target_int           :: fill_array(:,:)
-    define_return_pointer_int        :: return_pointer(:,:)
+    INTEGER, TARGET, OPTIONAL           :: fill_array(:,:)
+    INTEGER, POINTER, OPTIONAL        :: return_pointer(:,:)
     TYPE(t_ptr_2d_int) :: tmp_ptr(1)
     INTEGER, POINTER                 :: tmp_pointer(:,:)
     CHARACTER(LEN=NF_MAX_NAME)       :: variable_name_
@@ -637,8 +637,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT) :: stream_id
     INTEGER, INTENT(IN)          :: location
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:)
-    define_return_pointer        :: return_pointer(:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:)
+    REAL(wp), POINTER, OPTIONAL        :: return_pointer(:,:)
     TYPE(t_ptr_2d)               :: tmp_ptr(1)
     REAL(wp), POINTER            :: tmp_pointer(:,:)
     CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
@@ -699,8 +699,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT) :: stream_id
     INTEGER, INTENT(IN)              :: location
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
-    define_fill_target               :: fill_array(:,:)
-    define_return_pointer            :: return_pointer(:,:)  
+    REAL(wp), TARGET, OPTIONAL               :: fill_array(:,:)
+    REAL(wp), POINTER, OPTIONAL            :: return_pointer(:,:)  
     LOGICAL, OPTIONAL                :: has_missValue
     REAL(wp), OPTIONAL               :: missValue    
     
@@ -730,9 +730,9 @@ CONTAINS
     INTEGER, INTENT(IN)              :: location
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
     INTEGER, INTENT(IN)              :: array_shape(2)
-    define_fill_target               :: fill_array(array_shape(1), &
+    REAL(wp), TARGET, OPTIONAL               :: fill_array(array_shape(1), &
       &                                            array_shape(2), 1)
-    define_return_pointer            :: return_pointer(:,:)
+    REAL(wp), POINTER, OPTIONAL            :: return_pointer(:,:)
     LOGICAL, OPTIONAL                :: has_missValue
     REAL(wp), OPTIONAL               :: missValue    
     
@@ -783,8 +783,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT) :: stream_id
     INTEGER, INTENT(IN)              :: location
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
-    define_fill_target               :: fill_array(:,:)
-    define_return_pointer            :: return_pointer(:,:)
+    REAL(wp), TARGET, OPTIONAL               :: fill_array(:,:)
+    REAL(wp), POINTER, OPTIONAL            :: return_pointer(:,:)
     CHARACTER(LEN=*), PARAMETER      :: method_name = &
       'mo_read_interface:read_dist_REAL_2D_1lev_1time'
 
@@ -806,9 +806,9 @@ CONTAINS
     INTEGER, INTENT(IN)              :: location
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
     INTEGER, INTENT(IN)              :: array_shape(2)
-    define_fill_target               :: fill_array(array_shape(1), 1, &
+    REAL(wp), TARGET, OPTIONAL               :: fill_array(array_shape(1), 1, &
       &                                            array_shape(2), 1)
-    define_return_pointer            :: return_pointer(:,:)
+    REAL(wp), POINTER, OPTIONAL            :: return_pointer(:,:)
     
     CHARACTER(LEN=*), PARAMETER      :: method_name = &
       'mo_read_interface:read_dist_REAL_2D_1lev_1time_'
@@ -851,8 +851,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT) :: stream_id
     INTEGER, INTENT(IN)              :: location
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
-    define_fill_target               :: fill_array(:,:,:)
-    define_return_pointer            :: return_pointer(:,:,:)
+    REAL(wp), TARGET, OPTIONAL               :: fill_array(:,:,:)
+    REAL(wp), POINTER, OPTIONAL            :: return_pointer(:,:,:)
     INTEGER, INTENT(in), OPTIONAL    :: start_timestep, end_timestep
     LOGICAL, OPTIONAL                :: has_missValue
     REAL(wp), OPTIONAL               :: missValue
@@ -886,8 +886,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT)       :: stream_id
     INTEGER, INTENT(IN)                    :: location
     CHARACTER(LEN=*), INTENT(IN)           :: variable_name
-    define_fill_target                     :: fill_array(:,:,:)
-    define_return_pointer                  :: return_pointer(:,:,:)
+    REAL(wp), TARGET, OPTIONAL                     :: fill_array(:,:,:)
+    REAL(wp), POINTER, OPTIONAL                  :: return_pointer(:,:,:)
     INTEGER, INTENT(in), OPTIONAL          :: start_extdim, end_extdim
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: extdim_name
     LOGICAL, OPTIONAL                      :: has_missValue
@@ -1114,8 +1114,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT)       :: stream_id
     INTEGER, INTENT(IN)                    :: location
     CHARACTER(LEN=*), INTENT(IN)           :: variable_name
-    define_fill_target_int                 :: fill_array(:,:,:)
-    define_return_pointer_int              :: return_pointer(:,:,:)
+    INTEGER, TARGET, OPTIONAL                 :: fill_array(:,:,:)
+    INTEGER, POINTER, OPTIONAL              :: return_pointer(:,:,:)
     INTEGER, INTENT(in), OPTIONAL          :: start_extdim, end_extdim
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: extdim_name
     TYPE(t_ptr_3d_int)                     :: tmp_ptr(1)  
@@ -1328,8 +1328,8 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:,:)
-    define_return_pointer        :: return_pointer(:,:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:,:)
+    REAL(wp), POINTER, OPTIONAL        :: return_pointer(:,:,:)
 
     REAL(wp), POINTER            :: tmp_pointer(:,:,:)
     CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
@@ -1362,8 +1362,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT)       :: stream_id
     INTEGER, INTENT(IN)                    :: location
     CHARACTER(LEN=*), INTENT(IN)           :: variable_name
-    define_fill_target                     :: fill_array(:,:,:)
-    define_return_pointer                  :: return_pointer(:,:,:)
+    REAL(wp), TARGET, OPTIONAL                     :: fill_array(:,:,:)
+    REAL(wp), POINTER, OPTIONAL                  :: return_pointer(:,:,:)
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: levelsDimName
     TYPE(t_ptr_3d)                         :: tmp_ptr(1)
     INTEGER                                :: var_ndims, var_dimlen(2)
@@ -1439,8 +1439,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT)       :: stream_id
     INTEGER, INTENT(IN)                    :: location
     CHARACTER(LEN=*), INTENT(IN)           :: variable_name
-    define_fill_target                     :: fill_array(:,:,:)
-    define_return_pointer                  :: return_pointer(:,:,:)
+    REAL(wp), TARGET, OPTIONAL                     :: fill_array(:,:,:)
+    REAL(wp), POINTER, OPTIONAL                  :: return_pointer(:,:,:)
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: levelsDimName
     LOGICAL, OPTIONAL                      :: has_missValue
     REAL(wp), OPTIONAL                     :: missValue
@@ -1469,10 +1469,10 @@ CONTAINS
     INTEGER, INTENT(IN)                    :: location
     CHARACTER(LEN=*), INTENT(IN)           :: variable_name
     INTEGER, INTENT(IN)                    :: array_shape(3)
-    define_fill_target                     :: fill_array(array_shape(1), &
+    REAL(wp), TARGET, OPTIONAL                     :: fill_array(array_shape(1), &
       &                                                  array_shape(2), &
       &                                                  array_shape(3), 1)
-    define_return_pointer                  :: return_pointer(:,:,:)
+    REAL(wp), POINTER, OPTIONAL                  :: return_pointer(:,:,:)
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: levelsDimName
     LOGICAL, OPTIONAL                      :: has_missValue
     REAL(wp), OPTIONAL                     :: missValue
@@ -1538,8 +1538,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT)       :: stream_id
     INTEGER, INTENT(IN)                    :: location
     CHARACTER(LEN=*), INTENT(IN)           :: variable_name
-    define_fill_target                     :: fill_array(:,:,:,:)
-    define_return_pointer                  :: return_pointer(:,:,:,:)
+    REAL(wp), TARGET, OPTIONAL                     :: fill_array(:,:,:,:)
+    REAL(wp), POINTER, OPTIONAL                  :: return_pointer(:,:,:,:)
     INTEGER, INTENT(in), OPTIONAL          :: start_timestep, end_timestep
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: levelsDimName
     LOGICAL, OPTIONAL                      :: has_missValue
@@ -1578,8 +1578,8 @@ CONTAINS
     TYPE(t_stream_id), INTENT(INOUT)       :: stream_id
     INTEGER, INTENT(IN)                    :: location
     CHARACTER(LEN=*), INTENT(IN)           :: variable_name
-    define_fill_target                     :: fill_array(:,:,:,:)
-    define_return_pointer                  :: return_pointer(:,:,:,:)
+    REAL(wp), TARGET, OPTIONAL                     :: fill_array(:,:,:,:)
+    REAL(wp), POINTER, OPTIONAL                  :: return_pointer(:,:,:,:)
     INTEGER, INTENT(in), OPTIONAL          :: start_extdim, end_extdim
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: extdim_name, levelsDimName
     LOGICAL, OPTIONAL                      :: has_missValue

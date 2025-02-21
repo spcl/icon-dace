@@ -238,28 +238,28 @@ contains
       !$omp target teams distribute parallel do simd
       do icol = 1,ncol
         itropo_lower(icol,2) = nlay
-#if defined(_CRAYFTN) || defined(__NVCOMPILER)
-        itropo_upper(icol,1) = 1
-        call minmaxloc(icol, tropo, play, itropo_lower(icol,1), itropo_upper(icol,2))
-#else
+
+
+
+
         itropo_lower(icol,1) = minloc(play(icol,:), dim=1, mask=tropo(icol,:))
         itropo_upper(icol,1) = 1
         itropo_upper(icol,2) = maxloc(play(icol,:), dim=1, mask=(.not. tropo(icol,:)))
-#endif
+
       end do
     else
       !$acc parallel loop
       !$omp target teams distribute parallel do simd
       do icol = 1,ncol
         itropo_lower(icol,1) = 1
-#if defined(_CRAYFTN) || defined(__NVCOMPILER)
-        itropo_upper(icol,2) = nlay
-        call minmaxloc(icol, tropo, play, itropo_lower(icol,2), itropo_upper(icol,1))
-#else
+
+
+
+
         itropo_lower(icol,2) = minloc(play(icol,:), dim=1, mask=tropo(icol,:))
         itropo_upper(icol,2) = nlay
         itropo_upper(icol,1) = maxloc(play(icol,:), dim=1, mask=(.not.tropo(icol,:)))
-#endif
+
       end do
     end if
     ! ---------------------

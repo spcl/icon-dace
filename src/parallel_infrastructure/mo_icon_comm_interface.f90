@@ -20,9 +20,9 @@ MODULE mo_icon_comm_interface
     & p_barrier, p_comm_work_test, p_comm_work
   USE mo_icon_comm_lib
 
-#ifdef _OPENMP
-  USE omp_lib, ONLY: omp_in_parallel
-#endif
+
+
+
 
   IMPLICIT NONE
 
@@ -96,17 +96,7 @@ CONTAINS
 !    write(0,*) get_my_mpi_all_id(), ": enter icon_comm_barrier, for_patch%compute_is_parallel:",for_patch%compute_is_parallel, &
 !      & for_patch%work_communicator
     ! CALL  flush(0)
-#ifndef NOMPI
-    IF (for_patch%is_in_parallel_test) THEN
-      CALL p_barrier(for_patch%parallel_test_communicator)
-    ELSEIF (for_patch%compute_is_parallel) THEN
-!      write(0,*) get_my_mpi_all_id(), ": icon_comm_barrier:", for_patch%work_communicator
-      CALL p_barrier(for_patch%work_communicator)
-    ENDIF
-!    write(0,*) get_my_mpi_all_id(), "leave icon_comm_barrier:"
-#else
     RETURN
-#endif
     ! CALL  flush(0)
   END SUBROUTINE icon_comm_barrier
   !-----------------------------------------------------------------------

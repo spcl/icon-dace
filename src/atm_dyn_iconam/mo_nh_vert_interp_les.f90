@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nh_vert_interp_les
@@ -28,9 +38,6 @@ MODULE mo_nh_vert_interp_les
   USE mo_loopindices,         ONLY: get_indices_c
   USE mo_sync,                ONLY: global_sum_array, SYNC_C, SYNC_V, &
                                     sync_patch_array_mult
-#ifdef __MIXED_PRECISION
-  USE mo_sync,                ONLY: sync_patch_array_mult_mp
-#endif
   USE mo_impl_constants_grf,  ONLY: grf_bdywidth_c
   USE mo_impl_constants,      ONLY: SUCCESS, min_rlcell_int
   USE mo_parallel_config,     ONLY: nproma, p_test_run
@@ -109,18 +116,11 @@ MODULE mo_nh_vert_interp_les
     ! half_v sync
     CALL cells2verts_scalar(p_metrics%ddxt_z_half_c, p_patch, &
          p_int%cells_aw_verts, p_metrics%ddxt_z_half_v)
-#ifdef __MIXED_PRECISION
-    CALL sync_patch_array_mult_mp(SYNC_V, p_patch, 1, 3, &
-      &                 f3din1_sp=p_metrics%ddxn_z_full_v, &
-      &                 f3din2_sp=p_metrics%ddxt_z_full_v, &
-      &                    f3din1=p_metrics%inv_ddqz_z_full_v, &
-      &                 f3din3_sp=p_metrics%ddxt_z_half_v)
-#else
     CALL sync_patch_array_mult(SYNC_V, p_patch, 4, p_metrics%ddxn_z_full_v, &
       &                        p_metrics%ddxt_z_full_v, &
       &                        p_metrics%inv_ddqz_z_full_v, &
       &                        p_metrics%ddxt_z_half_v)
-#endif
+
 
   END SUBROUTINE init_vertical_grid_for_les
 
@@ -162,13 +162,13 @@ MODULE mo_nh_vert_interp_les
 
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx , i_endidx
-         DO jk = 2 , nlev  
-#else
+
+
+
+
         DO jk = 2 , nlev  
          DO jc = i_startidx , i_endidx
-#endif
+
           varout(jc,jk,jb) = p_metrics%wgtfac_c(jc,jk,jb)*varin(jc,jk,jb) + &
                         (1._wp-p_metrics%wgtfac_c(jc,jk,jb))*varin(jc,jk-1,jb)
          END DO
@@ -343,13 +343,13 @@ MODULE mo_nh_vert_interp_les
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx , i_endidx
-        DO jk = 2 , nlev
-#else
+
+
+
+
       DO jk = 2 , nlev
         DO jc = i_startidx , i_endidx
-#endif
+
           bru_vais(jc,jk,jb) = grav * ( thetav(jc,jk-1,jb) - thetav(jc,jk,jb) ) * &
                                p_metrics%inv_ddqz_z_half(jc,jk,jb)/thetav_ic(jc,jk,jb)    
         END DO

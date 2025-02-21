@@ -137,9 +137,9 @@ MODULE mo_meteogram_output
     &                                 p_comm_work, p_comm_work_2_io,      &
     &                                 process_mpi_io_size,                &
     &                                 p_comm_remote_size
-#ifndef NOMPI
-  USE mpi
-#endif
+
+
+
   USE mo_model_domain,          ONLY: t_patch, t_grid_cells
   USE mo_parallel_config,       ONLY: nproma, p_test_run
   USE mo_impl_constants,        ONLY: inwp, max_dom, SUCCESS
@@ -179,9 +179,9 @@ MODULE mo_meteogram_output
   USE mo_grid_config,           ONLY: grid_sphere_radius, is_plane_torus
   USE mo_aes_phy_memory,        ONLY: prm_field
   USE mo_fortran_tools,         ONLY: assert_acc_device_only, set_acc_host_or_device
-#ifdef _OPENACC
-  USE openacc,                  ONLY: acc_is_present
-#endif
+
+
+
 
   USE mo_netcdf
 
@@ -501,9 +501,9 @@ CONTAINS
       CALL add_atmo_var(meteogram_config, var_list, VAR_GROUP_ATMO_HL, &
         &               "TKE", "m^2/s^2", "turbulent kinetic energy", &
         &               var_info, prog%tke(:,:,:))
-#ifndef __NO_ICON_LES__
+
       IF ( .NOT. atm_phy_nwp_config%is_les_phy ) THEN
-#endif
+
         CALL add_atmo_var(meteogram_config, var_list, VAR_GROUP_ATMO_HL, &
           &               "ddt_tke_hsh", "m^2/s^3", &
           &               "TKE tendency horizonzal shear production", &
@@ -512,9 +512,9 @@ CONTAINS
           &               "ddt_tke_pconv", "m^2/s^3", &
           &               "TKE tendency due to subgrid-scale convection", &
           &               var_info, prm_nwp_tend%ddt_tke_pconv)
-#ifndef __NO_ICON_LES__
+
       END IF
-#endif
+
     ENDIF ! iforcing == inwp
     ! For dry test cases: do not sample variables defined below this line:
     ! (but allow for TORUS moist runs; see call in mo_atmo_nonhydrostatic.F90)
@@ -1044,11 +1044,11 @@ CONTAINS
         &               var_info, diag%extra_3d(:,:,:,1:inextra_3d))
     END IF
 
-#ifndef NOMPI
-    ! collect variable info for pure I/O PEs
-    IF (pack_buf%l_is_varlist_sender) &
-      CALL pack_varlists(pack_buf, var_list, var_info, sfc_var_info)
-#endif
+
+
+
+
+
 
     ! several variable indices, stored for convenience (when computing
     ! additional diagnostics):
@@ -1058,39 +1058,6 @@ CONTAINS
 
   END SUBROUTINE meteogram_setup_variables
 
-#ifndef NOMPI
-  SUBROUTINE pack_varlists(pack_buf, var_list, var_info, sfc_var_info)
-    TYPE(mtgrm_pack_buf), INTENT(inout) :: pack_buf
-    TYPE(t_var), INTENT(in) :: var_list
-    TYPE(t_var_info), INTENT(in) :: var_info(:)
-    TYPE(t_sfc_var_info), INTENT(in) :: sfc_var_info(:)
-
-    CHARACTER(len=*), PARAMETER :: routine = modname//":pack_varlists"
-    INTEGER :: var_counts(2), ivar
-    var_counts(1) = var_list%no_atmo_vars
-    var_counts(2) = var_list%no_sfc_vars
-    CALL p_pack_int_1d(var_counts, 2, pack_buf%msg_varlist, pack_buf%pos)
-
-    IF (dbg_level > 0) &
-      CALL message(routine, "collect variable info for pure I/O PEs")
-    DO ivar = 1, var_list%no_atmo_vars
-
-      CALL p_pack_string(var_info(ivar)%cf%standard_name, pack_buf%msg_varlist, pack_buf%pos)
-      CALL p_pack_string(var_info(ivar)%cf%long_name,     pack_buf%msg_varlist, pack_buf%pos)
-      CALL p_pack_string(var_info(ivar)%cf%units,         pack_buf%msg_varlist, pack_buf%pos)
-      CALL p_pack_int   (var_info(ivar)%igroup_id,        pack_buf%msg_varlist, pack_buf%pos)
-      CALL p_pack_int   (var_info(ivar)%nlevs,            pack_buf%msg_varlist, pack_buf%pos)
-    END DO
-    IF (dbg_level > 0) &
-      CALL message(routine, "collect surface variable info for pure I/O PEs")
-    DO ivar = 1, var_list%no_sfc_vars
-      CALL p_pack_string(sfc_var_info(ivar)%cf%standard_name, pack_buf%msg_varlist, pack_buf%pos)
-      CALL p_pack_string(sfc_var_info(ivar)%cf%long_name,     pack_buf%msg_varlist, pack_buf%pos)
-      CALL p_pack_string(sfc_var_info(ivar)%cf%units,         pack_buf%msg_varlist, pack_buf%pos)
-      CALL p_pack_int   (sfc_var_info(ivar)%igroup_id,        pack_buf%msg_varlist, pack_buf%pos)
-    END DO
-  END SUBROUTINE pack_varlists
-#endif
 
   SUBROUTINE setup_diag_var_indices(diag_var_indices, cf_atmo, cf_lnd)
     !> indices at which to find variables for compute_diagnostics
@@ -1987,149 +1954,6 @@ CONTAINS
     INTEGER, INTENT(in) :: jg
 
 
-#ifndef NOMPI
-    ! local variables
-    CHARACTER(*), PARAMETER :: routine = modname//":meteogram_collect_buffers"
-    INTEGER     :: station_idx, position, icurrent,   &
-      &            icurrent_recv(max_num_stations), &
-      &            istation, nstations, &
-      &            iowner
-    !> MPI buffer for station data
-    CHARACTER, ALLOCATABLE :: msg_buffer(:,:)
-
-    INTEGER :: ierror, req(2+max_num_stations), &
-      stati(mpi_status_size, 2+max_num_stations)
-    LOGICAL :: is_pure_io_pe
-    INTEGER :: max_time_stamps
-
-    IF (dbg_level > 5)  WRITE (*,*) routine, " Enter (collecting PE=", mtgrm%l_is_collecting_pe, ")"
-
-    is_pure_io_pe = use_async_name_list_io .AND. my_process_is_io()
-    IF (mtgrm%l_is_collecting_pe .NEQV. mtgrm%l_is_sender) THEN
-      max_time_stamps = mtgrm%max_time_stamps
-      ALLOCATE(msg_buffer(mtgrm%max_buf_size, &
-        MERGE(max_num_stations, 1, mtgrm%l_is_collecting_pe)), &
-        stat=ierror)
-      IF (ierror /= SUCCESS) THEN
-        WRITE (0,'(a,i0)') "jg = ", jg, &
-          " : message buffer: mtgrm%max_buf_size = ", &
-          & mtgrm%max_buf_size, "; MAX_NUM_STATIONS = ", MAX_NUM_STATIONS, &
-          "mtgrm_pack_header_ints  = ", mtgrm_pack_header_ints, &
-          "p_real_dp_byte          = ", p_real_dp_byte, &
-          "p_int_byte              = ", p_int_byte, &
-          "max_time_stamps         = ", max_time_stamps, &
-          "MAX_DATE_LEN            = ", MAX_DATE_LEN, &
-          "max_station_pack_size   = ", &
-          station_pack_size(mtgrm%max_time_stamps, mtgrm%var_info, &
-          &                 mtgrm%sfc_var_info, mtgrm%io_collect_comm)
-        WRITE (message_text, '(3a)') &
-          'ALLOCATE of meteogram message buffer failed (', &
-          MERGE('collector', 'sender   ', mtgrm%l_is_collecting_pe), ')'
-        CALL finish(routine, message_text)
-      END IF
-      msg_buffer(:,:) = ''
-    END IF
-
-    ! -- RECEIVER CODE --
-    RECEIVER : IF (mtgrm%l_is_collecting_pe) THEN
-      ! launch MPI message requests for station data on foreign PEs
-      nstations = SIZE(mtgrm%out_buf%station_idx)
-      IF (is_pure_io_pe) THEN
-        CALL p_irecv(mtgrm%istep, mtgrm%io_invar_send_rank, &
-          &          tag_mtgrm_msg+max_dom+2*jg-2, comm=mtgrm%io_collect_comm, &
-          &          request=req(1))
-        CALL p_irecv(mtgrm%zdate, mtgrm%io_invar_send_rank, &
-          &          tag_mtgrm_msg+max_dom+2*jg-1, comm=mtgrm%io_collect_comm, &
-          &          request=req(2))
-      ELSE
-        req(1) = mpi_request_null
-        req(2) = mpi_request_null
-      END IF
-      DO istation=1,nstations
-        iowner = mtgrm%pstation(istation)
-        IF ((is_pure_io_pe .OR. iowner /= p_pe_work) .AND. (iowner >= 0)) THEN
-          CALL p_irecv_packed(msg_buffer(:,istation), iowner, &
-            &    tag_mtgrm_msg+3*max_dom + (jg-1)*tag_domain_shift + istation, &
-            &    mtgrm%max_buf_size, comm=mtgrm%io_collect_comm, &
-            &    request=req(2+istation))
-        ELSE
-          req(2+istation) = mpi_request_null
-        END IF
-      END DO
-
-      ! wait for messages to arrive:
-      IF (dbg_level > 5)  WRITE (*,*) routine, " :: call p_wait"
-      CALL p_wait(req(:2+nstations), stati)
-      IF (dbg_level > 5)  WRITE (*,*) routine, " :: p_wait call done."
-
-      ! unpack received messages:
-      DO istation=1,nstations
-        IF (dbg_level > 5) WRITE (*,*) "Receiver side: Station ", istation
-        iowner = mtgrm%pstation(istation)
-        IF (iowner >= 0) THEN
-          IF (iowner /= p_pe_work .OR. is_pure_io_pe) THEN
-            CALL unpack_station_sample(mtgrm%var_info, mtgrm%sfc_var_info, &
-              mtgrm%out_buf, msg_buffer(:,istation), istation, nstations, &
-              icurrent_recv(istation))
-          ELSE
-            icurrent_recv(istation) = mtgrm%icurrent
-          END IF
-        ELSE
-          icurrent_recv(istation) = -2
-          IF (dbg_level > 5) WRITE (*,*) "skipping station!"
-        END IF
-      END DO
-
-      IF (is_pure_io_pe) THEN
-        CALL mpi_get_count(stati(:,1), p_int, icurrent, ierror)
-      ELSE
-        icurrent = mtgrm%icurrent
-      END IF
-
-      ! consistency check
-      ! Note: We only check the number of received time stamps, not the
-      !       exact sample dates themselves
-      IF (ANY(icurrent_recv(1:nstations) /= icurrent &
-        &     .AND. mtgrm%pstation(1:nstations) /= -1)) &
-        CALL finish(routine, "Received inconsistent time slice data!")
-      mtgrm%icurrent = icurrent
-
-    END IF RECEIVER
-
-    ! -- SENDER CODE --
-    SENDER : IF (mtgrm%l_is_sender) THEN
-      IF (p_pe_work == mtgrm%io_invar_send_rank) THEN
-        CALL p_isend(mtgrm%istep, mtgrm%io_collector_rank, &
-          &          tag_mtgrm_msg+max_dom+2*jg-2, &
-          &          p_count=mtgrm%icurrent, &
-          &          comm=mtgrm%io_collect_comm)
-        CALL p_isend(mtgrm%zdate, mtgrm%io_collector_rank, &
-          &          tag_mtgrm_msg+max_dom+2*jg-1, &
-          &          p_count=mtgrm%icurrent, &
-          &          comm=mtgrm%io_collect_comm)
-      END IF
-      ! pack station into buffer; send it
-      DO istation=1,mtgrm%nstations_local
-        station_idx = mtgrm%global_idx(istation)
-        CALL pack_station_sample(msg_buffer(:,1), position, &
-          mtgrm%icurrent, &
-          mtgrm%out_buf, istation, mtgrm%var_info, &
-          mtgrm%global_idx(istation), mtgrm%io_collect_comm)
-        ! (blocking) send of packed station data to IO PE:
-        CALL p_send_packed(msg_buffer, mtgrm%io_collector_rank, &
-          &    tag_mtgrm_msg+3*max_dom + (jg-1)*tag_domain_shift + station_idx,&
-          &    position, comm=mtgrm%io_collect_comm)
-        IF (dbg_level > 0) &
-          WRITE (*,*) "Sending ", icurrent, " time slices, station ", &
-          station_idx
-
-      END DO
-      IF (p_pe_work == mtgrm%io_invar_send_rank) CALL p_wait()
-    END IF SENDER
-
-    IF (dbg_level > 5)  WRITE (*,*) routine, " Leave (collecting PE=", mtgrm%l_is_collecting_pe, ")"
-
-#endif
 
   END SUBROUTINE meteogram_collect_buffers
 
@@ -2769,11 +2593,6 @@ CONTAINS
     IF (.NOT. mtgrm(jg)%meteogram_file_info%ldistributed) THEN
       CALL meteogram_collect_buffers(mtgrm(jg), jg)
     ELSE
-#ifdef _OPENACC
-      CALL finish(routine, "ldistributed has not been tested with OpenACC.")
-      ! MJ assumes that the code should work. Please test it and if it works,
-      ! please add a ldistributed test to the testing and remove this warning.
-#endif
     ENDIF
     IF (mtgrm(jg)%l_is_writer) THEN
       CALL disk_flush(mtgrm(jg)%var_info, mtgrm(jg)%sfc_var_info, &
@@ -2901,18 +2720,8 @@ CONTAINS
     INTEGER :: my_id, dist_prefix_len
     CHARACTER(len=3+10) :: dist_prefix
 
-#ifndef NOMPI
-    IF (meteogram_output_config%ldistributed) THEN
-      my_id = get_my_mpi_all_id()
-      WRITE(dist_prefix, '(a,i3.3,a)') "PE", my_id, "_"
-      dist_prefix_len = LEN_TRIM(dist_prefix)
-    ELSE
-#endif
       dist_prefix = ''
       dist_prefix_len = 0
-#ifndef NOMPI
-    END IF
-#endif
 
     SELECT CASE (meteogram_output_config%ftype)
     CASE (FTYPE_NETCDF)
@@ -2998,14 +2807,6 @@ CONTAINS
       CALL finish(routine, message_text)
     END IF
 
-#ifdef _OPENACC
-    IF (.NOT. acc_is_present(var_info(ivar)%p_source)) THEN
-      WRITE (message_text, '(3a)') 'Source array ', &
-        TRIM(var_info(ivar)%cf%standard_name), ' not present on accelerator!'
-      CALL finish(routine, message_text)
-    END IF
-    !$ACC ENTER DATA ATTACH(var_info(ivar)%p_source)
-#endif
 
   END SUBROUTINE add_atmo_var_3d
 
@@ -3082,14 +2883,6 @@ CONTAINS
     sfc_var_info(ivar)%igroup_id        = igroup_id
     sfc_var_info(ivar)%p_source  => source
 
-#ifdef _OPENACC
-    IF (.NOT. acc_is_present(sfc_var_info(ivar)%p_source)) THEN
-      WRITE (message_text, '(3a)') 'Source array ', &
-        TRIM(sfc_var_info(ivar)%cf%standard_name), ' not present on accelerator!'
-      CALL finish(routine, message_text)
-    END IF
-    !$ACC ENTER DATA ATTACH(sfc_var_info(ivar)%p_source)
-#endif
   END SUBROUTINE add_sfc_var_2d
 
 
@@ -3177,44 +2970,6 @@ CONTAINS
     TYPE(t_var), INTENT(inout) :: var_list
     TYPE(mtgrm_pack_buf), INTENT(inout) :: pack_buf
 
-#ifndef NOMPI
-    ! local variables
-    CHARACTER(*), PARAMETER :: routine = modname//":receive_var_info"
-    INTEGER                 :: ivar, var_counts(2), ierror
-
-    ! wait for messages to arrive:
-    CALL p_wait()
-
-    CALL p_unpack_int_1d(pack_buf%msg_varlist, pack_buf%pos, var_counts, 2)
-    ALLOCATE(var_info(var_counts(1)), &
-      &      sfc_var_info(var_counts(2)), stat=ierror)
-    IF (ierror /= SUCCESS) &
-      CALL finish (routine, 'ALLOCATE of var_info arrays failed.')
-
-
-    ! from the received message, unpack the atmosphere/surface
-    ! variables one by one:
-    DO ivar = 1, var_counts(1)
-      CALL unpack_cf(var_info(ivar)%cf, pack_buf)
-      CALL p_unpack_int(pack_buf%msg_varlist, pack_buf%pos, &
-        &               var_info(ivar)%igroup_id)
-      CALL p_unpack_int(pack_buf%msg_varlist, pack_buf%pos, &
-        &               var_info(ivar)%nlevs)
-      NULLIFY(var_info(ivar)%p_source)
-      IF (dbg_level > 0) &
-        WRITE (*,*) "Added variable ", var_info(ivar)%cf%standard_name
-    END DO
-    DO ivar = 1, var_counts(2)
-      CALL unpack_cf(sfc_var_info(ivar)%cf, pack_buf)
-      CALL p_unpack_int(pack_buf%msg_varlist, pack_buf%pos, &
-        &               sfc_var_info(ivar)%igroup_id)
-      NULLIFY(sfc_var_info(ivar)%p_source)
-      IF (dbg_level > 0) &
-        WRITE (*,*) "Added variable ", sfc_var_info(ivar)%cf%standard_name
-    END DO
-    var_list%no_atmo_vars = var_counts(1)
-    var_list%no_sfc_vars = var_counts(2)
-#endif
   END SUBROUTINE receive_var_info
 
   !> fill t_cf_var struct for meteogram variable description from pack buffer

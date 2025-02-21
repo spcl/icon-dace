@@ -11,7 +11,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_aerosol_util
@@ -36,9 +46,6 @@ MODULE mo_aerosol_util
   USE mo_math_laplace,           ONLY: nabla2_scalar
   USE mo_util_phys,              ONLY: rel_hum
   USE mtime,                     ONLY: datetime
-#ifdef __ECRAD
-  USE mo_ecrad,                  ONLY: t_ecrad_conf
-#endif
   USE mo_fortran_tools,          ONLY: set_acc_host_or_device
 
   IMPLICIT NONE
@@ -99,10 +106,6 @@ MODULE mo_aerosol_util
   PUBLIC :: init_aerosol_props_tegen_rrtm, tune_dust
   PUBLIC :: prog_aerosol_2D, aerosol_2D_diffusion
   PUBLIC :: tegen_scal_factors
-#ifdef __ECRAD
-  PUBLIC :: init_aerosol_props_tegen_ecrad
-  PUBLIC :: get_nbands_lw_aerosol, get_nbands_sw_aerosol
-#endif
 
   !$ACC DECLARE CREATE(zaea_rrtm, zaes_rrtm, zaeg_rrtm)
 
@@ -301,122 +304,6 @@ CONTAINS
 
   END SUBROUTINE init_aerosol_props_tegen_rrtm
 
-#ifdef __ECRAD
-  !---------------------------------------------------------------------------------------
-  !>
-  !! SUBROUTINE init_aerosol_props_tegen_ecrad
-  !! Initializes scaling factors used to scale 550nm AOD to different wavelength bands
-  !! of ecRad.
-  !! In case the RRTM gas model is chosen, the previously used lookup tables are copied
-  !! into the new data structure.
-  !!
-  !---------------------------------------------------------------------------------------
-  SUBROUTINE init_aerosol_props_tegen_ecrad(ecrad_conf, l_rrtm_gas_model)
-    TYPE(t_ecrad_conf),  INTENT(inout) :: &
-      &  ecrad_conf               !< ecRad configuration state
-    LOGICAL, INTENT(in) ::      &
-      &  l_rrtm_gas_model         !< Use RRTM gas model (mimic legacy behavior)
-    ! Local variables
-    REAL(wp), ALLOCATABLE :: &
-      &  mapping(:,:),       & !< Mapping matrix between wavenumbers at RRTM gas model bands and at ecckd bands
-      &  mapping_transp(:,:)   !< Transposed of mapping
-    INTEGER :: &
-      &  n_bands_sw,         & !< Number of ecrad shortwave bands
-      &  n_bands_lw,         & !< Number of ecrad longwave bands
-      &  jsp                   !< Aerosol species loop counter
-    CHARACTER(len=*), PARAMETER :: routine = modname//'::init_aerosol_props_tegen_ecrad'
-
-    ! Get the scaling factors for the original 30 (jpsw+jpband) bands
-    CALL tegen_scal_factors_rrtm%init(jpband+jpsw)
-    CALL init_aerosol_props_tegen_rrtm()
-    tegen_scal_factors_rrtm%absorption(:,:) = zaea_rrtm(:,:)
-    tegen_scal_factors_rrtm%scattering(:,:) = zaes_rrtm(:,:)
-    tegen_scal_factors_rrtm%asymmetry (:,:) = zaeg_rrtm(:,:)
-
-    IF (l_rrtm_gas_model) THEN ! RRTM gas model, uses same bands as original implementation
-
-      IF ( (ecrad_conf%n_bands_sw /= jpsw) .OR. (ecrad_conf%n_bands_lw /= jpband) ) &
-        &  CALL finish(routine,'ecRad wavelength bands / gas model mismatch.')
-
-      ! The following is a workaround for openacc. Original code:
-      ! tegen_scal_factors = tegen_scal_factors_rrtm
-      CALL tegen_scal_factors%init(tegen_scal_factors_rrtm%n_bands)
-      tegen_scal_factors%absorption(:,:) = tegen_scal_factors_rrtm%absorption(:,:)
-      tegen_scal_factors%scattering(:,:) = tegen_scal_factors_rrtm%scattering(:,:)
-      tegen_scal_factors%asymmetry (:,:) = tegen_scal_factors_rrtm%asymmetry (:,:)
-      !$ACC UPDATE DEVICE(tegen_scal_factors%absorption) &
-      !$ACC   DEVICE(tegen_scal_factors%scattering, tegen_scal_factors%asymmetry) &
-      !$ACC   ASYNC(1)
-
-    ELSE ! ECCKD gas optics, variable number of bands/g-points
-
-      n_bands_lw = get_nbands_lw_aerosol(ecrad_conf)
-      n_bands_sw = get_nbands_sw_aerosol(ecrad_conf)
-
-      CALL tegen_scal_factors_mod%init(n_bands_lw+n_bands_sw)
-
-      IF (ecrad_conf%do_sw) THEN
-        ALLOCATE(mapping(n_bands_sw,jpsw))
-
-        CALL ecrad_conf%gas_optics_sw%spectral_def%calc_mapping_from_wavenumber_bands( &
-          &    rrtm_wavenum1_sw, rrtm_wavenum2_sw, mapping_transp,                     &
-          &    use_bands=(.not. ecrad_conf%do_cloud_aerosol_per_sw_g_point) )
-
-        mapping = transpose(mapping_transp)
-
-        DO jsp = 1, 5 ! Loop over species
-          tegen_scal_factors_mod%absorption((n_bands_lw+1):(n_bands_lw+n_bands_sw),jsp) = &
-            &  matmul(mapping, tegen_scal_factors_rrtm%absorption((jpband+1):(jpband+jpsw),jsp))
-          tegen_scal_factors_mod%scattering((n_bands_lw+1):(n_bands_lw+n_bands_sw),jsp) = &
-            &  matmul(mapping, tegen_scal_factors_rrtm%scattering((jpband+1):(jpband+jpsw),jsp))
-          tegen_scal_factors_mod%asymmetry ((n_bands_lw+1):(n_bands_lw+n_bands_sw),jsp) = &
-            &  matmul(mapping, tegen_scal_factors_rrtm%asymmetry((jpband+1):(jpband+jpsw),jsp))
-        ENDDO
-
-        IF ( ALLOCATED(mapping        ) ) DEALLOCATE (mapping)
-        IF ( ALLOCATED(mapping_transp ) ) DEALLOCATE (mapping_transp)
-      ENDIF
-
-      IF (ecrad_conf%do_lw) THEN
-        ALLOCATE(mapping(n_bands_lw,jpband))
-
-        CALL ecrad_conf%gas_optics_lw%spectral_def%calc_mapping_from_wavenumber_bands( &
-          &    rrtm_wavenum1_lw, rrtm_wavenum2_lw, mapping_transp,                     &
-          &    use_bands=(.not. ecrad_conf%do_cloud_aerosol_per_lw_g_point) )
-
-        mapping = transpose(mapping_transp)
-
-        DO jsp = 1, 5 ! Loop over species
-          tegen_scal_factors_mod%absorption(1:n_bands_lw,jsp) = &
-            &  matmul(mapping, tegen_scal_factors_rrtm%absorption(1:jpband,jsp))
-          tegen_scal_factors_mod%scattering(1:n_bands_lw,jsp) = &
-            &  matmul(mapping, tegen_scal_factors_rrtm%scattering(1:jpband,jsp))
-          tegen_scal_factors_mod%asymmetry (1:n_bands_lw,jsp) = &
-            &  matmul(mapping, tegen_scal_factors_rrtm%asymmetry(1:jpband,jsp))
-        ENDDO
-
-        IF ( ALLOCATED(mapping        ) ) DEALLOCATE (mapping)
-        IF ( ALLOCATED(mapping_transp ) ) DEALLOCATE (mapping_transp)
-      ENDIF
-
-      ! The following is a workaround for openacc. Original code:
-      ! tegen_scal_factors = tegen_scal_factors_mod
-      CALL tegen_scal_factors%init(tegen_scal_factors_mod%n_bands)
-      tegen_scal_factors%absorption(:,:) = tegen_scal_factors_mod%absorption(:,:)
-      tegen_scal_factors%scattering(:,:) = tegen_scal_factors_mod%scattering(:,:)
-      tegen_scal_factors%asymmetry (:,:) = tegen_scal_factors_mod%asymmetry (:,:)
-      !$ACC UPDATE DEVICE(tegen_scal_factors%absorption) &
-      !$ACC   DEVICE(tegen_scal_factors%scattering, tegen_scal_factors%asymmetry) &
-      !$ACC   ASYNC(1)
-      CALL tegen_scal_factors_mod%finalize()
-
-    ENDIF
-
-    CALL tegen_scal_factors_rrtm%finalize()
-    
-  END SUBROUTINE init_aerosol_props_tegen_ecrad
-  !---------------------------------------------------------------------------------------
-#endif
 
   !---------------------------------------------------------------------------------------
   !>
@@ -464,43 +351,6 @@ CONTAINS
   END SUBROUTINE
   !---------------------------------------------------------------------------------------
 
-#ifdef __ECRAD
-  ! Calculate the number of bands or g-points based on the configuration of ecrad (long wave)
-  !
-  FUNCTION get_nbands_lw_aerosol(ecrad_conf) RESULT(n_bands_lw)
-    TYPE(t_ecrad_conf), INTENT(in) :: ecrad_conf
-    INTEGER                        :: n_bands_lw
-
-      IF (ecrad_conf%do_lw) THEN
-        IF (ecrad_conf%do_cloud_aerosol_per_lw_g_point) THEN
-          n_bands_lw = ecrad_conf%gas_optics_lw%spectral_def%ng
-        ELSE
-          n_bands_lw = ecrad_conf%gas_optics_lw%spectral_def%nband
-        ENDIF
-      ELSE
-        n_bands_lw = 0
-      ENDIF
-
-  END FUNCTION get_nbands_lw_aerosol
-
-  ! Calculate the number of bands or g-points based on the configuration of ecrad (short wave)
-  !
-  FUNCTION get_nbands_sw_aerosol(ecrad_conf) RESULT(n_bands_sw)
-    TYPE(t_ecrad_conf), INTENT(in) :: ecrad_conf
-    INTEGER                        :: n_bands_sw
-
-      IF (ecrad_conf%do_sw) THEN
-        IF (ecrad_conf%do_cloud_aerosol_per_sw_g_point) THEN
-          n_bands_sw = ecrad_conf%gas_optics_sw%spectral_def%ng
-        ELSE
-          n_bands_sw = ecrad_conf%gas_optics_sw%spectral_def%nband
-        ENDIF
-      ELSE
-        n_bands_sw = 0
-      ENDIF
-
-  END FUNCTION get_nbands_sw_aerosol
-#endif
 
   ! Very simple parameterization of source and sink terms for prognostic 2D aerosol fields
   !

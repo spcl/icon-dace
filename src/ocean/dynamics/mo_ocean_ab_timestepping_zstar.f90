@@ -129,11 +129,11 @@ MODULE mo_ocean_ab_timestepping_zstar
   PUBLIC :: update_zstar_variables
 
   INTERFACE velocity_diffusion_vertical_implicit_zstar
-#if defined(__LVECTOR__) && !defined(__LVEC_BITID__)
-    MODULE PROCEDURE velocity_diffusion_vertical_implicit_zstar_vector
-#else
+
+
+
     MODULE PROCEDURE velocity_diffusion_vertical_implicit_zstar_scalar
-#endif
+
   END INTERFACE
 
   LOGICAL :: eliminate_upper_diag = .true.
@@ -1308,9 +1308,9 @@ CONTAINS
       minmaxmean(:) = global_minmaxmean(values=eta_c_new, in_subset=owned_cells)
       IF ( abs(minmaxmean(1)) >  300 ) CALL finish("Surface height too large!!")
 
-#ifndef NAGFOR
+
       IF ( ieee_is_nan(minmaxmean(1)) ) CALL finish("Surface height too large!!")
-#endif
+
 
       IF (createSolverMatrix) &
         CALL free_sfc_solver%dump_matrix(timestep)

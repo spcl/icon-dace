@@ -14,7 +14,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_aes_phy_bcs
@@ -35,9 +45,7 @@ MODULE mo_aes_phy_bcs
   USE mo_aes_rad_config             ,ONLY: aes_rad_config
   USE mo_ccycle_config              ,ONLY: ccycle_config
   USE mo_radiation_solar_data       ,ONLY: ssi_radt, tsi_radt, tsi
-#ifndef __NO_RTE_RRTMGP__
   USE mo_rte_rrtmgp_radiation       ,ONLY: pre_rte_rrtmgp_radiation
-#endif
   USE mo_radiation_general          ,ONLY: nbndlw, nbndsw
   USE mo_bc_aeropt_stenchikov       ,ONLY: read_bc_aeropt_stenchikov
 
@@ -53,9 +61,6 @@ MODULE mo_aes_phy_bcs
   USE mo_bc_ozone                   ,ONLY: read_bc_ozone
   USE mo_bc_aeropt_kinne            ,ONLY: read_bc_aeropt_kinne
   USE mo_bc_aeropt_cmip6_volc       ,ONLY: read_bc_aeropt_cmip6_volc
-#if defined( _OPENACC )
-  USE mo_mpi                   ,ONLY: i_am_accel_node, my_process_is_work
-#endif
 
   ! for 6hourly sst and ice data
   USE mo_time_config,          ONLY: time_config
@@ -74,20 +79,7 @@ MODULE mo_aes_phy_bcs
   !        detected at :@AES_PHY_BCS
   ! Therefore, we have to introduce the following workaround
   !   (NAG 6.2 Build 6252 and NAG 7.0 Build 7048 are not affected):
-# if defined(NAGFOR) && __NAG_COMPILER_BUILD == 7101
-#   define NAGFOR_WORKAROUND
-# endif
 
-#ifdef NAGFOR_WORKAROUND
-  ! The following declaration actually belongs to subroutine aes_phy_bcs but we
-  ! have to move it here as a workaround:
-
-  ! mtime currently does not work with arrays of datetime pointers
-  ! therefore a type is constructed around the mtime pointer
-  TYPE t_radtime_domains
-    TYPE(datetime) , POINTER               :: radiation_time => NULL() !< date and time for radiative transfer
-  END TYPE t_radtime_domains
-#endif
 
 CONTAINS
   !>
@@ -116,7 +108,6 @@ CONTAINS
 
     ! Local variables
 
-#ifndef NAGFOR_WORKAROUND
     ! The following declaration actually belongs here but we have to move it to
     ! the specification part of the module as a workaround:
 
@@ -125,7 +116,6 @@ CONTAINS
     TYPE t_radtime_domains
       TYPE(datetime) , POINTER               :: radiation_time => NULL() !< date and time for radiative transfer
     END TYPE t_radtime_domains
-#endif
     !
     TYPE(t_radtime_domains), SAVE            :: radtime_domains(max_dom)
 
@@ -148,9 +138,6 @@ CONTAINS
 
 !!$    CHARACTER(*), PARAMETER :: method_name = "aes_phy_bcs"
 
-#ifdef _OPENACC
-    LOGICAL                                  :: save_i_am_accel_node
-#endif
     !
     INTEGER          :: jc, jb, jg,  jcs, jce, jbs, jbe
     TYPE(t_aes_phy_field) , POINTER    :: field
@@ -299,10 +286,6 @@ CONTAINS
         CALL ssi_time_interpolation(current_time_interpolation_weights, .FALSE., tsi)
       END IF
 
-#ifdef _OPENACC
-      save_i_am_accel_node = i_am_accel_node
-      i_am_accel_node = .FALSE. ! Deactivate GPUs; 2021.03.02 needed in read_bc_* if it is called, but why?
-#endif
       !
       ! quantities needed for the radiative transfer only
       !
@@ -407,10 +390,6 @@ CONTAINS
         CALL bc_greenhouse_gases_time_interpolation(mtime_old)
       END IF
 
-#ifndef __NO_RTE_RRTMGP__
-#ifdef _OPENACC
-      i_am_accel_node = save_i_am_accel_node    ! Reactivate GPUs if appropriate
-#endif
       IF ( luse_rad ) THEN
         CALL pre_rte_rrtmgp_radiation( &
              & patch,                     radtime_domains(jg)%radiation_time, &
@@ -421,7 +400,6 @@ CONTAINS
         !$ACC   DEVICE(prm_field(jg)%daylght_frc, prm_field(jg)%daylght_frc_rt) &
         !$ACC   ASYNC(1)
       END IF
-#endif
 
     END IF ! luse_rad
 

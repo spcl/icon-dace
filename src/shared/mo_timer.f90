@@ -11,18 +11,10 @@
 
 MODULE mo_timer
 
-#if (defined(__GFORTRAN__) || defined(_CRAYFTN) || defined(__PGIF90__))
+
   USE iso_fortran_env, ONLY: compiler_version, compiler_options
-#endif
+
   
-#ifdef __SCT__
-  USE sct, ONLY: new_timer     => sct_new_timer,             &
-       &         timer_start   => sct_start,                 &
-       &         timer_stop    => sct_stop,                  &
-       &         cleanup_timer => sct_reset_timer,           &
-       &         delete_timer  => sct_del_timer,             &
-       &         sct_init, sct_report, sct_add_report_attribute
-#else
   USE mo_real_timer, ONLY: new_timer,                        &
        &                   timer_start,                      &
        &                   timer_stop,                       &
@@ -30,7 +22,6 @@ MODULE mo_timer
        &                   cleanup_timer => timer_reset,     &
        &                   delete_timer => del_timer
 
-#endif
 
   USE mo_run_config, ONLY: ltimer, timers_level,  activate_sync_timers, iforcing
 
@@ -101,11 +92,6 @@ MODULE mo_timer
   ! aes radiation
   PUBLIC :: timer_rrtm_prep, timer_rrtm_post
   PUBLIC :: timer_lrtm, timer_srtm
-#ifdef PSRAD_TIMING
-  PUBLIC :: timer_gas_optics_lw, timer_gas_optics_sw, timer_cloud_optics, &
-    timer_sample_cloud_lw, timer_sample_cloud_sw, &
-    timer_rrtm_coeffs, timer_psrad_scaling, timer_psrad_aerosol
-#endif
 
   ! nwp physics
   PUBLIC :: timer_satad_v_3D
@@ -362,12 +348,6 @@ MODULE mo_timer
   ! aes radiation
   INTEGER :: timer_rrtm_prep, timer_rrtm_post
   INTEGER :: timer_lrtm, timer_srtm
-#ifdef PSRAD_TIMING
-  ! Timers for EMVORADO
-  INTEGER :: timer_gas_optics_lw, timer_gas_optics_sw, timer_cloud_optics, &
-    timer_sample_cloud_lw, timer_sample_cloud_sw, &
-    timer_rrtm_coeffs, timer_psrad_scaling, timer_psrad_aerosol
-#endif
 
   INTEGER :: timer_omp_radiation
   INTEGER :: timer_write_output
@@ -479,110 +459,11 @@ MODULE mo_timer
 CONTAINS
 
   SUBROUTINE print_timer
-#ifdef __SCT__
-
-    USE mo_util_sysinfo,    ONLY: util_user_name, util_os_system, util_node_name
-    USE mo_util_vcs,        ONLY: util_repository_url, util_branch_name, util_revision_key
-    USE mtime,              ONLY: timedelta, newTimedelta, deallocateTimedelta, &
-         &                        OPERATOR(-), timedeltaToString, max_timedelta_str_len
-    USE mo_time_config,     ONLY: time_config 
-    USE mo_parallel_config, ONLY: get_nproma
-    USE mo_run_config,      ONLY: nlev
-    USE mo_grid_config,     ONLY: nroot, start_lev
-    
-    INTEGER :: istat
-    
-    CHARACTER(len=256) :: repository  = ''
-    CHARACTER(len=256) :: branch      = ''
-    CHARACTER(len=256) :: revision    = ''
-    CHARACTER(len=256) :: executable  = ''
-    CHARACTER(len=256) :: user_name   = ''
-    CHARACTER(len=256) :: os_name     = ''
-    CHARACTER(len=256) :: host_name   = ''
-    CHARACTER(len=256) :: expname     = ''
-    CHARACTER(len=256) :: jobid       = ''
-    CHARACTER(len=256) :: jobname     = ''
-    CHARACTER(len=256) :: submit_date = ''        
-    CHARACTER(len=256) :: tmp_string  = ''
-    
-    INTEGER :: nlen, nlena, nlenb, nlenc, nlend
-
-    CHARACTER(len=max_timedelta_str_len) :: tdstring
-    TYPE(timedelta), POINTER :: length_of_run
-
-    CHARACTER(len=6) :: gridstring
-    
-    nlen = 256
-    call util_repository_url(repository, nlen)
-    nlen = 256
-    call util_branch_name(branch, nlen)
-    nlen = 256
-    call util_revision_key(revision, nlen)
-    
-    tmp_string = ''
-    CALL util_os_system (tmp_string, nlena)
-    os_name = tmp_string(1:nlena)
-    
-    tmp_string = ''
-    CALL util_user_name (tmp_string, nlenb)
-    user_name = tmp_string(1:nlenb)
-    
-    tmp_string = ''
-    CALL util_node_name (tmp_string, nlenc)
-    host_name = tmp_string(1:nlenc)
-
-    CALL get_command_argument(0, executable, nlend)
-    
-    CALL get_environment_variable('EXPNAME', expname, status=istat) 
-    CALL get_environment_variable('SCT_JOB_ID', jobid, status=istat)
-    CALL get_environment_variable('SCT_JOB_NAME', jobname, status=istat)
-    CALL get_environment_variable('SCT_SUBMIT_DATE', submit_date, status=istat)         
-    
-    ! sct end date             missing, to be done in sct
-
-    ! model simulation time    tc_stopdate-tc_startdate
-    length_of_run => newTimedelta("PT0S")
-    length_of_run = time_config%tc_stopdate-time_config%tc_startdate
-    CALL timedeltaToString(length_of_run, tdstring)
-
-    write(gridstring,'(a,i2.2,a,i2.2)') 'R', nroot, 'B', start_lev
-    
-    CALL sct_add_report_attribute('model',                 'icon')
-    CALL sct_add_report_attribute('executable',            executable)
-    CALL sct_add_report_attribute('repository',            repository)
-    CALL sct_add_report_attribute('branch',                branch)
-    CALL sct_add_report_attribute('revision',              revision)
-    CALL sct_add_report_attribute('user name',             user_name)
-    CALL sct_add_report_attribute('operating system name', os_name)
-    CALL sct_add_report_attribute('experiment name',       expname)
-    CALL sct_add_report_attribute('job id',                jobid)
-    CALL sct_add_report_attribute('job name',              jobname)
-    CALL sct_add_report_attribute('submit date',           submit_date)    
-    CALL sct_add_report_attribute('run length',            tdstring)
-    CALL sct_add_report_attribute('vertical levels',       nlev)
-    CALL sct_add_report_attribute('horizontal grid',       gridstring)
-    CALL sct_add_report_attribute('nproma',                get_nproma())    
-#if (defined(__GFORTRAN__) || defined(_CRAYFTN) || defined(__PGIF90__))
-    CALL sct_add_report_attribute('compiler version',      compiler_version())
-    CALL sct_add_report_attribute('compiler options',      compiler_options())
-#else
-    CALL sct_add_report_attribute('compiler version',      'unknown')
-    CALL sct_add_report_attribute('compiler options',      'unknown')    
-#endif
-    
-    CALL sct_report()
-
-    CALL deallocateTimedelta(length_of_run)
-#else
     CALL timer_report()
-#endif
   END SUBROUTINE print_timer
     
   SUBROUTINE init_timer
 
-#ifdef __SCT__
-    CALL sct_init(timer_max=512)
-#endif
 
     ! major timers
     timer_total        = new_timer("total")
@@ -692,16 +573,6 @@ CONTAINS
     timer_rrtm_post = new_timer("rrtm_post")
     timer_lrtm      = new_timer("lrtm")
     timer_srtm      = new_timer("srtm")
-#ifdef PSRAD_TIMING
-    timer_gas_optics_lw = new_timer("gas_optics_lw")
-    timer_gas_optics_sw = new_timer("gas_optics_sw")
-    timer_rrtm_coeffs = new_timer("rrtm_coeffs")
-    timer_cloud_optics = new_timer("cloud_optics")
-    timer_sample_cloud_lw = new_timer("sample_cloud")
-    timer_sample_cloud_sw = new_timer("sample_cloud")
-    timer_psrad_scaling = new_timer("psrad_scaling")
-    timer_psrad_aerosol = new_timer("psrad_aerosol")
-#endif
 
     ! nwp physics timers
     timer_omp_radiation = new_timer("omp_radiation")
@@ -949,17 +820,10 @@ CONTAINS
   !
   !  @note Currently implemented for multi-threaded runs only!
   SUBROUTINE tic(time_s)
-#ifdef _OPENMP
-    USE OMP_LIB
-#endif
 
     REAL, INTENT(OUT) :: time_s
 
-#ifdef _OPENMP
-    time_s = REAL(omp_get_wtime())
-#else
     time_s = 0.
-#endif
   END SUBROUTINE tic
 
   !> Low-level timing routine: stop timing, return elapsed time in
@@ -967,18 +831,11 @@ CONTAINS
   !
   !  @note Currently implemented for multi-threaded runs only!
   FUNCTION toc(time_s)
-#ifdef _OPENMP
-    USE OMP_LIB
-#endif
 
     REAL :: toc
     REAL, INTENT(IN) :: time_s
 
-#ifdef _OPENMP
-    toc = REAL(omp_get_wtime()) - time_s
-#else
     toc = 0.
-#endif
   END FUNCTION toc
 
 END MODULE mo_timer

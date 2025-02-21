@@ -27,11 +27,228 @@ module radiation_tripleclouds_sw
 
 contains
   ! Provides elemental function "delta_eddington"
-#include "radiation_delta_eddington.h"
+! radiation_delta_eddington.h - Delta-Eddington scaling -*- f90 -*-
+!
+! (C) Copyright 2015- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! This file is intended to be included inside a module to ensure that
+! these simple functions may be inlined
+
+!---------------------------------------------------------------------
+! Perform in-place delta-Eddington scaling of the phase function
+elemental subroutine delta_eddington(od, ssa, g)
+
+  use parkind1, only : jprb
+  
+  ! Total optical depth, single scattering albedo and asymmetry
+  ! factor
+  real(jprb), intent(inout) :: od, ssa, g
+  
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+  
+  f   = g*g
+  od  = od * (1.0_jprb - ssa*f)
+  ssa = ssa * (1.0_jprb - f) / (1.0_jprb - ssa*f)
+  g   = g / (1.0_jprb + g)
+  
+end subroutine delta_eddington
+
+
+!---------------------------------------------------------------------
+! Perform in-place delta-Eddington scaling of the phase function, but
+! using extensive variables (i.e. the scattering optical depth,
+! scat_od, rather than the single-scattering albedo, and the
+! scattering-optical-depth-multiplied-by-asymmetry-factor, scat_od_g,
+! rather than the asymmetry factor.
+elemental subroutine delta_eddington_extensive(od, scat_od, scat_od_g)
+
+  !$ACC ROUTINE SEQ
+
+  use parkind1, only : jprb
+
+  ! Total optical depth, scattering optical depth and asymmetry factor
+  ! multiplied by the scattering optical depth
+  real(jprb), intent(inout) :: od, scat_od, scat_od_g
+
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f, g
+
+  if (scat_od > 0.0_jprb) then
+    g = scat_od_g / scat_od
+  else
+    g = 0.0
+  end if
+
+  f         = g*g
+  od        = od - scat_od * f
+  scat_od   = scat_od * (1.0_jprb - f)
+  scat_od_g = scat_od * g / (1.0_jprb + g)
+  
+end subroutine delta_eddington_extensive
+
+
+!---------------------------------------------------------------------
+! Array version of delta_eddington_extensive, more likely to vectorize
+ subroutine delta_eddington_extensive_vec(ng, od, scat_od, scat_od_g)
+
+  use parkind1, only : jprb
+
+  ! Total optical depth, scattering optical depth and asymmetry factor
+  ! multiplied by the scattering optical depth
+  integer,                   intent(in)    :: ng
+  real(jprb), dimension(ng), intent(inout) :: od, scat_od, scat_od_g
+
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f, g
+  integer :: j
+
+  do j = 1,ng
+    g            = scat_od_g(j) / max(scat_od(j), 1.0e-24)
+    f            = g*g
+    od(j)        = od(j) - scat_od(j) * f
+    scat_od(j)   = scat_od(j) * (1.0_jprb - f)
+    scat_od_g(j) = scat_od(j) * g / (1.0_jprb + g)
+  end do
+  
+end subroutine delta_eddington_extensive_vec
+
+
+!---------------------------------------------------------------------
+! Perform in-place delta-Eddington scaling of the phase function,
+! using the scattering optical depth rather than the single scattering
+! albedo
+elemental subroutine delta_eddington_scat_od(od, scat_od, g)
+
+  use parkind1, only : jprb
+  
+  ! Total optical depth, scattering optical depth and asymmetry factor
+  real(jprb), intent(inout) :: od, scat_od, g
+
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+
+  !$ACC ROUTINE SEQ
+
+  f       = g*g
+  od      = od - scat_od * f
+  scat_od = scat_od * (1.0_jprb - f)
+  g       = g / (1.0_jprb + g)
+
+end subroutine delta_eddington_scat_od
+
+
+!---------------------------------------------------------------------
+! Revert delta-Eddington-scaled quantities in-place, back to their
+! original state
+elemental subroutine revert_delta_eddington(od, ssa, g)
+
+  use parkind1, only : jprb
+  
+  ! Total optical depth, single scattering albedo and asymmetry
+  ! factor
+  real(jprb), intent(inout) :: od, ssa, g
+  
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+  
+  g   = g / (1.0_jprb - g)
+  f   = g*g
+  ssa = ssa / (1.0_jprb - f + f*ssa);
+  od  = od / (1.0_jprb - ssa*f)
+  
+end subroutine revert_delta_eddington
 
   ! Small routine for scaling cloud optical depth in the cloudy
   ! regions
-#include "radiation_optical_depth_scaling.h"
+! radiation_optical_depth_scaling.h - Cloud optical-depth scaling for Tripleclouds 
+!
+! (C) Copyright 2016- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! Modifications
+!   2017-07-14  R. Hogan  Incorporate gamma distribution option
+!
+! This file is intended to be included inside a module to ensure that
+! this simple routine may be inlined
+
+!---------------------------------------------------------------------
+! Compute the optical depth scalings for the optically "thick" and
+! "thin" regions of a Tripleclouds representation of a sub-grid PDF of
+! cloud optical depth. Following Shonk and Hogan (2008), the 16th
+! percentile is used for the thin region, and the formulas estimate
+! this for both lognormal and gamma distributions.
+pure subroutine optical_depth_scaling(nreg, frac_std, do_gamma, od_scaling)
+
+  use parkind1, only : jprb
+
+  ! Number of regions
+  integer, intent(in)     :: nreg
+
+  ! Fractional standard deviation of in-cloud water content
+  real(jprb), intent(in)  :: frac_std
+
+  ! Do we do a lognormal or gamma distribution?
+  logical, intent(in) :: do_gamma
+
+  ! Optical depth scaling for the cloudy regions
+  real(jprb), intent(out) :: od_scaling(2:nreg)
+
+  if (nreg == 2) then
+    ! Only one clear-sky and one cloudy region: cloudy region is
+    ! homogeneous
+    od_scaling(2) = 1.0_jprb
+  else
+    ! Two cloudy regions with optical depth scaled by 1-x and
+    ! 1+x.
+    ! Simple version which fails when fractional_std >= 1:
+    !od_scaling(2) = 1.0_jprb-cloud%fractional_std(jcol,jlev)
+    ! According to Shonk and Hogan (2008), 1-x should correspond to
+    ! the 16th percentile. 
+    if (.not. do_gamma) then
+      ! If we treat the distribution as a lognormal such that the
+      ! equivalent Normal has a mean mu and standard deviation sigma,
+      ! then the 16th percentile of the lognormal is very close to
+      ! exp(mu-sigma).
+      od_scaling(2) &
+           &  = exp(-sqrt(log(frac_std**2+1))) / sqrt(frac_std**2+1)
+    else
+      ! If we treat the distribution as a gamma then the 16th
+      ! percentile is close to the following
+      od_scaling(2) = exp(-frac_std*(1.0_jprb + 0.5_jprb*frac_std &
+           &                                   *(1.0_jprb+0.5_jprb*frac_std)))
+    end if
+
+    ! Ensure mean optical depth is conserved
+    od_scaling(3) = 2.0_jprb-od_scaling(2)
+  end if
+
+end subroutine optical_depth_scaling
 
   !---------------------------------------------------------------------
   ! This module contains just one subroutine, the shortwave

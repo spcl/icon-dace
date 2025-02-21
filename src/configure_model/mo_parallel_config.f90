@@ -204,18 +204,18 @@ CONTAINS
     ELSE
       IF (nproma<=0)  CALL finish(TRIM(method_name),'"nproma" must be positive')
     ENDIF
-#if !defined (__SX__) && !defined (__NEC_VH__) && !defined(_OPENACC)
+
     ! migration helper: catch nproma's that were obviously intended
     !                   for a vector or GPU machine.
     IF (nproma>256) CALL warning(TRIM(method_name),'The value of "nproma" seems to be set for a vector machine!')
-#endif
+
 
     IF (proc0_shift < 0) CALL finish(TRIM(method_name),'"proc0_shift" currently must be 0 (disable) or a positive number')
     proc0_offloading = proc0_shift > 0
 
     icon_comm_openmp = .false.
 ! check l_test_openmp
-#ifndef _OPENMP
+
     IF (l_test_openmp) THEN
       CALL message(method_name, &
          & 'l_test_openmp has no effect if the model is compiled without OpenMP support')
@@ -223,13 +223,13 @@ CONTAINS
          & '--> l_test_openmp set to .FALSE.')
       l_test_openmp = .FALSE.
     END IF
-#else
-    IF (icon_comm_method > 100) &
-      & icon_comm_openmp = .true.
-#endif
+
+
+
+
 
     ! check p_test_run, num_io_procs, num_restart_procs and num_prefetch_proc
-#ifdef NOMPI
+
     ! Unconditionally set p_test_run to .FALSE. and num_io_procs to 0, num_restart_procs to 0
     ! and num_prefetch_proc to 0
     ! all other variables are already set correctly
@@ -262,25 +262,6 @@ CONTAINS
       num_prefetch_proc = 0
     END IF
 
-#else
-
-    ! check n_ghost_rows
-    IF (n_ghost_rows<1) THEN
-      CALL finish(method_name, &
-          & 'n_ghost_rows<1 in parallel_nml namelist is not allowed')
-    END IF
-
-    ! for safety only
-    IF (num_io_procs < 0)      num_io_procs = 0
-    IF (num_restart_procs < 0) num_restart_procs = 0
-    IF (num_io_procs > MAX_NUM_IO_PROCS) THEN
-      CALL finish(method_name, "Namelist parameter num_io_procs chosen too large ( > "//TRIM(int2string(MAX_NUM_IO_PROCS))//")!")
-    END IF
-    IF(num_prefetch_proc < 0) num_prefetch_proc = 0
-    IF(num_prefetch_proc > 1) &
-         CALL finish(TRIM(method_name),'The no of prefetch processor can be zero or one, but should not be set more than one!')
-
-#endif
 
   END SUBROUTINE check_parallel_configuration
   !-------------------------------------------------------------------------
@@ -327,11 +308,7 @@ CONTAINS
     INTEGER, INTENT(IN) :: nproma, min_nproma
     INTEGER             :: new_nproma
 
-#ifdef _OPENACC
-    new_nproma = nproma
-#else
     new_nproma = MIN(nproma, min_nproma)
-#endif
 
   END FUNCTION cpu_min_nproma 
   !-------------------------------------------------------------------------
@@ -361,17 +338,11 @@ CONTAINS
   ! Trying to invert the above and catching cases with blk_no < 1
   !-------------------------------------------------------------------------
   ELEMENTAL INTEGER FUNCTION blk_no(j)
-#if defined(_OPENACC)
-    !$ACC ROUTINE SEQ
-#endif
     INTEGER, INTENT(IN) :: j
     blk_no = MAX((ABS(j)-1)/nproma + 1, 1) ! i.e. also 1 for j=0, nproma=1
   END FUNCTION blk_no
 
   ELEMENTAL INTEGER FUNCTION idx_no(j)
-#if defined(_OPENACC)
-    !$ACC ROUTINE SEQ
-#endif
     INTEGER, INTENT(IN) :: j
     IF(j==0) THEN
       idx_no = 0
@@ -381,9 +352,6 @@ CONTAINS
   END FUNCTION idx_no
 
   ELEMENTAL INTEGER FUNCTION idx_1d(jl,jb)
-#if defined(_OPENACC)
-    !$ACC ROUTINE SEQ
-#endif
     INTEGER, INTENT(IN) :: jl, jb
     IF(jb<=0) THEN
       idx_1d = 0 ! This covers the special case nproma==1,jb=0,jl=1

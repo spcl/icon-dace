@@ -51,9 +51,9 @@
 MODULE mo_stoch_explicit
 
   USE netcdf
-#ifdef HAVE_ACM_LICENSE  
-  USE random_rewrite,        ONLY: random_Poisson
-#endif  
+
+
+
   USE mo_kind,               ONLY: JPRB=>wp ,JPIM=>i4
   USE mo_model_domain,       ONLY: t_patch
   USE mo_loopindices,        ONLY: get_indices_c
@@ -639,25 +639,6 @@ MODULE mo_stoch_explicit
         ! Request streammax new random numbers to use in Poisson distribution draws 
         CALL random_number_generator%uniform_distribution(rnd(1:streammax))
 
-#ifdef HAVE_ACM_LICENSE
-        ! Determine number of newborn passive clouds by drawing from Poisson distribution with given birth rate.
-        idx=1! This index keeps track of which random numbers out of the 200 have already been used
-        n1 = random_Poisson(birth_rate_p(i)*dt,idx,streammax,rnd(1:streammax))
-        ! Safety check in case random_Poisson routine does not converge and runs out of random numbers to use
-        IF (idx .gt. streammax) THEN
-           write(6,*) 'idx in first explicit Poisson draw out of range',idx,birth_rate_p(i)*dt, &
-                & rnd(1),rnd(idx),MINVAL(rnd(1:streammax)),MAXVAL(rnd(1:streammax))
-        ENDIF
-        
-        ! Determine number of newborn active clouds by drawing from Poisson distribution with given birth rate.
-        idx=50! Start at index 50, to make sure to use "fresh" random numbers
-        n2 = random_Poisson(birth_rate_a(i)*dt,idx,streammax,rnd(1:streammax))
-        ! Safety check in case random_Poisson routine does not converge and runs out of random numbers to use
-        IF (idx .gt. streammax) THEN
-           write(6,*) 'idx in 2nd explicit Poisson draw out of range',idx,birth_rate_a(i)*dt, &
-                & rnd(1),rnd(idx),MINVAL(rnd(1:streammax)),MAXVAL(rnd(1:streammax))
-        ENDIF
-#else
         ! Determine number of newborn passive clouds by sampling a normal distribution
         ! (instead of Poisson) using the Box-Muller method, with given birth rate.
         idx=1 ! This index keeps track of which random numbers out of the 200 have already been used
@@ -669,7 +650,6 @@ MODULE mo_stoch_explicit
         idx=50 ! This index keeps track of which random numbers out of the 200 have already been used
         z0 = SQRT(-2._JPRB * LOG(rnd(idx))) * COS(pi * rnd(idx+25))
         n2 = MAX(0, INT(z0 * SQRT(birth_rate_a(i)*dt) + birth_rate_a(i)*dt))
-#endif
        
         ! Count clouds to be born. For small, non-zero birth rates, the Poisson draw
         ! my nevertheless return zero clouds to be born.
@@ -682,20 +662,6 @@ MODULE mo_stoch_explicit
           idx=75 ! Start at index 75, to make sure to use "fresh" random numbers
           ! Iterate over number of spinup steps
           DO k=1,spinup_steps
-#ifdef HAVE_ACM_LICENSE             
-            n1 = random_Poisson(birth_rate_p(i)*dt,idx,streammax,rnd(1:streammax))
-            ! Safety check in case random_Poisson routine does not converge and runs out of random numbers to use
-            IF (idx .gt. streammax) THEN
-               write(6,*) 'idx in first explicit spinup Poisson draw out of range, at iteration ',k, &
-                    & idx,birth_rate_p(i)*dt,rnd(1),rnd(idx),MINVAL(rnd(1:streammax)),MAXVAL(rnd(1:streammax))
-            ENDIF
-            n2 = random_Poisson(birth_rate_a(i)*dt,idx,streammax,rnd(1:streammax))
-            ! Safety check in case random_Poisson routine does not converge and runs out of random numbers to use
-            IF (idx .gt. streammax) THEN
-               write(6,*) 'idx in second explicit spinup Poisson draw out of range, at iteration ',k, &
-                    & idx,birth_rate_p(i)*dt,rnd(1),rnd(idx),MINVAL(rnd(1:streammax)),MAXVAL(rnd(1:streammax))
-            ENDIF
-#else
             ! Determine number of newborn passive clouds by sampling a normal distribution
             ! (instead of Poisson) using the Box-Muller method, with given birth rate.
             z0 = SQRT(-2._JPRB * LOG(rnd(idx))) * COS(pi * rnd(idx+1))
@@ -706,7 +672,6 @@ MODULE mo_stoch_explicit
             z0 = SQRT(-2._JPRB * LOG(rnd(idx+2))) * COS(pi * rnd(idx+3))
             n2 = MAX(0, INT(z0 * SQRT(birth_rate_a(i)*dt) + birth_rate_a(i)*dt))
             idx=idx+4
-#endif
             ! Save numbers of passive/active clouds to be born for each spinup time step in two arrays
             n1array(k)=n1
             n2array(k)=n2
@@ -1184,11 +1149,8 @@ MODULE mo_stoch_explicit
     ! to plume depth. Clouds must be at least one model layer thick.
     !
     !|-\ -------- plume top = max depth of cloud with strongest mass flux
-    !|  \
-    !|   \
-    !|....\   ... cloud with "average" MF equal to bulk MF reach 1/3 of the max plume depth
-    !|     \
-    !|------\ --- plume base = cloud base
+    !|      !|       !|....\   ... cloud with "average" MF equal to bulk MF reach 1/3 of the max plume depth
+    !|         !|------\ --- plume base = cloud base
     !
     mdep_con=MAX(1,MIN(NINT((mbascon-mtopcon)*.3_JPRB*(mf/mavg)),mbascon-mtopcon))
   END FUNCTION cloud_depth

@@ -38,25 +38,25 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 !
-#define filename 'solver_internal_multi.f90'
+
 !
 SUBROUTINE ABORT_UNLESS_NORMAL0(x, x_str)
   REAL(PREC), INTENT(IN) :: x
   CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
   INTEGER :: rank
-#ifdef USE_MPI
-  INTEGER :: error
-#endif
 
-#ifdef USE_MPI
-  CALL mpi_comm_rank(mpi_comm_world, rank, error)
-#else
+
+
+
+
+
+
   rank = 0
-#endif
+
 
   IF ( .NOT. is_normal(x) ) THEN
     CALL abort_ppm("Not normal number found in " // x_str // &
-         " on rank " // int2str(rank) // ".", filename, __LINE__)
+         " on rank " // int2str(rank) // ".", 'solver_internal_multi.f90', 59)
   ENDIF
 
 END SUBROUTINE ABORT_UNLESS_NORMAL0
@@ -66,24 +66,24 @@ SUBROUTINE ABORT_UNLESS_NORMAL1(x, x_str)
   REAL(PREC), INTENT(IN) :: x(:)
   CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
   INTEGER :: i, ie, rank
-#ifdef USE_MPI
-  INTEGER :: error
-#endif
+
+
+
 
   ie = SIZE(x,1)
 
-#ifdef USE_MPI
-  CALL mpi_comm_rank(mpi_comm_world, rank, error)
-#else
+
+
+
   rank = 0
-#endif
+
 
   DO i=1,ie
     IF ( .NOT. is_normal(x(i)) ) THEN
       CALL abort_ppm("Abnormal number found in " // x_str // &
            ", i=" // int2str(i) // &
            " on rank " // int2str(rank) // ".", &
-           filename, __LINE__)
+           'solver_internal_multi.f90', 86)
     ENDIF
   ENDDO
 
@@ -94,18 +94,18 @@ SUBROUTINE ABORT_UNLESS_NORMAL2(x, x_str)
   REAL(PREC), INTENT(IN) :: x(:,:)
   CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
   INTEGER :: i, j, ie, je, rank
-#ifdef USE_MPI
-  INTEGER :: error
-#endif
+
+
+
 
   ie = SIZE(x,1)
   je = SIZE(x,2)
 
-#ifdef USE_MPI
-  CALL mpi_comm_rank(mpi_comm_world, rank, error)
-#else
+
+
+
   rank = 0
-#endif
+
 
   DO j=1,je
     DO i=1,ie
@@ -113,7 +113,7 @@ SUBROUTINE ABORT_UNLESS_NORMAL2(x, x_str)
         CALL abort_ppm("Not normal number found in " // x_str // &
              ", i=" // int2str(i) // ", j=" // int2str(j) // &
              " on rank " // int2str(rank) // ".", &
-             filename, __LINE__)
+             'solver_internal_multi.f90', 116)
       ENDIF
     ENDDO
   ENDDO
@@ -125,19 +125,19 @@ SUBROUTINE ABORT_UNLESS_NORMAL3(x, x_str)
   REAL(PREC), INTENT(IN) :: x(:,:,:)
   CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
   INTEGER :: i, j, k, ie, je, ke, rank
-#ifdef USE_MPI
-  INTEGER :: error
-#endif
+
+
+
 
   ie = SIZE(x,1)
   je = SIZE(x,2)
   ke = SIZE(x,3)
 
-#ifdef USE_MPI
-  CALL mpi_comm_rank(mpi_comm_world, rank, error)
-#else
+
+
+
   rank = 0
-#endif
+
 
   DO k=1,ke
     DO j=1,je
@@ -147,7 +147,7 @@ SUBROUTINE ABORT_UNLESS_NORMAL3(x, x_str)
                // ", i=" // int2str(i) // ", j=" // int2str(j) // &
                ", k=" // int2str(k) // " on rank " &
                // int2str(rank) // ".", &
-               filename, __LINE__)
+               'solver_internal_multi.f90', 150)
         ENDIF
       ENDDO
     ENDDO
@@ -178,7 +178,7 @@ SUBROUTINE CLEAR_HALOS(x, ext_x)
 
 END SUBROUTINE CLEAR_HALOS
 
-#undef filename
+
 !
 ! Local Variables:
 ! license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"

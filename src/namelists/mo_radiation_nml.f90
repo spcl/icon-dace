@@ -75,12 +75,12 @@ MODULE mo_radiation_nml
                                  & open_and_restore_namelist, close_tmpfile
   USE mo_nml_annotate,       ONLY: temp_defaults, temp_settings
   USE mo_io_units,           ONLY: filename_max
-#ifdef _OPENACC
-  USE openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)  
-#else
-#define __acc_attach(ptr)
-#endif
+
+
+
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -392,7 +392,7 @@ CONTAINS
     ELSE
       csalb => csalb1
     ENDIF
-    __acc_attach(csalb)
+    
 
     !$ACC UPDATE DEVICE(config_decorr_pole, config_decorr_equator) ASYNC(1)
 

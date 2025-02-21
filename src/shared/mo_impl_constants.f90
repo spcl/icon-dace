@@ -136,8 +136,8 @@ MODULE mo_impl_constants
 !   there would be double-counting). There are, however, operations for which even such edges/vertices can be 
 !   excluded from prognostic computation because a halo synchronization follows immediately afterwards (and
 !   has to be there anyway). Thus, the following ordering is applied:
-!   min_rledge_int - 1: outer boundary edges of a prognostic cell not owned by the current PE\\
-!   min_rledge_int - 2: edges connecting halo cells of the first row
+!   min_rledge_int - 1: outer boundary edges of a prognostic cell not owned by the current PE\!   min_rledge_int - 2: edges connecting halo cells of the first row
+
 !   min_rledge_int - 3: outer boundary edges of the first halo cells row, or edges connecting cells
 !   of the first halo cell row with cells of the second halo cell row.
 !   For n_ghost_rows = 2, an analogous setting applies to min_rledge_int - 4 and

@@ -29,9 +29,9 @@ MODULE mo_reader_sst_sic
   USE mo_read_netcdf_distributed, ONLY: distrib_nf_open, distrib_read, distrib_nf_close, &
        &                                idx_lvl_blk
   USE mo_fortran_tools,           ONLY: t_ptr_3d
-#ifdef _OPENACC
-  USE mo_mpi,                     ONLY: i_am_accel_node
-#endif
+
+
+
 
   IMPLICIT NONE
 
@@ -169,16 +169,16 @@ CONTAINS
       CALL finish(modname, '6 hourly SST/Seaice file not open!')
     END IF
     tmp(1)%p => temp(:,:,:,1)
-#ifdef _OPENACC
-    init_i_am_accel_node = i_am_accel_node
-    i_am_accel_node = .FALSE.
-#endif
+
+
+
+
     CALL distrib_read(this%dist_fileid, varname, tmp, &
          & (/this%p_patch%cells%dist_io_data/), edim=(/1/), dimo=idx_lvl_blk, &
          & start_ext_dim=(/timelevel/), end_ext_dim=(/timelevel/))
-#ifdef _OPENACC
-    i_am_accel_node = init_i_am_accel_node
-#endif
+
+
+
     IF (ALLOCATED(dat)) THEN
       IF (.NOT. ALL( SHAPE(dat) .EQ. (/get_nproma(), 1, this%p_patch%nblks_c, 1/) )) THEN
         DEALLOCATE(dat)

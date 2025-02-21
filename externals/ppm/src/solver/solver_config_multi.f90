@@ -37,7 +37,7 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#define filename 'solver_config_multi.f90'
+
 !
 ! Check if stencil is defined
 ! Prototype is need to determine the right stencil, sp or dp
@@ -78,7 +78,7 @@ SUBROUTINE APPLY_STENCIL(field, res_field)
 
   IF (.NOT. stencil_defined(0._precs)) THEN
     CALL abort_ppm("Stencil is not defined! Use set_stencil() first.", &
-         filename, __LINE__)
+         'solver_config_multi.f90', 81)
   ENDIF
 
   ! Define some variables for the ranges of the fields
@@ -116,7 +116,7 @@ SUBROUTINE APPLY_SHIFTED_STENCIL(field, res_field)
 
   IF (.NOT. stencil_defined(0._precs)) THEN
     CALL abort_ppm("Stencil is not defined! Use set_stencil() first.", &
-         filename, __LINE__)
+         'solver_config_multi.f90', 119)
   ENDIF
 
   ! Define some variables for the ranges of the fields
@@ -141,7 +141,7 @@ SUBROUTINE APPLY_SHIFTED_STENCIL(field, res_field)
 
 END SUBROUTINE APPLY_SHIFTED_STENCIL
 
-#undef filename
+
 !
 ! Local Variables:
 ! license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"

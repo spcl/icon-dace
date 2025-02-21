@@ -16,7 +16,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nh_vert_interp
@@ -55,9 +65,6 @@ MODULE mo_nh_vert_interp
   USE mo_dynamics_config,     ONLY: ldeepatmo
   USE mo_deepatmo,            ONLY: deepatmo_htrafo
 
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -113,30 +120,12 @@ CONTAINS
     start_idx_diff_threshold = nlevs-1
     ! OpenACC requires a different approach, as EXIT would be illegal
     ! and MINVAL would be very inefficient within an ACC-loop.
-#ifndef _OPENACC
     DO jk = 1, nlevs
       IF (MINVAL(z2d_in(1:nlen,jk)-z_reference(1:nlen)) <= threshold) THEN
         start_idx_diff_threshold = jk - 1
         EXIT
       ENDIF
     ENDDO
-#else
-    !$ACC PARALLEL LOOP GANG VECTOR COLLAPSE(2) ASYNC(1) DEFAULT(PRESENT) REDUCTION(MIN: start_idx_diff_threshold) IF(lacc)
-    DO jk = 1, nlevs
-      DO jc = 1, nlen
-        IF ( z2d_in(jc,jk)-z_reference(jc) <= threshold ) THEN
-          start_idx_diff_threshold = MIN(start_idx_diff_threshold, jk)
-        END IF
-      END DO
-    END DO
-    !$ACC END PARALLEL LOOP
-    !$ACC WAIT ! required to sync result back to CPU
-
-    start_idx_diff_threshold = start_idx_diff_threshold - 1
-    ! OpenACC does its own initialization of reduction variables with a very high value.
-    ! Thus we make sure that the final value is in a valid range
-    IF ( start_idx_diff_threshold > nlevs-1 ) start_idx_diff_threshold = nlevs-1
-#endif
   END FUNCTION start_idx_diff_threshold
 
 
@@ -160,26 +149,12 @@ CONTAINS
     start_idx_threshold = nlevs-1
     ! OpenACC requires a different approach, as EXIT would be illegal
     ! and MINVAL would be very inefficient within an ACC-loop.
-#ifndef _OPENACC
     DO jk = 1, nlevs
       IF (MINVAL(zalml(1:nlen,jk)) < threshold) THEN
         start_idx_threshold = jk
         EXIT
       ENDIF
     ENDDO
-#else
-    !$ACC PARALLEL LOOP GANG VECTOR COLLAPSE(2) DEFAULT(PRESENT) REDUCTION(MIN: start_idx_threshold) ASYNC(1) IF(lacc)
-    DO jk = 1, nlevs
-      DO jc = 1, nlen
-        IF ( zalml(jc,jk) < threshold ) THEN
-          start_idx_threshold = MIN(start_idx_threshold, jk)
-        END IF
-      END DO
-    END DO
-    !$ACC END PARALLEL LOOP
-
-    !$ACC WAIT ! required to sync result back to CPU
-#endif
   END FUNCTION start_idx_threshold
 
 
@@ -381,11 +356,6 @@ CONTAINS
 
 !-------------------------------------------------------------------------
 
-#ifdef _OPENACC
-    IF(i_am_accel_node) CALL finish(routine, "Does not support OpenACC (or is untested).")
-    ! In order to support OpenACC, the lacc flags in the following code must be turned on.
-    ! Additional porting might be necessary.
-#endif
 
     jg = p_patch%id
 
@@ -905,27 +875,15 @@ CONTAINS
             ENDIF
           ENDDO
 
-#ifndef _OPENACC
           ! ACC: the following EXIT would be illegal within an OpenACC Kernel, thus we skip this CPU optimization
           IF (ALL(l_found(1:nlen))) THEN
             lfound_all = .TRUE.
             EXIT
           ENDIF
-#endif
 
         ENDDO
         !$ACC END PARALLEL
 
-#ifdef _OPENACC
-        lfound_all = .TRUE.
-        ! The following reduction must appear in its own small kernel as it did not work otherwise with Nvidia 21.2
-        !$ACC PARALLEL LOOP VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc) REDUCTION(.AND.: lfound_all)
-        DO jc = 1, nlen
-          lfound_all = lfound_all .AND. l_found(jc)
-        ENDDO
-        !$ACC END PARALLEL LOOP
-        !$ACC WAIT
-#endif
 
         IF (lfound_all) THEN
           jk_start = MIN(minval_1d(idx0(1:nlen,jk,jb), lacc=lzacc),nlevs_in-1)
@@ -1313,26 +1271,15 @@ CONTAINS
             ENDIF
           ENDDO
 
-#ifndef _OPENACC
           ! ACC: the following EXIT would be illegal within an OpenACC Kernel, thus we skip this CPU optimization
           IF (ALL(l_found(1:nlen))) THEN
             lfound_all = .TRUE.
             EXIT
           ENDIF
-#endif
 
         ENDDO
         !$ACC END PARALLEL
 
-#ifdef _OPENACC
-        lfound_all = .TRUE.
-        ! The following reduction must appear in its own small kernel as it did not work otherwise with Nvidia 21.2
-        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc) REDUCTION(.AND.: lfound_all)
-        DO jc = 1, nlen
-          lfound_all = lfound_all .AND. l_found(jc)
-        ENDDO
-        !$ACC END PARALLEL LOOP
-#endif
         !$ACC WAIT
 
         IF (lfound_all) THEN
@@ -2585,10 +2532,8 @@ CONTAINS
                 ENDIF
               ENDIF
             ENDDO
-#ifndef _OPENACC
             ! ACC: the following EXIT would be illegal within an OpenACC Kernel, thus we skip this CPU optimization
             IF (ALL(l_found(1:nlen))) EXIT
-#endif
           ENDDO
           !$ACC END PARALLEL
           jk_start = minval_1d(ik1(1: nlen), lacc=lzacc)
@@ -2973,10 +2918,6 @@ CONTAINS
                 ENDIF
               ENDIF
             ENDDO
-#ifdef _OPENACC
-            ! ACC: the following EXIT would be illegal within an OpenACC Kernel, thus we skip this CPU optimization
-            IF (ALL(l_found(1:nlen))) EXIT
-#endif
           ENDDO
           !$ACC END PARALLEL
 
@@ -3358,10 +3299,6 @@ CONTAINS
                 ENDIF
               ENDIF
             ENDDO
-#ifdef _OPENACC
-            ! ACC: the following EXIT would be illegal within an OpenACC Kernel, thus we skip this CPU optimization
-            IF (ALL(l_found(1:nlen))) EXIT
-#endif
           ENDDO
           !$ACC END PARALLEL
           jk_start = minval_1d(ik1(1:nlen), lacc=lzacc)

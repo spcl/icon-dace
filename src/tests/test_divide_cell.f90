@@ -55,12 +55,12 @@ PROGRAM test_divide_cell
     END IF
   END DO
 
-#if 0
-  PRINT *, ''
-  DO i = 1, ncells
-    PRINT *, TRIM(cell_desc2str(cell_desc(i)))
-  END DO
-#endif
+
+
+
+
+
+
 
 CONTAINS
   FUNCTION cell_desc2str(c) RESULT(s)

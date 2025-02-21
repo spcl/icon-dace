@@ -22,9 +22,9 @@ MODULE mo_key_value_store
   USE mo_packed_message,        ONLY: t_PackedMessage
   USE mo_util_string,           ONLY: tolower
   USE mo_util_texthash,         ONLY: text_hash, text_isEqual, sel_char
-#ifdef __PGI
-  USE mo_util_texthash,         ONLY: t_char_workaround
-#endif
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -91,19 +91,6 @@ CONTAINS
     IF (isDest) CALL key_value_store_input_pmsg(me, pmsg)
   END SUBROUTINE key_value_store_bcast
 
-#ifdef __PGI
-#define ALLOC_ASSIGN(__a) \
-    __a , POINTER :: val_p; CLASS(*), POINTER :: valObj; \
-    ALLOCATE(val_p); val_p = val; valObj => val_p
-#define ALLOC_ASSIGN_C \
-    TYPE(t_char_workaround), POINTER :: val_p; CLASS(*), POINTER :: valObj; \
-    ALLOCATE(val_p); ALLOCATE(CHARACTER(LEN=LEN_TRIM(val)) :: val_p%c); \
-    WRITE(val_p%c, "(a)") TRIM(val); valObj => val_p
-#else
-#define ALLOC_ASSIGN(__a) \
-    CLASS(*), POINTER :: valObj; ALLOCATE(valObj , SOURCE=val)
-#define ALLOC_ASSIGN_C ALLOC_ASSIGN(xxxx)
-#endif
 
   SUBROUTINE key_value_store_put_internal(me, key, valObj)
     CLASS(t_key_value_store), INTENT(INOUT) :: me
@@ -121,16 +108,7 @@ CONTAINS
     SUBROUTINE put_actual(key)
       CHARACTER(*), INTENT(IN) :: key
       CLASS(*), POINTER :: keyObj
-#ifdef __PGI
-      TYPE(t_char_workaround), POINTER :: key_p
-
-      ALLOCATE(key_p)
-      ALLOCATE(CHARACTER(LEN=LEN(key)) :: key_p%c)
-      WRITE(key_p%c, "(a)") key
-      keyObj => key_p
-#else
       ALLOCATE(keyObj , SOURCE=key)
-#endif
       CALL me%table%setEntry(keyObj, valObj)
     END SUBROUTINE put_actual
   END SUBROUTINE key_value_store_put_internal
@@ -139,7 +117,7 @@ CONTAINS
     CLASS(t_key_value_store), INTENT(INOUT) :: me
     CHARACTER(*), INTENT(IN) :: key, val
 
-    ALLOC_ASSIGN_C
+    CLASS(*), POINTER :: valObj; ALLOCATE(valObj , SOURCE=val)
     CALL key_value_store_put_internal(me, key, valObj)
   END SUBROUTINE key_value_store_put_c
 
@@ -148,7 +126,7 @@ CONTAINS
     CHARACTER(*), INTENT(IN) :: key
     REAL(wp), INTENT(IN) :: val
 
-    ALLOC_ASSIGN(REAL(wp))
+    CLASS(*), POINTER :: valObj; ALLOCATE(valObj , SOURCE=val)
     CALL key_value_store_put_internal(me, key, valObj)
   END SUBROUTINE key_value_store_put_r
 
@@ -157,7 +135,7 @@ CONTAINS
     CHARACTER(*), INTENT(IN) :: key
     INTEGER, INTENT(IN) :: val
 
-    ALLOC_ASSIGN(INTEGER)
+    CLASS(*), POINTER :: valObj; ALLOCATE(valObj , SOURCE=val)
     CALL key_value_store_put_internal(me, key, valObj)
   END SUBROUTINE key_value_store_put_i
 
@@ -166,7 +144,7 @@ CONTAINS
     CHARACTER(*), INTENT(IN) :: key
     LOGICAL, INTENT(IN) :: val
 
-    ALLOC_ASSIGN(LOGICAL)
+    CLASS(*), POINTER :: valObj; ALLOCATE(valObj , SOURCE=val)
     CALL key_value_store_put_internal(me, key, valObj)
   END SUBROUTINE key_value_store_put_l
 
@@ -189,17 +167,10 @@ CONTAINS
     IF(ASSOCIATED(valObj)) THEN
       IF (PRESENT(opt_err)) opt_err = 0
       SELECT TYPE(valObj)
-#ifdef __PGI
-      TYPE IS(t_char_workaround)
-        IF (.NOT.PRESENT(opt_c)) &
-          & CALL finish(routine, "type mismatch '"//trimmed_key//"', isCHARACTER")
-        opt_c = valObj%c
-#else
       TYPE IS(CHARACTER(*))
         IF (.NOT.PRESENT(opt_c)) &
           &CALL finish(routine, "type mismatch '"//trimmed_key//"', isCHARACTER")
         opt_c = valObj
-#endif
       TYPE IS(REAL(wp))
          IF (.NOT.PRESENT(opt_r)) &
            & CALL finish(routine, "type mismatch '"//trimmed_key//"', is REAL(wp)")
@@ -372,13 +343,8 @@ CONTAINS
       CALL pmsg%pack(clen)
       CALL pmsg%pack(ccKey(1:clen))
       SELECT TYPE(curVal)
-#ifdef __PGI
-      TYPE IS(t_char_workaround)
-        ccVal => curVal%c
-#else
       TYPE IS(CHARACTER(*))
         ccVal => curVal
-#endif
         CALL pmsg%pack(dt_txt)
         clen = LEN_TRIM(ccVal)
         CALL pmsg%pack(clen)
@@ -403,13 +369,8 @@ CONTAINS
       message_text = ''
       NULLIFY(ccVal)
       SELECT TYPE(curVal)
-#ifdef __PGI
-      TYPE IS(t_char_workaround)
-        ccVal => curVal%c
-#else
       TYPE IS(CHARACTER(*))
         ccVal => curVal
-#endif
       TYPE IS(REAL(wp))
         WRITE(message_text, "(3a,e12.5,a)") "key = >", ccKey, "< val = >", curVal, "<"
       TYPE IS(INTEGER)

@@ -13,7 +13,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_vdf
@@ -45,12 +55,6 @@ MODULE mo_vdf
   ! Todo: refactor so that t_patch is not needed
   USE mo_model_domain      ,ONLY: t_patch
 
-#ifdef _OPENACC
-  use openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)
-#else
-#define __acc_attach(ptr)
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -148,11 +152,11 @@ CONTAINS
     ! Sub-process for atmosphere
     result%atmo => t_vdf_atmo('vdf atmo', dt=dt, domain=t_domain(patch, nproma, nlev=nlev))
     CALL result%atmo%Set_time_scheme(time_scheme_explicit_euler)
-    __acc_attach(result%atmo)
+    
 
     ! Sub-process for surface
     result%sfc  => t_vdf_sfc ('vdf sfc',  dt=dt, domain=t_domain(patch, nproma, nlev=1, ntiles=nsfc_tiles, sfc_types=sfc_types))
-    __acc_attach(result%sfc)
+    
 
     CALL result%Add_process(result%atmo)
     CALL result%Add_process(result%sfc)
@@ -251,33 +255,33 @@ CONTAINS
     TYPE IS (t_vdf_atmo_config)
       conf_atmo => v
     END SELECT
-    __acc_attach(conf_atmo)
+    
     SELECT TYPE (v => this%atmo%inputs)
     TYPE IS (t_vdf_atmo_inputs)
       ins_atmo => v
     END SELECT
-    __acc_attach(ins_atmo)
+    
     SELECT TYPE (v => this%atmo%diagnostics)
     TYPE IS (t_vdf_atmo_diagnostics)
       diags_atmo => v
     END SELECT
-    __acc_attach(diags_atmo)
+    
 
     SELECT TYPE (v => this%sfc%config)
     TYPE IS (t_vdf_sfc_config)
       conf_sfc => v
     END SELECT
-    __acc_attach(conf_sfc)
+    
     SELECT TYPE (v => this%sfc%inputs)
     TYPE IS (t_vdf_sfc_inputs)
       ins_sfc => v
     END SELECT
-    __acc_attach(ins_sfc)
+    
     SELECT TYPE (v => this%sfc%diagnostics)
     TYPE IS (t_vdf_sfc_diagnostics)
       diags_sfc => v
     END SELECT
-    __acc_attach(diags_sfc)
+    
 
     conf_sfc%cpd => conf_atmo%cpd
     conf_sfc%cvd => conf_atmo%cvd
@@ -1542,33 +1546,33 @@ END DO
     TYPE IS (t_vdf_atmo_config)
       conf_atmo => v
     END SELECT
-    __acc_attach(conf_atmo)
+    
     SELECT TYPE (v => this%atmo%inputs)
     TYPE IS (t_vdf_atmo_inputs)
       ins_atmo => v
     END SELECT
-    __acc_attach(ins_atmo)
+    
     SELECT TYPE (v => this%atmo%diagnostics)
     TYPE IS (t_vdf_atmo_diagnostics)
       diags_atmo => v
     END SELECT
-    __acc_attach(diags_atmo)
+    
 
     SELECT TYPE (v => this%sfc%config)
     TYPE IS (t_vdf_sfc_config)
       conf_sfc => v
     END SELECT
-    __acc_attach(conf_sfc)
+    
     SELECT TYPE (v => this%sfc%inputs)
     TYPE IS (t_vdf_sfc_inputs)
       ins_sfc => v
     END SELECT
-    __acc_attach(ins_sfc)
+    
     SELECT TYPE (v => this%sfc%diagnostics)
     TYPE IS (t_vdf_sfc_diagnostics)
       diags_sfc => v
     END SELECT
-    __acc_attach(diags_sfc)
+    
 
     ASSOCIATE( &
       domain => this%atmo%domain,    &

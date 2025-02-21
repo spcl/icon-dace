@@ -62,9 +62,9 @@
 
 MODULE mo_gnat_gridsearch
 
-#ifdef _OPENMP
-  USE OMP_LIB
-#endif
+
+
+
 
   USE mo_kind,                ONLY: wp
   USE mo_exception,           ONLY: message, message_text, finish
@@ -78,9 +78,9 @@ MODULE mo_gnat_gridsearch
     &                               p_bcast, p_max, p_comm_work_2_test
   USE mo_communication,       ONLY: idx_1d
   USE mo_icon_comm_lib,       ONLY: t_mpi_mintype, mpi_reduce_mindistance_pts
-#ifndef NOMPI
-  USE mpi
-#endif
+
+
+
 
   IMPLICIT NONE
 
@@ -101,11 +101,11 @@ MODULE mo_gnat_gridsearch
   ! On the SX9 architecture, distance computations
   ! are vectorized. Thus it is beneficial to choose
   ! a shallow tree with a large degree.
-#ifdef __SX__
-  INTEGER, PARAMETER :: gnat_k        = 30
-#else
+
+
+
   INTEGER, PARAMETER :: gnat_k        = 10
-#endif
+
 
   !> REAL kind value for GNAT data structure
   INTEGER, PARAMETER  :: gk           = wp
@@ -221,11 +221,11 @@ CONTAINS
     CHARACTER(*), PARAMETER :: routine = modname//"::gnat_init_grid"
     INTEGER                      :: nproc
 
-#ifdef _OPENMP
-    nproc = OMP_GET_MAX_THREADS()
-#else
+
+
+
     nproc = 1
-#endif
+
 
     ! consistency check
     IF (gnat%gnat_tree /= UNASSOCIATED) THEN
@@ -278,9 +278,9 @@ CONTAINS
     INTEGER                           :: ip, isplit_pts
     REAL(gk)                          :: dist_vp
     TYPE(t_gnat_node),  POINTER       :: tree
-#ifdef __SX__
-    REAL(gk)                          :: pdist(gnat_k)
-#endif
+
+
+
 
     tree => gnat%node_storage(tree_idx)
     isplit_pts = tree%isplit_pts
@@ -292,20 +292,20 @@ CONTAINS
 
     ! note: On the SX it might be cheaper to compute all distances (vectorized)
     ! outside of the following loop (though many won't be needed then)
-#ifdef __SX__
-!CDIR IEXPAND
-    CALL dist_vect(tree%p, v, isplit_pts, pdist)
-#endif
+
+
+
+
 
     ! remove some elements from P
     P : DO ip=1,isplit_pts
       IF (pflag(ip)) THEN
 
-#ifdef __SX__
-        dist_vp = pdist(ip)
-#else
+
+
+
         dist_vp = dist(tree%p(ip), v)
-#endif
+
 
         IF (dist_vp <= r) THEN
           IF (dist_vp < min_dist) THEN
@@ -349,9 +349,9 @@ CONTAINS
     INTEGER                           :: ip, isplit_pts
     REAL(gk)                          :: dist_vp
     TYPE(t_gnat_node), POINTER        :: tree
-#ifdef __SX__
-    REAL(gk)                          :: pdist(gnat_k)
-#endif
+
+
+
 
     tree => gnat%node_storage(tree_idx)
     isplit_pts = tree%isplit_pts
@@ -363,20 +363,20 @@ CONTAINS
 
     ! note: On the SX it might be cheaper to compute all distances (vectorized)
     ! outside of the following loop (though many won't be needed then)
-#ifdef __SX__
-!CDIR IEXPAND
-    CALL dist_vect(tree%p, v, isplit_pts, pdist)
-#endif
+
+
+
+
 
     ! remove some elements from P
     P : DO ip=1,isplit_pts
       IF (pflag(ip)) THEN
 
-#ifdef __SX__
-        dist_vp = pdist(ip)
-#else
+
+
+
         dist_vp = dist(tree%p(ip), v)
-#endif
+
 
         IF (dist_vp <= r) THEN
           is_pt_inside = .TRUE.
@@ -418,9 +418,9 @@ CONTAINS
       &                                  ip, isplit_pts, ntraversal0,  &
       &                                  i, ti, ntraversal, ihead
     TYPE(t_coord)                     :: p_v, p_ip
-#ifdef __SX__
-    REAL(gk)                          :: dist_v(gnat_k)
-#endif
+
+
+
     REAL(gk)                          :: dist_vp, r0
 
     ! initialization
@@ -440,23 +440,23 @@ CONTAINS
         ti         = traversal_list(i)
         isplit_pts = gnat%node_storage(ti)%isplit_pts
 
-#ifdef __SX__
-        CALL dist_vect(gnat%node_storage(ti)%p, v, isplit_pts, dist_v)
-#endif
+
+
+
 
         P : DO ip=1,isplit_pts
           IF (pflag(ip,i)) THEN
-#ifdef __SX__
-            dist_vp = dist_v(ip)
-#else
+
+
+
             p_ip    = gnat%node_storage(ti)%p(ip)
             dist_vp = dist_t_coord(p_ip,p_v)
-#endif
+
 
             IF (dist_vp <= r0) THEN
-#ifdef __SX__
-              p_ip = gnat%node_storage(ti)%p(ip)
-#endif
+
+
+
               IF (dist_vp == r0) THEN
                 IF (min_node_idx(3) > p_ip%idx(3)) THEN
                   min_node_idx(:) = p_ip%idx(:)
@@ -675,19 +675,19 @@ CONTAINS
       r = gnat_std_radius(gnat) ! search radius ~ (query time)**(-1)
     END IF
 
-#ifdef _OPENMP
-    nproc = OMP_GET_MAX_THREADS()
-#else
+
+
+
     nproc = 1
-#endif
+
 
     IF (l_chunk) THEN
 !$OMP PARALLEL private(istart, iend, ichunksize, iproc)
-#ifdef _OPENMP
-      iproc      = OMP_GET_THREAD_NUM() + 1
-#else
+
+
+
       iproc      = 1
-#endif
+
 
       ! proc "iproc" will query the entry blocks (istart,...,iend)
       ichunksize = (iv_nblks+nproc-1)/nproc
@@ -1406,11 +1406,11 @@ CONTAINS
 !$OMP PARALLEL num_threads(nproc)                    &
 !$OMP          private(lcomplete,iproc)
 
-#ifdef _OPENMP
-      iproc = OMP_GET_THREAD_NUM() + 1
-#else
+
+
+
       iproc = 1
-#endif
+
 
     POINTS : DO
 
@@ -1541,20 +1541,6 @@ CONTAINS
       & /grid_sphere_radius, gk)
     ! for MPI-independent behaviour: determine global max. of search radii
     radius = p_max(radius, comm=p_comm_work)
-#ifndef NOMPI
-    IF (l_p_test_run) THEN
-      IF (my_process_is_mpi_test()) THEN
-        bcast_source=0
-      ELSE
-        IF (p_pe_work == 0) THEN
-          bcast_source=mpi_root
-        ELSE
-          bcast_source=mpi_proc_null
-        END IF
-      END IF
-      CALL p_bcast(radius, bcast_source, comm=p_comm_work_2_test)
-    END IF
-#endif
 
     ! query list of nearest neighbors
     CALL gnat_query_nnb(gnat, v, iv_nproma, iv_nblks,   &

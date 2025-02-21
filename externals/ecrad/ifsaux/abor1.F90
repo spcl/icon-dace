@@ -25,10 +25,10 @@ IF (NULOUT >= 0) THEN
   IF (NULOUT /= 0 .and. NULOUT /= 6) CLOSE(NULOUT)
 ENDIF
 
-#ifdef __PGI
-      stop 1
-#else
+
+
+
       error stop 1
-#endif
+
 
 END SUBROUTINE ABOR1

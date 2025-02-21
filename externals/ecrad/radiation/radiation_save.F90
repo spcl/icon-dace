@@ -1431,35 +1431,35 @@ contains
     ! The mapping matrix is usually sparse, in which case we can check
     ! its elements before multiplying a column of bandwise fluxes by
     ! it.
-#define USE_SPARSE_MATMUL 1
-#ifdef USE_SPARSE_MATMUL
-#define MY_MATMUL sparse_x_dense
-#else
-#define MY_MATMUL matmul
-#endif
+
+
+
+
+
+
     
-    flux_out = MY_MATMUL(mapping, flux%sw_dn_surf_band)
+    flux_out = sparse_x_dense(mapping, flux%sw_dn_surf_band)
     call out_file%put("flux_dn_sw_surf", flux_out)
-    flux_out = MY_MATMUL(mapping, flux%sw_dn_direct_surf_band)
+    flux_out = sparse_x_dense(mapping, flux%sw_dn_direct_surf_band)
     call out_file%put("flux_dn_direct_sw_surf", flux_out)
     if (config%do_clear) then
-      flux_out = MY_MATMUL(mapping, flux%sw_dn_surf_clear_band)
+      flux_out = sparse_x_dense(mapping, flux%sw_dn_surf_clear_band)
       call out_file%put("flux_dn_sw_surf_clear", flux_out)
-      flux_out = MY_MATMUL(mapping, flux%sw_dn_direct_surf_clear_band)
+      flux_out = sparse_x_dense(mapping, flux%sw_dn_direct_surf_clear_band)
       call out_file%put("flux_dn_direct_sw_surf_clear", flux_out)
     end if
 
     if (allocated(flux%sw_up_band)) then
-      flux_out = MY_MATMUL(mapping, flux%sw_up_band(:,:,n_lev_plus1))
+      flux_out = sparse_x_dense(mapping, flux%sw_up_band(:,:,n_lev_plus1))
       call out_file%put("flux_up_sw_surf", flux_out)
-      flux_out = MY_MATMUL(mapping, flux%sw_up_band(:,:,1))
+      flux_out = sparse_x_dense(mapping, flux%sw_up_band(:,:,1))
       call out_file%put("flux_up_sw_toa", flux_out)
-      flux_out = MY_MATMUL(mapping, flux%sw_dn_band(:,:,1))
+      flux_out = sparse_x_dense(mapping, flux%sw_dn_band(:,:,1))
       call out_file%put("flux_dn_sw_toa", flux_out)
       if (allocated(flux%sw_up_clear_band)) then
-        flux_out = MY_MATMUL(mapping, flux%sw_up_clear_band(:,:,1))
+        flux_out = sparse_x_dense(mapping, flux%sw_up_clear_band(:,:,1))
         call out_file%put("flux_up_sw_toa_clear", flux_out)
-        flux_out = MY_MATMUL(mapping, flux%sw_up_clear_band(:,:,n_lev_plus1))
+        flux_out = sparse_x_dense(mapping, flux%sw_up_clear_band(:,:,n_lev_plus1))
         call out_file%put("flux_up_sw_surf_clear", flux_out)
       end if
     end if

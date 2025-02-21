@@ -27,10 +27,10 @@ MODULE mo_grib2_util
     &                              CLASS_CHEM_STAT, CLASS_CHEM_OPTP,         &
     &                              CLASS_DISTR, CLASS_DISTR_STAT
   USE mo_action_types,       ONLY: ACTION_RESET, getActiveAction
-#ifndef __NO_ICON_ATMO__
+
   USE mo_lnd_nwp_config,     ONLY: tile_list
   USE mo_nwp_sfc_tiles,      ONLY: t_tileinfo_icon, t_tileinfo_grb2
-#endif
+
   USE mo_grib2_tile,         ONLY: t_grib2_template_tile
   ! calendar operations
   USE mtime,                 ONLY: timedelta, datetime,                &
@@ -346,7 +346,7 @@ CONTAINS
     INTEGER,                     INTENT(IN) :: i_lctype  !< Tile classification
     TYPE(t_grib2_template_tile), INTENT(IN) :: grib2_template_tile ! set of allowed tile templates
 
-#ifndef __NO_ICON_ATMO__
+
     ! local
     INTEGER                   :: res
     INTEGER                   :: typeOfGeneratingProcess
@@ -428,7 +428,7 @@ CONTAINS
     ! Set tile attribute
     CALL vlistDefVarIntKey(vlistID, varID, TRIM(grib2_template_tile%keys%attributeOfTile), &
       &                    tileinfo_grb2%att)
-#endif
+
 
   END SUBROUTINE set_GRIB2_tile_keys
 

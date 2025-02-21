@@ -46,12 +46,12 @@ USE mo_lnd_nwp_config,       ONLY: lseaice
 USE mo_initicon_config,      ONLY: pinit_seed, pinit_amplitude, init_mode, iterate_iau
 USE mo_nh_testcases,         ONLY: init_nh_testcase, init_nh_testcase_scm
 USE mo_nh_testcases_nml,     ONLY: nh_test_name
-#ifndef __NO_ICON_LES__
+
 USE mo_ls_forcing_nml,       ONLY: is_ls_forcing, is_nudging
 USE mo_ls_forcing,           ONLY: init_ls_forcing
 USE mo_turbulent_diagnostic, ONLY: init_les_turbulent_output, close_les_turbulent_output
 USE mo_nh_vert_interp_les,   ONLY: init_vertical_grid_for_les
-#endif
+
 USE mo_dynamics_config,      ONLY: nnow, nnew, nnow_rcf
 ! Horizontal grid
 USE mo_model_domain,         ONLY: p_patch, p_patch_local_parent
@@ -101,24 +101,24 @@ USE mo_nwp_lnd_state,        ONLY: p_lnd_state, construct_nwp_lnd_state
 USE mo_atm_phy_nwp_config,   ONLY: configure_atm_phy_nwp, atm_phy_nwp_config
 USE mo_synsat_config,        ONLY: configure_synsat
 USE mo_iau,                  ONLY: save_initial_state, reset_to_initial_state
-#ifndef __NO_NWP__
+
 USE mo_ensemble_pert_config, ONLY: configure_ensemble_pert
 USE mo_ext_data_init,        ONLY: init_index_lists
 USE mo_sppt_state,           ONLY: construct_sppt_state, destruct_sppt_state
 USE mo_sppt_config,          ONLY: sppt_config, configure_sppt
 USE mo_nwp_phy_cleanup,      ONLY: cleanup_nwp_phy
 USE mo_nwp_ww,               ONLY: configure_ww
-#endif
-#ifdef __ICON_ART
-! ICON-ART
-USE mo_art_init_interface,   ONLY: art_init_atmo_tracers_nwp
-#endif
+
+
+
+
+
 
 ! AES physics
 USE mo_aes_phy_config,      ONLY: aes_phy_tc, dt_zero, aes_phy_config
 USE mo_aes_rad_config,      ONLY: aes_rad_config
 USE mo_aes_vdf_config,      ONLY: aes_vdf_config
-#ifndef __NO_AES__
+
 USE mo_aes_phy_memory,      ONLY: construct_aes_phy_memory
 USE mo_cloud_mig_memory,    ONLY: construct_cloud_mig_memory
 USE mo_cloud_two_memory,    ONLY: construct_cloud_two_memory
@@ -129,10 +129,10 @@ USE mo_aes_phy_init,        ONLY: init_aes_phy_params, init_aes_phy_external, &
    &                              init_aes_phy_field, init_o3_lcariolle
 USE mo_aes_phy_cleanup,     ONLY: cleanup_aes_phy
 USE mo_interface_aes_tmx,   ONLY: init_tmx
-#endif
-#ifndef __NO_JSBACH__
+
+
   USE mo_jsb_model_init,    ONLY: jsbach_init_after_restart
-#endif
+
 ! Needed for upper atmosphere configuration
 USE mo_sleve_config,        ONLY: flat_height
 USE mo_io_units,            ONLY: filename_max
@@ -140,11 +140,11 @@ USE mo_vertical_coord_table,ONLY: vct_a
 USE mo_upatmo_impl_const,   ONLY: iUpatmoPrcStat
 USE mo_upatmo_config,       ONLY: upatmo_config, upatmo_phy_config, &
     &                             configure_upatmo, destruct_upatmo
-#ifndef __NO_ICON_UPATMO__
+
 USE mo_upatmo_state,        ONLY: construct_upatmo_state, &
     &                             destruct_upatmo_state
 USE mo_upatmo_phy_setup,    ONLY: finalize_upatmo_phy_nwp
-#endif
+
 
 USE mo_util_mtime,          ONLY: getElapsedSimTimeInSeconds
 USE mo_output_event_types,  ONLY: t_sim_step_info
@@ -166,27 +166,13 @@ USE mo_random_util,         ONLY: add_random_noise_3d, add_random_noise_2d
 USE mo_icon2dace,           ONLY: init_dace, finish_dace
 
 !-------------------------------------------------------------------------
-#ifdef HAVE_CDI_PIO
-  USE mo_impl_constants,      ONLY: pio_type_cdipio
-  USE mo_parallel_config,     ONLY: pio_type
-  USE mo_cdi,                 ONLY: namespaceGetActive, namespaceSetActive
-  USE mo_cdi_pio_interface,         ONLY: nml_io_cdi_pio_namespace
-#endif
 
-#ifndef __NO_ICON_COMIN__
-  USE comin_host_interface, ONLY: comin_callback_context_call,        &
-    &                             EP_SECONDARY_CONSTRUCTOR,           &
-    &                             EP_ATM_INIT_FINALIZE,               &
-    &                             EP_DESTRUCTOR,                      &
-    &                             comin_var_list_finalize,            &
-    &                             comin_descrdata_finalize,           &
-    &                             comin_setup_finalize,               &
-    &                             COMIN_DOMAIN_OUTSIDE_LOOP
-  USE mo_comin_adapter,     ONLY: icon_append_comin_variables,        &
-    &                             icon_append_comin_tracer_variables, &
-    &                             icon_append_comin_tracer_phys_tend, &
-    &                             icon_expose_variables
-#endif
+
+
+
+
+
+
 
 
 IMPLICIT NONE
@@ -263,16 +249,6 @@ CONTAINS
 
     CALL deleteRestartDescriptor(restartDescriptor)
 
-#ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_DESTRUCTOR, COMIN_DOMAIN_OUTSIDE_LOOP)
-
-    CALL comin_var_list_finalize(ierr)
-    IF (ierr /= 0) STOP
-    CALL comin_descrdata_finalize(ierr)
-    IF (ierr /= 0) STOP
-    CALL comin_setup_finalize(ierr)
-    IF (ierr /= 0) STOP
-#endif
 
     !---------------------------------------------------------------------
     ! Integration finished. Clean up.
@@ -308,44 +284,34 @@ CONTAINS
     ENDDO
 
     IF (iforcing == iaes) THEN
-#ifdef __NO_AES__   
-      CALL finish (routine, 'Error: remove --disable-aes and reconfigure')
-#else
       CALL init_aes_phy_dims
       CALL init_aes_phy_params( p_patch(1:) )
-#endif
     END IF
 
     IF(iforcing == inwp) THEN
 
-#ifndef __NO_NWP__
       CALL configure_ensemble_pert(ext_data, time_config%tc_exp_startdate)
 
       ! - generate index lists for tiles (land, ocean, lake)
       ! index lists for ice-covered and non-ice covered ocean points
       ! are initialized in init_nwp_phy
       CALL init_index_lists (p_patch(1:), ext_data)
-#endif
 
       CALL configure_atm_phy_nwp(n_dom, p_patch(1:), dtime)
 
       CALL configure_synsat()
 
       DO jg = 1, n_dom
-#ifndef __NO_NWP__
         CALL configure_ww( time_config%tc_startdate, jg, p_patch(jg)%nlev, p_patch(jg)%nshift_total, 'ICON')
-#endif
         !
         ! initialize number of chemical tracers for convection
         CALL configure_art(jg)
       ENDDO
 
-#ifndef __NO_NWP__
       ! configure SPPT
       IF ( ANY(sppt_config(1:n_dom)%lsppt) ) THEN
         CALL configure_sppt(n_dom, p_patch(1:), time_config%tc_current_date)
       ENDIF
-#endif
 
     ENDIF
 
@@ -386,7 +352,6 @@ CONTAINS
     CALL construct_prepadv_state (p_patch(1:))
 
     IF (iforcing == inwp) THEN
-#ifndef __NO_NWP__
       CALL construct_nwp_phy_state( p_patch(1:), var_in_output)
       CALL construct_nwp_lnd_state( p_patch(1:), p_lnd_state, var_in_output(:)%smi, n_timelevels=2 )
 
@@ -394,18 +359,13 @@ CONTAINS
       IF ( ANY(sppt_config(1:n_dom)%lsppt) ) THEN
         CALL construct_sppt_state(p_patch(1:))
       ENDIF
-#endif
     END IF
 
     IF (iforcing == iaes) THEN
-#ifdef __NO_AES__   
-      CALL finish (routine, 'Error: remove --disable-aes and reconfigure')
-#else
       CALL construct_aes_phy_memory    ( p_patch(1:), ntracer )
       CALL construct_cloud_mig_memory  ( p_patch(1:) )
       CALL construct_cloud_two_memory  ( p_patch(1:) )
       CALL construct_rad_forcing_list  ( p_patch(1:) )
-#endif
     END IF
 
 ! Upper atmosphere
@@ -420,36 +380,10 @@ CONTAINS
       &                    aes_rad_config(:)%clonp, aes_rad_config(:)%lyr_perp, aes_rad_config(:)%yr_perp, model_base_dir, &
       &                    msg_level, vct_a )
 
-#ifndef __NO_ICON_UPATMO__
 ! Create state only if enabled
     CALL construct_upatmo_state( n_dom, nproma, p_patch(1:), upatmo_config(1:), upatmo_phy_config(1:), vct_a )
-#endif
 
-#ifndef __NO_ICON_COMIN__
-    ! ----------------------------------------------------------
-    ! UNDER DEVELOPMENT (ICON ComIn)
-    !
-    ! loop over the total list of additional requested variables and
-    ! perform `add_var` / `add_ref` operations needed.
-    ! remark: variables are added to a separate variable list.
-    CALL icon_append_comin_tracer_variables(p_patch(1:))
-    CALL icon_append_comin_tracer_phys_tend(p_patch(1:))
-    CALL icon_append_comin_variables(p_patch(1:))
 
-    ! expose ICON's variables to the ComIn infrastructure.
-
-    CALL icon_expose_variables()
-
-    ! call to secondary constructor
-    !   third party modules retrieve pointers to data arrays, telling
-    !   ICON ComIn about the context where these will be accessed.
-    CALL comin_callback_context_call(EP_SECONDARY_CONSTRUCTOR, COMIN_DOMAIN_OUTSIDE_LOOP)
-    ! ----------------------------------------------------------
-#endif
-
-#ifdef MESSY
-    CALL messy_init_memory(n_dom)
-#endif
 
     ! Due to the requirement for ICON-ART to overwrite advection-Namelist settings
     ! via add_ref/add_tracer_ref, configure_advection is called AFTER the nh_state
@@ -505,7 +439,6 @@ CONTAINS
       CALL init_dace (comm=p_comm_work_only, p_io=0, ldetached=.NOT.my_process_is_work_only())
       IF (timers_level > 4) CALL timer_stop(timer_init_dace)
     END IF
-#ifndef __NO_ICON_LES__
     ! init LES
     DO jg = 1 , n_dom
       IF(atm_phy_nwp_config(jg)%is_les_phy .OR. aes_vdf_config(jg)%turb==VDIFF_TURB_3DSMAGORINSKY) THEN
@@ -514,7 +447,6 @@ CONTAINS
            &                            p_nh_state(jg)%metrics)
       END IF
     END DO
-#endif
     !------------------------------------------------------------------
     ! Prepare initial conditions for time integration.
     !------------------------------------------------------------------
@@ -535,7 +467,6 @@ CONTAINS
       !
       IF (timers_level > 4) CALL timer_stop(timer_read_restart)
       !
-#ifndef __NO_JSBACH__
       DO jg = 1,n_dom
         IF (.NOT. p_patch(jg)%ldom_active) CYCLE
         IF (aes_phy_config(jg)%ljsb &
@@ -543,7 +474,6 @@ CONTAINS
           CALL jsbach_init_after_restart(jg)
         END IF
       END DO
-#endif
       !
     ELSE
       !
@@ -568,10 +498,8 @@ CONTAINS
             &                       ntl=2           )
         ENDIF
         !
-#ifndef __NO_ICON_LES__
         IF(is_ls_forcing .OR. is_nudging) &
           CALL init_ls_forcing(p_nh_state(1)%metrics)
-#endif
         !
       ELSE
         !
@@ -593,9 +521,6 @@ CONTAINS
             &             p_lnd_state(1:) )
           !
         ELSE ! iforcing == iaes, inoforcing, ...
-#ifdef __NO_AES__   
-          CALL finish (routine, 'Error: remove --disable-aes and reconfigure')
-#else
           !
           ! Initialize the atmosphere only
           !
@@ -605,7 +530,6 @@ CONTAINS
             &             p_nh_state(1:)  ,&
             &             ext_data(1:)    )
           !
-#endif
         END IF ! iforcing
         !
         IF (timers_level > 4) CALL timer_stop(timer_init_icon)
@@ -663,9 +587,6 @@ CONTAINS
       ! but may be used with AES physics, for real cases or test cases.
       !
       IF (iforcing == iaes ) THEN
-#ifdef __NO_AES__   
-        CALL finish (routine, 'Error: remove --disable-aes and reconfigure')
-#else
         DO jg = 1,n_dom
           IF (.NOT. p_patch(jg)%ldom_active) CYCLE
           !
@@ -699,7 +620,6 @@ CONTAINS
           !
         END DO
         !
-#endif
       END IF
       !
     END IF ! isRestart()
@@ -708,9 +628,6 @@ CONTAINS
     ! Now set up AES physics fields
     !
     IF ( iforcing == iaes ) THEN
-#ifdef __NO_AES__   
-        CALL finish (routine, 'Error: remove --disable-aes and reconfigure')
-#else
       !
       ! read external data for real case
       IF (.NOT. ltestcase) THEN 
@@ -724,7 +641,6 @@ CONTAINS
           &                      p_nh_state(jg)% diag% temp(:,:,:) )
       END DO
       !
-#endif
     END IF
 
     !------------------------------------------------------------------
@@ -831,7 +747,6 @@ CONTAINS
     END IF
 
     ! tmx
-#ifndef __NO_AES__
     IF (aes_vdf_config(1)%use_tmx) THEN
       IF (n_dom == 1) THEN
         CALL init_tmx(p_patch(1), dtime)
@@ -839,16 +754,8 @@ CONTAINS
         CALL finish(routine, 'Only one domain supported currently for new tmx')
       END IF
     END IF
-#endif
 
-#ifdef MESSY
-    CALL messy_init_coupling
-    CALL messy_init_tracer
-#endif
 
-#ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_INIT_FINALIZE, COMIN_DOMAIN_OUTSIDE_LOOP)
-#endif
     ! Determine if temporally averaged vertically integrated moisture quantities need to be computed
 
     IF (iforcing == inwp) THEN
@@ -870,7 +777,6 @@ CONTAINS
     ! Initialize reset-Action, i.e. assign variables to action object
     CALL reset_act%initialize(ACTION_RESET)
 
-#ifndef __NO_ICON_LES__
     !Anurag Dipankar, MPIM (2014-01-14)
     !Special 1D and 0D output for LES runs till we get add_var/nml_out working
     !Only for Torus runs with single domain
@@ -881,32 +787,7 @@ CONTAINS
            &    time_config%tc_startdate, var_in_output(jg)%rh, ldelete=(.NOT. isRestart()))
 
     END DO
-#endif
 
-#ifndef __NO_NWP__
-#ifdef __ICON_ART
-    IF (iforcing == inwp) THEN
-      !--------------------------!
-      !  Initialize ART for NWP  !
-      !--------------------------!
-      IF (lart) THEN
-        DO jg=1, n_dom
-          IF (.NOT. p_patch(jg)%ldom_active) CYCLE
-          CALL art_init_atmo_tracers_nwp(                       &
-               &  jg,                                           &
-               &  time_config%tc_current_date,                  &
-               &  p_nh_state(jg),                               &
-               &  ext_data(jg),                                 &
-               &  prm_diag(jg),                                 &
-               &  p_nh_state(jg)%prog(nnow(jg)),                &
-               &  p_nh_state(jg)%prog(nnow_rcf(jg))%tracer,     &
-               &  p_nh_state_lists(jg)%prog_list(nnow_rcf(jg)), & 
-               &  p_patch(jg)%nest_level)
-        ENDDO
-      END IF  ! lart
-    END IF  ! iforcing == inwp
-#endif
-#endif /* __NO_NWP__ */
 
     !-------------------------------------------------------!
     !  (Optional) detailed print-out of some variable info  !
@@ -929,9 +810,6 @@ CONTAINS
 
     INTEGER :: jg
     
-#ifdef HAVE_CDI_PIO
-    INTEGER :: prev_cdi_namespace
-#endif
 
     !---------------------------------------------------------------------
     ! 6. Integration finished. Clean up.
@@ -939,9 +817,6 @@ CONTAINS
 
     CALL message(routine,'start to clean up')
 
-#ifdef MESSY
-    CALL messy_free_memory
-#endif
 
     ! Destruction of post-processing job queue
     CALL pp_scheduler_finalize()
@@ -958,34 +833,25 @@ CONTAINS
     ! Delete state variables for transport
     CALL destruct_prepadv_state()
 
-#ifndef __NO_ICON_LES__
     ! close LES diag files
     DO jg = 1 , n_dom
       IF(atm_phy_nwp_config(jg)%is_les_phy .AND. is_plane_torus) &
         CALL close_les_turbulent_output(jg)
     END DO
-#endif
     ! cleanup NWP physics
     IF (iforcing == inwp) THEN
-#ifndef __NO_NWP__
       CALL cleanup_nwp_phy()
 
       ! Destruct SPPT state
       IF ( ANY(sppt_config(1:n_dom)%lsppt) ) THEN
         CALL destruct_sppt_state()
       ENDIF
-#endif
     ENDIF
 
     IF (iforcing == iaes) THEN
-#ifdef __NO_AES__   
-      CALL finish (routine, 'Error: remove --disable-aes and reconfigure')
-#else
       CALL cleanup_aes_phy()
-#endif
     ENDIF
 
-#ifndef __NO_ICON_UPATMO__
     ! This is required for NWP forcing only. 
     ! For AES forcing, the following will likely be done in 
     ! 'src/atm_phy_aes/mo_aes_phy_cleanup: cleanup_aes_phy'
@@ -1000,7 +866,6 @@ CONTAINS
     !---------------------------------------------------------------------
 
     CALL destruct_upatmo_state( n_dom, upatmo_config(1:) )
-#endif
 
     !---------------------------------------------------------------------
     !          Destruct the upper-atmosphere configuration type
@@ -1023,14 +888,6 @@ CONTAINS
       CALL close_name_list_output
       CALL message(routine, 'finish statistics streams')
     END IF
-#ifdef HAVE_CDI_PIO
-    IF (pio_type == pio_type_cdipio) THEN
-      prev_cdi_namespace = namespaceGetActive()
-      CALL namespaceSetActive(nml_io_cdi_pio_namespace)
-      CALL pioFinalize
-      CALL namespaceSetActive(prev_cdi_namespace)
-    END IF
-#endif
     ! finalize meteogram output
     IF (output_mode%l_nml) THEN
       CALL message(routine, 'finalize meteogram output')

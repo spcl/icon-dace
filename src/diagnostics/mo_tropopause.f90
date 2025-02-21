@@ -15,9 +15,9 @@
 
 !
 ! Hauke: Is this routine HAMMONIA save?
-#if defined __xlC__ && !defined NOXLFPROCESS
-@PROCESS HOT
-#endif
+
+
+
 MODULE mo_tropopause
 
   USE mo_kind,               ONLY: wp

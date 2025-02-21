@@ -114,25 +114,10 @@ LOGICAL, PARAMETER :: &
 
 CONTAINS
 
-#ifdef _OPENACC
-! GPU code can't flush to zero double precision denormals
-! So to avoid CPU-GPU differences we'll do it manually
-FUNCTION make_normalized(v)
-  !$ACC ROUTINE SEQ
-  REAL(wp) :: v, make_normalized
-
-  IF (ABS(v) <= 2.225073858507201e-308_wp) THEN
-    make_normalized = 0.0_wp
-  ELSE
-    make_normalized = v
-  END IF
-END FUNCTION
-#else
 FUNCTION make_normalized(v)
   REAL(wp) :: v, make_normalized
     make_normalized = v
 END FUNCTION
-#endif
 
 !==============================================================================
 !> Module procedure "cloudice" in "gscp_cloudice" for computing effects of 
@@ -409,11 +394,7 @@ SUBROUTINE cloudice (                &
     reduce_dep,&!FR: coefficient: reduce deposition at cloud top (Forbes 2012)
     dist_cldtop(nvec) !FR: distance from cloud top layer
 
-#ifdef __LOOP_EXCHANGE
-   REAL (KIND = wp )  ::  zlhv(ke), zlhs(ke)
-#else
    REAL (KIND = wp )  ::  zlhv(nvec), zlhs(nvec) ! Latent heat if vaporization and sublimation
-#endif
 
   LOGICAL :: lvariable_lh   ! Use constant latent heat (default .true.)
 
@@ -553,9 +534,6 @@ SUBROUTINE cloudice (                &
     WRITE (message_text,*) '   ivend   = ',ivend   ; CALL message('',message_text)
   END IF
   IF (izdebug > 50) THEN
-#if defined( _OPENACC )
-    CALL message('gscp_cloudice','GPU-info : update host before cloudice')
-#endif
     !$ACC UPDATE HOST(dz, t, p, rho, qv, qc, qi, qr, qs) ASYNC(1)
     !$ACC WAIT(1)
     WRITE (message_text,'(A,2E10.3)') '      MAX/MIN dz  = ',MAXVAL(dz),MINVAL(dz)
@@ -596,18 +574,12 @@ SUBROUTINE cloudice (                &
     dist_cldtop(iv) = 0.0_wp
     zqvsw_up(iv) = 0.0_wp
     pri_gsp (iv) = 0.0_wp
-#ifndef __LOOP_EXCHANGE
     zlhv(iv)     = lh_v
     zlhs(iv)     = lh_s    
-#endif
   END DO
   !$ACC END PARALLEL
 
   ! Initialize latent heats to constant values
-#ifdef __LOOP_EXCHANGE
-  zlhv(:) = lh_v
-  zlhs(:) = lh_s
-#endif
 
 ! *********************************************************************
 ! Loop from the top of the model domain to the surface to calculate the
@@ -616,20 +588,6 @@ SUBROUTINE cloudice (                &
 
   !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
   !$ACC LOOP SEQ
-#ifdef __LOOP_EXCHANGE
-  DO iv = iv_start, iv_end  !loop over horizontal domain
-
-    ! Calculate latent heats if necessary
-    IF ( lvariable_lh ) THEN
-      DO  k = k_start, ke  ! loop over levels
-        tg      = make_normalized(t(iv,k))
-        zlhv(k) = latent_heat_vaporization(tg)
-        zlhs(k) = latent_heat_sublimation(tg)
-      END DO
-    END IF
-
-    DO  k = k_start, ke  ! loop over levels
-#else
   DO  k = k_start, ke  ! loop over levels
 
     ! Calculate latent heats if necessary
@@ -663,7 +621,6 @@ SUBROUTINE cloudice (                &
     !$ACC   PRIVATE(ztau, ztc, ztfrzdiff, ztt, zvz0s, zx1, zx2) &
     !$ACC   PRIVATE(zxfac, zzai, zzar, zzas, zztau)
     DO iv = iv_start, iv_end  !loop over horizontal domain
-#endif
 
       ! add part of latent heating calculated in subroutine graupel to model latent
       ! heating field: subtract temperature from model latent heating field
@@ -1226,11 +1183,7 @@ llqi =  zqik > zqmin
       zqrt =   scau   + sshed  + scac   + ssmelt - sev    - srcri  - srfrz
       zqst =   siau   + sdau   + sagg   - ssmelt + sicri  + srcri  + srim   + ssdep + srfrz
 
-#ifdef __LOOP_EXCHANGE      
-      ztt = z_heat_cap_r*( zlhv(k)*(zqct+zqrt) + zlhs(k)*(zqit+zqst) )
-#else
       ztt = z_heat_cap_r*( zlhv(iv)*(zqct+zqrt) + zlhs(iv)*(zqit+zqst) )
-#endif
 
       ! Update variables and add qi to qrs for water loading
       IF (lsedi_ice .OR. lorig_icon) THEN
@@ -1315,7 +1268,6 @@ llqi =  zqik > zqmin
       qv (iv,k) = MAX ( 0.0_wp, qv(iv,k) + zqvt*zdt )
       qc (iv,k) = MAX ( 0.0_wp, qc(iv,k) + zqct*zdt )
 
-#if !defined (_OPENACC) && !defined (__SX__)
       IF (izdebug > 15) THEN
         ! Check for negative values
         IF (qr(iv,k) < 0.0_wp) THEN
@@ -1339,7 +1291,6 @@ llqi =  zqik > zqmin
           CALL message('',message_text)
         ENDIF
       ENDIF
-#endif
 
     END DO  !loop over iv
 
@@ -1396,9 +1347,6 @@ llqi =  zqik > zqmin
   ENDIF
 
   IF (izdebug > 15) THEN
-#ifdef _OPENACC
-   CALL message('gscp_cloudice', 'GPU-info : update host after cloudice')
-#endif
    !$ACC UPDATE HOST(t, qv, qc, qi, qr, qs) ASYNC(1)
    !$ACC WAIT(1)
    CALL message('gscp_cloudice', 'UPDATED VARIABLES')

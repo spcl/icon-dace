@@ -84,16 +84,16 @@ MODULE mo_nml_crosscheck
 
   USE mo_assimilation_config,      ONLY: assimilation_config
   USE mo_scm_nml,                  ONLY: i_scm_netcdf, scm_sfc_temp, scm_sfc_qv, scm_sfc_mom
-#ifndef __NO_ICON_LES__
-  USE mo_ls_forcing_nml,           ONLY: is_ls_forcing
-#endif
-#ifdef __ICON_ART
-  USE mo_grid_config,              ONLY: lredgrid_phys
-#endif
 
-#ifdef HAVE_RADARFWO
-  USE radar_data,            ONLY: ndoms_max_radar => ndoms_max
-#endif
+  USE mo_ls_forcing_nml,           ONLY: is_ls_forcing
+
+
+
+
+
+
+
+
 
   USE mo_sppt_config,              ONLY: sppt_config, crosscheck_sppt
 
@@ -172,9 +172,9 @@ CONTAINS
       END IF
       !
       ! ... only supported for MPI parallel configuration
-#ifdef NOMPI
+
       CALL finish(routine, "LatBC: Idle-wait-and-retry requires MPI!")
-#endif
+
     END IF
 
     ! Limited area mode must not be enabled for torus grid:
@@ -249,12 +249,12 @@ CONTAINS
       !if time dependent surface BD conditions then use ls_forcing
       !routines for interpolation in time
       IF ( (scm_sfc_temp .GE. 1) .OR. (scm_sfc_qv .GE. 1) .OR. (scm_sfc_mom .GE. 1) ) THEN
-#ifndef __NO_ICON_LES__
+
         is_ls_forcing = .TRUE.
         CALL message( routine, 'scm_sfc_... requires is_ls_forcing=TRUE. is_ls_forcing has been set to TRUE')
-#else
-        CALL finish( routine, 'scm_sfc_... requires is_ls_forcing=TRUE, but --disable-les has been set')
-#endif
+
+
+
       END IF
     ELSE
       i_scm_netcdf   = 0
@@ -290,15 +290,15 @@ CONTAINS
     CALL finish( routine, 'NWP physics only implemented in the '//&
                'nonhydrostatic atm model')
 
-#ifdef __NO_AES__
-    IF ( iforcing==iaes ) &
-      CALL finish( routine, 'AES physics desired, but compilation with --disable-aes' )
-#endif
 
-#ifdef __NO_NWP__
-    IF ( iforcing==inwp ) &
-      CALL finish( routine, 'NWP physics desired, but compilation with --disable-nwp' )
-#endif
+
+
+
+
+
+
+
+
 
     !--------------------------------------------------------------------
     ! NWP physics
@@ -494,10 +494,10 @@ CONTAINS
 
         !! Checks for simple prognostic aerosol scheme
         IF (iprog_aero > 0) THEN
-#ifndef __NO_ICON_LES__
+
           IF (atm_phy_nwp_config(jg)%is_les_phy) &
             & CALL finish(routine,'iprog_aero > 0 can not be combined with LES physics')
-#endif
+
           IF (irad_aero /= iRadAeroTegen) &
             & CALL finish(routine,'iprog_aero > 0 currently only available for irad_aero=6 (Tegen)')
         ENDIF
@@ -551,11 +551,11 @@ CONTAINS
       ENDDO
     END IF
 
-#ifdef _OPENACC
-    IF ( irad_aero == iRadAeroCAMSclim) THEN
-        CALL finish(routine,'CAMS 3D climatology irad_aero=7 is currently not supported on GPU.')
-    END IF
-#endif
+
+
+
+
+
 
     !--------------------------------------------------------------------
     ! Tracers and diabatic forcing
@@ -576,20 +576,6 @@ CONTAINS
     END SELECT
 
 
-#ifdef _OPENACC
-    IF (ltransport) THEN
-      DO jg =1,n_dom
-        IF ( .not. advection_config(jg)%llsq_svd ) THEN
-          ! The .FALSE. version is not supported by OpenACC. However,
-          ! both versions do the same. The .TRUE. version is faster
-          ! during runtime on most platforms but involves a more
-          ! expensive calculation of coefficients.
-          CALL message(routine, 'WARNING: llsq_svd has been set to .true. for this OpenACC GPU run.')
-          advection_config(jg)%llsq_svd = .TRUE.
-        END IF
-      ENDDO
-    ENDIF
-#endif
 
 
     !--------------------------------------------------------------------
@@ -821,14 +807,6 @@ CONTAINS
     INTEGER  :: jg
     CHARACTER(len=*), PARAMETER :: routine =  modname//'::land_crosscheck'
 
-#ifdef __NO_JSBACH__
-    IF (ANY(aes_phy_config(:)%ljsb)) THEN
-      CALL finish(routine, "This version was compiled without jsbach. Compile with __JSBACH__, or set ljsb=.FALSE.")
-    ENDIF
-
-    IF (ANY(atm_phy_nwp_config(1:n_dom)%inwp_surface == LSS_JSBACH)) &
-        & CALL finish(routine, "This version was compiled without jsbach. Compile with __JSBACH__, or set inwp_surface to a different value.")
-#else
     DO jg=1,n_dom
       IF (.NOT.aes_phy_config(jg)%ljsb) THEN
          IF (aes_phy_config(jg)%llake) THEN
@@ -842,7 +820,6 @@ CONTAINS
         END IF
       END IF
     END DO
-#endif
 
   END SUBROUTINE land_crosscheck
   !---------------------------------------------------------------------------------------
@@ -861,19 +838,6 @@ CONTAINS
        CALL finish(routine, "Coupled atm/ocean runs only supported with sstice_mode=1 named SSTICE_ANA")
     ENDIF
 
-#ifdef _OPENACC
-    IF ( is_coupled_to_hydrodisc() ) THEN
-      CALL finish(routine, "Coupled atm/hydrodisc/ocean runs are not available on GPU")
-    END IF
-
-    IF ( is_coupled_to_waves() ) THEN
-      CALL finish(routine, "Coupled atm/wave runs are not available on GPU")
-    END IF
-
-    IF ( is_coupled_to_ocean() ) THEN
-      CALL finish(routine, "Coupled atm/ocean runs are not available on GPU")
-    END IF
-#endif
 
   END SUBROUTINE coupled_crosscheck
   !---------------------------------------------------------------------------------------
@@ -882,16 +846,10 @@ CONTAINS
   SUBROUTINE art_crosscheck
 
     CHARACTER(len=*), PARAMETER :: routine =  modname//'::art_crosscheck'
-#ifdef __ICON_ART
-    INTEGER  :: &
-      &  jg
-#endif
 
-#ifndef __ICON_ART
     IF (lart) THEN
         CALL finish( routine,'run_nml: lart is set .TRUE. but ICON was compiled without -D__ICON_ART')
     ENDIF
-#endif
 
     IF (.NOT. lart .AND. irad_aero == iRadAeroART ) THEN
       CALL finish(routine,'irad_aero=9 (ART) needs lart = .TRUE.')
@@ -901,42 +859,6 @@ CONTAINS
       CALL finish(routine,'irad_aero=9 (ART) requires iprog_aero=0')
     ENDIF
 
-#ifdef __ICON_ART
-    IF ( ( irad_aero == iRadAeroART ) .AND. ( itopo /=1 ) ) THEN
-      CALL finish(routine,'irad_aero=9 (ART) requires itopo=1')
-    ENDIF
-
-    DO jg= 1,n_dom
-      IF(lredgrid_phys(jg) .AND. irad_aero == iRadAeroART .AND. atm_phy_nwp_config(jg)%inwp_radiation /= 4) THEN
-        CALL finish(routine,'irad_aero=9 (ART) and a reduced radiation grid only works with ecRad (inwp_radiation=4)')
-      ENDIF
-      IF(art_config(jg)%iart_ari == 0 .AND. irad_aero == iRadAeroART) THEN
-        CALL finish(routine,'irad_aero=9 (ART) needs iart_ari > 0')
-      ENDIF
-      IF(art_config(jg)%iart_ari > 0  .AND. irad_aero /= iRadAeroART) THEN
-        CALL finish(routine,'iart_ari > 0 requires irad_aero=9 (ART)')
-      ENDIF
-    ENDDO
-
-#ifdef _OPENACC
-    DO jg = 1, n_dom
-      IF (    art_config(jg)%iart_aci_cold  >  0  .OR.  &
-          &   art_config(jg)%iart_aci_warm  >  0  .OR.  &
-          &   art_config(jg)%iart_ari       >  0  .OR.  &      
-          &   art_config(jg)%iart_dust      >  0  .OR.  &
-          &   art_config(jg)%iart_init_aero >  0  .OR.  &
-          &   art_config(jg)%iart_radioact  >  0  .OR.  &
-          &   art_config(jg)%iart_seasalt   >  0  .OR.  &
-          &   art_config(jg)%iart_volcano   >  0  .OR.  &
-          &   art_config(jg)%lart_chem            .OR.  &
-          &   art_config(jg)%lart_chemtracer            ) THEN
-        CALL finish(routine,  &
-          &  'mo_nml_crosscheck: art_crosscheck: some activated art switches are currently not supported on GPU.')
-      END IF
-    ENDDO
-#endif
-
-#endif
   END SUBROUTINE art_crosscheck
   !---------------------------------------------------------------------------------------
 
@@ -947,25 +869,14 @@ CONTAINS
     INTEGER  :: jg, ndoms_radaractive
     CHARACTER(len=255) :: errstring
 
-#ifndef HAVE_RADARFWO
     IF ( ANY(luse_radarfwo) ) THEN
         CALL finish( routine,'run_nml: luse_radarfwo is set .TRUE. in some domains but ICON was compiled without -DHAVE_RADARFWO')
     ENDIF
-#endif
 
     ndoms_radaractive = 0
     DO jg = 1, n_dom
       IF (luse_radarfwo(jg)) ndoms_radaractive = ndoms_radaractive + 1
     END DO
-#ifdef HAVE_RADARFWO
-    IF ( ndoms_radaractive > ndoms_max_radar ) THEN
-      errstring(:) = ' '
-      WRITE (errstring, '(a,i3,a,i2,a)') 'luse_radarfwo is enabled (.true.) for ', ndoms_radaractive, &
-           ' ICON domains, but EMVORADO supports max. ', ndoms_max_radar, &
-           ' domains. You may increase  parameter ''ndoms_max'' in radar_data.f90.'
-      CALL finish(routine, 'run_nml: '//TRIM(errstring))
-    END IF
-#endif
 
     IF ( num_io_procs_radar > 0 .AND. .NOT.ANY(luse_radarfwo) ) THEN
       CALL message(routine, 'Setting num_io_procs_radar = 0 because luse_radarfwo(:) = .FALSE.')

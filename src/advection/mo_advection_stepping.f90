@@ -27,7 +27,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_advection_stepping
 
@@ -49,9 +59,6 @@ MODULE mo_advection_stepping
   USE mo_grid_config,         ONLY: l_limited_area
   USE mo_initicon_config,     ONLY: is_iau_active, iau_wgt_adv
   USE mo_fortran_tools,       ONLY: negative2zero
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
   IMPLICIT NONE
 
@@ -936,14 +943,9 @@ CONTAINS
 
           !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
           !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-            DO jk = iadv_slev_jt, nlev
-#else
 !NEC$ outerloop_unroll(8)
           DO jk = iadv_slev_jt, nlev
             DO jc = i_startidx, i_endidx
-#endif
 
 ! TODO: possible GPU optimization: add tracer_new calculation here
               z_fluxdiv_c(jc,jk) = deepatmo_divh_mc(jk) * (                                            &

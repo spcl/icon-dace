@@ -20,17 +20,17 @@ MODULE mo_variable_list
        &                            unbind_variable, &
        &                            deallocate_variable
 
-#ifdef SERIALIZE
-  USE m_serialize
-#endif
+
+
+
   USE mo_mpi,                 ONLY: get_my_mpi_work_id
 
-#ifdef _OPENACC
-  use openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)
-#else
-#define __acc_attach(ptr)
-#endif
+
+
+
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -71,10 +71,10 @@ MODULE mo_variable_list
     PROCEDURE :: allocator               => t_variable_list_allocator
     PROCEDURE :: deallocator             => t_variable_list_deallocator
     PROCEDURE :: unbind                  => t_variable_list_unbind
-#ifdef SERIALIZE
-    PROCEDURE :: ser_out                 => t_variable_list_ser_out
-    PROCEDURE :: ser_in                  => t_variable_list_ser_in
-#endif
+
+
+
+
     PROCEDURE :: getID                   => t_variable_list_getListId
     PROCEDURE :: getName                 => t_variable_list_getListName
     PROCEDURE :: getFirstVariable        => t_variable_list_getFirstVariable
@@ -228,7 +228,7 @@ CONTAINS
       SELECT TYPE (tv)
       CLASS IS (t_variable)
         ptr => tv%i2d
-        __acc_attach(ptr)
+        
       CLASS DEFAULT
         ptr => NULL()
       END SELECT
@@ -245,7 +245,7 @@ CONTAINS
       SELECT TYPE (tv)
       CLASS IS (t_variable)
         ptr => tv%i3d
-        __acc_attach(ptr)
+        
       CLASS DEFAULT
         ptr => NULL()
       END SELECT
@@ -294,7 +294,7 @@ CONTAINS
       SELECT TYPE (tv)
       CLASS IS (t_variable)
         ptr => tv%r2d
-        __acc_attach(ptr)
+        
       CLASS DEFAULT
         ptr => NULL()
       END SELECT
@@ -311,7 +311,7 @@ CONTAINS
       SELECT TYPE (tv)
       CLASS IS (t_variable)
         ptr => tv%r3d
-        __acc_attach(ptr)
+        
       CLASS DEFAULT
         ptr => NULL()
       END SELECT
@@ -328,7 +328,7 @@ CONTAINS
       SELECT TYPE (tv)
       CLASS IS (t_variable)
         ptr => tv%s2d
-        __acc_attach(ptr)
+        
       CLASS DEFAULT
         ptr => NULL()
       END SELECT
@@ -345,7 +345,7 @@ CONTAINS
       SELECT TYPE (tv)
       CLASS IS (t_variable)
         ptr => tv%s3d
-        __acc_attach(ptr)
+        
       CLASS DEFAULT
         ptr => NULL()
       END SELECT
@@ -425,14 +425,14 @@ CONTAINS
 
     CALL this%variable_list%append(new_variable_item(variable_to_add))
     p => this%variable_list%last()
-    __acc_attach(p)
+    
     SELECT TYPE (p)
     CLASS is (t_variable_item)
       ASSOCIATE (variable => p%item_value)
         SELECT TYPE (variable)
         CLASS is (t_variable)
           p%variable => variable
-          __acc_attach(p%variable)
+          
         END SELECT
       END ASSOCIATE
     END SELECT
@@ -486,224 +486,6 @@ CONTAINS
     ENDDO
   END SUBROUTINE t_variable_list_unbind
   
-#ifdef SERIALIZE
-
-  SUBROUTINE t_variable_list_ser_in(this, sp_name, filename, directory )
-    CLASS (t_variable_list) :: this
-    CHARACTER(len=*), INTENT(IN) :: sp_name            
-    CHARACTER(len=*), INTENT(IN) :: filename
-    CHARACTER(len=*), INTENT(IN) :: directory
-
-    TYPE(t_serializer)             :: serializer_ref
-    TYPE(t_savepoint)              :: savepoint
-    TYPE(t_variable_item), POINTER :: item
-
-    REAL(wp), ALLOCATABLE          :: lon(:,:), lat(:,:)
-    REAL(wp), ALLOCATABLE          :: lon4(:,:,:,:), lat4(:,:,:,:)
-    INTEGER                        :: i, j, k, l
-    CHARACTER(len=20) :: suffix
-    INTEGER:: mpi_rank
-    !
-    ! Create a serializer and save-point
-    !
-    mpi_rank = get_my_mpi_work_id()
-    WRITE(suffix,'(A,I0)') '_rank_',mpi_rank
-
-    CALL fs_create_serializer(directory, filename//TRIM(suffix), 'r', serializer_ref)
-    CALL fs_create_savepoint(sp_name//TRIM(suffix), savepoint )
-
-    item => this%getFirstVariable()
-    DO WHILE ( ASSOCIATED(item) )
-      ASSOCIATE (variable => item%item_value)
-        SELECT TYPE (variable)
-        CLASS is (t_variable)
-          IF ( variable%bound ) THEN
-            SELECT CASE ( variable%dim )
-            CASE (0)
-              IF (variable%type_id == "bool") CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%l0d )
-              IF (variable%type_id == "int") CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%i0d )
-              IF (variable%type_id == "real") CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%r0d )
-            CASE (1)
-              IF (variable%type_id == "int") THEN
-                CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%i1d )
-                !$ACC ENTER DATA COPYIN(variable%i1d)
-              ENDIF
-              IF (variable%type_id == "real") THEN
-                CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%r1d )
-                !$ACC ENTER DATA COPYIN(variable%r1d)
-              ENDIF
-              IF (variable%type_id == "bool") THEN
-                CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%l1d )
-                !$ACC ENTER DATA COPYIN(variable%l1d)
-              ENDIF
-            CASE (2)
-              IF (variable%type_id == "int") THEN
-                CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%i2d )
-                !$ACC ENTER DATA COPYIN(variable%i2d)
-              ENDIF
-              IF (variable%type_id == "real") THEN
-                CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%r2d )
-                !$ACC ENTER DATA COPYIN(variable%r2d)
-              ENDIF
-              IF (variable%type_id == "geocoord") THEN
-                ALLOCATE( lon( variable%dims(1), variable%dims(2) ), lat( variable%dims(1), variable%dims(2) ) )
-                ! For geographical coordinates two fields are read and then copied to the target type instance
-                CALL fs_read_field(serializer_ref, savepoint, TRIM(variable%name//"_lon"), lon )
-                CALL fs_read_field(serializer_ref, savepoint, TRIM(variable%name//"_lat"), lat )
-                DO j=1,variable%dims(2)
-                  DO i=1,variable%dims(1)
-                    variable%gc2d(i,j)%lon = lon(i,j)
-                    variable%gc2d(i,j)%lat = lat(i,j)
-                  ENDDO
-                ENDDO
-                DEALLOCATE( lon, lat )
-                !$ACC ENTER DATA COPYIN(variable%gc2d)
-              ENDIF
-            CASE (3)
-              IF (variable%type_id == "int") THEN
-                CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%i3d )
-                !$ACC ENTER DATA COPYIN(variable%i3d)
-              ENDIF
-              IF (variable%type_id == "real") THEN
-                CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%r3d )
-                !$ACC ENTER DATA COPYIN(variable%r3d)
-              ENDIF
-            CASE (4)
-              IF (variable%type_id == "int") THEN
-                CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%i4d )
-                !$ACC ENTER DATA COPYIN(variable%i4d)
-              ENDIF
-              IF (variable%type_id == "real") THEN
-                CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%r4d )
-                !$ACC ENTER DATA COPYIN(variable%r4d)
-              ENDIF
-              IF (variable%type_id == "geocoord") THEN
-                ALLOCATE( lon4( variable%dims(1), variable%dims(2), variable%dims(3), variable%dims(4) ), &
-                        & lat4( variable%dims(1), variable%dims(2), variable%dims(3), variable%dims(4) ) )
-                ! For geographical coordinates two fields are read and then copied to the target type instance
-                CALL fs_read_field(serializer_ref, savepoint, TRIM(variable%name//"_lon"), lon4 )
-                CALL fs_read_field(serializer_ref, savepoint, TRIM(variable%name//"_lat"), lat4 )
-                DO l=1,variable%dims(4)
-                  DO k=1,variable%dims(3)
-                    DO j=1,variable%dims(2)
-                      DO i=1,variable%dims(1)
-                        variable%gc4d(i,j,k,l)%lon = lon4(i,j,k,l)
-                        variable%gc4d(i,j,k,l)%lat = lat4(i,j,k,l)
-                      ENDDO
-                    ENDDO
-                  ENDDO
-                ENDDO
-                DEALLOCATE( lon4, lat4 )
-                !$ACC ENTER DATA COPYIN(variable%gc4d)
-              ENDIF
-            !CASE (5)
-            !  IF (variable%type_id == "int") CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%r5d )
-            !  IF (variable%type_id == "real") CALL fs_read_field(serializer_ref, savepoint, variable%name, variable%r5d )
-            CASE DEFAULT
-              print *, "Serialization of ", variable%dim, " dimensions not yet supported "
-            END SELECT
-          ENDIF
-        END SELECT
-      END ASSOCIATE
-      item => this%getNextVariable(item) 
-    ENDDO
-    CALL fs_destroy_savepoint( savepoint )
-    CALL fs_destroy_serializer( serializer_ref )
-  END SUBROUTINE t_variable_list_ser_in
-  
-  SUBROUTINE t_variable_list_ser_out(this, sp_name, filename, directory )
-    CLASS (t_variable_list) :: this
-    CHARACTER(len=*), INTENT(IN) :: sp_name            
-    CHARACTER(len=*), INTENT(IN) :: filename
-    CHARACTER(len=*), INTENT(IN) :: directory
-
-    TYPE(t_serializer)             :: serializer_ref
-    TYPE(t_savepoint)              :: savepoint
-    TYPE(t_variable_item), POINTER :: item
-
-    REAL(wp), ALLOCATABLE          :: lon(:,:), lat(:,:)
-    REAL(wp), ALLOCATABLE          :: lon4(:,:,:,:), lat4(:,:,:,:)
-    INTEGER                        :: i, j, k, l
-    CHARACTER(len=20) :: suffix
-    INTEGER:: mpi_rank
-    !
-    ! Create a serializer and save-point
-    !
-    mpi_rank = get_my_mpi_work_id()
-    WRITE(suffix,'(A,I0)') '_rank_',mpi_rank
-
-    CALL fs_create_serializer(directory, filename//TRIM(suffix), 'w', serializer_ref)
-    CALL fs_create_savepoint(sp_name//TRIM(suffix), savepoint )
-
-    item => this%getFirstVariable()
-    DO WHILE ( ASSOCIATED(item) )
-      ASSOCIATE (variable => item%item_value)
-        SELECT TYPE (variable)
-        CLASS is (t_variable)
-          IF ( variable%bound ) THEN
-            SELECT CASE ( variable%dim )
-            CASE (0)
-              IF (variable%type_id == "bool") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%l0d )
-              IF (variable%type_id == "int") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%i0d )
-              IF (variable%type_id == "real") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%r0d )
-            CASE (1)
-              IF (variable%type_id == "int") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%i1d )
-              IF (variable%type_id == "real") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%r1d )
-              IF (variable%type_id == "bool") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%l1d )
-            CASE (2)
-              IF (variable%type_id == "int") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%i2d )
-              IF (variable%type_id == "real") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%r2d )
-              IF (variable%type_id == "geocoord") THEN
-               ALLOCATE( lon( variable%dims(1), variable%dims(2) ), lat( variable%dims(1), variable%dims(2) ) )
-               DO j=1,variable%dims(2)
-                  DO i=1,variable%dims(1)
-                    lon(i,j) = variable%gc2d(i,j)%lon
-                    lat(i,j) = variable%gc2d(i,j)%lat
-                  ENDDO
-                ENDDO
-                CALL fs_write_field(serializer_ref, savepoint, TRIM(variable%name//"_lon"), lon )
-                CALL fs_write_field(serializer_ref, savepoint, TRIM(variable%name//"_lat"), lat )
-                DEALLOCATE( lon, lat )
-              ENDIF
-            CASE (3)
-              IF (variable%type_id == "int") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%i3d )
-              IF (variable%type_id == "real") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%r3d )
-            CASE (4)
-              IF (variable%type_id == "int") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%i4d )
-              IF (variable%type_id == "real") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%r4d )
-              IF (variable%type_id == "geocoord") THEN
-                ALLOCATE( lon4( variable%dims(1), variable%dims(2), variable%dims(3), variable%dims(4) ), &
-                       &  lat4( variable%dims(1), variable%dims(2), variable%dims(3), variable%dims(4) ) )
-                DO l=1,variable%dims(4)
-                  DO k=1,variable%dims(3)
-                    DO j=1,variable%dims(2)
-                      DO i=1,variable%dims(1)
-                        lon4(i,j,k,l) = variable%gc4d(i,j,k,l)%lon
-                        lat4(i,j,k,l) = variable%gc4d(i,j,k,l)%lat
-                      ENDDO
-                    ENDDO
-                  ENDDO
-                ENDDO
-                CALL fs_write_field(serializer_ref, savepoint, TRIM(variable%name//"_lon"), lon4 )
-                CALL fs_write_field(serializer_ref, savepoint, TRIM(variable%name//"_lat"), lat4 )
-                DEALLOCATE( lon4, lat4 )
-              ENDIF
-            !CASE (5)
-            !  IF (variable%type_id == "int") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%i5d )
-            !  IF (variable%type_id == "real") CALL fs_write_field(serializer_ref, savepoint, variable%name, variable%r5d )
-            CASE DEFAULT
-              print *, "Serialization of ", variable%dim, " dimensions not yet supported "
-            END SELECT
-          ENDIF
-        END SELECT
-      END ASSOCIATE
-      item => this%getNextVariable(item) 
-    ENDDO
-    CALL fs_destroy_savepoint( savepoint )
-    CALL fs_destroy_serializer( serializer_ref )
-  END SUBROUTINE t_variable_list_ser_out
-  
-#endif
 
 !
   ! Deprecated: original attempt to bind arrays to list item_value

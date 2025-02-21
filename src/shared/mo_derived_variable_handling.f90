@@ -12,7 +12,17 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#include <omp_definitions.inc>
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 MODULE mo_derived_variable_handling
 
   USE mo_kind,                ONLY: wp, sp
@@ -37,7 +47,19 @@ MODULE mo_derived_variable_handling
   USE mo_mpi,                 ONLY: p_bcast, i_am_accel_node
   USE ISO_C_BINDING,          ONLY: C_INT
 
-#include <add_var_acc_macro.inc>
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -343,88 +365,69 @@ CONTAINS
     INTEGER :: i,j,k,l,m,lblk
     REAL(wp), POINTER :: tmp1(:,:,:,:,:), tmp2(:,:,:,:,:)
 
-#define _begin_loop_construct_ \
-DO m = sm, em;\
-  DO l = sl, el;\
-    DO k = sk, ek;\
-      DO j = sj, ej;\
-        DO i = si, ei;\
-          lblk = MERGE(0, MERGE(k, j, bk.EQ.3), bk.EQ.0);\
-          IF (lblk.LT.sbk .OR. lblk.GT.ebk) CYCLE;\
-          IF (lblk.EQ.sbk .AND. i.LT.sbi) CYCLE;\
-          IF (lblk.EQ.ebk .AND. i.GT.ebi) CYCLE
-#define _close_loop_construct_ \
-        END DO;\
-      END DO;\
-    END DO;\
-  END DO;\
-END DO
-#define _idx_ i,j,k,l,m
-#define __myACC_directive !$ACC PARALLEL LOOP PRESENT(tmp1, tmp2) COLLAPSE(5) GANG VECTOR ASYNC(1) IF(lacc)
-#define __myOMP_directive !ICON_OMP PARALLEL DO PRIVATE(lblk) COLLAPSE(4)
     IF (ASSOCIATED(sd5d)) THEN
       tmp1 => sd5d
-      __acc_attach(tmp1)
+      
     ELSE IF (funccode .NE. F_MISS .OR. funccode .NE. F_WGT) THEN
         ALLOCATE(tmp1(si:ei,sj:ej,sk:ek,sl:el,sm:em))
         !$ACC ENTER DATA CREATE(tmp1) IF(lacc)
-__myOMP_directive
+!ICON_OMP PARALLEL DO PRIVATE(lblk) COLLAPSE(4)
 !$ACC PARALLEL LOOP PRESENT(ss5d, tmp1) COLLAPSE(5) GANG VECTOR ASYNC(1) IF(lacc)
-      _begin_loop_construct_
-        tmp1(_idx_) = REAL(ss5d(_idx_), wp)
-      _close_loop_construct_
+      DO m = sm, em;  DO l = sl, el;    DO k = sk, ek;      DO j = sj, ej;        DO i = si, ei;          lblk = MERGE(0, MERGE(k, j, bk.EQ.3), bk.EQ.0);          IF (lblk.LT.sbk .OR. lblk.GT.ebk) CYCLE;          IF (lblk.EQ.sbk .AND. i.LT.sbi) CYCLE;          IF (lblk.EQ.ebk .AND. i.GT.ebi) CYCLE
+        tmp1(i,j,k,l,m) = REAL(ss5d(i,j,k,l,m), wp)
+      END DO;      END DO;    END DO;  END DO;END DO
     END IF
     tmp2 => dest%r_ptr
-    __acc_attach(tmp2)
+    
     SELECT CASE(funccode)
     CASE(F_ACC)
-__myOMP_directive
-__myACC_directive
-       _begin_loop_construct_
-       tmp2(_idx_) = tmp2(_idx_) + tmp1(_idx_)
-       _close_loop_construct_
+!ICON_OMP PARALLEL DO PRIVATE(lblk) COLLAPSE(4)
+!$ACC PARALLEL LOOP PRESENT(tmp1, tmp2) COLLAPSE(5) GANG VECTOR ASYNC(1) IF(lacc)
+       DO m = sm, em;  DO l = sl, el;    DO k = sk, ek;      DO j = sj, ej;        DO i = si, ei;          lblk = MERGE(0, MERGE(k, j, bk.EQ.3), bk.EQ.0);          IF (lblk.LT.sbk .OR. lblk.GT.ebk) CYCLE;          IF (lblk.EQ.sbk .AND. i.LT.sbi) CYCLE;          IF (lblk.EQ.ebk .AND. i.GT.ebi) CYCLE
+       tmp2(i,j,k,l,m) = tmp2(i,j,k,l,m) + tmp1(i,j,k,l,m)
+       END DO;      END DO;    END DO;  END DO;END DO
     CASE(F_MAX)
-__myOMP_directive
-__myACC_directive       
-        _begin_loop_construct_
-        IF (tmp1(_idx_) .GT. tmp2(_idx_)) tmp2(_idx_) = tmp1(_idx_)
-        _close_loop_construct_
+!ICON_OMP PARALLEL DO PRIVATE(lblk) COLLAPSE(4)
+!$ACC PARALLEL LOOP PRESENT(tmp1, tmp2) COLLAPSE(5) GANG VECTOR ASYNC(1) IF(lacc)       
+        DO m = sm, em;  DO l = sl, el;    DO k = sk, ek;      DO j = sj, ej;        DO i = si, ei;          lblk = MERGE(0, MERGE(k, j, bk.EQ.3), bk.EQ.0);          IF (lblk.LT.sbk .OR. lblk.GT.ebk) CYCLE;          IF (lblk.EQ.sbk .AND. i.LT.sbi) CYCLE;          IF (lblk.EQ.ebk .AND. i.GT.ebi) CYCLE
+        IF (tmp1(i,j,k,l,m) .GT. tmp2(i,j,k,l,m)) tmp2(i,j,k,l,m) = tmp1(i,j,k,l,m)
+        END DO;      END DO;    END DO;  END DO;END DO
     CASE(F_MIN)
-__myOMP_directive
-__myACC_directive       
-        _begin_loop_construct_
-        IF (tmp1(_idx_) .LT. tmp2(_idx_)) tmp2(_idx_) = tmp1(_idx_)
-        _close_loop_construct_
+!ICON_OMP PARALLEL DO PRIVATE(lblk) COLLAPSE(4)
+!$ACC PARALLEL LOOP PRESENT(tmp1, tmp2) COLLAPSE(5) GANG VECTOR ASYNC(1) IF(lacc)       
+        DO m = sm, em;  DO l = sl, el;    DO k = sk, ek;      DO j = sj, ej;        DO i = si, ei;          lblk = MERGE(0, MERGE(k, j, bk.EQ.3), bk.EQ.0);          IF (lblk.LT.sbk .OR. lblk.GT.ebk) CYCLE;          IF (lblk.EQ.sbk .AND. i.LT.sbi) CYCLE;          IF (lblk.EQ.ebk .AND. i.GT.ebi) CYCLE
+        IF (tmp1(i,j,k,l,m) .LT. tmp2(i,j,k,l,m)) tmp2(i,j,k,l,m) = tmp1(i,j,k,l,m)
+        END DO;      END DO;    END DO;  END DO;END DO
     CASE(F_ACC_SQ)
-__myOMP_directive
-__myACC_directive       
-        _begin_loop_construct_
-        tmp2(_idx_) = tmp2(_idx_) + tmp1(_idx_) * tmp1(_idx_)
-        _close_loop_construct_
+!ICON_OMP PARALLEL DO PRIVATE(lblk) COLLAPSE(4)
+!$ACC PARALLEL LOOP PRESENT(tmp1, tmp2) COLLAPSE(5) GANG VECTOR ASYNC(1) IF(lacc)       
+        DO m = sm, em;  DO l = sl, el;    DO k = sk, ek;      DO j = sj, ej;        DO i = si, ei;          lblk = MERGE(0, MERGE(k, j, bk.EQ.3), bk.EQ.0);          IF (lblk.LT.sbk .OR. lblk.GT.ebk) CYCLE;          IF (lblk.EQ.sbk .AND. i.LT.sbi) CYCLE;          IF (lblk.EQ.ebk .AND. i.GT.ebi) CYCLE
+        tmp2(i,j,k,l,m) = tmp2(i,j,k,l,m) + tmp1(i,j,k,l,m) * tmp1(i,j,k,l,m)
+        END DO;      END DO;    END DO;  END DO;END DO
     CASE(F_ASS)
-__myOMP_directive
-__myACC_directive       
-        _begin_loop_construct_
-        tmp2(_idx_) = tmp1(_idx_)
-        _close_loop_construct_               
+!ICON_OMP PARALLEL DO PRIVATE(lblk) COLLAPSE(4)
+!$ACC PARALLEL LOOP PRESENT(tmp1, tmp2) COLLAPSE(5) GANG VECTOR ASYNC(1) IF(lacc)       
+        DO m = sm, em;  DO l = sl, el;    DO k = sk, ek;      DO j = sj, ej;        DO i = si, ei;          lblk = MERGE(0, MERGE(k, j, bk.EQ.3), bk.EQ.0);          IF (lblk.LT.sbk .OR. lblk.GT.ebk) CYCLE;          IF (lblk.EQ.sbk .AND. i.LT.sbi) CYCLE;          IF (lblk.EQ.ebk .AND. i.GT.ebi) CYCLE
+        tmp2(i,j,k,l,m) = tmp1(i,j,k,l,m)
+        END DO;      END DO;    END DO;  END DO;END DO               
     CASE(F_ASS_SQ)
-__myOMP_directive
-__myACC_directive       
-        _begin_loop_construct_
-        tmp2(_idx_) = tmp1(_idx_) * tmp1(_idx_) 
-        _close_loop_construct_          
+!ICON_OMP PARALLEL DO PRIVATE(lblk) COLLAPSE(4)
+!$ACC PARALLEL LOOP PRESENT(tmp1, tmp2) COLLAPSE(5) GANG VECTOR ASYNC(1) IF(lacc)       
+        DO m = sm, em;  DO l = sl, el;    DO k = sk, ek;      DO j = sj, ej;        DO i = si, ei;          lblk = MERGE(0, MERGE(k, j, bk.EQ.3), bk.EQ.0);          IF (lblk.LT.sbk .OR. lblk.GT.ebk) CYCLE;          IF (lblk.EQ.sbk .AND. i.LT.sbi) CYCLE;          IF (lblk.EQ.ebk .AND. i.GT.ebi) CYCLE
+        tmp2(i,j,k,l,m) = tmp1(i,j,k,l,m) * tmp1(i,j,k,l,m) 
+        END DO;      END DO;    END DO;  END DO;END DO          
     CASE(F_WGT)
-__myOMP_directive
-__myACC_directive       
-        _begin_loop_construct_
-        tmp2(_idx_) = tmp2(_idx_) * weight_dst
-        _close_loop_construct_
+!ICON_OMP PARALLEL DO PRIVATE(lblk) COLLAPSE(4)
+!$ACC PARALLEL LOOP PRESENT(tmp1, tmp2) COLLAPSE(5) GANG VECTOR ASYNC(1) IF(lacc)       
+        DO m = sm, em;  DO l = sl, el;    DO k = sk, ek;      DO j = sj, ej;        DO i = si, ei;          lblk = MERGE(0, MERGE(k, j, bk.EQ.3), bk.EQ.0);          IF (lblk.LT.sbk .OR. lblk.GT.ebk) CYCLE;          IF (lblk.EQ.sbk .AND. i.LT.sbi) CYCLE;          IF (lblk.EQ.ebk .AND. i.GT.ebi) CYCLE
+        tmp2(i,j,k,l,m) = tmp2(i,j,k,l,m) * weight_dst
+        END DO;      END DO;    END DO;  END DO;END DO
     CASE(F_MISS)
-__myOMP_directive
-__myACC_directive       
-        _begin_loop_construct_
-        IF (tmp1(_idx_) .EQ. miss_src) tmp2(_idx_) = miss_dst
-        _close_loop_construct_
+!ICON_OMP PARALLEL DO PRIVATE(lblk) COLLAPSE(4)
+!$ACC PARALLEL LOOP PRESENT(tmp1, tmp2) COLLAPSE(5) GANG VECTOR ASYNC(1) IF(lacc)       
+        DO m = sm, em;  DO l = sl, el;    DO k = sk, ek;      DO j = sj, ej;        DO i = si, ei;          lblk = MERGE(0, MERGE(k, j, bk.EQ.3), bk.EQ.0);          IF (lblk.LT.sbk .OR. lblk.GT.ebk) CYCLE;          IF (lblk.EQ.sbk .AND. i.LT.sbi) CYCLE;          IF (lblk.EQ.ebk .AND. i.GT.ebi) CYCLE
+        IF (tmp1(i,j,k,l,m) .EQ. miss_src) tmp2(i,j,k,l,m) = miss_dst
+        END DO;      END DO;    END DO;  END DO;END DO
     END SELECT
     IF (ASSOCIATED(ss5d) .AND. ASSOCIATED(tmp1)) THEN
       DEALLOCATE(tmp1)

@@ -14,16 +14,26 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------  
 
-#ifdef __xlC__
-@PROCESS smp=noopt
-@PROCESS noopt
-#endif
-#ifdef __PGI
-!pgi$g opt=1
-#endif
+
+
+
+
+
+
+
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_intp_rbf_coeffs
@@ -74,7 +84,127 @@ CHARACTER(LEN=*), PARAMETER :: modname = 'mo_intp_rbf_coeffs'
 
 CONTAINS
 
-#include "intp_functions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+!-------------------------------------------------------------------------   
+!>
+!! Gaussian kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=e^{-r^2}@f$
+!! 
+FUNCTION gaussi (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = -1._wp * p_rbf_val * p_rbf_val
+p_rbf_val = EXP(p_rbf_val)
+
+END FUNCTION gaussi
+
+
+
+!-------------------------------------------------------------------------
+!
+!  
+!>
+!! Multiquadric kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=(1+r^2)^{\frac{1}{2}}@f$
+!! 
+FUNCTION multiq (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = p_rbf_val * p_rbf_val
+p_rbf_val = SQRT(1._wp + p_rbf_val)
+
+END FUNCTION multiq
+
+!-------------------------------------------------------------------------
+!
+!  
+!>
+!! Inverse multiquadric kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=(1+r^2)^{-\frac{1}{2}}@f$
+!! 
+FUNCTION inv_multiq (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = p_rbf_val * p_rbf_val
+p_rbf_val = SQRT(1._wp + p_rbf_val)
+p_rbf_val = 1._wp / p_rbf_val
+
+END FUNCTION inv_multiq
+
+!-------------------------------------------------------------------------
+!
+!  
+!>
+!! Weighting function for IDW interpolation.
+!! 
+!! @f$\phi(r)=\frac{1}{(r)^p_{exp}}@f$
+!! 
+FUNCTION invdwgt (p_x, p_exp)  RESULT (wgtfac)
+REAL(wp) , INTENT(in) :: p_x            ! radial distance
+REAL(wp) , INTENT(in) :: p_exp          ! exponent
+
+REAL(wp)              :: wgtfac       ! weighting factor
+
+!-----------------------------------------------------------------------  
+
+  wgtfac = 1._wp/max(1.e-10_wp , p_x**p_exp)
+
+END FUNCTION invdwgt
+
+
+!-------------------------------------------------------------------------  
+!
+!  
+!>
+!! Modified inverse multiquadric kernel for RBF interpolation.
+!! 
+!! @f$\phi(r)=(1+r^2)^{-1}@f$
+!! 
+FUNCTION inv_multiq2 (p_x, p_scale)  RESULT (p_rbf_val)
+REAL(wp) , INTENT(in) :: p_x             ! radial distance
+REAL(wp) , INTENT(in) :: p_scale         ! scale parameter
+
+REAL(wp)              :: p_rbf_val       ! RBF value
+
+!-----------------------------------------------------------------------  
+
+p_rbf_val = p_x / p_scale
+p_rbf_val = p_rbf_val * p_rbf_val
+p_rbf_val = 1._wp / (1._wp + p_rbf_val)
+
+END FUNCTION inv_multiq2
+
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
@@ -1022,11 +1152,7 @@ REAL(wp) ::  checksum_u,checksum_v ! to check if sum of interpolation coefficien
 
     ! apply Cholesky decomposition to matrix
     !
-#ifdef __SX__
-    CALL choldec_v(i_startidx,i_endidx,istencil,rbf_vec_dim_c,z_rbfmat,z_diag)
-#else
     CALL choldec_v(i_startidx,i_endidx,istencil,              z_rbfmat,z_diag)
-#endif
 !$NEC ivdep
     DO jc = i_startidx, i_endidx
 
@@ -1132,21 +1258,11 @@ REAL(wp) ::  checksum_u,checksum_v ! to check if sum of interpolation coefficien
     ! compute vector coefficients
     !
 !CDIR NOIEXPAND
-#ifdef __SX__
-    CALL solve_chol_v(i_startidx, i_endidx, istencil, rbf_vec_dim_c, z_rbfmat,  &
-      &               z_diag, z_rhs1, ptr_int%rbf_vec_coeff_c(:,1,:,jb))
-#else
     CALL solve_chol_v(i_startidx, i_endidx, istencil,                z_rbfmat,  &
       &               z_diag, z_rhs1, ptr_int%rbf_vec_coeff_c(:,1,:,jb))
-#endif
 !CDIR NOIEXPAND
-#ifdef __SX__
-    CALL solve_chol_v(i_startidx, i_endidx, istencil, rbf_vec_dim_c, z_rbfmat,  &
-      &               z_diag, z_rhs2, ptr_int%rbf_vec_coeff_c(:,2,:,jb))
-#else
     CALL solve_chol_v(i_startidx, i_endidx, istencil,                z_rbfmat,  &
       &               z_diag, z_rhs2, ptr_int%rbf_vec_coeff_c(:,2,:,jb))
-#endif
 
     DO jc = i_startidx, i_endidx
 
@@ -1196,20 +1312,6 @@ REAL(wp) ::  checksum_u,checksum_v ! to check if sum of interpolation coefficien
   ENDDO
 
 ! Optional debug output for RBF coefficients
-#ifdef DEBUG_COEFF
-  DO jb = i_startblk, nblks_c
-
-    CALL get_indices_c(ptr_patch, jb, i_startblk, nblks_c, &
-                       i_startidx, i_endidx, i_rcstartlev)
-
-      DO jc = i_startidx, i_endidx
-      istencil(jc) = ptr_int%rbf_vec_stencil_c(jc,jb)
-      WRITE(510+jg,'(2i5,25f12.6)') jb,jc,ptr_int%rbf_vec_coeff_c(1:istencil(jc),1,jc,jb)
-      WRITE(510+jg,'(2i5,25f12.6)') jb,jc,ptr_int%rbf_vec_coeff_c(1:istencil(jc),2,jc,jb)
-    END DO
-  END DO
-  CLOSE (510+jg)
-#endif
 
 END SUBROUTINE rbf_vec_compute_coeff_cell
 
@@ -1535,11 +1637,7 @@ REAL(wp), DIMENSION(:,:,:,:), POINTER :: ptr_coeff  ! pointer to output coeffici
     ! apply Cholesky decomposition to matrix
     !
 !CDIR NOIEXPAND
-#ifdef __SX__
-    CALL choldec_v(i_startidx,i_endidx,istencil,rbf_vec_dim_v,z_rbfmat,z_diag)
-#else
     CALL choldec_v(i_startidx,i_endidx,istencil,              z_rbfmat,z_diag)
-#endif
 !$NEC ivdep
     DO jv = i_startidx, i_endidx
 
@@ -1650,21 +1748,11 @@ REAL(wp), DIMENSION(:,:,:,:), POINTER :: ptr_coeff  ! pointer to output coeffici
     ! compute vector coefficients
     !
 !CDIR NOIEXPAND
-#ifdef __SX__
-    CALL solve_chol_v(i_startidx, i_endidx, istencil, rbf_vec_dim_v, z_rbfmat,  &
-      &               z_diag, z_rhs1, ptr_coeff(:,1,:,jb))
-#else
     CALL solve_chol_v(i_startidx, i_endidx, istencil,                z_rbfmat,  &
       &               z_diag, z_rhs1, ptr_coeff(:,1,:,jb))
-#endif
 !CDIR NOIEXPAND
-#ifdef __SX__
-    CALL solve_chol_v(i_startidx, i_endidx, istencil, rbf_vec_dim_v, z_rbfmat,  &
-      &               z_diag, z_rhs2, ptr_coeff(:,2,:,jb))
-#else
     CALL solve_chol_v(i_startidx, i_endidx, istencil,                z_rbfmat,  &
       &               z_diag, z_rhs2, ptr_coeff(:,2,:,jb))
-#endif
 
     DO jv = i_startidx, i_endidx
 
@@ -1711,21 +1799,6 @@ REAL(wp), DIMENSION(:,:,:,:), POINTER :: ptr_coeff  ! pointer to output coeffici
   ENDDO
 
 ! Optional debug output for RBF coefficients
-#ifdef DEBUG_COEFF
-  DO jb = i_startblk, nblks_v
-
-    CALL get_indices_v(ptr_patch, jb, i_startblk, nblks_v, &
-                       i_startidx, i_endidx, i_rcstartlev)
-
-    DO jv = i_startidx, i_endidx
-
-      istencil = ptr_int%rbf_vec_stencil_v(jv,jb)
-      WRITE(i_outunit+jg,'(2i5,25f12.6)') jb,jv,ptr_coeff(1:istencil(jv),1,jv,jb)
-      WRITE(i_outunit+jg,'(2i5,25f12.6)') jb,jv,ptr_coeff(1:istencil(jv),2,jv,jb)
-    END DO
-  END DO
-  CLOSE (i_outunit+jg)
-#endif
 
 END SUBROUTINE rbf_vec_compute_coeff_vertex
 
@@ -1948,11 +2021,7 @@ TYPE(t_tangent_vectors), DIMENSION(:,:), POINTER :: ptr_orient_out
     ! apply Cholesky decomposition to matrix
     !
 !CDIR NOIEXPAND
-#ifdef __SX__
-    CALL choldec_v(i_startidx,i_endidx,istencil,rbf_vec_dim_e,z_rbfmat,z_diag)
-#else
     CALL choldec_v(i_startidx,i_endidx,istencil,              z_rbfmat,z_diag)
-#endif
 !$NEC ivdep
     DO je = i_startidx, i_endidx
 
@@ -2050,13 +2119,8 @@ TYPE(t_tangent_vectors), DIMENSION(:,:), POINTER :: ptr_orient_out
     ! compute vector coefficients
     !
 !CDIR NOIEXPAND
-#ifdef __SX__
-    CALL solve_chol_v(i_startidx, i_endidx, istencil, rbf_vec_dim_e, z_rbfmat, &
-                    z_diag, z_rbfval, ptr_coeff(:,:,jb))
-#else
     CALL solve_chol_v(i_startidx, i_endidx, istencil,                z_rbfmat, &
                     z_diag, z_rbfval, ptr_coeff(:,:,jb))
-#endif
 
     DO je = i_startidx, i_endidx
 
@@ -2097,20 +2161,6 @@ TYPE(t_tangent_vectors), DIMENSION(:,:), POINTER :: ptr_orient_out
   ENDDO
 
 ! Optional debug output for RBF coefficients
-#ifdef DEBUG_COEFF
-  DO jb = i_startblk, nblks_e
-
-    CALL get_indices_e(ptr_patch, jb, i_startblk, nblks_e, &
-                       i_startidx, i_endidx, i_rcstartlev)
-
-    DO je = i_startidx, i_endidx
-
-      istencil(je) = ptr_int%rbf_vec_stencil_e(je,jb)
-      WRITE(i_outunit+jg,'(2i5,25f12.6)') jb,je,ptr_coeff(1:istencil(je),je,jb)
-    END DO
-  END DO
-  CLOSE (i_outunit+jg)
-#endif
 
 END SUBROUTINE rbf_vec_compute_coeff_edge
 

@@ -38,7 +38,7 @@
 !
 !
 !> compute uniform partitioning of n-dimensional rectilinear
-#include "fc_feature_defs.inc"
+
 MODULE ppm_uniform_partition
   USE ppm_base, ONLY: assertion
   USE ppm_extents, ONLY: extent, extent_size, extent_start
@@ -162,13 +162,13 @@ CONTAINS
     LOGICAL :: symmetry(SIZE(rect))
 
     n = SIZE(rect)
-    CALL assertion(SIZE(nparts) == n, filename, __LINE__, &
+    CALL assertion(SIZE(nparts) == n, filename, 165, &
          msg='argument parts must be same size as argument rect')
-    CALL assertion(SIZE(pgrid) == n, filename, __LINE__, &
+    CALL assertion(SIZE(pgrid) == n, filename, 167, &
          msg='argument pgrids must be same size as argument rect')
     symmetry = .FALSE.
     IF (PRESENT(symmetric)) THEN
-      CALL assertion(SIZE(symmetric) == n, filename, __LINE__, &
+      CALL assertion(SIZE(symmetric) == n, filename, 171, &
            msg='argument symmetry must be same size as argument rect')
       symmetry = symmetric
     END IF

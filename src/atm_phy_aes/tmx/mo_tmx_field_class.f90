@@ -22,12 +22,12 @@ MODULE mo_tmx_field_class
   ! Todo: refactor so that t_patch is not needed
   USE mo_model_domain      ,ONLY: t_patch
 
-#ifdef _OPENACC
-  use openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)
-#else
-#define __acc_attach(ptr)
-#endif
+
+
+
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -235,7 +235,7 @@ CONTAINS
     domain%nproma = nproma
 
     domain%patch => patch
-    __acc_attach(domain%patch)
+    
 
     domain%npromz = patch%npromz_c
     IF (PRESENT(nlev)) THEN

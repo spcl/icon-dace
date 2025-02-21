@@ -28,12 +28,12 @@ MODULE mo_radiation_random
   
 CONTAINS
 
-#define m(k,n) (ieor (k, ishft (k, n)))
-#ifdef BIG_ENDIAN
-#define low_byte(i) transfer(ishft(i,bit_size(1)),1)
-#else
-#define low_byte(i) transfer(i,1)
-#endif
+
+
+
+
+
+
 
 ! George Masaglia's KISS random number generator
 ! adapted from public domain code available at http://www.fortran.com/kiss.f90
@@ -48,14 +48,14 @@ CONTAINS
     
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
     DO jk = 1, kproma
-      seed(jk,1) = low_byte(69069_i8 * seed(jk,1) + 1327217885)
-      seed(jk,2) = m (seed(jk,2), 13)
-      seed(jk,2) = m (seed(jk,2), - 17)
-      seed(jk,2) = m (seed(jk,2), 5)
+      seed(jk,1) = transfer(69069_i8 * seed(jk,1) + 1327217885,1)
+      seed(jk,2) = (ieor (seed(jk,2), ishft (seed(jk,2),  13)))
+      seed(jk,2) = (ieor (seed(jk,2), ishft (seed(jk,2),  - 17)))
+      seed(jk,2) = (ieor (seed(jk,2), ishft (seed(jk,2),  5)))
       seed(jk,3) = 18000 * iand (seed(jk,3), 65535) + ishft (seed(jk,3), - 16)
       seed(jk,4) = 30903 * iand (seed(jk,4), 65535) + ishft (seed(jk,4), - 16)
       kiss       = int(seed(jk,1), i8) + seed(jk,2) + ishft (seed(jk,3), 16) + seed(jk,4)
-      harvest(jk) = low_byte(kiss)*2.328306e-10_dp + 0.5_dp
+      harvest(jk) = transfer(kiss,1)*2.328306e-10_dp + 0.5_dp
     END DO
   END SUBROUTINE kissvec_all
 
@@ -74,14 +74,14 @@ CONTAINS
     DO j = klev, 1, -1
     !$ACC LOOP GANG VECTOR
     DO i = 1, kproma
-      seed(i,1) = low_byte(69069_i8 * seed(i,1) + 1327217885)
-      seed(i,2) = m (seed(i,2), 13)
-      seed(i,2) = m (seed(i,2), - 17)
-      seed(i,2) = m (seed(i,2), 5)
+      seed(i,1) = transfer(69069_i8 * seed(i,1) + 1327217885,1)
+      seed(i,2) = (ieor (seed(i,2), ishft (seed(i,2),  13)))
+      seed(i,2) = (ieor (seed(i,2), ishft (seed(i,2),  - 17)))
+      seed(i,2) = (ieor (seed(i,2), ishft (seed(i,2),  5)))
       seed(i,3) = 18000 * iand (seed(i,3), 65535) + ishft (seed(i,3), - 16)
       seed(i,4) = 30903 * iand (seed(i,4), 65535) + ishft (seed(i,4), - 16)
       kiss      = int(seed(i,1), i8) + seed(i,2) + ishft (seed(i,3), 16) + seed(i,4)
-      harvest(i,j,k) = low_byte(kiss)*2.328306e-10_dp + 0.5_dp
+      harvest(i,j,k) = transfer(kiss,1)*2.328306e-10_dp + 0.5_dp
     END DO
     END DO
     END DO
@@ -106,14 +106,14 @@ CONTAINS
     !$ACC LOOP GANG VECTOR
     DO i = 1, kproma
       IF (mask(i,j)) THEN
-        seed(i,1) = low_byte(69069_i8 * seed(i,1) + 1327217885)
-        seed(i,2) = m (seed(i,2), 13)
-        seed(i,2) = m (seed(i,2), - 17)
-        seed(i,2) = m (seed(i,2), 5)
+        seed(i,1) = transfer(69069_i8 * seed(i,1) + 1327217885,1)
+        seed(i,2) = (ieor (seed(i,2), ishft (seed(i,2),  13)))
+        seed(i,2) = (ieor (seed(i,2), ishft (seed(i,2),  - 17)))
+        seed(i,2) = (ieor (seed(i,2), ishft (seed(i,2),  5)))
         seed(i,3) = 18000 * iand (seed(i,3), 65535) + ishft (seed(i,3), - 16)
         seed(i,4) = 30903 * iand (seed(i,4), 65535) + ishft (seed(i,4), - 16)
         kiss      = int(seed(i,1), i8) + seed(i,2) + ishft (seed(i,3), 16) + seed(i,4)
-        harvest(i,j,k) = low_byte(kiss)*2.328306e-10_dp + 0.5_dp
+        harvest(i,j,k) = transfer(kiss,1)*2.328306e-10_dp + 0.5_dp
       ELSE
         harvest(i,j,k) = 0._dp
       ENDIF
@@ -137,14 +137,14 @@ CONTAINS
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
     DO jk = 1, kproma
       IF(mask(jk)) THEN  
-        seed(jk,1) = low_byte(69069_i8 * seed(jk,1) + 1327217885)
-        seed(jk,2) = m (seed(jk,2), 13)
-        seed(jk,2) = m (seed(jk,2), - 17)
-        seed(jk,2) = m (seed(jk,2), 5)
+        seed(jk,1) = transfer(69069_i8 * seed(jk,1) + 1327217885,1)
+        seed(jk,2) = (ieor (seed(jk,2), ishft (seed(jk,2),  13)))
+        seed(jk,2) = (ieor (seed(jk,2), ishft (seed(jk,2),  - 17)))
+        seed(jk,2) = (ieor (seed(jk,2), ishft (seed(jk,2),  5)))
         seed(jk,3) = 18000 * iand (seed(jk,3), 65535) + ishft (seed(jk,3), - 16)
         seed(jk,4) = 30903 * iand (seed(jk,4), 65535) + ishft (seed(jk,4), - 16)
         kiss       = int(seed(jk,1), i8) + seed(jk,2) + ishft (seed(jk,3), 16) + seed(jk,4)
-        harvest(jk) = low_byte(kiss)*2.328306e-10_dp + 0.5_dp
+        harvest(jk) = transfer(kiss,1)*2.328306e-10_dp + 0.5_dp
       ELSE  
         harvest(jk) = 0._dp
       END IF 

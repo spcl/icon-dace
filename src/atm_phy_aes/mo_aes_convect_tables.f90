@@ -10,10 +10,19 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#if defined __xlC__ && !defined NOXLFPROCESS
-@PROCESS HOT
-#endif
-#include "fsel.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
 MODULE mo_aes_convect_tables
 
@@ -345,11 +354,11 @@ CONTAINS
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(zavm1, zavm3, zavm4, zavm5, zldcp)
       DO jl = jcs, size
-        zavm1 = FSEL(tmelt-temp(jl),cavi1,cavl1)
-        zavm3 = FSEL(tmelt-temp(jl),cavi3,cavl3)
-        zavm4 = FSEL(tmelt-temp(jl),cavi4,cavl4)
-        zavm5 = FSEL(tmelt-temp(jl),cavi5,cavl5)
-        zldcp = FSEL(tmelt-temp(jl),zalsdcp,zalvdcp)
+        zavm1 = MERGE(cavi1,cavl1,(tmelt-temp(jl)).GE.0._wp)
+        zavm3 = MERGE(cavi3,cavl3,(tmelt-temp(jl)).GE.0._wp)
+        zavm4 = MERGE(cavi4,cavl4,(tmelt-temp(jl)).GE.0._wp)
+        zavm5 = MERGE(cavi5,cavl5,(tmelt-temp(jl)).GE.0._wp)
+        zldcp = MERGE(zalsdcp,zalvdcp,(tmelt-temp(jl)).GE.0._wp)
         ub(jl) = zldcp*(-zavm1/(temp(jl)*temp(jl))+zavm3*0.01_wp+zavm4*temp(jl)*2.e-5_wp+zavm5/temp(jl))
         uc(jl) = zldcp
       END DO
@@ -360,11 +369,11 @@ CONTAINS
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(zavm1, zavm3, zavm4, zavm5, zldcp)
       DO jl = jcs, size
-        zavm1 = FSEL(tmelt-temp(jl),cavi1,cavl1)
-        zavm3 = FSEL(tmelt-temp(jl),cavi3,cavl3)
-        zavm4 = FSEL(tmelt-temp(jl),cavi4,cavl4)
-        zavm5 = FSEL(tmelt-temp(jl),cavi5,cavl5)
-        zldcp = FSEL(tmelt-temp(jl),zalsdcp,zalvdcp)
+        zavm1 = MERGE(cavi1,cavl1,(tmelt-temp(jl)).GE.0._wp)
+        zavm3 = MERGE(cavi3,cavl3,(tmelt-temp(jl)).GE.0._wp)
+        zavm4 = MERGE(cavi4,cavl4,(tmelt-temp(jl)).GE.0._wp)
+        zavm5 = MERGE(cavi5,cavl5,(tmelt-temp(jl)).GE.0._wp)
+        zldcp = MERGE(zalsdcp,zalvdcp,(tmelt-temp(jl)).GE.0._wp)
         ub(jl) = zldcp*(-zavm1/(temp(jl)*temp(jl))+zavm3*0.01_wp+zavm4*temp(jl)*2.e-5_wp+zavm5/temp(jl))
       END DO
       !$ACC END PARALLEL
@@ -397,11 +406,11 @@ CONTAINS
       !$ACC LOOP GANG VECTOR PRIVATE(jl, zavm1, zavm3, zavm4, zavm5, zldcp)
       DO nl = jcs, kidx
         jl = list(nl)
-        zavm1 = FSEL(tmelt-temp(jl),cavi1,cavl1)
-        zavm3 = FSEL(tmelt-temp(jl),cavi3,cavl3)
-        zavm4 = FSEL(tmelt-temp(jl),cavi4,cavl4)
-        zavm5 = FSEL(tmelt-temp(jl),cavi5,cavl5)
-        zldcp = FSEL(tmelt-temp(jl),zalsdcp,zalvdcp)
+        zavm1 = MERGE(cavi1,cavl1,(tmelt-temp(jl)).GE.0._wp)
+        zavm3 = MERGE(cavi3,cavl3,(tmelt-temp(jl)).GE.0._wp)
+        zavm4 = MERGE(cavi4,cavl4,(tmelt-temp(jl)).GE.0._wp)
+        zavm5 = MERGE(cavi5,cavl5,(tmelt-temp(jl)).GE.0._wp)
+        zldcp = MERGE(zalsdcp,zalvdcp,(tmelt-temp(jl)).GE.0._wp)
         ub(nl) = zldcp*(-zavm1/(temp(jl)*temp(jl))+zavm3*0.01_wp+zavm4*temp(jl)*2.e-5_wp+zavm5/temp(jl))
         uc(nl) = zldcp
       END DO
@@ -414,11 +423,11 @@ CONTAINS
       !$ACC LOOP GANG VECTOR PRIVATE(jl, zavm1, zavm3, zavm4, zavm5, zldcp)
       DO nl = jcs, kidx
         jl = list(nl)
-        zavm1 = FSEL(tmelt-temp(jl),cavi1,cavl1)
-        zavm3 = FSEL(tmelt-temp(jl),cavi3,cavl3)
-        zavm4 = FSEL(tmelt-temp(jl),cavi4,cavl4)
-        zavm5 = FSEL(tmelt-temp(jl),cavi5,cavl5)
-        zldcp = FSEL(tmelt-temp(jl),zalsdcp,zalvdcp)
+        zavm1 = MERGE(cavi1,cavl1,(tmelt-temp(jl)).GE.0._wp)
+        zavm3 = MERGE(cavi3,cavl3,(tmelt-temp(jl)).GE.0._wp)
+        zavm4 = MERGE(cavi4,cavl4,(tmelt-temp(jl)).GE.0._wp)
+        zavm5 = MERGE(cavi5,cavl5,(tmelt-temp(jl)).GE.0._wp)
+        zldcp = MERGE(zalsdcp,zalvdcp,(tmelt-temp(jl)).GE.0._wp)
         ub(nl) = zldcp*(-zavm1/(temp(jl)*temp(jl))+zavm3*0.01_wp+zavm4*temp(jl)*2.e-5_wp+zavm5/temp(jl))
       END DO
       !$ACC END PARALLEL
@@ -858,18 +867,18 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(ztshft, ztt, ztest) REDUCTION(+: znphase) PRIVATE(zinbounds)
       DO jl = jcs,size
-        ztshft = FSEL(tmelt-temp(jl),1.0_wp,0.0_wp)
+        ztshft = MERGE(1.0_wp,0.0_wp,(tmelt-temp(jl)).GE.0._wp)
         ztt = rsdeltat*temp(jl)
         zalpha(jl) = ztt - AINT(ztt)
         idx(jl) = INT(ztt-ztshft)
-        zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
-        zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
+        zinbounds = MERGE(0.0_wp,zinbounds,(ztmin-ztt).GE.0._wp)
+        zinbounds = MERGE(0.0_wp,zinbounds,(ztt-ztmax).GE.0._wp)
 
         ! check dual phase conditions:
         ! lo2 = (ptm1(jl,jk) < cthomi) .OR. (ptm1(jl,jk) < tmelt .AND. zxised > csecfrl)
-        ztest = FSEL(temp(jl)-tmelt,0.0_wp,1.0_wp)
-        ztest = FSEL(csecfrl-xi(jl),0.0_wp,ztest)
-        ztest = FSEL(temp(jl)-cthomi,ztest,1.0_wp)
+        ztest = MERGE(0.0_wp,1.0_wp,(temp(jl)-tmelt).GE.0._wp)
+        ztest = MERGE(0.0_wp,ztest,(csecfrl-xi(jl)).GE.0._wp)
+        ztest = MERGE(ztest,1.0_wp,(temp(jl)-cthomi).GE.0._wp)
         ! normalize ztest to 0 and 1
         iphase(jl) = INT(ztest)
         zphase(jl) = ztest-0.5_wp
@@ -881,17 +890,16 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(ztshft, ztt) PRIVATE(zinbounds)
       DO jl = jcs, size
-        ztshft = FSEL(tmelt-temp(jl),1.0_wp,0.0_wp)
+        ztshft = MERGE(1.0_wp,0.0_wp,(tmelt-temp(jl)).GE.0._wp)
         ztt = rsdeltat*temp(jl)
         zalpha(jl) = ztt - AINT(ztt)
         idx(jl) = INT(ztt-ztshft)
-        zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
-        zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
+        zinbounds = MERGE(0.0_wp,zinbounds,(ztmin-ztt).GE.0._wp)
+        zinbounds = MERGE(0.0_wp,zinbounds,(ztt-ztmax).GE.0._wp)
       END DO
       !$ACC END PARALLEL
     END IF
 
-#ifndef _OPENACC
     ! if one index was out of bounds -> print error and exit
     IF (zinbounds == 0.0_wp) THEN
       IF ( PRESENT(kblock) .AND. PRESENT(kblock_size) .AND. PRESENT(klev) ) THEN
@@ -913,7 +921,6 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       ENDIF
       CALL lookuperror(name, 'prepare_ua_index_spline')
     END IF
-#endif
 
     !$ACC WAIT(1)
     !$ACC END DATA
@@ -987,7 +994,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
             jl = jgang + jvec
             IF (jl > jce) CYCLE
 
-            ztshft = FSEL(tmelt-temp(jl,batch),1.0_wp,0.0_wp)
+            ztshft = MERGE(1.0_wp,0.0_wp,(tmelt-temp(jl,batch)).GE.0._wp)
             ztt = rsdeltat*temp(jl,batch)
             zalpha(jl,batch) = ztt - AINT(ztt)
             idx(jl,batch) = INT(ztt-ztshft)
@@ -995,9 +1002,9 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
 
             ! check dual phase conditions:
             ! lo2 = (ptm1(jl,jk) < cthomi) .OR. (ptm1(jl,jk) < tmelt .AND. zxised > csecfrl)
-            ztest = FSEL(temp(jl,batch)-tmelt,0.0_wp,1.0_wp)
-            ztest = FSEL(csecfrl-xi(jl,batch),0.0_wp,ztest)
-            ztest = FSEL(temp(jl,batch)-cthomi,ztest,1.0_wp)
+            ztest = MERGE(0.0_wp,1.0_wp,(temp(jl,batch)-tmelt).GE.0._wp)
+            ztest = MERGE(0.0_wp,ztest,(csecfrl-xi(jl,batch)).GE.0._wp)
+            ztest = MERGE(ztest,1.0_wp,(temp(jl,batch)-cthomi).GE.0._wp)
             ! normalize ztest to 0 and 1
             iphase(jl,batch) = INT(ztest)
             zphase(jl,batch) = ztest-0.5_wp
@@ -1040,7 +1047,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) REDUCTION(+: zoutofbounds) GANG VECTOR COLLAPSE(2) ASYNC(1)
         DO batch = 1,batch_size
           DO jl = jcs, jce
-            ztshft = FSEL(tmelt-temp(jl,batch),1.0_wp,0.0_wp)
+            ztshft = MERGE(1.0_wp,0.0_wp,(tmelt-temp(jl,batch)).GE.0._wp)
             ztt = rsdeltat*temp(jl,batch)
             zalpha(jl,batch) = ztt - AINT(ztt)
             idx(jl,batch) = INT(ztt-ztshft)
@@ -1051,7 +1058,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
         DO batch = 1,batch_size
           DO jl = jcs, jce
-            ztshft = FSEL(tmelt-temp(jl,batch),1.0_wp,0.0_wp)
+            ztshft = MERGE(1.0_wp,0.0_wp,(tmelt-temp(jl,batch)).GE.0._wp)
             ztt = rsdeltat*temp(jl,batch)
             zalpha(jl,batch) = ztt - AINT(ztt)
             idx(jl,batch) = INT(ztt-ztshft)
@@ -1120,13 +1127,13 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       DO jl = 1, size
         ztt = ANINT(rfdeltat*temp(jl))
         idx(jl) = INT(ztt)
-        zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
-        zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
+        zinbounds = MERGE(0.0_wp,zinbounds,(ztmin-ztt).GE.0._wp)
+        zinbounds = MERGE(0.0_wp,zinbounds,(ztt-ztmax).GE.0._wp)
         ! check dual phase conditions
         ! lo2 = (ptm1(jl,jk) < cthomi) .OR. (ptm1(jl,jk) < tmelt .AND. zxised > csecfrl)
-        ztest = FSEL(temp(jl)-tmelt,0.0_wp,1.0_wp)
-        ztest = FSEL(csecfrl-xi(jl),0.0_wp,ztest)
-        ztest = FSEL(temp(jl)-cthomi,ztest,1.0_wp)
+        ztest = MERGE(0.0_wp,1.0_wp,(temp(jl)-tmelt).GE.0._wp)
+        ztest = MERGE(0.0_wp,ztest,(csecfrl-xi(jl)).GE.0._wp)
+        ztest = MERGE(ztest,1.0_wp,(temp(jl)-cthomi).GE.0._wp)
         ! normalize ztest to 0 and 1
         iphase(jl) = INT(ztest)
         zphase(jl) = ztest-0.5_wp
@@ -1137,8 +1144,8 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       DO jl = 1,size
         ztt = ANINT(rfdeltat*temp(jl))
         idx(jl) = INT(ztt)
-        zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
-        zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
+        zinbounds = MERGE(0.0_wp,zinbounds,(ztmin-ztt).GE.0._wp)
+        zinbounds = MERGE(0.0_wp,zinbounds,(ztt-ztmax).GE.0._wp)
       END DO
     END IF
     ! if one index was out of bounds -> print error and exit
@@ -1178,16 +1185,15 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
     !$ACC LOOP GANG VECTOR PRIVATE(jl, ztshft, ztt) PRIVATE(zinbounds)
     DO nl = jcs, kidx
       jl = list(nl)
-      ztshft = FSEL(tmelt-temp(jl),1.0_wp,0.0_wp)
+      ztshft = MERGE(1.0_wp,0.0_wp,(tmelt-temp(jl)).GE.0._wp)
       ztt = rsdeltat*temp(jl)
       zalpha(nl) = ztt - AINT(ztt)
       idx(nl) = INT(ztt-ztshft)
-      zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
-      zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
+      zinbounds = MERGE(0.0_wp,zinbounds,(ztmin-ztt).GE.0._wp)
+      zinbounds = MERGE(0.0_wp,zinbounds,(ztt-ztmax).GE.0._wp)
     END DO
     !$ACC END PARALLEL
 
-#ifndef _OPENACC
     ! if one index was out of bounds -> print error and exit
     IF (zinbounds == 0.0_wp) THEN
       IF ( PRESENT(kblock) .AND. PRESENT(kblock_size) .AND. PRESENT(klev) ) THEN
@@ -1209,7 +1215,6 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       ENDIF
       CALL lookuperror(name, 'lookup_ua_list_spline')
     ENDIF
-#endif
     CALL fetch_ua_spline(jcs, kidx, idx, zalpha, tlucu, ua, dua)
 
     !$ACC WAIT(1)
@@ -1239,8 +1244,8 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       jl = list(nl)
       ztt = ANINT(rfdeltat*temp(jl))
       idx(nl) = INT(ztt)
-      zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
-      zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
+      zinbounds = MERGE(0.0_wp,zinbounds,(ztmin-ztt).GE.0._wp)
+      zinbounds = MERGE(0.0_wp,zinbounds,(ztt-ztmax).GE.0._wp)
     END DO
     ! if one index was out of bounds -> print error and exit
     IF (zinbounds == 0.0_wp) CALL lookuperror(name)
@@ -1274,12 +1279,12 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
 !IBM* ASSERT(NODEPS)
     DO nl = 1, size
       jl = list(nl)
-      ztshft = FSEL(tmelt-temp(jl),1.0_wp,0.0_wp)
+      ztshft = MERGE(1.0_wp,0.0_wp,(tmelt-temp(jl)).GE.0._wp)
       ztt = rsdeltat*temp(jl)
       zalpha(nl) = ztt - AINT(ztt)
       idx(nl) = INT(ztt-ztshft)
-      zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
-      zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
+      zinbounds = MERGE(0.0_wp,zinbounds,(ztmin-ztt).GE.0._wp)
+      zinbounds = MERGE(0.0_wp,zinbounds,(ztt-ztmax).GE.0._wp)
     END DO
     ! if one index was out of bounds -> print error and exit
     IF (zinbounds == 0.0_wp) CALL lookuperror(name, 'lookup_uaw_list_spline')
@@ -1310,8 +1315,8 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       jl = list(nl)
       ztt = ANINT(rfdeltat*temp(jl))
       idx(nl) = INT(ztt)
-      zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
-      zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
+      zinbounds = MERGE(0.0_wp,zinbounds,(ztmin-ztt).GE.0._wp)
+      zinbounds = MERGE(0.0_wp,zinbounds,(ztt-ztmax).GE.0._wp)
     END DO
     ! if one index was out of bounds -> print error and exit
     IF (zinbounds == 0.0_wp) CALL lookuperror(name, 'lookup_uaw_list')

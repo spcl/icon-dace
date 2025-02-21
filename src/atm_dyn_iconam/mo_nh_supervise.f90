@@ -14,7 +14,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nh_supervise
@@ -144,14 +154,6 @@ CONTAINS
     REAL(wp) :: z_int_energy_re         !< percentage of internal energy out of total energy
     REAL(wp) :: z_pot_energy_re         !< percentage of potential energy out of total energy
     REAL(wp) :: z_volume
-#ifndef NOMPI
-    REAL(wp) ::   z_total_mass_2d(nproma,patch(1)%nblks_c), &
-      &           z_kin_energy_2d(nproma,patch(1)%nblks_c), &
-      &           z_int_energy_2d(nproma,patch(1)%nblks_c), &
-      &           z_pot_energy_2d(nproma,patch(1)%nblks_c), &
-      &           z_surfp_2d(nproma,patch(1)%nblks_c), &
-      &           z_total_drymass_2d(nproma,patch(1)%nblks_c)
-#endif
 
     REAL (wp):: z_total_tracer(ntracer)       ! total tracer mass
     REAL (wp):: z_aux_tracer(nproma,patch(1)%nblks_c)
@@ -178,9 +180,7 @@ CONTAINS
     CALL assert_acc_device_only('mo_nh_stepping:supervise_total_integrals_nh', lacc)
 
     !$ACC DATA CREATE(z_ekin, z_qsum, z_aux_tracer)
-#ifndef NOMPI
-    !$ACC DATA CREATE(z_total_mass_2d, z_kin_energy_2d, z_int_energy_2d, z_pot_energy_2d, z_surfp_2d, z_total_drymass_2d)
-#endif
+
 
     ! Hack [ha]:
     IF (.NOT. ALLOCATED (z_total_tracer_old)) THEN
@@ -263,11 +263,11 @@ CONTAINS
 !$OMP END DO
 !$OMP END PARALLEL
 
-#ifdef NOMPI
 
-#ifdef _OPENACC
-    CALL finish("mo_nh_stepping:supervise_total_integrals_nh", "The NOMPI has not been tested with OpenACC.")
-#endif
+
+
+
+
 
     z_total_mass    = 0.0_wp
     z_total_drymass = 0.0_wp
@@ -313,67 +313,6 @@ CONTAINS
     ENDDO
     z_total_energy = z_int_energy+z_kin_energy+z_pot_energy
 
-#else
-
-    !$OMP PARALLEL
-    CALL init(z_total_mass_2d, opt_acc_async=.TRUE.)
-    CALL init(z_kin_energy_2d, opt_acc_async=.TRUE.)
-    CALL init(z_int_energy_2d, opt_acc_async=.TRUE.)
-    CALL init(z_pot_energy_2d, opt_acc_async=.TRUE.)
-    CALL init(z_surfp_2d, opt_acc_async=.TRUE.)
-    CALL init(z_total_drymass_2d, opt_acc_async=.TRUE.)
-    !$OMP END PARALLEL
-
-    DO jb = 1, nblks_c
-      IF (jb /= nblks_c) THEN
-        nlen = nproma
-      ELSE
-        nlen = npromz_c
-      ENDIF
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-      !$ACC LOOP SEQ
-      DO jk = 1,nlev
-        !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(z_volume)
-        DO jc = 1, nlen
-          z_volume = patch(jg)%cells%area(jc,jb)      &
-            & *nh_state(jg)%metrics%ddqz_z_full(jc,jk,jb) &
-            & /REAL(patch(jg)%n_patch_cells_g,wp)*nh_state(jg)%metrics%deepatmo_vol_mc(jk)
-          z_total_mass_2d(jc,jb) = z_total_mass_2d(jc,jb)&
-            & +prog%rho(jc,jk,jb)*z_volume
-          z_kin_energy_2d(jc,jb) = z_kin_energy_2d(jc,jb)&
-            & +prog%rho(jc,jk,jb)*z_ekin(jc,jk,jb)*z_volume
-          z_int_energy_2d(jc,jb) = z_int_energy_2d(jc,jb)&
-            & +cvd*prog%exner(jc,jk,jb)*prog%rho(jc,jk,jb)*prog%theta_v(jc,jk,jb)*z_volume
-          z_pot_energy_2d(jc,jb) = z_pot_energy_2d(jc,jb)&
-            & +prog%rho(jc,jk,jb)*nh_state(jg)%metrics%geopot(jc,jk,jb)*z_volume
-          z_total_drymass_2d(jc,jb) = z_total_drymass_2d(jc,jb)&
-            & +prog%rho(jc,jk,jb)*(1._wp-z_qsum(jc,jk,jb))*z_volume
-        ENDDO
-      ENDDO
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jc = 1, nlen
-        z_surfp_2d(jc,jb) = diag%pres_sfc(jc,jb)*patch(jg)%cells%area(jc,jb)
-        IF(.NOT. patch(jg)%cells%decomp_info%owner_mask(jc,jb)) THEN
-          z_total_mass_2d(jc,jb) = 0._wp
-          z_kin_energy_2d(jc,jb) = 0._wp
-          z_int_energy_2d(jc,jb) = 0._wp
-          z_pot_energy_2d(jc,jb) = 0._wp
-          z_surfp_2d(jc,jb) = 0._wp
-          z_total_drymass_2d(jc,jb) = 0._wp
-        ENDIF
-      ENDDO
-      !$ACC END PARALLEL
-    ENDDO
-
-    z_mean_surfp    = global_sum_array( z_surfp_2d, lacc=.TRUE. )/(4._wp*grid_sphere_radius**2*pi)
-    z_total_mass    = global_sum_array( z_total_mass_2d, lacc=.TRUE. )
-    z_kin_energy    = global_sum_array( z_kin_energy_2d, lacc=.TRUE. )
-    z_int_energy    = global_sum_array( z_int_energy_2d, lacc=.TRUE. )
-    z_pot_energy    = global_sum_array( z_pot_energy_2d, lacc=.TRUE. )
-    z_total_drymass = global_sum_array( z_total_drymass_2d, lacc=.TRUE. )
-    z_total_energy = z_int_energy+z_kin_energy+z_pot_energy
-
-#endif
 
     IF (k_step == 1) THEN
       z_total_mass_0    = z_total_mass
@@ -529,9 +468,6 @@ CONTAINS
     ENDIF
 
     !$ACC WAIT
-#ifndef NOMPI
-    !$ACC END DATA ! z_total_mass_2d, z_kin_energy_2d, z_int_energy_2d, z_pot_energy_2d, z_surfp_2d, z_total_drymass_2d
-#endif
     !$ACC END DATA
 
   END SUBROUTINE supervise_total_integrals_nh
@@ -684,9 +620,6 @@ CONTAINS
 
     INTEGER  :: i_nchdom, istartblk_c, istartblk_e, iendblk_c, iendblk_e, i_startidx, i_endidx
     INTEGER  :: jb, jk, jg
-#if defined( __INTEL_COMPILER ) || defined( _OPENACC ) || defined (__SX__)
-    INTEGER  :: jec
-#endif
     INTEGER  :: proc_id(2), keyval(2)
     LOGICAL :: lzacc ! non-optional version of lacc
 
@@ -710,11 +643,7 @@ CONTAINS
     ENDIF
 
 !$OMP PARALLEL
-#if defined( __INTEL_COMPILER ) || defined (__SX__)
-!$OMP DO PRIVATE(jb, jk, jec, i_startidx, i_endidx, vn_aux_tmp) ICON_OMP_DEFAULT_SCHEDULE
-#else
 !$OMP DO PRIVATE(jb, jk, i_startidx, i_endidx) ICON_OMP_DEFAULT_SCHEDULE
-#endif
     DO jb = istartblk_e, iendblk_e
 
       CALL get_indices_e(patch, jb, istartblk_e, iendblk_e, i_startidx, i_endidx, &
@@ -724,26 +653,13 @@ CONTAINS
       !$ACC LOOP GANG PRIVATE(vn_aux_tmp)
 !$NEC novector
       DO jk = 1, patch%nlev
-#if defined( __INTEL_COMPILER ) || defined( _OPENACC ) || defined (__SX__)
-        vn_aux_tmp = 0._wp
-        !$ACC LOOP VECTOR REDUCTION(MAX: vn_aux_tmp)
-        DO jec = i_startidx,i_endidx
-          vn_aux_tmp = MAX(vn_aux_tmp, -vn(jec,jk,jb), vn(jec,jk,jb))
-        ENDDO
-        vn_aux(jb,jk) = vn_aux_tmp
-#else
         vn_aux(jb,jk) = MAXVAL(ABS(vn(i_startidx:i_endidx,jk,jb)))
-#endif
       ENDDO
       !$ACC END PARALLEL
     END DO
 !$OMP END DO
 
-#if defined( __INTEL_COMPILER ) || defined (__SX__)
-!$OMP DO PRIVATE(jb, jk, jec, i_startidx, i_endidx, w_aux_tmp) ICON_OMP_DEFAULT_SCHEDULE
-#else
 !$OMP DO PRIVATE(jb, jk, i_startidx, i_endidx) ICON_OMP_DEFAULT_SCHEDULE
-#endif
     DO jb = istartblk_c, iendblk_c
 
       CALL get_indices_c(patch, jb, istartblk_c, iendblk_c, i_startidx, i_endidx, &
@@ -753,16 +669,7 @@ CONTAINS
       !$ACC LOOP GANG PRIVATE(w_aux_tmp)
 !$NEC novector
       DO jk = 1, patch%nlevp1
-#if defined( __INTEL_COMPILER ) || defined( _OPENACC ) || defined (__SX__)
-        w_aux_tmp = 0._wp
-        !$ACC LOOP VECTOR REDUCTION(MAX: w_aux_tmp)
-        DO jec = i_startidx,i_endidx
-          w_aux_tmp = MAX(w_aux_tmp, -w(jec,jk,jb), w(jec,jk,jb))
-        ENDDO
-        w_aux(jb,jk) = w_aux_tmp
-#else
         w_aux(jb,jk) = MAXVAL(ABS(w(i_startidx:i_endidx,jk,jb)))
-#endif
       ENDDO
       !$ACC END PARALLEL
     END DO
@@ -773,7 +680,6 @@ CONTAINS
 
 ! At this point vn_aux and w_aux reside on the host.  
 ! Avoid doing MAXVAL with OpenACC -- this is not well supported!
-#ifndef __SX__
 !$OMP DO PRIVATE(jk) ICON_OMP_DEFAULT_SCHEDULE
 
     DO jk = 1, patch%nlev
@@ -782,24 +688,6 @@ CONTAINS
     END DO
 
 !$OMP END DO
-#else
-    vn_aux_lev = 0._wp
-    w_aux_lev  = 0._wp
-!$OMP DO PRIVATE(jb,jk) REDUCTION(max:vn_aux_lev) ICON_OMP_DEFAULT_SCHEDULE
-    DO jb = istartblk_e, iendblk_e
-      DO jk = 1, patch%nlev
-        vn_aux_lev(jk) = MAX(vn_aux_lev(jk),vn_aux(jb,jk))
-      ENDDO
-    ENDDO
-!$OMP END DO
-!$OMP DO PRIVATE(jb,jk) REDUCTION(max:w_aux_lev) ICON_OMP_DEFAULT_SCHEDULE
-    DO jb = istartblk_c, iendblk_c
-      DO jk = 1, patch%nlev
-        w_aux_lev(jk) = MAX(w_aux_lev(jk),w_aux(jb,jk))
-      ENDDO
-    ENDDO
-!$OMP END DO
-#endif
 
 !$OMP END PARALLEL
 

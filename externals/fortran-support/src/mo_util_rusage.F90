@@ -21,11 +21,11 @@ MODULE mo_util_rusage
 
   TYPE, BIND(c) :: timeval
     INTEGER(c_long) :: tv_sec ! seconds
-#ifdef __linux__
-    INTEGER(c_long)  :: tv_usec ! and microseconds
-#else
+
+
+
     INTEGER(c_int)  :: tv_usec ! and microseconds
-#endif
+
   END TYPE timeval
 
   TYPE, BIND(c) :: rusage
@@ -189,11 +189,11 @@ CONTAINS
     END DO
 
     PRINT *, ''
-#ifdef __linux__
-    PRINT *, ' maxrss - Maximum resident set size (kbytes)'
-#else
+
+
+
     PRINT *, ' maxrss - Maximum resident set size (bytes)'
-#endif
+
     PRINT *, ' majflt - Major (requiring I/O) page faults'
     PRINT *, ' minflt - Minor (reclaiming a frame) page faults'
     PRINT *, ' nvcsw  - Voluntary context switches'

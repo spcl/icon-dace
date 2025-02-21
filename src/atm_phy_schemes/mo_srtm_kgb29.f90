@@ -32,12 +32,12 @@
 
 !NEC$ options "-O1"
 !option! -Nv -NO
-#ifdef VPP
-!OCL SCALAR
-#endif
-#ifdef __xlC__
-@PROCESS NOOPTIMIZE
-#endif
+
+
+
+
+
+
 MODULE mo_srtm_kgb29
 PUBLIC :: srtm_kgb29
 CONTAINS

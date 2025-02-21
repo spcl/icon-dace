@@ -201,11 +201,11 @@ CONTAINS
       meteogram_output_config(idom)%lenabled     = lmeteogram_enabled(idom)
       meteogram_output_config(idom)%zprefix      = zprefix(idom)
       meteogram_output_config(idom)%ftype        = ftype(idom)
-#ifdef NOMPI
+
       meteogram_output_config(idom)%ldistributed = .TRUE.
-#else
-      meteogram_output_config(idom)%ldistributed = ldistributed(idom)
-#endif
+
+
+
       meteogram_output_config(idom)%loutput_tiles= loutput_tiles
       meteogram_output_config(idom)%n0_mtgrm     = n0_mtgrm(idom)
       meteogram_output_config(idom)%ninc_mtgrm   = ninc_mtgrm(idom)

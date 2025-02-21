@@ -16,10 +16,32 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
-#ifndef _OPENMP
-#include "consistent_fma.inc"
-#endif
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! For runs that check result consistency we fix the different
+! contractions that the Intel compiler performs on some loops (at
+! least in version 16.0) for the vectorized part and the
+! non-vectorized parts
 !----------------------------
 MODULE mo_sea_ice
   !-------------------------------------------------------------------------
@@ -170,11 +192,9 @@ CONTAINS
     END DO
 !ICON_OMP_END_PARALLEL_DO
 
-#ifndef _OPENMP
     CALL dbg_print('IceConcCh: conc leadcl' ,ice%conc, str_module, 4, in_subset=p_patch%cells%owned)
     CALL dbg_print('IceConcCh: hi   leadcl' ,ice%hi  , str_module, 4, in_subset=p_patch%cells%owned)
     CALL dbg_print('IceConcCh: hs   leadcl' ,ice%hs  , str_module, 4, in_subset=p_patch%cells%owned)
-#endif
 
     ! This is where concentration, and thickness change due to ice melt (we must conserve volume)
     ! A.k.a. lateral melt
@@ -198,11 +218,9 @@ CONTAINS
     END DO
 !ICON_OMP_END_PARALLEL_DO
 
-#ifndef _OPENMP
     CALL dbg_print('IceConcCh: conc latMlt' ,ice%conc, str_module, 4, in_subset=p_patch%cells%owned)
     CALL dbg_print('IceConcCh: hi   latMlt' ,ice%hi  , str_module, 4, in_subset=p_patch%cells%owned)
     CALL dbg_print('IceConcCh: hs   latMlt' ,ice%hs  , str_module, 4, in_subset=p_patch%cells%owned)
-#endif
 
     ! Ice cannot grow thinner than hmin
     ! Changed 27. March

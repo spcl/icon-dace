@@ -827,9 +827,9 @@ CONTAINS
     CHARACTER(len=2)                     :: inclStart_str, inclEnd_str  ! open/closed intervals
 
     INTEGER :: ierr
-#ifdef __INTEL_COMPILER
-    INTEGER :: nrows ! HB : workaround for ifort16.0 weirdness aka bug
-#endif
+
+
+
     TYPE(datetime), POINTER   :: startDate_ptr, endDate_ptr
     TYPE(timedelta), POINTER  :: intvl_ptr
     CHARACTER(LEN=3)          :: enabled_str   ! is the process enabled at all (TRUE/FALSE)
@@ -848,24 +848,11 @@ CONTAINS
     ! table-based output
     CALL initialize_table(table)
     ! the latter is no longer mandatory
-#ifdef __INTEL_COMPILER
-    nrows = 0
-    DO iev=1,UBOUND(phyProcGrp%proc,1)   
-      IF (ASSOCIATED(phyProcGrp%proc(iev)%p)) &
-        & nrows = nrows + 1
-    END DO
-    CALL add_table_column(table, eventNameCol, nrows)
-    CALL add_table_column(table, enabledCol, nrows)
-    CALL add_table_column(table, startDateCol, nrows)
-    CALL add_table_column(table, endDateCol, nrows)
-    CALL add_table_column(table, intvlCol, nrows)
-#else
     CALL add_table_column(table, eventNameCol)
     CALL add_table_column(table, enabledCol)
     CALL add_table_column(table, startDateCol)
     CALL add_table_column(table, endDateCol)
     CALL add_table_column(table, intvlCol)
-#endif
 
 
     ! initialize counter

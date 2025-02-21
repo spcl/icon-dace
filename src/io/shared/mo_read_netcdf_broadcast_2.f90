@@ -14,12 +14,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#define define_fill_target REAL(wp), TARGET, OPTIONAL
-!#define define_fill_target REAL(wp), TARGET, ALLOCATABLE, OPTIONAL
-!#define define_fill_target REAL(wp), POINTER, OPTIONAL
-#define define_fill_target_int INTEGER, TARGET, OPTIONAL
-!#define define_fill_target_int INTEGER, TARGET, ALLOCATABLE, OPTIONAL
-!#define define_fill_target_int INTEGER, POINTER, OPTIONAL
+
+!#define REAL(wp), TARGET, OPTIONAL REAL(wp), TARGET, ALLOCATABLE, OPTIONAL
+!#define REAL(wp), TARGET, OPTIONAL REAL(wp), POINTER, OPTIONAL
+
+!#define INTEGER, TARGET, OPTIONAL INTEGER, TARGET, ALLOCATABLE, OPTIONAL
+!#define INTEGER, TARGET, OPTIONAL INTEGER, POINTER, OPTIONAL
 
 MODULE mo_read_netcdf_broadcast_2
 
@@ -265,7 +265,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:)
 
     INTEGER :: varid, var_type, var_dims
     INTEGER :: var_size(MAX_VAR_DIMS)
@@ -329,7 +329,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:,:)
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: dim_names(:)
     INTEGER, INTENT(IN), OPTIONAL:: start_timestep, end_timestep
 
@@ -434,7 +434,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:,:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:,:,:)
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: dim_names(:)
     INTEGER, INTENT(IN), OPTIONAL:: start_timestep, end_timestep
 
@@ -540,7 +540,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:,:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:,:,:)
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: dim_names(:)
     INTEGER, INTENT(IN), OPTIONAL:: start_extdim1, end_extdim1
 
@@ -639,7 +639,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)              :: file_id
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
-    define_fill_target_int           :: fill_array(:,:)
+    INTEGER, TARGET, OPTIONAL           :: fill_array(:,:)
     INTEGER, INTENT(IN)              :: n_g
     CLASS(t_scatterPattern), POINTER :: scatter_pattern
 
@@ -738,7 +738,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:)
 
     INTEGER :: varid, var_type, var_dims
     INTEGER :: var_size(MAX_VAR_DIMS)
@@ -803,7 +803,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)              :: file_id
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
-    define_fill_target               :: fill_array(:,:)
+    REAL(wp), TARGET, OPTIONAL               :: fill_array(:,:)
     INTEGER, INTENT(IN)              :: n_g
     CLASS(t_scatterPattern), POINTER :: scatter_pattern
 
@@ -921,7 +921,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)              :: file_id
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
-    define_fill_target               :: fill_array(:,:,:)
+    REAL(wp), TARGET, OPTIONAL               :: fill_array(:,:,:)
     INTEGER, INTENT(IN)              :: n_g
     CLASS(t_scatterPattern), POINTER :: scatter_pattern
     INTEGER, INTENT(in), OPTIONAL    :: start_timestep, end_timestep
@@ -949,7 +949,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)                    :: file_id
     CHARACTER(LEN=*), INTENT(IN)           :: variable_name
-    define_fill_target                     :: fill_array(:,:,:)
+    REAL(wp), TARGET, OPTIONAL                     :: fill_array(:,:,:)
     INTEGER, INTENT(IN)                    :: n_g
     CLASS(t_scatterPattern), POINTER       :: scatter_pattern
     INTEGER, INTENT(in), OPTIONAL          :: start_extdim, end_extdim
@@ -1132,7 +1132,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)                    :: file_id
     CHARACTER(LEN=*), INTENT(IN)           :: variable_name
-    define_fill_target_int                 :: fill_array(:,:,:)
+    INTEGER, TARGET, OPTIONAL                 :: fill_array(:,:,:)
     INTEGER, INTENT(IN)                    :: n_g
     CLASS(t_scatterPattern), POINTER       :: scatter_pattern
     INTEGER, INTENT(in), OPTIONAL          :: start_extdim, end_extdim
@@ -1280,7 +1280,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)          :: file_id
     CHARACTER(LEN=*), INTENT(IN) :: variable_name
-    define_fill_target           :: fill_array(:,:,:)
+    REAL(wp), TARGET, OPTIONAL           :: fill_array(:,:,:)
 
     INTEGER :: varid, var_type, var_dims
     INTEGER :: var_size(MAX_VAR_DIMS)
@@ -1353,7 +1353,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)              :: file_id
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
-    define_fill_target               :: fill_array(:,:,:)
+    REAL(wp), TARGET, OPTIONAL               :: fill_array(:,:,:)
     INTEGER, INTENT(IN)              :: n_g
     CLASS(t_scatterPattern), POINTER :: scatter_pattern
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: levelsdim_name
@@ -1467,7 +1467,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)              :: file_id
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
-    define_fill_target               :: fill_array(:,:,:,:)
+    REAL(wp), TARGET, OPTIONAL               :: fill_array(:,:,:,:)
     INTEGER, INTENT(IN)              :: n_g
     CLASS(t_scatterPattern), POINTER :: scatter_pattern
     INTEGER, INTENT(in), OPTIONAL    :: start_timestep, end_timestep
@@ -1502,7 +1502,7 @@ CONTAINS
 
     INTEGER, INTENT(IN)              :: file_id
     CHARACTER(LEN=*), INTENT(IN)     :: variable_name
-    define_fill_target               :: fill_array(:,:,:,:)
+    REAL(wp), TARGET, OPTIONAL               :: fill_array(:,:,:,:)
     INTEGER, INTENT(IN)              :: n_g
     CLASS(t_scatterPattern), POINTER :: scatter_pattern
     INTEGER, INTENT(in), OPTIONAL    :: start_extdim, end_extdim

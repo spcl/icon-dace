@@ -13,14 +13,21 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_ocean_diagnostics
   USE mo_master_control,     ONLY: get_my_process_name
   USE mo_kind,               ONLY: wp, dp, i8
-#ifdef _OPENMP
-  USE omp_lib
-#endif
   USE mo_grid_subset,        ONLY: t_subset_range, get_index_range, t_subset_indexed
   USE mo_grid_tools,         ONLY: get_oriented_edges_from_global_vertices, check_global_indexes
   USE mo_mpi,                ONLY: my_process_is_stdio, p_field_sum, get_my_mpi_work_id, &
@@ -115,11 +122,7 @@ MODULE mo_ocean_diagnostics
 
   INTERFACE calc_moc
 ! 2023-11 dzo-DKRZ: Temporary until the difference in atlantic_moc and global_moc between both functions is solved
-#if defined(__LVECTOR__) && !defined(__LVEC_BITID__)
-    MODULE PROCEDURE calc_moc_hfl_internal_vector
-#else
     MODULE PROCEDURE calc_moc_hfl_internal_scalar
-#endif
   END INTERFACE
 
   TYPE t_oce_section
@@ -1065,7 +1068,6 @@ CONTAINS
     LOGICAL, INTENT(IN), OPTIONAL :: lacc
 
     REAL(wp) :: potential_energy
-#define VerticalDim_Position 2
 
     REAL(wp), ALLOCATABLE :: sum_value(:,:), sum_weight(:,:), total_weight(:), total_sum(:)
     INTEGER :: block, level, start_index, end_index, idx, start_vertical, end_vertical
@@ -1081,17 +1083,15 @@ CONTAINS
 
     no_of_threads = 1
     myThreadNo = 0
-#ifdef _OPENMP
-    no_of_threads = omp_get_max_threads()
-#endif
 
-    allocated_levels = SIZE(w,VerticalDim_Position)
+
+    allocated_levels = SIZE(w,2)
     ALLOCATE( sum_value(allocated_levels, 0:no_of_threads-1), &
       & sum_weight(allocated_levels, 0:no_of_threads-1), &
       & total_weight(allocated_levels), total_sum(allocated_levels) )
 
     start_vertical = 1
-    end_vertical = SIZE(w, VerticalDim_Position)
+    end_vertical = SIZE(w, 2)
 
     IF (start_vertical > end_vertical) &
       & CALL finish(method_name, "start_vertical > end_vertical")
@@ -1102,13 +1102,13 @@ CONTAINS
     !$ACC   CREATE(sum_value, sum_weight, total_sum, total_weight) IF(lzacc)
 
 !ICON_OMP_PARALLEL PRIVATE(myThreadNo)
-#ifdef _OPENMP
-    myThreadNo = omp_get_thread_num()
-#endif
+
+
+
 !ICON_OMP_SINGLE
-#ifdef _OPENMP
-    no_of_threads = OMP_GET_NUM_THREADS()
-#endif
+
+
+
 !ICON_OMP_END_SINGLE NOWAIT
     !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     sum_value(:,  myThreadNo) = 0.0_wp
@@ -1233,7 +1233,7 @@ CONTAINS
     LOGICAL, INTENT(IN), OPTIONAL :: lacc
 
     REAL(wp) :: potential_energy_zstar
-#define VerticalDim_Position 2
+
 
     REAL(wp), ALLOCATABLE :: sum_value(:,:), sum_weight(:,:), total_weight(:), total_sum(:)
     INTEGER :: block, level, start_index, end_index, idx, start_vertical, end_vertical
@@ -1249,17 +1249,17 @@ CONTAINS
 
     no_of_threads = 1
     myThreadNo = 0
-#ifdef _OPENMP
-    no_of_threads = omp_get_max_threads()
-#endif
 
-    allocated_levels = SIZE(w,VerticalDim_Position)
+
+
+
+    allocated_levels = SIZE(w,2)
     ALLOCATE( sum_value(allocated_levels, 0:no_of_threads-1), &
       & sum_weight(allocated_levels, 0:no_of_threads-1), &
       & total_weight(allocated_levels), total_sum(allocated_levels) )
 
     start_vertical = 1
-    end_vertical = SIZE(w, VerticalDim_Position)
+    end_vertical = SIZE(w, 2)
 
     IF (start_vertical > end_vertical) &
       & CALL finish(method_name, "start_vertical > end_vertical")
@@ -1270,13 +1270,13 @@ CONTAINS
     !$ACC   CREATE(sum_value, sum_weight, total_sum, total_weight) IF(lzacc)
 
     !ICON_OMP_PARALLEL PRIVATE(myThreadNo)
-#ifdef _OPENMP
-    myThreadNo = omp_get_thread_num()
-#endif
+
+
+
     !ICON_OMP_SINGLE
-#ifdef _OPENMP
-    no_of_threads = OMP_GET_NUM_THREADS()
-#endif
+
+
+
     !ICON_OMP_END_SINGLE NOWAIT
     !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     sum_value(:,  myThreadNo) = 0.0_wp
@@ -1589,9 +1589,9 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, 'OpenACC version currently not implemented')
-#endif
+
+
+
 
     mpi_comm = MERGE(p_comm_work_test, p_comm_work, p_test_run)
 
@@ -2477,19 +2477,19 @@ CONTAINS
   FUNCTION calc_mixed_layer_depth(vertical_density_gradient,critical_value,min_lev,max_lev,thickness, depth_of_first_layer) &
     & result(mixed_layer_depth)
     !$ACC ROUTINE SEQ
-#if defined(__NVCOMPILER_MAJOR__) && __NVCOMPILER_MAJOR__ <= 21
-    REAL(wp), INTENT(in)  :: vertical_density_gradient(n_zlev)
-#else
+
+
+
     REAL(wp), INTENT(in)  :: vertical_density_gradient(:)
-#endif
+
     REAL(wp), INTENT(in)  :: critical_value
     INTEGER,  INTENT(in)  :: min_lev
     INTEGER,  INTENT(in)  :: max_lev
-#if defined(__NVCOMPILER_MAJOR__) && __NVCOMPILER_MAJOR__ <= 21
-    REAL(wp), INTENT(in)  :: thickness(n_zlev)
-#else
+
+
+
     REAL(wp), INTENT(in)  :: thickness(:)
-#endif
+
     REAL(wp), INTENT(in)  :: depth_of_first_layer
 
     REAL(wp) :: sigh        ,zzz
@@ -2942,13 +2942,13 @@ CONTAINS
     TYPE(t_patch), POINTER                   :: patch_2d
     TYPE(t_subset_range), POINTER            :: owned_cells
 
-#ifdef __LVECTOR__
-    REAL(wp) :: sigh(nproma)
-    REAL(wp) :: masked_vertical_density_gradient
-    REAL(wp) :: delta_h
-    INTEGER :: jk
-    INTEGER :: max_lev
-#endif
+
+
+
+
+
+
+
 
     INTEGER  :: blockNo, jc, start_index, end_index
     LOGICAL  :: lzacc
@@ -2959,7 +2959,7 @@ CONTAINS
     patch_2d => patch_3D%p_patch_2d(1)
     owned_cells => patch_2d%cells%owned
 
-#ifndef __LVECTOR__
+
     ! Non-vector variant
 
     !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index) SCHEDULE(dynamic)
@@ -2982,59 +2982,6 @@ CONTAINS
     !$ACC WAIT(1)
     !ICON_OMP_END_PARALLEL_DO
 
-#else
-    ! Vector variant
-
-    !$ACC DATA CREATE(sigh) IF(lzacc)
-
-    !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, jc, jk, max_lev, &
-    !ICON_OMP   & masked_vertical_density_gradient, delta_h, sigh) SCHEDULE(dynamic)
-    DO blockNo = owned_cells%start_block, owned_cells%end_block
-      CALL get_index_range(owned_cells, blockNo, start_index, end_index)
-
-      ! This diagnostic calculates the mixed layer depth.
-      ! It uses the incremental density increase between two
-      ! levels and substracts it from the initial density criterion (sigcrit)
-      ! and adds the level thickness (zzz) to zmld. This is done till
-      ! the accumulated density increase between the surface and
-      ! layer k is sigcrit or sigh = O, respectively.
-
-      ! stabio(k) = insitu density gradient
-      ! sigh = remaining density difference
-
-      !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      mld(start_index:end_index,blockNo) = patch_3d%p_patch_1d(1)%zlev_m(min_lev)
-      sigh(start_index:end_index) = sigcrit
-
-      max_lev = MAXVAL(patch_3d%p_patch_1d(1)%dolic_c(start_index:end_index,blockNo))
-      !$ACC END KERNELS
-      !$ACC WAIT(1)
-
-      !$ACC PARALLEL LOOP GANG VECTOR COLLAPSE(2) DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      DO jk = min_lev+1, max_lev
-        DO jc = start_index, end_index
-          IF (jk <= patch_3d%p_patch_1d(1)%dolic_c(jc,blockNo)) THEN
-            IF (sigh(jc) > 1.e-6_wp) THEN
-              masked_vertical_density_gradient = MAX(zgrad_rho(jc,jk,blockNo), 0.0_wp)
-              delta_h = MIN( &
-                  & sigh(jc) / (masked_vertical_density_gradient + 1.0E-19_wp), &
-                  & patch_3d%p_patch_1d(1)%prism_center_dist_c(jc,jk,blockNo) &
-                )
-              sigh(jc) = sigh(jc) - delta_h * masked_vertical_density_gradient
-              mld(jc,blockNo) = mld(jc,blockNo) + delta_h
-            ELSE
-              sigh(jc) = 0._wp
-            END IF
-          END IF
-        END DO
-      END DO
-      !$ACC END PARALLEL LOOP
-    END DO
-    !$ACC WAIT(1)
-    !ICON_OMP_END_PARALLEL_DO
-
-    !$ACC END DATA
-#endif
   END SUBROUTINE calc_mld
 
   !>

@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_initicon_utils
@@ -82,9 +92,6 @@ MODULE mo_initicon_utils
   USE mo_upatmo_config,       ONLY: upatmo_config
   USE mo_2mom_mcrph_util,     ONLY: set_qnc, set_qnr, set_qni,   &
     &                               set_qns, set_qng, set_qnh_expPSD_N0const
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
 
   IMPLICIT NONE
@@ -3211,15 +3218,8 @@ MODULE mo_initicon_utils
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
-#ifndef NOMPI
-      IF (num_work_procs > 1) THEN
-        ! Global stats using MPI:
-        mn           = p_min(mn          , comm=p_comm_work)
-        mx           = p_max(mx          , comm=p_comm_work)
-        mm           = p_sum(mm          , comm=p_comm_work)
-        size_field3d = p_sum(size_field3d, comm=p_comm_work)
-      END IF
-#endif
+
+
 
       mm = mm / MAX(size_field3d, 1)
 

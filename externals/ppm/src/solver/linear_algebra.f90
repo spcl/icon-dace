@@ -39,18 +39,18 @@
 !
 !
 !> basic tools from linear algebra
-#include "fc_feature_defs.inc"
+
 MODULE linear_algebra
   USE solver_internal, ONLY: config
   USE ppm_std_type_kinds, ONLY: sp, dp
   USE ppm_extents, ONLY: extent, extent_start, extent_end
-#if defined USE_MPI_MOD
-  USE mpi
-#endif
+
+
+
   IMPLICIT NONE
-#if defined USE_MPI && ! defined USE_MPI_MOD
-  INCLUDE 'mpif.h'
-#endif
+
+
+
 
   PRIVATE
 
@@ -120,64 +120,433 @@ MODULE linear_algebra
 
   PUBLIC :: calc_abs_res, calc_rel_res, arr_dotproduct, global_sum, arr_norm_2
 
-#if defined __GNUC__ && __GNUC__ > 4 \
-  && defined USE_MPI && ! defined USE_MPI_MOD
-  INTERFACE
-    SUBROUTINE mpi_allreduce(sendbuf, recvbuf, count, datatype, op, comm, &
-         ierror)
-      INTEGER, INTENT(in) :: count, datatype, op, comm
-      INTEGER, INTENT(out) :: ierror
-      INTEGER, INTENT(in) :: sendbuf(*)
-      INTEGER, INTENT(inout) :: recvbuf(*)
-!DEC$ ATTRIBUTES NO_ARG_CHECK :: sendbuf, recvbuf
-!GCC$ ATTRIBUTES NO_ARG_CHECK :: sendbuf, recvbuf
-!$PRAGMA IGNORE_TKR sendbuf, recvbuf
-!DIR$ IGNORE_TKR sendbuf, recvbuf
-!IBM* IGNORE_TKR sendbuf, recvbuf
-    END SUBROUTINE mpi_allreduce
-  END INTERFACE
-#endif
 
 CONTAINS
 
-#define PREC sp
-#define PDOT SDOT
-#define PREC_MPI_DT mp_sp
-#define ARR_DOTPRODCUT1 arr_dotproduct1_sp
-#define ARR_DOTPRODCUT2 arr_dotproduct2_sp
-#define CALC_ABS_RES calc_abs_res_sp
-#define CALC_REL_RES calc_rel_res_sp
-#define GLOBAL_SUM global_sum_sp
-#define ARR_NORM_2 arr_norm_2_sp
-#include "linear_algebra_multi.f90"
-#undef PREC
-#undef PDOT
-#undef PREC_MPI_DT
-#undef ARR_DOTPRODCUT1
-#undef ARR_DOTPRODCUT2
-#undef CALC_ABS_RES
-#undef CALC_REL_RES
-#undef GLOBAL_SUM
-#undef ARR_NORM_2
-#define PREC dp
-#define PDOT DDOT
-#define PREC_MPI_DT mp_dp
-#define ARR_DOTPRODCUT1 arr_dotproduct1_dp
-#define ARR_DOTPRODCUT2 arr_dotproduct2_dp
-#define CALC_ABS_RES calc_abs_res_dp
-#define CALC_REL_RES calc_rel_res_dp
-#define GLOBAL_SUM global_sum_dp
-#define ARR_NORM_2 arr_norm_2_dp
-#include "linear_algebra_multi.f90"
-#undef PREC
-#undef PDOT
-#undef PREC_MPI_DT
-#undef ARR_DOTPRODCUT1
-#undef ARR_DOTPRODCUT2
-#undef CALC_ABS_RES
-#undef CALC_REL_RES
-#undef GLOBAL_SUM
-#undef ARR_NORM_2
+!>
+!! @file linear_algebra_multi.f90
+!! @author Florian Wilhelm
+!!
+!! @copyright Copyright  (C)  2010  Florian Wilhelm <Florian.Wilhelm@kit.edu>
+!!
+!! @version 1.0
+!! @author Florian Wilhelm <Florian.Wilhelm@kit.edu>
+!
+! Keywords: scales ppm solver linear algebra residual
+! Maintainer: Florian Wilhelm <Florian.Wilhelm@kit.edu>
+! URL: https://www.dkrz.de/redmine/projects/scales-ppm
+!
+! Redistribution and use in source and binary forms, with or without
+! modification, are  permitted provided that the following conditions are
+! met:
+!
+! Redistributions of source code must retain the above copyright notice,
+! this list of conditions and the following disclaimer.
+!
+! Redistributions in binary form must reproduce the above copyright
+! notice, this list of conditions and the following disclaimer in the
+! documentation and/or other materials provided with the distribution.
+!
+! Neither the name of the DKRZ GmbH nor the names of its contributors
+! may be used to endorse or promote products derived from this software
+! without specific prior written permission.
+!
+! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+! IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+! TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+! PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+! OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+! EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+! PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+! PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+! LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!
+!
+FUNCTION arr_dotproduct1_sp(x, global_opt) RESULT(ans)
+  REAL(sp), INTENT(IN) :: x(:,:)
+  LOGICAL, INTENT(IN), OPTIONAL :: global_opt
+  REAL(sp) :: ans
+  LOGICAL :: global
+
+  IF ( PRESENT(global_opt) ) THEN
+    global = global_opt
+  ELSE
+    global = config%do_exchange
+  ENDIF
+
+  ans = SUM(x**2)
+
+  IF (global) ans = global_sum(ans)
+
+END FUNCTION arr_dotproduct1_sp
+
+!> Array-wise dotproduct for two different matrices
+FUNCTION arr_dotproduct2_sp(x, y, global_opt) RESULT(ans)
+  REAL(sp), INTENT(IN) :: x(:,:), y(:,:)
+  LOGICAL, INTENT(IN), OPTIONAL :: global_opt
+  REAL(sp) :: ans
+  REAL(sp), ALLOCATABLE :: xy(:)
+  LOGICAL :: global
+  INTEGER :: j, je
+  IF ( PRESENT(global_opt) ) THEN
+    global = global_opt
+  ELSE
+    global = config%do_exchange
+  ENDIF
+
+  je = SIZE(x,2)
+
+  ALLOCATE(xy(je))
+
+  DO j=1,je
+    xy(j) = DOT_PRODUCT(x(:,j), y(:,j))
+  ENDDO
+
+  ans = SUM(xy)
+  DEALLOCATE(xy)
+  IF (global) ans = global_sum(ans)
+
+END FUNCTION arr_dotproduct2_sp
+
+! Array-wise 2-norm
+FUNCTION arr_norm_2_sp(x, global_opt) RESULT(ans)
+  REAL(sp), INTENT(IN) :: x(:,:)
+  LOGICAL, INTENT(IN), OPTIONAL :: global_opt
+  REAL(sp) :: ans
+  LOGICAL :: global
+
+  IF ( PRESENT(global_opt) ) THEN
+    global = global_opt
+  ELSE
+    global = config%do_exchange
+  ENDIF
+
+  ans = SQRT(arr_dotproduct(x, global))
+
+END FUNCTION arr_norm_2_sp
+
+! Sums a variable globally up
+FUNCTION global_sum_sp(summand, comm_opt) RESULT(all_sum)
+
+  REAL(sp), INTENT(in) :: summand
+  INTEGER, OPTIONAL, INTENT(in) :: comm_opt
+  REAL(sp) :: all_sum
+  all_sum = summand
+
+END FUNCTION global_sum_sp
+
+! Calculate absolute residual of system
+! If global_opt is .TRUE. then calculate the global absolute residual
+FUNCTION calc_abs_res_sp(A, b, x, ext_x, global_opt) RESULT(abs_res)
+  REAL(sp), INTENT(IN) :: x(:,:)
+  REAL(sp), INTENT(IN) :: b(:,:)
+  TYPE(extent), INTENT(IN) :: ext_x(:)      ! extent of x
+  LOGICAL, INTENT(IN), OPTIONAL :: global_opt
+  REAL(sp), ALLOCATABLE :: r(:,:), Ax(:,:)
+  INTEGER :: ie, je, ib, jb, il, jl
+  REAL(sp) :: abs_res
+  LOGICAL :: global
+
+  INTERFACE
+    SUBROUTINE A(field, res_field)
+      USE ppm_std_type_kinds, ONLY: sp
+      REAL(sp), INTENT(IN) :: field(:,:)
+      REAL(sp), INTENT(OUT) :: res_field(:,:)
+    END SUBROUTINE A
+  END INTERFACE
+
+  IF ( PRESENT(global_opt) ) THEN
+    global = global_opt
+  ELSE
+    global = config%do_exchange
+  ENDIF
+
+  ie = SIZE(x,1)
+  je = SIZE(x,2)
+  ib = extent_start(ext_x(1))
+  jb = extent_start(ext_x(2))
+  il = extent_end(ext_x(1))
+  jl = extent_end(ext_x(2))
+
+  ALLOCATE(r(ie,je), Ax(ie,je))
+
+  CALL A(x, Ax)
+  r(ib:il,jb:jl) = b(ib:il,jb:jl) - Ax(ib:il,jb:jl)
+
+  abs_res = arr_norm_2(r(ib:il,jb:jl), global)
+
+  DEALLOCATE(Ax, r)
+
+END FUNCTION calc_abs_res_sp
+
+! Calculate relative residual of system
+! If global_opt is .TRUE. then calculate the global relative residual
+FUNCTION calc_rel_res_sp(A, b, x, ext_x, global_opt, x0_opt) RESULT(rel_res)
+  REAL(sp), INTENT(IN) :: x(:,:)
+  REAL(sp), INTENT(IN) :: b(:,:)
+  TYPE(extent), INTENT(IN) :: ext_x(:)      ! extent of x
+  LOGICAL, INTENT(IN), OPTIONAL :: global_opt
+  REAL(sp), INTENT(IN), OPTIONAL :: x0_opt(:,:)
+  REAL(sp), ALLOCATABLE :: x0(:,:)
+  INTEGER :: ie, je
+  REAL(sp) :: rel_res, numer, denom
+
+  ! sp suffix (precs) as constant to avoid Preprocessor problems
+  INTEGER, PARAMETER :: precs = sp
+
+  INTERFACE
+    SUBROUTINE A(field, res_field)
+      USE ppm_std_type_kinds, ONLY: sp
+      REAL(sp), INTENT(IN) :: field(:,:)
+      REAL(sp), INTENT(OUT) :: res_field(:,:)
+    END SUBROUTINE A
+  END INTERFACE
+
+  IF ( PRESENT(x0_opt) ) THEN
+    x0 = x0_opt
+  ELSE
+    ie = SIZE(x,1)
+    je = SIZE(x,2)
+    ALLOCATE(x0(ie,je))
+    x0 = 0.0_precs
+  ENDIF
+
+  IF ( PRESENT(global_opt) ) THEN
+    numer = calc_abs_res(A, b, x, ext_x, global_opt)
+    denom = calc_abs_res(A, b, x0, ext_x, global_opt)
+  ELSE
+    numer = calc_abs_res(A, b, x, ext_x)
+    denom = calc_abs_res(A, b, x0, ext_x)
+  ENDIF
+
+  rel_res = numer/denom
+
+  IF (.NOT. PRESENT(x0_opt)) THEN
+    DEALLOCATE(x0)
+  ENDIF
+
+END FUNCTION calc_rel_res_sp
+!
+! Local Variables:
+! mode: f90
+! license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+! license-markup: "doxygen"
+! license-default: "bsd"
+! End:
+!>
+!! @file linear_algebra_multi.f90
+!! @author Florian Wilhelm
+!!
+!! @copyright Copyright  (C)  2010  Florian Wilhelm <Florian.Wilhelm@kit.edu>
+!!
+!! @version 1.0
+!! @author Florian Wilhelm <Florian.Wilhelm@kit.edu>
+!
+! Keywords: scales ppm solver linear algebra residual
+! Maintainer: Florian Wilhelm <Florian.Wilhelm@kit.edu>
+! URL: https://www.dkrz.de/redmine/projects/scales-ppm
+!
+! Redistribution and use in source and binary forms, with or without
+! modification, are  permitted provided that the following conditions are
+! met:
+!
+! Redistributions of source code must retain the above copyright notice,
+! this list of conditions and the following disclaimer.
+!
+! Redistributions in binary form must reproduce the above copyright
+! notice, this list of conditions and the following disclaimer in the
+! documentation and/or other materials provided with the distribution.
+!
+! Neither the name of the DKRZ GmbH nor the names of its contributors
+! may be used to endorse or promote products derived from this software
+! without specific prior written permission.
+!
+! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+! IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+! TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+! PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+! OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+! EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+! PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+! PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+! LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!
+!
+FUNCTION arr_dotproduct1_dp(x, global_opt) RESULT(ans)
+  REAL(dp), INTENT(IN) :: x(:,:)
+  LOGICAL, INTENT(IN), OPTIONAL :: global_opt
+  REAL(dp) :: ans
+  LOGICAL :: global
+
+  IF ( PRESENT(global_opt) ) THEN
+    global = global_opt
+  ELSE
+    global = config%do_exchange
+  ENDIF
+
+  ans = SUM(x**2)
+
+  IF (global) ans = global_sum(ans)
+
+END FUNCTION arr_dotproduct1_dp
+
+!> Array-wise dotproduct for two different matrices
+FUNCTION arr_dotproduct2_dp(x, y, global_opt) RESULT(ans)
+  REAL(dp), INTENT(IN) :: x(:,:), y(:,:)
+  LOGICAL, INTENT(IN), OPTIONAL :: global_opt
+  REAL(dp) :: ans
+  REAL(dp), ALLOCATABLE :: xy(:)
+  LOGICAL :: global
+  INTEGER :: j, je
+  IF ( PRESENT(global_opt) ) THEN
+    global = global_opt
+  ELSE
+    global = config%do_exchange
+  ENDIF
+
+  je = SIZE(x,2)
+
+  ALLOCATE(xy(je))
+
+  DO j=1,je
+    xy(j) = DOT_PRODUCT(x(:,j), y(:,j))
+  ENDDO
+
+  ans = SUM(xy)
+  DEALLOCATE(xy)
+  IF (global) ans = global_sum(ans)
+
+END FUNCTION arr_dotproduct2_dp
+
+! Array-wise 2-norm
+FUNCTION arr_norm_2_dp(x, global_opt) RESULT(ans)
+  REAL(dp), INTENT(IN) :: x(:,:)
+  LOGICAL, INTENT(IN), OPTIONAL :: global_opt
+  REAL(dp) :: ans
+  LOGICAL :: global
+
+  IF ( PRESENT(global_opt) ) THEN
+    global = global_opt
+  ELSE
+    global = config%do_exchange
+  ENDIF
+
+  ans = SQRT(arr_dotproduct(x, global))
+
+END FUNCTION arr_norm_2_dp
+
+! Sums a variable globally up
+FUNCTION global_sum_dp(summand, comm_opt) RESULT(all_sum)
+
+  REAL(dp), INTENT(in) :: summand
+  INTEGER, OPTIONAL, INTENT(in) :: comm_opt
+  REAL(dp) :: all_sum
+  all_sum = summand
+
+END FUNCTION global_sum_dp
+
+! Calculate absolute residual of system
+! If global_opt is .TRUE. then calculate the global absolute residual
+FUNCTION calc_abs_res_dp(A, b, x, ext_x, global_opt) RESULT(abs_res)
+  REAL(dp), INTENT(IN) :: x(:,:)
+  REAL(dp), INTENT(IN) :: b(:,:)
+  TYPE(extent), INTENT(IN) :: ext_x(:)      ! extent of x
+  LOGICAL, INTENT(IN), OPTIONAL :: global_opt
+  REAL(dp), ALLOCATABLE :: r(:,:), Ax(:,:)
+  INTEGER :: ie, je, ib, jb, il, jl
+  REAL(dp) :: abs_res
+  LOGICAL :: global
+
+  INTERFACE
+    SUBROUTINE A(field, res_field)
+      USE ppm_std_type_kinds, ONLY: dp
+      REAL(dp), INTENT(IN) :: field(:,:)
+      REAL(dp), INTENT(OUT) :: res_field(:,:)
+    END SUBROUTINE A
+  END INTERFACE
+
+  IF ( PRESENT(global_opt) ) THEN
+    global = global_opt
+  ELSE
+    global = config%do_exchange
+  ENDIF
+
+  ie = SIZE(x,1)
+  je = SIZE(x,2)
+  ib = extent_start(ext_x(1))
+  jb = extent_start(ext_x(2))
+  il = extent_end(ext_x(1))
+  jl = extent_end(ext_x(2))
+
+  ALLOCATE(r(ie,je), Ax(ie,je))
+
+  CALL A(x, Ax)
+  r(ib:il,jb:jl) = b(ib:il,jb:jl) - Ax(ib:il,jb:jl)
+
+  abs_res = arr_norm_2(r(ib:il,jb:jl), global)
+
+  DEALLOCATE(Ax, r)
+
+END FUNCTION calc_abs_res_dp
+
+! Calculate relative residual of system
+! If global_opt is .TRUE. then calculate the global relative residual
+FUNCTION calc_rel_res_dp(A, b, x, ext_x, global_opt, x0_opt) RESULT(rel_res)
+  REAL(dp), INTENT(IN) :: x(:,:)
+  REAL(dp), INTENT(IN) :: b(:,:)
+  TYPE(extent), INTENT(IN) :: ext_x(:)      ! extent of x
+  LOGICAL, INTENT(IN), OPTIONAL :: global_opt
+  REAL(dp), INTENT(IN), OPTIONAL :: x0_opt(:,:)
+  REAL(dp), ALLOCATABLE :: x0(:,:)
+  INTEGER :: ie, je
+  REAL(dp) :: rel_res, numer, denom
+
+  ! dp suffix (precs) as constant to avoid Preprocessor problems
+  INTEGER, PARAMETER :: precs = dp
+
+  INTERFACE
+    SUBROUTINE A(field, res_field)
+      USE ppm_std_type_kinds, ONLY: dp
+      REAL(dp), INTENT(IN) :: field(:,:)
+      REAL(dp), INTENT(OUT) :: res_field(:,:)
+    END SUBROUTINE A
+  END INTERFACE
+
+  IF ( PRESENT(x0_opt) ) THEN
+    x0 = x0_opt
+  ELSE
+    ie = SIZE(x,1)
+    je = SIZE(x,2)
+    ALLOCATE(x0(ie,je))
+    x0 = 0.0_precs
+  ENDIF
+
+  IF ( PRESENT(global_opt) ) THEN
+    numer = calc_abs_res(A, b, x, ext_x, global_opt)
+    denom = calc_abs_res(A, b, x0, ext_x, global_opt)
+  ELSE
+    numer = calc_abs_res(A, b, x, ext_x)
+    denom = calc_abs_res(A, b, x0, ext_x)
+  ENDIF
+
+  rel_res = numer/denom
+
+  IF (.NOT. PRESENT(x0_opt)) THEN
+    DEALLOCATE(x0)
+  ENDIF
+
+END FUNCTION calc_rel_res_dp
+!
+! Local Variables:
+! mode: f90
+! license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+! license-markup: "doxygen"
+! license-default: "bsd"
+! End:
 
 END MODULE linear_algebra
 !

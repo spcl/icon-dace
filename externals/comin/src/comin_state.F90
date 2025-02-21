@@ -44,8 +44,8 @@ MODULE comin_state
   PUBLIC :: comin_current_get_ep
   PUBLIC :: comin_current_get_domain_id
 
-#include "comin_global.inc"
-#include "comin_version.inc"
+
+
 
   TYPE, PUBLIC :: t_comin_state
 
@@ -93,7 +93,7 @@ MODULE comin_state
     PROCEDURE(comin_host_errhandler_fct), POINTER, NOPASS :: comin_host_finish => NULL()
 
     ! current simulation date-time stamp (ISO 8601)
-    CHARACTER(LEN=MAX_DATETIME_STR_LEN) :: current_datetime
+    CHARACTER(LEN=32) :: current_datetime
 
     INTEGER  :: current_domain_id   = DOMAIN_UNDEFINED
     INTEGER  :: current_ep
@@ -149,7 +149,7 @@ CONTAINS
     ! constants driectly.
 
     IF( .NOT. comin_setup_version_compatible(host_version, &
-         & t_comin_setup_version_info(COMIN_VERSION_MAJOR, COMIN_VERSION_MINOR, COMIN_VERSION_PATCH))) THEN
+         & t_comin_setup_version_info(0, 1, 0))) THEN
        WRITE(0,*) "ERROR: host and plugin using incompatible comin versions"
        ierr = COMIN_ERROR_PLUGIN_INIT_COMIN_VERSION
     END IF

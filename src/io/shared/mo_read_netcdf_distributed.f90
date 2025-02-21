@@ -11,7 +11,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 
 MODULE mo_read_netcdf_distributed
 
@@ -34,9 +44,6 @@ MODULE mo_read_netcdf_distributed
   USE mo_netcdf_errhandler, ONLY: nf
   USE mo_netcdf
   USE mo_read_netcdf_types, ONLY: t_distrib_read_data
-#if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-  USE mpi, ONLY: MPI_INFO_NULL, MPI_UNDEFINED, MPI_Comm_split, MPI_COMM_NULL
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -71,53 +78,19 @@ MODULE mo_read_netcdf_distributed
   ! This one only depends on n_io_processes and io_process_stride, so it is
   ! save to store it in a module variable.
   INTEGER :: parRootRank = -1
-#if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-  INTEGER :: io_comm = MPI_COMM_NULL
-#endif
   LOGICAL :: this_PE_does_IO = .FALSE.
 
 CONTAINS
 
   INTEGER FUNCTION distrib_nf_open(path) RESULT(nfid)
     CHARACTER(*), INTENT(in) :: path
-#if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-    INTEGER              :: ierr, nvars, i
-    INTEGER, ALLOCATABLE :: varids(:)
-    LOGICAL              :: exists
-#endif
+
     CHARACTER(*), PARAMETER :: routine = modname//'::distrib_nf_open'
 
     CALL message (routine, path)
     nfid = -1
     IF (this_PE_does_IO) THEN
-#if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-      ierr = nf_open_par(path, IOR(nf_nowrite, nf_mpiio), io_comm, &
-        & MPI_INFO_NULL, nfid)
-
-      ! We do our own error handling here to give the filename to the user if
-      ! a file does not exist.
-      IF (ierr == nf_noerr) THEN
-        ! Switch all vars to collective. Hopefully this is sufficient.
-        CALL nf(nf_inq_nvars(nfid, nvars), routine)
-        ALLOCATE(varids(nvars))
-        CALL nf(nf_inq_varids(nfid, nvars, varids), routine)
-        DO i = 1,nvars
-          CALL nf(nf_var_par_access(nfid, varids(i), NF_COLLECTIVE), routine)
-        ENDDO
-      ELSE
-        INQUIRE(file=path, exist=exists)
-        IF (.NOT. exists) THEN
-          CALL finish("mo_read_netcdf_distributed", "File "//TRIM(path)//" does not exist.")
-        ELSE
-          ! If file exists just do the usual thing.
-          CALL nf(nf_open(path, nf_nowrite, nfid), routine)
-          CALL message(routine, 'warning: falling back to serial semantics for&
-               & opening netcdf file '//path)
-        ENDIF
-      ENDIF
-#else
       CALL nf(nf_open(path, nf_nowrite, nfid), routine)
-#endif
     END IF
   END FUNCTION distrib_nf_open
 
@@ -149,10 +122,6 @@ CONTAINS
         CALL nf(nf_inq_dimlen(file_id, var_dimids(i), temp_var_dimlen(i)), routine)
       ENDDO
     END IF
-#ifndef NOMPI
-    CALL p_bcast(var_ndims, parRootRank, p_comm_work)
-    CALL p_bcast(temp_var_dimlen(1:var_ndims), parRootRank, p_comm_work)
-#endif
     IF (SIZE(var_dimlen) .LT. var_ndims) &
       CALL finish("distrib_inq_var_dims", &
         &         "array size of argument var_dimlen is too small")
@@ -199,9 +168,6 @@ CONTAINS
 
     SUBROUTINE init_module_vars()
       INTEGER :: rotate, temp_n, temp_stride
-#if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-      INTEGER :: ierr, myColor
-#endif
 
       rotate = MODULO(io_process_rotate, io_stride)
       IF (io_process_stride .GT. 0) THEN
@@ -217,11 +183,6 @@ CONTAINS
       this_PE_does_IO = MOD(p_pe_work, io_stride) == rotate
       parRootRank = MERGE(p_pe_work, 0, this_PE_does_IO)
       parRootRank = p_max(parRootRank, p_comm_work)
-#if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-      myColor = MERGE(1, MPI_UNDEFINED, this_PE_does_IO)
-      IF (io_comm .EQ. MPI_COMM_NULL) &
-        CALL MPI_Comm_split(p_comm_work, myColor, 0, io_comm, ierr)
-#endif
     END SUBROUTINE init_module_vars
 
     INTEGER FUNCTION get_data_idx() RESULT(idx)

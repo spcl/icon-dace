@@ -154,21 +154,6 @@ contains
               ! Fraction of the clear-sky region
               reg_fracs(1,jlev,jcol) = 1.0_jprb - cloud_fraction(jcol,jlev)
 !#define OLD_GAMMA_REGION_BEHAVIOUR 1
-#ifdef OLD_GAMMA_REGION_BEHAVIOUR
-              ! Use previous behaviour (ecRad version 1.1.5 and
-              ! earlier): cloudy fractions are the same and there is
-              ! no minimum optical depth scaling; this tends to lead
-              ! to an overprediction of the reflection from scenes
-              ! with a large fractional standard deviation of optical
-              ! depth.
-              ! Fraction and optical-depth scaling of the lower of the
-              ! two cloudy regions
-              reg_fracs(2,jlev,jcol) = cloud_fraction(jcol,jlev) * 0.5_jprb
-              od_scaling(2,jlev,jcol) = &
-                   &  exp(-frac_std(jcol,jlev)*(1.0_jprb + 0.5_jprb*frac_std(jcol,jlev) &
-                   &                     *(1.0_jprb+0.5_jprb*frac_std(jcol,jlev))))
-
-#else
               ! Improved behaviour.
               ! Fraction and optical-depth scaling of the lower of the
               ! two cloudy regions
@@ -179,7 +164,6 @@ contains
                    &  + (1.0_jprb - MinGammaODScaling) &
                    &    * exp(-frac_std(jcol,jlev)*(1.0_jprb + 0.5_jprb*frac_std(jcol,jlev) &
                    &                     *(1.0_jprb+0.5_jprb*frac_std(jcol,jlev))))
-#endif
               ! Fraction of the upper of the two cloudy regions
               reg_fracs(3,jlev,jcol) = 1.0_jprb-reg_fracs(1,jlev,jcol)-reg_fracs(2,jlev,jcol)
               ! Ensure conservation of the mean optical depth

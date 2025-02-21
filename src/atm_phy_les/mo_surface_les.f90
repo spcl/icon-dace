@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_surface_les
@@ -172,9 +182,6 @@ MODULE mo_surface_les
     !(constant in time) that is used here is fixed to the initial value so that the flux 
     !is fixed in density units. 
     CASE(2)
-#ifdef _OPENACC
-      CALL finish ('mo_surface_les:', 'isrfc_type=2: OpenACC version currently not implemented')
-#endif
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jc,jb,i_startidx,i_endidx,exner,zrough,mwind,z_mc,RIB,rhos, &
@@ -248,9 +255,6 @@ MODULE mo_surface_les
     !(constant in time) that is used here is fixed to the initial value so that the flux 
     !is fixed in density units. 
     CASE(3)
-#ifdef _OPENACC
-      CALL finish ('mo_surface_les:', 'isrfc_type=3: OpenACC version currently not implemented')
-#endif
 
       !Get mean theta and qv at first model level and surface pressure
 
@@ -353,9 +357,6 @@ MODULE mo_surface_les
 
    !Rico case
     CASE(4)
-#ifdef _OPENACC
-      CALL finish ('mo_surface_les:', 'isrfc_type=4: OpenACC version currently not implemented')
-#endif
 
       !RICO case - bulk aerodynamic formulation with fixed exchange coef.
       DO jb = i_startblk,i_endblk
@@ -390,9 +391,8 @@ MODULE mo_surface_les
  
     !Fix SST case
     CASE(5)
-#ifdef _OPENACC
-      CALL finish ('mo_surface_les:', 'isrfc_type=5: OpenACC version currently not implemented')
-#endif
+
+
 
 !   Get roughness length * grav           
     IF(turbdiff_config(jg)%lconst_z0 .AND. turbdiff_config(jg)%const_z0 <= 0._wp)THEN
@@ -477,9 +477,9 @@ MODULE mo_surface_les
     ! Added by Christopher Moseley:
     ! Time varying SST and qv_s case with prescribed roughness length: semi-idealized setups
     CASE(6)
-#ifdef _OPENACC
-      CALL finish ('mo_surface_les:', 'isrfc_type=6: OpenACC version currently not implemented')
-#endif
+
+
+
 
     IF(dt_interval==0._wp)THEN
 
@@ -598,9 +598,9 @@ MODULE mo_surface_les
 
     !Fix SST case
     CASE(7,8,9)
-#ifdef _OPENACC
-      CALL finish ('mo_surface_les:', 'isrfc_type=7,8,9: OpenACC version currently not implemented')
-#endif
+
+
+
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jc,jb,i_startidx,i_endidx,zrough,theta_sfc,mwind,z_mc, &
@@ -697,9 +697,9 @@ MODULE mo_surface_les
 
     !prescribed fluxes aka SCM
     CASE(10)
-#ifdef _OPENACC
-      CALL finish ('mo_surface_les:', 'isrfc_type=10: OpenACC version currently not implemented')
-#endif
+
+
+
     !Fluxes are already setup in mo_sgs_turbulence.f90
      !change sign of surface fluxes
      prm_diag%shfl_s  = - prm_diag%shfl_s
@@ -709,9 +709,9 @@ MODULE mo_surface_les
 
     !No fluxes
     CASE(0)
-#ifdef _OPENACC
-      CALL finish ('mo_surface_les:', 'isrfc_type=0: OpenACC version currently not implemented')
-#endif
+
+
+
 
       prm_diag%shfl_s  = 0._wp
       prm_diag%lhfl_s  = 0._wp 

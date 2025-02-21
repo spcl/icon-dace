@@ -53,11 +53,11 @@ MODULE mo_ocean_tracer_zstar
   PUBLIC :: eliminate_upper_diag
 
   INTERFACE limiter_ocean_zalesak_horz_zstar
-#if defined(__LVECTOR__) && !defined(__LVEC_BITID__)
-    MODULE PROCEDURE limiter_ocean_zalesak_horz_zstar_vector
-#else
+
+
+
     MODULE PROCEDURE limiter_ocean_zalesak_horz_zstar_scalar
-#endif
+
   END INTERFACE
 
 CONTAINS
@@ -162,15 +162,6 @@ CONTAINS
     !$ACC   CREATE(z_fluxdiv_c, z_anti, z_tracer_new_low, z_tracer_max, z_tracer_min) &
     !$ACC   CREATE(r_p, r_m, z_min, z_max, p_p, p_m) IF(lzacc)
 
-#ifdef NAGFOR
-    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    z_tracer_max(:,:,:) = 0.0_wp
-    z_tracer_min(:,:,:) = 0.0_wp
-    r_m(:,:,:)          = 0.0_wp
-    r_p(:,:,:)          = 0.0_wp
-    !$ACC END KERNELS
-    !$ACC WAIT(1)
-#endif
 
     !-----------------------------------------------------------------------
 
@@ -504,15 +495,6 @@ CONTAINS
     !$ACC   CREATE(z_mflx_anti, z_anti, z_tracer_new_low, z_tracer_max, z_tracer_min) &
     !$ACC   CREATE(r_p, r_m, z_tracer_update_horz) IF(lzacc)
 
-#ifdef NAGFOR
-    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    z_tracer_max(:,:,:) = 0.0_wp
-    z_tracer_min(:,:,:) = 0.0_wp
-    r_m(:,:,:)          = 0.0_wp
-    r_p(:,:,:)          = 0.0_wp
-    !$ACC END KERNELS
-    !$ACC WAIT(1)
-#endif
 
     !-----------------------------------------------------------------------
 
@@ -912,14 +894,7 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef NAGFOR
-    inv_prism_thickness(:,:) = 0.0_wp
-    inv_prisms_center_distance(:,:) = 0.0_wp
-#endif
 
-#ifdef __LVECTOR__
-    maxcell = MAXVAL(dolic_c(start_index:end_index,blockNo))
-#endif
 
     !$ACC DATA PRESENT(patch_3d%p_patch_2d(1)%alloc_cell_blocks, patch_3d%p_patch_2d(1)%nblks_e) &
     !$ACC   CREATE(inv_prism_thickness, inv_prisms_center_distance, a, b, c, fact, column_tracer) &
@@ -927,23 +902,13 @@ CONTAINS
     !$ACC   COPY(field_column) IF(lzacc)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-#ifdef __LVECTOR__
-    !$ACC LOOP SEQ
-    DO level=1,maxcell
-      !$ACC LOOP GANG VECTOR PRIVATE(inv_str_c)
-      DO cell_index = start_index, end_index
-        IF (dolic_c(cell_index,blockNo) < 2 .or. dolic_c(cell_index,blockNo) < level) CYCLE ! nothing to diffuse
-#else
     !$ACC LOOP GANG VECTOR PRIVATE(inv_str_c)
     DO cell_index = start_index, end_index
       IF (dolic_c(cell_index,blockNo) < 2) CYCLE ! nothing to diffuse
-#endif
 
       inv_str_c    = 1._wp/stretch_c(cell_index, blockNo)
 
-#ifndef __LVECTOR__
       DO level=1,dolic_c(cell_index,blockNo)
-#endif
         inv_prism_thickness(cell_index,level)        = inv_str_c*inv_prism_thick_c(cell_index,level,blockNo)
         inv_prisms_center_distance(cell_index,level) = inv_str_c*inv_prism_center_dist_c(cell_index,level,blockNo)
 
@@ -969,18 +934,10 @@ CONTAINS
       b(cell_index,1) = 1.0_wp - c(cell_index,1)
     END DO
 
-#ifdef __LVECTOR__
-    !$ACC LOOP SEQ
-    DO level = 2, maxcell-1
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO cell_index = start_index, end_index
-        IF(dolic_c(cell_index,blockNo) < level) CYCLE
-#else
     !$ACC LOOP GANG(STATIC: 1) VECTOR
     DO cell_index = start_index, end_index
       !$ACC LOOP SEQ
       DO level = 2, dolic_c(cell_index,blockNo)-1
-#endif
         a(cell_index,level) = - a_v(cell_index,level,blockNo) * inv_prism_thickness(cell_index,level) &
           & * inv_prisms_center_distance(cell_index,level)*dtime
         c(cell_index,level) = - a_v(cell_index,level+1,blockNo) * inv_prism_thickness(cell_index,level) &
@@ -1004,19 +961,11 @@ CONTAINS
     IF (eliminate_upper_diag) THEN
       ! solve the tridiagonal matrix by eliminating c (the upper diagonal)
 
-# ifdef __LVECTOR__
-      !$ACC LOOP SEQ
-      DO level=maxcell-1,1,-1
-        !$ACC LOOP GANG(STATIC: 1) VECTOR
-        DO cell_index = start_index, end_index
-          IF (dolic_c(cell_index,blockNo) < 2 .or. dolic_c(cell_index,blockNo)-1 < level) CYCLE
-#else
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO cell_index = start_index, end_index
         !$ACC LOOP SEQ
         DO level=dolic_c(cell_index,blockNo)-1,1,-1
           IF (dolic_c(cell_index,blockNo) < 2) CYCLE ! nothing to diffuse
-#endif
 
           fact(cell_index,level) = c(cell_index,level)/b(cell_index,level+1)
           b(cell_index,level) = b(cell_index,level)-a(cell_index,level+1)*fact(cell_index,level)
@@ -1033,19 +982,11 @@ CONTAINS
         field_column(cell_index,1,blockNo) = column_tracer(cell_index,1)/b(cell_index,1)
       END DO
 
-#ifdef __LVECTOR__
-    !$ACC LOOP SEQ
-    DO level=2,maxcell
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO cell_index = start_index, end_index
-        IF (dolic_c(cell_index,blockNo) < 2 .or. dolic_c(cell_index,blockNo) < level) CYCLE
-#else
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO cell_index = start_index, end_index
         !$ACC LOOP SEQ
         DO level=2,dolic_c(cell_index,blockNo)
           IF (dolic_c(cell_index,blockNo) < 2) CYCLE ! nothing to diffuse
-#endif
 
           field_column(cell_index,level,blockNo) = (column_tracer(cell_index,level) - &
             & a(cell_index,level)* field_column(cell_index,level-1,blockNo)) / b(cell_index,level)
@@ -1054,19 +995,11 @@ CONTAINS
     ELSE
       ! solve the tridiagonal matrix by eliminating a (the lower diagonal)
 
-#ifdef __LVECTOR__
-      !$ACC LOOP SEQ
-      DO level=2, maxcell
-        !$ACC LOOP GANG(STATIC: 1) VECTOR
-        DO cell_index = start_index, end_index
-          IF (dolic_c(cell_index,blockNo) < 2 .or. dolic_c(cell_index,blockNo) < level) CYCLE
-#else
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO cell_index = start_index, end_index
         !$ACC LOOP SEQ
         DO level=2, dolic_c(cell_index,blockNo)
           IF (dolic_c(cell_index,blockNo) < 2) CYCLE ! nothing to diffuse
-#endif
           fact(cell_index,level) = a(cell_index,level)/b(cell_index,level-1)
           b(cell_index,level) = b(cell_index,level)-c(cell_index,level-1)*fact(cell_index,level)
           a(cell_index,level) = 0.0_wp
@@ -1083,19 +1016,11 @@ CONTAINS
         field_column(cell_index,level,blockNo) = column_tracer(cell_index,level)/b(cell_index,level)
       END DO
 
-#ifdef __LVECTOR__
-      !$ACC LOOP SEQ
-      DO level=maxcell-1,1,-1
-        !$ACC LOOP GANG(STATIC: 1) VECTOR
-        DO cell_index = start_index, end_index
-          IF (dolic_c(cell_index,blockNo) < 2 .or. dolic_c(cell_index,blockNo)-1 < level) CYCLE
-#else
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO cell_index = start_index, end_index
         !$ACC LOOP SEQ
         DO level=dolic_c(cell_index,blockNo)-1,1,-1
           IF (dolic_c(cell_index,blockNo) < 2) CYCLE ! nothing to diffuse
-#endif
 
           field_column(cell_index,level,blockNo) = (column_tracer(cell_index,level) - &
             & c(cell_index,level)* field_column(cell_index,level+1,blockNo)) / b(cell_index,level)

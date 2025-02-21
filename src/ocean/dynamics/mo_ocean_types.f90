@@ -11,7 +11,133 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !=============================================================================================
 MODULE mo_ocean_types
 
@@ -40,16 +166,16 @@ MODULE mo_ocean_types
   PUBLIC :: t_solverCoeff_singlePrecision
 
   TYPE t_onCells_Pointer_3d_wp
-    onCells :: p  ! pointer to 3D array
+    REAL(wp),  POINTER, DIMENSION(:,:,:) :: p  ! pointer to 3D array
   END TYPE t_onCells_Pointer_3d_wp
   TYPE t_onCells_HalfLevels_Pointer_wp
-    onCells_HalfLevels :: p  ! pointer to 3D array
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: p  ! pointer to 3D array
   END TYPE t_onCells_HalfLevels_Pointer_wp
   TYPE t_onEdges_Pointer_3d_wp
-    onCells :: p  ! pointer to 3D array
+    REAL(wp),  POINTER, DIMENSION(:,:,:) :: p  ! pointer to 3D array
   END TYPE t_onEdges_Pointer_3d_wp
   TYPE t_onEdges_HalfLevels_Pointer_wp
-    onEdges_HalfLevels :: p  ! pointer to 3D array
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: p  ! pointer to 3D array
   END TYPE t_onEdges_HalfLevels_Pointer_wp
   
   !-------------------------------------------------------------------------------
@@ -58,15 +184,15 @@ MODULE mo_ocean_types
     !  these are allocated in a block mode (ie each block allocates its own coefficients)
     !  all dimensions are (nproma, levels),
     !  although not all the levels are actually used
-    onCellsBlock ::  cellHeightRatio_This_toBelow
-    onCellsBlock ::  cellHeightRatio_This_toThisBelow
-    onCellsBlock ::  cellHeight_2xBelow_x_RatioThis_toThisBelow
-    onCellsBlock ::  cellHeightRatio_This_toThisAboveBelow
-    onCellsBlock ::  cellHeightRatio_2xAboveplusThis_toThisBelow
-    onCellsBlock ::  cellHeightRatio_2xBelowplusThis_toThisAbove
-    onCellsBlock ::  cellHeightRatio_ThisAbove_to2xThisplusBelow
-    onCellsBlock ::  cellHeightRatio_ThisBelow_to2xThisplusAbove
-    onCellsBlock ::  cellHeight_inv_ThisAboveBelow2Below
+    REAL(wp),  POINTER, DIMENSION(:,:) ::  cellHeightRatio_This_toBelow
+    REAL(wp),  POINTER, DIMENSION(:,:) ::  cellHeightRatio_This_toThisBelow
+    REAL(wp),  POINTER, DIMENSION(:,:) ::  cellHeight_2xBelow_x_RatioThis_toThisBelow
+    REAL(wp),  POINTER, DIMENSION(:,:) ::  cellHeightRatio_This_toThisAboveBelow
+    REAL(wp),  POINTER, DIMENSION(:,:) ::  cellHeightRatio_2xAboveplusThis_toThisBelow
+    REAL(wp),  POINTER, DIMENSION(:,:) ::  cellHeightRatio_2xBelowplusThis_toThisAbove
+    REAL(wp),  POINTER, DIMENSION(:,:) ::  cellHeightRatio_ThisAbove_to2xThisplusBelow
+    REAL(wp),  POINTER, DIMENSION(:,:) ::  cellHeightRatio_ThisBelow_to2xThisplusAbove
+    REAL(wp),  POINTER, DIMENSION(:,:) ::  cellHeight_inv_ThisAboveBelow2Below
 
   END TYPE t_verticalAdvection_ppm_coefficients
   !-------------------------------------------------------------------------------
@@ -94,14 +220,14 @@ MODULE mo_ocean_types
     !!             vertical information is calculated from this array of
     !!             thicknesses.
     !!             Dimension: n_zlev
-    onGrid_1D :: del_zlev_m
+    REAL(wp), POINTER, DIMENSION(:) :: del_zlev_m
     
     !! zlev_m    : position of the vertical cell centers, i.e. below zero surface;
     !!             Numbering starts from surface and increases downwards to bottom.
     !!             Dimension: n_zlev
     !!             At these surfaces the horizontal velocities, vorticity, divergence
     !!             and scalar variables are evaluated.
-    onGrid_1D :: zlev_m
+    REAL(wp), POINTER, DIMENSION(:) :: zlev_m
     
     
     !! zlev_i    : vertical position of the UPPER BORDER of the vertical cell
@@ -109,12 +235,12 @@ MODULE mo_ocean_types
     !!             Position of first surface is 0.
     !!             Dimension: n_zlvp = n_zlev + 1
     !!             The vertical velocities are evaluated at such surfaces.
-    onGrid_HalfLevels1D :: zlev_i
+    REAL(wp), POINTER, DIMENSION(:) :: zlev_i
     
     !! del_zlev_i: distance between two z-coordinate surfaces. The first is
     !!             the distance from the ocean surface = zlev_m(1)
     !!             Dimension: n_zlev
-    onGrid_1D :: del_zlev_i
+    REAL(wp), POINTER, DIMENSION(:) :: del_zlev_i
     
     
     ! land-sea-mask for ocean has 3 dimensions (the 2nd is the number of
@@ -123,10 +249,10 @@ MODULE mo_ocean_types
     !
     ! land-sea-mask for cell centers
     ! index1=1,nproma, index2=1,n_zlev, index3=1,alloc_cell_blocks
-    onCells_3D_Int :: lsm_c
+    INTEGER, POINTER, DIMENSION(:,:,:) :: lsm_c
     ! land-sea-mask for cell edges
     ! index1=1,nproma, index2=1,n_zlev, index3=1,nblks_e
-    onEdges_3D_Int :: lsm_e
+    INTEGER, POINTER, DIMENSION(:,:,:) :: lsm_e
     ! land-sea-mask for cell vertices
     ! index1=1,nproma, index2=1,n_zlev, index3=1,nblks_v
     ! INTEGER, ALLOCATABLE :: lsm_v(:,:,:)
@@ -140,19 +266,19 @@ MODULE mo_ocean_types
     ! to the number of z-coodinate surfaces.
     
     ! index1=1,nproma, index2=1,alloc_cell_blocks
-    onCells_2D_Int :: dolic_c
+    INTEGER, POINTER, DIMENSION(:,:) :: dolic_c
     ! index1=1,nproma, index2=1,nblks_e
-    onEdges_2D_Int :: dolic_e
+    INTEGER, POINTER, DIMENSION(:,:) :: dolic_e
     
     ! For diagnosis like stream functions and area calculations we add surface arrays
     ! index1=1,nproma, index2=1,alloc_cell_blocks
-    onCells_2D_Int :: basin_c  ! basin information Atlantic/Indian/Pacific
-    onCells_2D_Int :: regio_c  ! area information like tropical Atlantic etc.
+    INTEGER, POINTER, DIMENSION(:,:) :: basin_c  ! basin information Atlantic/Indian/Pacific
+    INTEGER, POINTER, DIMENSION(:,:) :: regio_c  ! area information like tropical Atlantic etc.
     
     ! To simply set land points to zero we store additional 3-dim wet points
     ! dimensions as in lsm_oce:
-    onCells :: wet_c  ! cell centers
-    onEdges :: wet_e  ! cell edges
+    REAL(wp),  POINTER, DIMENSION(:,:,:) :: wet_c  ! cell centers
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: wet_e  ! cell edges
     
   END TYPE t_hydro_ocean_base
   
@@ -160,12 +286,12 @@ MODULE mo_ocean_types
   ! prognostic variables
   TYPE t_hydro_ocean_prog
 
-    onCells_2D :: h
-    onCells_2D :: eta_c !! For z* computations 
-    onCells_2D :: stretch_c !! For z* computations 
+    REAL(wp), POINTER, DIMENSION(:,:) :: h
+    REAL(wp), POINTER, DIMENSION(:,:) :: eta_c !! For z* computations 
+    REAL(wp), POINTER, DIMENSION(:,:) :: stretch_c !! For z* computations 
     
-    onEdges :: vn
-    onCells_tracers :: tracer
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: vn
+    REAL(wp), POINTER, DIMENSION(:,:,:,:) :: tracer
      ! Ordering of tracers:
      !   1) pot_temp:= potential temperature, Unit: [deg C]
      !   2) salinity:= salinity, Unit [psu]
@@ -178,7 +304,7 @@ MODULE mo_ocean_types
 
   TYPE t_hydro_ocean_diag
 
-    onCells ::          &
+    REAL(wp),  POINTER, DIMENSION(:,:,:) ::          &
       & rho            ,& ! density. Unit: [kg/m^3]
       & rhopot         ,& ! potential density. Unit: [kg/m^3]
       & rho_GM         ,& ! potential density. Unit: [kg/m^3]      
@@ -237,7 +363,7 @@ MODULE mo_ocean_types
       & odensitytend
 
 
-    onCells_2D :: &
+    REAL(wp), POINTER, DIMENSION(:,:) :: &
       & thick_c          ,& ! individual fluid column thickness at cells. Unit [m].
       & u_vint           ,& ! barotropic zonal velocity. Unit [m*m/s]
       & v_vint           ,& ! barotropic meridional velocity. Unit [m*m/s]
@@ -283,26 +409,26 @@ MODULE mo_ocean_types
       & atlantic_sltbasin ,& ! northward ocean salt transport atlantic
       & pacific_sltbasin     ! northward ocean salt transport pacific
 
-   onCells_2D :: &
+   REAL(wp), POINTER, DIMENSION(:,:) :: &
       & northernHemisphere ,&
       & southernHemisphere
       
-    onCells_2D :: &
+    REAL(wp), POINTER, DIMENSION(:,:) :: &
       & u_50m,    &
       & v_50m,    &
       & T_50m,    &
       & vort_f_cells_50m
 
-    onCells_Type(t_cartesian_coordinates) :: &
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:) :: &
       & p_vn              ! reconstructed velocity at cell center in cartesian coordinates
       
-    onCells_2D_Type(t_cartesian_coordinates) :: &
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:) :: &
       & p_mass_flux_sfc_cc  ! mass flux at surface in cartesian coordinates
       
-    onCells_HalfLevels_tracers ::        &
+    REAL(wp), POINTER, DIMENSION(:,:,:,:) ::        &
       & GMRedi_flux_vert
 
-    onCells_HalfLevels ::        &
+    REAL(wp), POINTER, DIMENSION(:,:,:) ::        &
       & zgrad_rho      ,& ! vertical density gradient. Unit: [kg/m^2] this is allocated on n_zlev
       & w              ,& ! vertical velocity. Unit [m/s].
       & w_old          ,& ! vertical velocity from previous timestep. Unit [m/s].
@@ -311,10 +437,10 @@ MODULE mo_ocean_types
       & cfl_vert       ,&   ! vertical cfl values
       & w_deriv
 
-    onEdges_tracers :: &
+    REAL(wp), POINTER, DIMENSION(:,:,:,:) :: &
       & GMRedi_flux_horz 
     
-    onEdges :: &
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: &
       & mass_flx_e     ,& ! individual fluid column thickness at cells. Unit [m].
       & ptp_vn         ,& ! normal velocity after mapping P^T P, not used currently
       & vn_pred        ,& ! predicted normal velocity vector at edges.
@@ -332,30 +458,30 @@ MODULE mo_ocean_types
 !       & zlim           ,& ! zalesak limiter factor
       & vn_bolus  
       
-!     onEdges_HalfLevels :: &
+!     REAL(wp), POINTER, DIMENSION(:,:,:) :: &
 !       & w_e            ! vertical velocity at edges. Unit [m/s]
 
-    onVertices :: &
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: &
       & vort            ! vorticity at triangle vertices. Unit [1/s]
       
-    onVertices_2D :: &
+    REAL(wp), POINTER, DIMENSION(:,:) :: &
       & vort_50m,    &     ! vorticity at 20 and 70 meters
       & vort_70m
 
-    onVertices_Type(t_cartesian_coordinates) :: &
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:) :: &
       & p_vn_dual
     
-    onEdges_2D :: &
+    REAL(wp), POINTER, DIMENSION(:,:) :: &
       & h_e              ,& ! surface height at cell edges. Unit [m].
       & thick_e          ! individual fluid column thickness at edges. Unit [m].
     
-    onEdges_2D :: verticallyTotal_mass_flux_e
+    REAL(wp), POINTER, DIMENSION(:,:) :: verticallyTotal_mass_flux_e
     
     TYPE(t_ocean_monitor) :: monitor
 
     ! for the testbed
     !    testbed_div (test_mode: 103-113)
-    onCells :: div_model, div_diff, divPtP, divPtP_diff
+    REAL(wp),  POINTER, DIMENSION(:,:,:) :: div_model, div_diff, divPtP, divPtP_diff
     
   END TYPE t_hydro_ocean_diag
   !-------------------------------------------------------------------------
@@ -366,7 +492,7 @@ MODULE mo_ocean_types
   !
   TYPE t_hydro_ocean_aux
 
-    onEdges :: &
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: &
       & g_n           ,& ! explicit velocity term in Adams-Bashford time marching routines,
                                 ! at timelevel n
       & g_nm1         ,& ! explicit velocity term in Adams-Bashford time marching routines,
@@ -377,18 +503,18 @@ MODULE mo_ocean_types
       & temperature_grad_horz,&  !horizontal temperature gradient                          
       & salinity_grad_horz       !horizontal salinity gradient                                
 
-    onCells_HalfLevels ::   &
+    REAL(wp), POINTER, DIMENSION(:,:,:) ::   &
       & tracer_deriv_vert,&      ! vertical tracer gradient
       & temperature_deriv_vert,& ! vertical temperature gradient
       & salinity_deriv_vert      ! vertical salinity gradient            
 
 
-    onEdges_2D :: &
+    REAL(wp), POINTER, DIMENSION(:,:) :: &
       & bc_bot_vn       ,& ! normal velocity boundary condition at bottom
       & bc_top_vn       ,& ! normal velocity boundary condition at top
       & bc_top_WindStress ! normal velocity boundary condition at surface
 
-    onCells_2D :: &
+    REAL(wp), POINTER, DIMENSION(:,:) :: &
       & bc_top_u        ,& ! zonal velocity boundary condition at surface
       & bc_top_v        ,& ! meridional velocity boundary condition at surface
       & bc_top_w        ,& ! vertical velocity boundary condition at surface
@@ -398,21 +524,21 @@ MODULE mo_ocean_types
       & bc_total_top_potential, &
       & bc_SAL_potential
             
-    onCells_2D_tracers :: &
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: &
       & bc_top_tracer,    &
       & bc_bot_tracer 
       
-    onCells_2D ::       &
+    REAL(wp), POINTER, DIMENSION(:,:) ::       &
       & p_rhs_sfc_eq     ! right hand side of surface equation
       
-    onCells_2D_Type(t_cartesian_coordinates) :: bc_top_veloc_cc
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:) :: bc_top_veloc_cc
     
 !     TYPE(t_pointer_2d_wp), ALLOCATABLE :: bc_top_tracer(:) !< pointer array: one pointer for each tracer boundary condition
 
-    onCells_Type(t_cartesian_coordinates) :: &
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:) :: &
       & slopes              ! neutral slopes at cell center in cartesian coordinates
 
-    onCells :: &
+    REAL(wp),  POINTER, DIMENSION(:,:,:) :: &
       & slopes_squared,   &
       & slopes_drdz,   &
       & slopes_drdx,   & 
@@ -420,7 +546,7 @@ MODULE mo_ocean_types
       & taper_function_2, &
       & diagnose_Redi_flux_vert
       
-    onCells_Type(t_cartesian_coordinates) :: &
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:) :: &
       & PgradTemperature_horz_center,        & ! reconstructed temperature gradient at cell center in cartesian coordinates
       & PgradSalinity_horz_center,           & ! reconstructed salinity gradient at cell center in cartesian coordinates
       & PgradDensity_horz_center,            & ! reconstructed density gradient at cell center in cartesian coordinates      
@@ -428,7 +554,7 @@ MODULE mo_ocean_types
       & diagnose_Redi_flux_sal,              & ! can be removed once diagnostic is no longer necessary
       & PgradTracer_horz_center                ! reconstructed tracer gradient at cell center in cartesian coordinates, for HAMMOC in GMredi
       
-   onCells ::         &
+   REAL(wp),  POINTER, DIMENSION(:,:,:) ::         &
       & DerivTemperature_vert_center, &  
       & DerivSalinity_vert_center,    &
       & DerivDensity_vert_center,     & 
@@ -453,22 +579,22 @@ MODULE mo_ocean_types
 
     ! 1) precomputed 3D-factors for mathematical operators (for efficiency).
     !------------------------------------------------------------------------------
-    mapEdgesToCells    :: div_coeff
-    mapEdgesToVertices :: rot_coeff  
-    onEdges            :: grad_coeff ! this should be revised
-    mapCellsToEdges_2D :: averageCellsToEdges
+    REAL(wp), POINTER, DIMENSION(:,:,:,:)    :: div_coeff
+    REAL(wp), POINTER, DIMENSION(:,:,:,:) :: rot_coeff  
+    REAL(wp), POINTER, DIMENSION(:,:,:)            :: grad_coeff ! this should be revised
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: averageCellsToEdges
     
     !2) Required for description of boundary around a vertex
     !------------------------------------------------------------------------------
-    onVertices_3D_Int :: bnd_edges_per_vertex
-    onVertices_3D_Connectivity :: vertex_bnd_edge_idx  !(nproma,nlev,nblks_v,1:NO_DUAL_EDGES-2)
-    onVertices_3D_Connectivity :: vertex_bnd_edge_blk  !(nproma,nlev,nblks_v,1:NO_DUAL_EDGES-2)
-    onVertices_3D_Connectivity :: boundaryEdge_Coefficient_Index   ! this is an index to the rot_coeff  (nproma,nlev,nblks_v,1:NO_DUAL_EDGES-2)
+    INTEGER, POINTER, DIMENSION(:,:,:) :: bnd_edges_per_vertex
+    INTEGER, POINTER, DIMENSION(:,:,:,:) :: vertex_bnd_edge_idx  !(nproma,nlev,nblks_v,1:NO_DUAL_EDGES-2)
+    INTEGER, POINTER, DIMENSION(:,:,:,:) :: vertex_bnd_edge_blk  !(nproma,nlev,nblks_v,1:NO_DUAL_EDGES-2)
+    INTEGER, POINTER, DIMENSION(:,:,:,:) :: boundaryEdge_Coefficient_Index   ! this is an index to the rot_coeff  (nproma,nlev,nblks_v,1:NO_DUAL_EDGES-2)
 !     REAL(wp),POINTER :: orientation(:,:,:,:)!(nproma,nlev,nblks_v,1:NO_DUAL_EDGES-2)
 
     ! this is a edge-to-one-cell pointer, needs to be rethinked
-!     onEdges_3D_Int :: upwind_cell_idx
-!     onEdges_3D_Int :: upwind_cell_blk
+!     INTEGER, POINTER, DIMENSION(:,:,:) :: upwind_cell_idx
+!     INTEGER, POINTER, DIMENSION(:,:,:) :: upwind_cell_blk
 
     !3) Scalarproduct: The following arrays are required for the reconstruction process.
     !------------------------------------------------------------------------------
@@ -491,54 +617,54 @@ MODULE mo_ocean_types
     ! other choice index2=1,nblks_e, index3=1,2
     ! Eventually switch to other second indexing if this is more appropriate
     ! new constructs for mimetic core:
-    mapEdgesToEdges_3D                         :: edge2edge_viacell_coeff
+    REAL(wp), POINTER, DIMENSION(:,:,:,:)                         :: edge2edge_viacell_coeff
 
 ! Note: the following have the connectivity at the first index
-    mapEdgesToEdges_2D                         :: edge2edge_viacell_coeff_top       ! the same as the top edge2edge_viacell_coeff
-    mapEdgesToEdges_2D                         :: edge2edge_viacell_coeff_integrated! the other levels integrated
-    mapEdgesToEdges_2D                         :: edge2edge_viacell_coeff_all       ! all the levels integrated
+    REAL(wp), POINTER, DIMENSION(:,:,:)                         :: edge2edge_viacell_coeff_top       ! the same as the top edge2edge_viacell_coeff
+    REAL(wp), POINTER, DIMENSION(:,:,:)                         :: edge2edge_viacell_coeff_integrated! the other levels integrated
+    REAL(wp), POINTER, DIMENSION(:,:,:)                         :: edge2edge_viacell_coeff_all       ! all the levels integrated
 
-    mapCellsToCells_2D                         :: lhs_all                ! the left hand side operator coefficients of the height solver
-    onCells_2D_Connectivity                    :: lhs_CellToCell_index   ! connectivity of the above
-    onCells_2D_Connectivity                    :: lhs_CellToCell_block   ! connectivity of the above
+    REAL(wp), POINTER, DIMENSION(:,:,:)                         :: lhs_all                ! the left hand side operator coefficients of the height solver
+    INTEGER, POINTER, DIMENSION(:,:,:)                    :: lhs_CellToCell_index   ! connectivity of the above
+    INTEGER, POINTER, DIMENSION(:,:,:)                    :: lhs_CellToCell_block   ! connectivity of the above
 ! End Note
  
-   mapEdgesToEdges                            :: edge2edge_viavert_coeff
+   REAL(wp), POINTER, DIMENSION(:,:,:,:)                            :: edge2edge_viavert_coeff
 
     !coefficient for surface layer, changes in time, in contrast to other coefficients
 !     TYPE(t_cartesian_coordinates), ALLOCATABLE :: edge2cell_coeff_cc_dyn(:,:,:,:)
     !TYPE(t_cartesian_coordinates), ALLOCATABLE :: edge2vert_coeff_cc_dyn(:,:,:,:)
 
-    mapEdgesToCells_3D_Type(t_cartesian_coordinates)    :: edge2cell_coeff_cc
-    mapEdgesToCells_3D_Type(t_cartesian_coordinates)    :: edge2cell_coeff_cc_t
-    mapEdgesToVertices_3D_Type(t_cartesian_coordinates) :: edge2vert_coeff_cc
-    mapEdgesToVertices_3D_Type(t_cartesian_coordinates) :: edge2vert_coeff_cc_t
-    mapEdgesToVertices_3D_Type(t_cartesian_coordinates) :: edge2vert_vector_cc
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:,:)    :: edge2cell_coeff_cc
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:,:)    :: edge2cell_coeff_cc_t
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:,:) :: edge2vert_coeff_cc
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:,:) :: edge2vert_coeff_cc_t
+    TYPE(t_cartesian_coordinates), POINTER, DIMENSION(:,:,:,:) :: edge2vert_vector_cc
 
-    onCells :: fixed_vol_norm
+    REAL(wp),  POINTER, DIMENSION(:,:,:) :: fixed_vol_norm
 
-    blockList_Type(t_verticalAdvection_ppm_coefficients) :: verticalAdvectionPPMcoeffs
+    TYPE(t_verticalAdvection_ppm_coefficients), POINTER, DIMENSION(:) :: verticalAdvectionPPMcoeffs
 
 !    REAL(wp), POINTER         :: matrix_vert_diff_c(:,:,:,:)
 !    REAL(wp), POINTER         :: matrix_vert_diff_e(:,:,:,:)
 !    TYPE(t_onCells_Pointer_3d_wp),ALLOCATABLE :: matrix_vert_diff_c_ptr(:)
 !    TYPE(t_onCells_Pointer_3d_wp),ALLOCATABLE :: matrix_vert_diff_e_ptr(:)
-    onEdges_3D_Int :: edges_SeaBoundaryLevel ! boundary level based on cells:
+    INTEGER, POINTER, DIMENSION(:,:,:) :: edges_SeaBoundaryLevel ! boundary level based on cells:
                                              ! 1=land, 0=boundary between land and sea, -1=between a boundary sea cell and and sea-cell,...,-99999
-    onCells_3D_Int :: cells_SeaBoundaryLevel ! as above
+    INTEGER, POINTER, DIMENSION(:,:,:) :: cells_SeaBoundaryLevel ! as above
 
   END TYPE t_operator_coeff
     
   
   TYPE t_solverCoeff_singlePrecision
     ! the same as in t_operator_coeff in single precision for using in the solver
-    onEdges_2D_RealPrecision(sp) :: grad_coeff                  ! as in t_operator_coeff for the 1st level
-    mapEdgesToCells_2D_RealPrecision(sp) :: div_coeff                   ! as in t_operator_coeff for the 1st level
+    REAL(sp), POINTER,  DIMENSION(:,:) :: grad_coeff                  ! as in t_operator_coeff for the 1st level
+    REAL(sp), POINTER, DIMENSION(:,:,:) :: div_coeff                   ! as in t_operator_coeff for the 1st level
 
-    mapEdgesToEdges_2D_RealPrecision(sp) :: edge2edge_viacell_coeff_all  ! as in t_operator_coeff
+    REAL(sp), POINTER, DIMENSION(:,:,:) :: edge2edge_viacell_coeff_all  ! as in t_operator_coeff
 
-    onEdges_2D_RealPrecision(sp) :: edge_thickness                ! as t_hydro_ocean_diag thick_e
-    onCells_2D_RealPrecision(sp) :: cell_thickness                ! as t_hydro_ocean_diag thick_c
+    REAL(sp), POINTER,  DIMENSION(:,:) :: edge_thickness                ! as t_hydro_ocean_diag thick_e
+    REAL(sp), POINTER,  DIMENSION(:,:) :: cell_thickness                ! as t_hydro_ocean_diag thick_c
 
   END TYPE t_solverCoeff_singlePrecision
 

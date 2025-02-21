@@ -35,7 +35,7 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_strio_internal
   USE ppm_std_type_kinds, ONLY: i4
   IMPLICIT NONE
@@ -89,7 +89,7 @@ CONTAINS
     IF (PRESENT(ierror)) THEN
       ierror = ierr
     ELSE
-      IF (ierr /= 0) CALL abort_ppm('error in sscana', filename, __LINE__)
+      IF (ierr /= 0) CALL abort_ppm('error in sscana', filename, 92)
     END IF
   END SUBROUTINE sscana
 

@@ -11,7 +11,19 @@
 ! ---------------------------------------------------------------
       MODULE mo_hamocc_output
 
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
 ! icon specific routines for output and restart
       USE mo_master_control,       ONLY: get_my_process_name
@@ -182,7 +194,7 @@
           & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
           & ldims=(/nproma,n_zlev,alloc_cell_blocks,n_bgctra/), &
           & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_prog%tracer)
+    
 
     ! Reference to individual tracer, for I/O
     ALLOCATE(hamocc_state_prog%tracer_ptr(n_bgctra))
@@ -199,7 +211,7 @@
           & ref_idx=isco212, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(isco212)%p)
+    
 
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'alk'//TRIM(var_suffix),        &
@@ -210,7 +222,7 @@
           & ref_idx=ialkali, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(ialkali)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'phosph'//TRIM(var_suffix),        &
@@ -221,7 +233,7 @@
           & ref_idx=iphosph, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(iphosph)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'nitrate'//TRIM(var_suffix),        &
@@ -232,7 +244,7 @@
           & ref_idx=iano3, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(iano3)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'gasnit'//TRIM(var_suffix),        &
@@ -243,7 +255,7 @@
           & ref_idx=igasnit, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(igasnit)%p)
+    
  
     IF (my_process_is_stdio()) CALL message(routine,'phy:'//TRIM(int2string(iphy)))
 
@@ -256,7 +268,7 @@
           & ref_idx=iphy, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(iphy)%p)
+    
 
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'zoo'//TRIM(var_suffix),        &
@@ -267,7 +279,7 @@
           & ref_idx=izoo, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(izoo)%p)
+    
 
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'cyano'//TRIM(var_suffix),        &
@@ -278,7 +290,7 @@
           & ref_idx=icya, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(icya)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'oxygen'//TRIM(var_suffix),        &
@@ -289,7 +301,7 @@
           & ref_idx=ioxygen, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(ioxygen)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'silica'//TRIM(var_suffix),        &
@@ -300,7 +312,7 @@
           & ref_idx=isilica, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(isilica)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'doc'//TRIM(var_suffix),        &
@@ -311,7 +323,7 @@
           & ref_idx=idoc, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(idoc)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'an2o'//TRIM(var_suffix),        &
@@ -322,7 +334,7 @@
           & ref_idx=ian2o, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(ian2o)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'det'//TRIM(var_suffix),        &
@@ -333,7 +345,7 @@
           & ref_idx=idet, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(idet)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'iron'//TRIM(var_suffix),        &
@@ -344,7 +356,7 @@
           & ref_idx=iiron, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(iiron)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'dms'//TRIM(var_suffix),        &
@@ -355,7 +367,7 @@
           & ref_idx=idms, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(idms)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'h2s'//TRIM(var_suffix),        &
@@ -366,7 +378,7 @@
           & ref_idx=ih2s, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(ih2s)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'agesc'//TRIM(var_suffix),        &
@@ -377,7 +389,7 @@
           & ref_idx=iagesc, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(iagesc)%p)
+    
 
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'calc'//TRIM(var_suffix),        &
@@ -388,7 +400,7 @@
           & ref_idx=icalc, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.True.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(icalc)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'opal'//TRIM(var_suffix),        &
@@ -399,7 +411,7 @@
           & ref_idx=iopal, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.True.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(iopal)%p)
+    
  
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'dust'//TRIM(var_suffix),        &
@@ -410,7 +422,7 @@
           & ref_idx=idust, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.True.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(idust)%p)
+    
 
     IF (l_N_cycle) THEN
       
@@ -423,7 +435,7 @@
           & ref_idx=iammo, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach(hamocc_state_prog%tracer_ptr(iammo)%p)
+    
 
     CALL add_ref( hamocc_restart_list, 'tracers'//TRIM(var_suffix),   &
           & 'nitrite'//TRIM(var_suffix),        &
@@ -434,7 +446,7 @@
           & ref_idx=iano2, &
           & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
           & lrestart_cont=.TRUE.,in_group=groups("HAMOCC_BASE"))
-    __acc_attach( hamocc_state_prog%tracer_ptr(iano2)%p)
+    
 
      ENDIF ! l_N_cycle
  
@@ -492,7 +504,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_BASE"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-     __acc_attach(hamocc_state_diag%hi)
+     
 
      CALL add_var(hamocc_restart_list, 'HAMOCC_co3',hamocc_state_diag%co3,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -500,7 +512,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_BASE"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-     __acc_attach(hamocc_state_diag%co3)
+     
 
     CALL message(TRIM(routine), 'construct diagnostic hamocc end')
   END SUBROUTINE 
@@ -1039,7 +1051,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE., lopenacc=.TRUE.)
-   __acc_attach(hamocc_state_tend%npp)
+   
 
    CALL add_var(hamocc_tendency_list, 'HAMOCC_BACFRA',hamocc_state_tend%bacfra,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1047,7 +1059,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE., lopenacc=.TRUE.)
-   __acc_attach(hamocc_state_tend%bacfra)
+   
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_SRED',hamocc_state_tend%remins,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1055,7 +1067,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%remins)
+    
       
     CALL add_var(hamocc_tendency_list, 'HAMOCC_REMIN',hamocc_state_tend%remina,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1063,7 +1075,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%remina)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_DENIT',hamocc_state_tend%reminn,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1071,7 +1083,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%reminn)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_nfix',hamocc_state_tend%nfix,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1079,7 +1091,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%nfix)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_pho_cya',hamocc_state_tend%phoc,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1087,7 +1099,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%phoc)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_cya_loss',hamocc_state_tend%cyloss,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1095,7 +1107,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%cyloss)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_h2obudget',hamocc_state_tend%h2obudget,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1103,7 +1115,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%h2obudget)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_n2budget',hamocc_state_tend%n2budget,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1111,7 +1123,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%n2budget)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_grazing',hamocc_state_tend%graz,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1119,7 +1131,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%graz)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_remin_via_grazer',hamocc_state_tend%graton,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1127,7 +1139,7 @@
       & grib2_var(255, 255, 292, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%graton)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_exudation_phy',hamocc_state_tend%exud,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1135,7 +1147,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE., lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%exud)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_exudation_zoo',hamocc_state_tend%exudz,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1143,7 +1155,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%exudz)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_zoomor',hamocc_state_tend%zoomor,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1151,7 +1163,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%zoomor)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_phymor',hamocc_state_tend%phymor,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1159,7 +1171,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%phymor)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_orginp',hamocc_state_tend%orginp,    &
       & grid_unstructured_cell, za_surface,&
@@ -1167,7 +1179,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%orginp)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_silinp',hamocc_state_tend%silinp,    &
       & grid_unstructured_cell, za_surface,&
@@ -1175,7 +1187,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%silinp)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_calinp',hamocc_state_tend%calinp,    &
       & grid_unstructured_cell, za_surface,&
@@ -1183,7 +1195,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%calinp)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_dms_prod',hamocc_state_tend%dmsprod,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1191,7 +1203,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%dmsprod)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_h2s_prod',hamocc_state_tend%h2sprod,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1199,7 +1211,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%h2sprod)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_h2s_loss',hamocc_state_tend%h2sloss,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1207,7 +1219,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%h2sloss)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_dms_bac',hamocc_state_tend%dmsbac,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1215,7 +1227,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%dmsbac)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_dms_uv',hamocc_state_tend%dmsuv,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1223,7 +1235,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%dmsuv)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_eu_export',hamocc_state_tend%euexp,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1231,7 +1243,7 @@
       & grib2_var(255, 255, 71, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%euexp)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_flim',hamocc_state_tend%flim,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1239,7 +1251,7 @@
       & grib2_var(255, 255, 138, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%flim)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_plim',hamocc_state_tend%plim,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1247,7 +1259,7 @@
       & grib2_var(255, 255, 139, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%plim)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_nlim',hamocc_state_tend%nlim,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1255,7 +1267,7 @@
       & grib2_var(255, 255, 140, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%nlim)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_cTlim',hamocc_state_tend%cTlim,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1263,7 +1275,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%cTlim)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_cLlim',hamocc_state_tend%cLlim,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1271,7 +1283,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%cLlim)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_cPlim',hamocc_state_tend%cPlim,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1279,7 +1291,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%cPlim)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_cFlim',hamocc_state_tend%cFlim,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1287,7 +1299,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%cFlim)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_o2min',hamocc_state_tend%o2min,    &
       & grid_unstructured_cell, za_surface,&
@@ -1296,7 +1308,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%o2min)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_zo2min',hamocc_state_tend%zo2min,    &
       & grid_unstructured_cell, za_surface,&
@@ -1306,7 +1318,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%zo2min)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_dmsflux',hamocc_state_tend%dmsflux,    &
       & grid_unstructured_cell, za_surface,&
@@ -1314,7 +1326,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%dmsflux)
+    
 
     CALL add_var(hamocc_tendency_list, 'co2mr',hamocc_state_tend%co2mr,    &
       & grid_unstructured_cell, za_surface,&
@@ -1322,7 +1334,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%co2mr)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_co2flux',hamocc_state_tend%cflux,    &
       & grid_unstructured_cell, za_surface,&
@@ -1330,7 +1342,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%cflux)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_pco2',hamocc_state_tend%pco2,    &
       & grid_unstructured_cell, za_surface,&
@@ -1338,7 +1350,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%pco2)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_o2flux',hamocc_state_tend%oflux,    &
       & grid_unstructured_cell, za_surface,&
@@ -1346,7 +1358,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%oflux)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_n2flux',hamocc_state_tend%nflux,    &
       & grid_unstructured_cell, za_surface,&
@@ -1354,7 +1366,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%nflux)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_n2oflux',hamocc_state_tend%n2oflux,    &
       & grid_unstructured_cell, za_surface,&
@@ -1362,7 +1374,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%n2oflux)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_nfix_diag',hamocc_state_tend%nfixd,    &
       & grid_unstructured_cell, za_surface,&
@@ -1370,7 +1382,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%nfixd)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_silpro',hamocc_state_tend%silpro,    &
       & grid_unstructured_cell, za_surface,&
@@ -1378,7 +1390,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-   __acc_attach(hamocc_state_tend%silpro)
+   
 
    CALL add_var(hamocc_tendency_list, 'HAMOCC_produs',hamocc_state_tend%produs,    &
       & grid_unstructured_cell, za_surface,&
@@ -1386,7 +1398,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-   __acc_attach(hamocc_state_tend%produs)
+   
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_prcaca',hamocc_state_tend%prcaca,    &
       & grid_unstructured_cell, za_surface,&
@@ -1394,7 +1406,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%prcaca)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_prorca',hamocc_state_tend%prorca,    &
       & grid_unstructured_cell, za_surface,&
@@ -1402,7 +1414,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%prorca)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_coex90',hamocc_state_tend%coex90,    &
       & grid_unstructured_cell, za_surface,&
@@ -1410,7 +1422,7 @@
       & grib2_var(255, 255, 81, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%coex90)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_calex90',hamocc_state_tend%calex90,    &
       & grid_unstructured_cell, za_surface,&
@@ -1418,7 +1430,7 @@
       & grib2_var(255, 255, 78, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%calex90)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_opex90',hamocc_state_tend%opex90,    &
       & grid_unstructured_cell, za_surface,&
@@ -1426,7 +1438,7 @@
       & grib2_var(255, 255, 75, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%opex90)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_coex1000',hamocc_state_tend%coex1000,    &
       & grid_unstructured_cell, za_surface,&
@@ -1434,7 +1446,7 @@
       & grib2_var(255, 255, 82, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%coex1000)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_calex1000',hamocc_state_tend%calex1000,    &
       & grid_unstructured_cell, za_surface,&
@@ -1442,7 +1454,7 @@
       & grib2_var(255, 255, 79, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%calex1000)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_opex1000',hamocc_state_tend%opex1000,    &
       & grid_unstructured_cell, za_surface,&
@@ -1450,7 +1462,7 @@
       & grib2_var(255, 255, 76, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%opex1000)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_coex2000',hamocc_state_tend%coex2000,    &
       & grid_unstructured_cell, za_surface,&
@@ -1458,7 +1470,7 @@
       & grib2_var(255, 255, 83, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%coex2000)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_calex2000',hamocc_state_tend%calex2000,    &
       & grid_unstructured_cell, za_surface,&
@@ -1466,7 +1478,7 @@
       & grib2_var(255, 255, 80, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%calex2000)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_opex2000',hamocc_state_tend%opex2000,    &
       & grid_unstructured_cell, za_surface,&
@@ -1474,7 +1486,7 @@
       & grib2_var(255, 255, 77, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%opex2000)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_delsil',hamocc_state_tend%delsil,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1482,7 +1494,7 @@
       & grib2_var(255, 255, 86, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%delsil)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_delcar',hamocc_state_tend%delcar,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1490,7 +1502,7 @@
       & grib2_var(255, 255, 85, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%delcar)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedflux_dic',hamocc_state_tend%sedflic,    &
       & grid_unstructured_cell, za_surface,&
@@ -1498,7 +1510,7 @@
       & grib2_var(255, 255, 280, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedflic)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedflux_alk',hamocc_state_tend%sedflal,    &
       & grid_unstructured_cell, za_surface,&
@@ -1506,7 +1518,7 @@
       & grib2_var(255, 255, 281, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedflal)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedflux_po4',hamocc_state_tend%sedflph,    &
       & grid_unstructured_cell, za_surface,&
@@ -1514,7 +1526,7 @@
       & grib2_var(255, 255, 282, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedflph)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedflux_o2',hamocc_state_tend%sedflox,    &
       & grid_unstructured_cell, za_surface,&
@@ -1522,7 +1534,7 @@
       & grib2_var(255, 255, 283, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedflox)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedflux_n2',hamocc_state_tend%sedfln2,    &
       & grid_unstructured_cell, za_surface,&
@@ -1530,7 +1542,7 @@
       & grib2_var(255, 255, 284, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedfln2)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedflux_no3',hamocc_state_tend%sedflno3,    &
       & grid_unstructured_cell, za_surface,&
@@ -1538,7 +1550,7 @@
       & grib2_var(255, 255, 285, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedflno3)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedflux_si',hamocc_state_tend%sedflsi,    &
       & grid_unstructured_cell, za_surface,&
@@ -1546,7 +1558,7 @@
       & grib2_var(255, 255, 286, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedflsi)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedflux_fe',hamocc_state_tend%sedflfe,    &
       & grid_unstructured_cell, za_surface,&
@@ -1554,7 +1566,7 @@
       & grib2_var(255, 255, 287, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedflfe)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedflux_h2s',hamocc_state_tend%sedflh2s,    &
       & grid_unstructured_cell, za_surface,&
@@ -1562,7 +1574,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedflh2s)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sed_remino2',hamocc_state_tend%sedro2,    &
       & grid_unstructured_cell, ZA_OCEAN_SEDIMENT,&
@@ -1570,7 +1582,7 @@
       & grib2_var(255, 255, 300, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedro2)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sed_reminn',hamocc_state_tend%sedrn,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1578,7 +1590,7 @@
       & grib2_var(255, 255, 301, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedrn)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sed_remins',hamocc_state_tend%sedrs,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1586,7 +1598,7 @@
       & grib2_var(255, 255, 302, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedrs)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_akb',hamocc_state_tend%akb,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1594,7 +1606,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%akb)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_akw',hamocc_state_tend%akw,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1602,7 +1614,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%akw)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_ak1',hamocc_state_tend%ak1,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1610,7 +1622,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%ak1)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_ak2',hamocc_state_tend%ak2,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1618,7 +1630,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%ak2)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_aksp',hamocc_state_tend%aksp,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1626,7 +1638,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%aksp)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_aksi',hamocc_state_tend%aksi,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1634,7 +1646,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%aksi)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_aks',hamocc_state_tend%aks,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1642,7 +1654,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%aks)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_akf',hamocc_state_tend%akf,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1650,7 +1662,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%akf)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_ak1p',hamocc_state_tend%ak1p,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1658,7 +1670,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%ak1p)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_ak2p',hamocc_state_tend%ak2p,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1666,7 +1678,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%ak2p)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_ak3p',hamocc_state_tend%ak3p,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1674,7 +1686,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%ak3p)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_satoxy',hamocc_state_tend%satoxy,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1682,7 +1694,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%satoxy)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_satn2',hamocc_state_tend%satn2,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1690,7 +1702,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%satn2)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_satn2o',hamocc_state_tend%satn2o,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1698,7 +1710,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%satn2o)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_solco2',hamocc_state_tend%solco2,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1706,7 +1718,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%solco2)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_aou',hamocc_state_tend%aou,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1714,7 +1726,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%aou)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_lysocline',hamocc_state_tend%lysocline, &
       & grid_unstructured_cell, za_surface,&
@@ -1722,7 +1734,7 @@
       & grib2_var(255, 255, 75, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%lysocline)
+    
 
     CALL add_var(hamocc_tendency_list,'HAMOCC_nitinp',hamocc_state_tend%nitrogeninp, &
       & grid_unstructured_cell, za_surface,&
@@ -1730,7 +1742,7 @@
       & grib2_var(255, 255, 75, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.FALSE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%nitrogeninp)
+    
 
     If (i_settling==2) THEN
 
@@ -1740,7 +1752,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.FALSE., lrestart=.FALSE.,lopenacc=.TRUE.)
-     __acc_attach(hamocc_state_tend%wdust)
+     
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_wpoc',hamocc_state_tend%wpoc,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1748,7 +1760,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%wpoc)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_wopal',hamocc_state_tend%wopal,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1756,7 +1768,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.FALSE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%wopal)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_wcal',hamocc_state_tend%wcal,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1764,7 +1776,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.FALSE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%wcal)
+    
     
     END IF
 
@@ -1776,7 +1788,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%gppnh4)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_cyapro',hamocc_state_tend%cyapro,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1784,7 +1796,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%cyapro)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_nh3flux',hamocc_state_tend%nh3flux,    &
       & grid_unstructured_cell, za_surface,&
@@ -1792,7 +1804,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%nh3flux)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_ammox',hamocc_state_tend%ammox,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1800,7 +1812,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%ammox)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_nitox',hamocc_state_tend%nitox,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1808,7 +1820,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%nitox)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_dnrn',hamocc_state_tend%dnrn,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1816,7 +1828,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%dnrn)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_dnra',hamocc_state_tend%dnra,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1824,7 +1836,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%dnra)
+    
 
     CALL add_var(hamocc_tendency_list, 'HAMOCC_anam',hamocc_state_tend%anam,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -1832,7 +1844,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_TEND"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%anam)
+    
 
 
     ! Sediment
@@ -1842,7 +1854,7 @@
       & grib2_var(255, 255, 285, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedflnh4)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedflux_no2',hamocc_state_tend%sedflno2,    &
       & grid_unstructured_cell, za_surface,&
@@ -1850,7 +1862,7 @@
       & grib2_var(255, 255, 285, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedflno2)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sed_ammox',hamocc_state_tend%sedammox,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1858,7 +1870,7 @@
       & grib2_var(255, 255, 302, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedammox)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sed_nitox',hamocc_state_tend%sednitox,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1866,7 +1878,7 @@
       & grib2_var(255, 255, 302, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sednitox)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sed_anam',hamocc_state_tend%sedanam,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1874,7 +1886,7 @@
       & grib2_var(255, 255, 302, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sedanam)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sed_dnrn',hamocc_state_tend%seddnrn,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1882,7 +1894,7 @@
       & grib2_var(255, 255, 302, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%seddnrn)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sed_dnra',hamocc_state_tend%seddnra,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1890,7 +1902,7 @@
       & grib2_var(255, 255, 302, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%seddnra)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sed_nrn2',hamocc_state_tend%sednrn2,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1898,7 +1910,7 @@
       & grib2_var(255, 255, 302, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_tend%sednrn2)
+    
 
     ENDIF ! l_N_cycle
 
@@ -1932,7 +1944,7 @@
       & grib2_var(255, 255, 38, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%so12)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_SED_C12',hamocc_state_sed%sc12,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1940,7 +1952,7 @@
       & grib2_var(255, 255, 41, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%sc12)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_SED_Si',hamocc_state_sed%ssil,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1948,7 +1960,7 @@
       & grib2_var(255, 255, 44, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%ssil)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_SED_clay',hamocc_state_sed%ster,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1956,7 +1968,7 @@
       & grib2_var(255, 255, 45, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%ster)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_DIC',hamocc_state_sed%pwic,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1964,7 +1976,7 @@
       & grib2_var(255, 255, 51, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwic)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_alk',hamocc_state_sed%pwal,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1972,7 +1984,7 @@
       & grib2_var(255, 255, 54, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwal)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_phos',hamocc_state_sed%pwph,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1980,7 +1992,7 @@
       & grib2_var(255, 255, 55, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwph)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_o2',hamocc_state_sed%pwox,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1988,7 +2000,7 @@
       & grib2_var(255, 255, 56, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwox)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_si',hamocc_state_sed%pwsi,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -1996,7 +2008,7 @@
       & grib2_var(255, 255, 59, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwsi)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_fe',hamocc_state_sed%pwfe,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -2004,7 +2016,7 @@
       & grib2_var(255, 255, 60, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwfe)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_n2',hamocc_state_sed%pwn2,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -2012,7 +2024,7 @@
       & grib2_var(255, 255, 57, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwn2)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_no3',hamocc_state_sed%pwno3,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -2020,7 +2032,7 @@
       & grib2_var(255, 255, 58, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwno3)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_h2s',hamocc_state_sed%pwh2s,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -2028,7 +2040,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwh2s)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_n2b',hamocc_state_sed%pwn2b,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -2036,7 +2048,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE., lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwn2b)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_h2ob',hamocc_state_sed%pwh2ob,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -2044,7 +2056,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwh2ob)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_sedhpl',hamocc_state_sed%sedhi,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -2052,7 +2064,7 @@
       & grib2_var(255, 255, 50, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%sedhi)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_BUR_C12org',hamocc_state_sed%bo12,    &
       & grid_unstructured_cell, za_surface,&
@@ -2060,7 +2072,7 @@
       & grib2_var(255, 255, 46, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%bo12)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_BUR_C12',hamocc_state_sed%bc12,    &
       & grid_unstructured_cell, za_surface,&
@@ -2068,7 +2080,7 @@
       & grib2_var(255, 255, 47, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%bc12)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_BUR_clay',hamocc_state_sed%bter,    &
       & grid_unstructured_cell, za_surface,&
@@ -2076,7 +2088,7 @@
       & grib2_var(255, 255, 49, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%bter)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_BUR_si',hamocc_state_sed%bsil,    &
       & grid_unstructured_cell, za_surface,&
@@ -2084,7 +2096,7 @@
       & grib2_var(255, 255, 48, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-   __acc_attach(hamocc_state_sed%bsil)
+   
   
    CALL add_var(hamocc_sediment_list, 'HAMOCC_bolay',hamocc_state_sed%bolay,    &
       & grid_unstructured_cell, za_surface,&
@@ -2092,7 +2104,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-   __acc_attach(hamocc_state_sed%bolay)
+   
 
    CALL add_var(hamocc_sediment_list, 'HAMOCC_kbo',hamocc_state_sed%kbo,    &
       & grid_unstructured_cell, za_surface,&
@@ -2100,7 +2112,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,alloc_cell_blocks/),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%kbo)
+    
 
     IF (l_N_cycle) THEN
 
@@ -2110,7 +2122,7 @@
       & grib2_var(255, 255, 58, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwnh4)
+    
 
     CALL add_var(hamocc_sediment_list, 'HAMOCC_POW_no2',hamocc_state_sed%pwno2,    &
       & grid_unstructured_cell, za_ocean_sediment,&
@@ -2118,7 +2130,7 @@
       & grib2_var(255, 255, 58, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,ks,alloc_cell_blocks/),in_group=groups("HAMOCC_SED"),&
       & loutput=.TRUE., lrestart=.TRUE.,lrestart_cont=.TRUE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_sed%pwno2)
+    
 
     ENDIF ! l_N_cycle
 
@@ -2158,7 +2170,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_AGG"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_agg%avdp)
+    
 
     CALL add_var(hamocc_aggregate_list, 'HAMOCC_avrhop',hamocc_state_agg%avrhop,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -2166,7 +2178,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_AGG"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_agg%avrhop)
+    
 
 !    CALL add_var(hamocc_aggregate_list, 'HAMOCC_avdc',hamocc_state_agg%avdc,    &
 !      & grid_unstructured_cell, za_depth_below_sea,&
@@ -2181,7 +2193,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_AGG"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_agg%sticka)
+    
 
 !    CALL add_var(hamocc_aggregate_list, 'HAMOCC_stickf',hamocc_state_agg%stickf,    &
 !      & grid_unstructured_cell, za_depth_below_sea,&
@@ -2196,7 +2208,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_AGG"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_agg%lmaxagg)
+    
 
     CALL add_var(hamocc_aggregate_list, 'HAMOCC_dfagg',hamocc_state_agg%dfagg,    &
       & grid_unstructured_cell, za_depth_below_sea,&
@@ -2204,7 +2216,7 @@
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("HAMOCC_AGG"),&
       & loutput=.TRUE., lrestart=.FALSE.,lopenacc=.TRUE.)
-    __acc_attach(hamocc_state_agg%dfagg)
+    
 
 !    CALL add_var(hamocc_aggregate_list, 'HAMOCC_bagg',hamocc_state_agg%bagg,    &
 !      & grid_unstructured_cell, za_depth_below_sea,&

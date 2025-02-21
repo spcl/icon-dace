@@ -19,7 +19,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nwp_conv_interface
@@ -213,11 +223,6 @@ CONTAINS
     ! spinup cloud ensemble only during inital slow physics call, and when spinup
     ! is requested via namelist parameter
 
-#ifdef _OPENACC
-    IF (lvv_shallow_deep .OR. lvvcouple) THEN
-       CALL finish('nwp_convection','stochastic convection not ported to GPU')
-    ENDIF
-#endif
     IF (atm_phy_nwp_config(jg)%lstoch_spinup .AND. linit) THEN
        lspinup=.TRUE.
     ELSE
@@ -225,9 +230,6 @@ CONTAINS
     ENDIF
 
     IF (lstoch_expl .or. lstoch_sde .or. lstoch_deep) THEN
-#ifdef _OPENACC
-       CALL finish('nwp_convection','stochastic convection not ported to GPU')
-#endif
        ! initialize stochstic diagnostic variables:
        CALL init(prm_diag%mf_b)
        CALL init(prm_diag%mf_p)
@@ -249,13 +251,11 @@ CONTAINS
     ! compute lfd_con(_max) only if all relevant fields are allocated (non-dummy).
     lcompute_lfd = SIZE(prm_diag%lfd_con_max,1) * SIZE(prm_diag%lfd_con,1) > 0
 
-#ifndef __PGI
 !FIXME: PGI + OpenMP produce deadlock in this loop. Compiler bug suspected
 !$OMP PARALLEL DO PRIVATE(jb,jc,jk,jt,i_startidx,i_endidx,z_omega_p,z_plitot,z_qhfl,z_shfl,z_dtdqv,&
 !$OMP            z_dtdt,z_dtdt_sv,zk850,zk950,u850,u950,v850,v950,wfac,z_ddspeed,&
 !$OMP            iseed,presmean,umean,vmean,qvmean,tempmean,qhfl_avg,shfl_avg,l,jc2,jb2,area_norm, &
 !$OMP            p_pres,p_u,p_v,p_qv,p_temp,p_qhfl_avg,p_shfl_avg,p_cloud_ensemble), ICON_OMP_GUIDED_SCHEDULE
-#endif
 
     DO jb = i_startblk, i_endblk
 
@@ -684,9 +684,9 @@ CONTAINS
 
     ENDDO  ! jb
     !$ACC WAIT(1)
-#ifndef __PGI
+
 !$OMP END PARALLEL DO
-#endif
+
 
     IF ( ALLOCATED( ptr_conv_tracer_tend_comin) ) DEALLOCATE(ptr_conv_tracer_tend_comin)
     IF ( ALLOCATED( ptr_conv_tracer_comin) )      DEALLOCATE(ptr_conv_tracer_comin)

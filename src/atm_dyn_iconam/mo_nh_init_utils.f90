@@ -14,7 +14,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nh_init_utils
@@ -378,13 +388,8 @@ CONTAINS
         CALL get_indices_e(p_patch, jb, i_startblk, nblks_e, &
                            i_startidx, i_endidx, 2)
 
-#ifdef __LOOP_EXCHANGE
-        DO je = i_startidx, i_endidx
-          DO jk = 1, nlev
-#else
         DO jk = 1, nlev
           DO je = i_startidx, i_endidx
-#endif
 
             vn(je,jk,jb) = p_int%c_lin_e(je,1,jb)                                              &
               *(u(iidx(je,jb,1),jk,iblk(je,jb,1))*p_patch%edges%primal_normal_cell(je,jb,1)%v1 &
@@ -618,11 +623,7 @@ CONTAINS
     je = SIZE(exner_pr, 2)
     ke = SIZE(exner_pr, 3)
 !$OMP PARALLEL
-#if (defined(_CRAYFTN) || defined(__INTEL_COMPILER))
-!$OMP DO PRIVATE(i,j,k)
-#else
 !$OMP DO COLLAPSE(3) PRIVATE(i,j,k)
-#endif
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(use_acc)
     !$ACC LOOP GANG VECTOR COLLAPSE(3)
     DO k = 1, ke

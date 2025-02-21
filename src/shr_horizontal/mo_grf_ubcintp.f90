@@ -16,7 +16,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_grf_ubcintp
@@ -35,9 +45,6 @@ USE mo_parallel_config,     ONLY: nproma, cpu_min_nproma
 USE mo_communication,       ONLY: exchange_data_grf
 
 USE mo_grf_intp_data_strc
-#ifdef _OPENACC
-  USE mo_mpi,               ONLY: i_am_accel_node
-#endif
 
 IMPLICIT NONE
 
@@ -257,14 +264,9 @@ SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO jc = nshift+1, nshift+nlen
-      DO jn = 1, nfields
-#else
 !$NEC novector
     DO jn = 1, nfields
       DO jc = nshift+1, nshift+nlen
-#endif
 
         val_ctr(jn,jc) = f3din(iidx(1,jc),jn,iblk(1,jc))
         grad_x(jn,jc) =  &
@@ -316,14 +318,12 @@ SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg)
 
     !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2) PRIVATE(min_expval, max_expval) &
     !$ACC   PRIVATE(limfac1, limfac2, relaxed_minval, relaxed_maxval, limfac1, limfac2, limfac)
-#ifdef __LOOP_EXCHANGE
-    DO jc = nshift+1, nshift+nlen
-      DO jn = 1, nfields
-#else
+
+
 !$NEC novector
     DO jn = 1, nfields
       DO jc = nshift+1, nshift+nlen
-#endif
+
         min_expval = MIN(grad_x(jn,jc)*p_grf%dist_pc2cc_ubc(1,1,jc) + &
                          grad_y(jn,jc)*p_grf%dist_pc2cc_ubc(1,2,jc),  &
                          grad_x(jn,jc)*p_grf%dist_pc2cc_ubc(2,1,jc) + &
@@ -373,14 +373,14 @@ SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg)
 
     IF (l_limit_nneg) THEN
       !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = nshift+1, nshift+nlen
-        DO jn = 1, nfields
-#else
+
+
+
+
 !$NEC novector
       DO jn = 1, nfields
         DO jc = nshift+1, nshift+nlen
-#endif
+
 
           h_aux(jn,jc,1) = MAX(0._wp, val_ctr(jn,jc)    + &
             grad_x(jn,jc)*p_grf%dist_pc2cc_ubc(1,1,jc)  + &
@@ -399,14 +399,14 @@ SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg)
       ENDDO
     ELSE
       !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = nshift+1, nshift+nlen
-        DO jn = 1, nfields
-#else
+
+
+
+
 !$NEC novector
       DO jn = 1, nfields
         DO jc = nshift+1, nshift+nlen
-#endif
+
 
           h_aux(jn,jc,1) = val_ctr(jn,jc)              + &
             grad_x(jn,jc)*p_grf%dist_pc2cc_ubc(1,1,jc) + &

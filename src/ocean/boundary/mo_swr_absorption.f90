@@ -188,17 +188,17 @@ CONTAINS
         heatabb(jc) = 0._wp
       END DO
 
-#ifdef __LVECTOR__
-      !$ACC LOOP SEQ
-      DO level=n_zlev,2,-1
-        !$ACC LOOP GANG VECTOR
-        DO jc =  start_index, end_index
-#else
+
+
+
+
+
+
       !$ACC LOOP GANG VECTOR
       DO jc =  start_index, end_index
         !$ACC LOOP SEQ
         DO level=n_zlev,2,-1
-#endif
+
           heatabb(jc)=heatabb(jc)+swrab(jc,level,blockNo)*heatabs_t(jc)
 
           ! diagnostic for subfurface sw absorbtion
@@ -294,17 +294,17 @@ CONTAINS
         heatabb(jc) = 0._wp
       END DO
 
-#ifdef __LVECTOR__
-      !$ACC LOOP SEQ
-      DO level=n_zlev,2,-1
-        !$ACC LOOP GANG VECTOR
-        DO jc =  start_index, end_index
-#else
+
+
+
+
+
+
       !$ACC LOOP GANG VECTOR
       DO jc =  start_index, end_index
         !$ACC LOOP SEQ
         DO level=n_zlev,2,-1
-#endif
+
           heatabb(jc)=heatabb(jc)+swrab(jc,level,blockNo)*heatabs_t(jc)
 
           ! diagnostic for subfurface sw absorbtion
@@ -371,9 +371,9 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, 'OpenACC version currently not tested/validated')
-#endif
+
+
+
 
     patch_2d => patch_3D%p_patch_2d(1)
     all_cells => patch_2d%cells%all

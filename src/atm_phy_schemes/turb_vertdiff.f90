@@ -20,9 +20,9 @@ MODULE turb_vertdiff
 
 ! Modules used:
 
-#ifdef _OPENMP
-  USE omp_lib,            ONLY: omp_get_thread_num
-#endif
+
+
+
 
 !-------------------------------------------------------------------------------
 ! Parameter for precision
@@ -105,11 +105,11 @@ USE turb_utilities,          ONLY:   &
     zexner
 
 !SCLM---------------------------------------------------------------------------
-#ifdef SCLM
-USE data_1d_global, ONLY : &
-    lsclm, latmflu, i_cal, i_mod, imb, &
-    SHF, LHF
-#endif
+
+
+
+
+
 !SCLM---------------------------------------------------------------------------
 
 !===============================================================================
@@ -145,7 +145,7 @@ CONTAINS
 
 !===============================================================================
 
-#  define err_args
+
 
 SUBROUTINE vertdiff ( &
 !
@@ -172,7 +172,7 @@ SUBROUTINE vertdiff ( &
           qv_conv,                           &
 !
           shfl_s, qvfl_s, umfl_s, vmfl_s     &
-          err_args)
+          )
 
 !-------------------------------------------------------------------------------
 !
@@ -537,19 +537,6 @@ INTEGER :: my_cart_id, my_thrd_id
   dvar(liq)%av  => qc ; dvar(liq)%at => qctens ; dvar(liq)%sv => NULL() ; dvar(liq)%kstart = kstart_cloud
 
 !SCLM --------------------------------------------------------------------------------
-#ifdef SCLM
-      IF (lsclm) THEN
-         IF (SHF%mod(0)%vst.GT.i_cal .AND. SHF%mod(0)%ist.EQ.i_mod) THEN
-            !measured SHF has to be used for forcing:
-            lsfli(tem)=.TRUE.
-         END IF
-         IF (LHF%mod(0)%vst.GT.i_cal .AND. LHF%mod(0)%ist.EQ.i_mod) THEN
-            !measured LHF has to be used for forcing:
-            lsfli(vap)=.TRUE.
-         END IF
-      END IF
-      !Note: the measured SHF and LHF have to be present by shfl_s and qvfl_s!
-#endif
 !SCLM --------------------------------------------------------------------------------
 
   IF (lsfluse) THEN !use explicit heat flux densities at the surface
@@ -607,9 +594,6 @@ INTEGER :: my_cart_id, my_thrd_id
 !--------------------------------------------------
 
 my_cart_id = get_my_global_mpi_id()
-#ifdef _OPENMP
-my_thrd_id = omp_get_thread_num()
-#endif
 
 ! Just do some check printouts:
   IF (ldebug) THEN
@@ -1037,23 +1021,6 @@ enddo
             END IF
 
 !---------------------------------------------------------------------------------------
-#ifdef SCLM
-            IF (lsclm .AND. latmflu) THEN
-               !Berechnung der Enthalpieflussdichten:
-
-               SHF%mod(0)%val=shfl_s(imb)     ; SHF%mod(0)%vst=i_cal
-               LHF%mod(0)%val=qvfl_s(imb)*lh_v; LHF%mod(0)%vst=i_cal
-
-               !Note:
-               !IF ".NOT.latmflu", SHF and LHF either are loaded by the fluxes used for
-               ! the soil budget (lertflu) or they have been loaded above by the explicit 
-               ! SHF and LHF at the surface (lsurflu).
-               !SHF and LHF are positive downward and they may have been corrected with
-               ! vertical integrated correction tendencies.
-               !Thus they always refer to the used flux densities, which are only then equal
-               ! to the explicit surface flux density, if a lower flux condition is used "lsflcnd=.TRUE.".
-            END IF
-#endif
 !SCLM-----------------------------------------------------------------------------------
 
             !Bem: shfl_s und qvfl_s, sowie SHF und LHF sind positiv abwaerts!

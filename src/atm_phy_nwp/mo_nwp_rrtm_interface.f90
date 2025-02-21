@@ -15,12 +15,19 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
-#if defined __xlC__
-@PROCESS SPILL(1058)
-#endif
 MODULE mo_nwp_rrtm_interface
 
   USE mo_atm_phy_nwp_config,   ONLY: atm_phy_nwp_config
@@ -93,9 +100,6 @@ CONTAINS
     REAL(wp), DIMENSION(:),    POINTER :: &
             & ptr_fr_glac => NULL(), ptr_fr_land => NULL()
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: aclcov
-#endif
 
     ! Local scalars:
     INTEGER:: jb
@@ -389,30 +393,6 @@ CONTAINS
         min_qv, min_qc, min_qi, min_cc, max_reff_liq, max_reff_frz, min_reff_liq, min_reff_frz 
 
     REAL(wp), DIMENSION(pt_patch%nlevp1) :: max_lwflx, min_lwflx, max_swtrans, min_swtrans
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: aclcov,dust_tunefac
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_emis_rad,zrg_cosmu0
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_albvisdir,zrg_albnirdir,zrg_albvisdif
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_albnirdif,zrg_albdif,zrg_tsfc,zrg_rtype
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_ktype,zrg_pres_ifc,zlp_pres_ifc,zrg_pres
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_temp,zrg_o3,zrg_tot_cld
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_reff_liq, zrg_reff_frz, zrg_extra_flds, zrg_extra_2D
-!DIR$ ATTRIBUTES ALIGN : 64 :: zlp_tot_cld,zrg_clc,zrg_aeq1,zrg_aeq2,zrg_aeq3
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_aeq4,zrg_aeq5,zrg_aclcov,zrg_lwflxall
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_trsolall,zrg_lwflx_up_sfc,zrg_trsol_up_toa
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_trsol_up_sfc,zrg_trsol_nir_sfc,zrg_trsol_vis_sfc,zrg_trsol_par_sfc
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_fr_nir_sfc_diff,zrg_fr_vis_sfc_diff,zrg_fr_par_sfc_diff
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_trsol_dn_sfc_diff,zrg_trsol_clr_sfc,zrg_lwflx_clr_sfc
-!DIR$ ATTRIBUTES ALIGN : 64 :: max_albvisdir,min_albvisdir,max_albvisdif,min_albvisdif
-!DIR$ ATTRIBUTES ALIGN : 64 :: max_albdif, min_albdif, max_tsfc, min_tsfc,max_psfc, min_psfc
-!DIR$ ATTRIBUTES ALIGN : 64 :: max_lwflx,min_lwflx,max_swtrans,min_swtrans
-!DIR$ ATTRIBUTES ALIGN : 64 :: max_pres_ifc, max_pres, max_temp, max_acdnc
-!DIR$ ATTRIBUTES ALIGN : 64 :: max_qv,max_qc,max_qi,max_cc,min_pres_ifc,min_pres,min_temp,min_acdnc
-!DIR$ ATTRIBUTES ALIGN : 64 :: min_qv, min_qc, min_qi, min_cc
-!DIR$ ATTRIBUTES ALIGN : 64 :: max_reff_liq, max_reff_frz, min_reff_liq, min_reff_frz
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_lwflx_up,zrg_lwflx_dn,zrg_swflx_up,zrg_swflx_dn
-!DIR$ ATTRIBUTES ALIGN : 64 :: zrg_lwflx_up_clr,zrg_lwflx_dn_clr,zrg_swflx_up_clr,zrg_swflx_dn_clr
-#endif
 
     ! Local scalars:
     INTEGER:: jk,jb,jf
@@ -808,10 +788,8 @@ CONTAINS
       ENDIF ! msg_level >= 16
 
 
-#if !defined(__PGI)
 !FIXME: PGI + OpenMP produce deadlock in this loop. Compiler bug suspected
 !ICON_OMP PARALLEL DO PRIVATE(jb,jk,jf,i_startidx,i_endidx) ICON_OMP_GUIDED_SCHEDULE
-#endif
       DO jb = i_startblk, i_endblk
 
         CALL get_indices_c(ptr_pp, jb, i_startblk, i_endblk, &
@@ -867,12 +845,10 @@ CONTAINS
 
 
 
-#if !defined(__PGI)
 !FIXME: PGI + OpenMP produce deadlock in this loop. Compiler bug suspected
 !ICON_OMP PARALLEL DO PRIVATE(jb,jk,i_startidx,i_endidx,dust_tunefac,              &    
 !ICON_OMP              ptr_acdnc, ptr_fr_land,ptr_fr_glac,ptr_reff_qc,ptr_reff_qi) &
 !ICON_OMP ICON_OMP_GUIDED_SCHEDULE
-#endif
       DO jb = i_startblk, i_endblk
 
         CALL get_indices_c(ptr_pp, jb, i_startblk, i_endblk, &

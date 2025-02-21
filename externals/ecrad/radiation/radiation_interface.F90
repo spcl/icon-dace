@@ -572,10 +572,10 @@ contains
       write(nulout,'(a)') 'Reversing arrays to be in order of increasing pressure'
     end if
 
-#ifdef _OPENACC
-    write(nulerr,'(a)') '*** Error: radiation_interface:radiation_reverse not ported to GPU'
-    call radiation_abort()
-#endif
+
+
+
+
 
     ! Allocate reversed arrays
     call thermodynamics_rev%allocate(ncol, nlev)

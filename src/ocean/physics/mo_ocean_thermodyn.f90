@@ -16,8 +16,139 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "iconfor_dsl_definitions.inc"
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_ocean_thermodyn
   !-------------------------------------------------------------------------
@@ -831,9 +962,6 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc .and. (eos_type /= 2)) CALL finish('calculate_density', 'OpenACC version for eos_type /=2 currently not implemented')
-#endif
 
     !For calculate_density_lin_EOS and calculate_density_MPIOM the conversion to in-situ temperature is done
     !internally.
@@ -841,11 +969,7 @@ CONTAINS
     CASE(1)
       CALL calculate_density_linear(patch_3d, tracer, rho)
     CASE(2)
-#ifdef __LVECTOR__
-      CALL calculate_density_mpiom_vec(patch_3d, tracer, rho, lacc=lzacc)
-#else
       CALL calculate_density_mpiom(patch_3d, tracer, rho, lacc=lzacc)
-#endif
     CASE(3)
       CALL calculate_density_jmdwfg06(patch_3d, tracer, rho)
       !CALL calculate_density_JM_EOS(patch_2D, tracer, rho)
@@ -879,9 +1003,6 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc .and. (eos_type /= 2)) CALL finish('calculate_density_zstar', 'OpenACC version for eos_type /=2 currently not implemented')
-#endif
 
     !! FIXME zstar: only mpiom adapted to zstar
     !For calculate_density_lin_EOS and calculate_density_MPIOM the conversion to in-situ temperature is done
@@ -1281,14 +1402,8 @@ CONTAINS
           !! For bottom, use the uniform depth without partial cells
           !! This allows well-balancedness for pressure gradients
           z_p(levels) = patch_3d%p_patch_1d(1)%zlev_m(levels) * OceanReferenceDensity * sitodbar
-#ifdef _OPENACC
-          DO jk = 1, levels
-            rho(jc, jk, jb) = calculate_density_mpiom_onColumn(tracer(jc,jk,jb,1), tracer(jc,jk,jb,2), z_p(jk))
-          END DO
-#else
           rho(jc,1:levels,jb) = calculate_density_mpiom_onColumn( &
             & tracer(jc,1:levels,jb,1),  tracer(jc,1:levels,jb,2), z_p(1:levels))
-#endif
         END DO
         !$ACC END PARALLEL LOOP
       END DO
@@ -1306,14 +1421,8 @@ CONTAINS
           z_p(1:levels - 1) = patch_3d%p_patch_1d(1)%depth_CellMiddle(jc,1:levels - 1,jb) * OceanReferenceDensity * sitodbar
           !! For bottom, use the uniform depth without partial cells
           z_p(levels) = patch_3d%p_patch_1d(1)%zlev_m(levels) * OceanReferenceDensity * sitodbar
-#ifdef _OPENACC
-          DO jk = 1, levels
-            rho(jc, jk, jb) = calculate_density_mpiom_onColumn(tracer(jc,jk,jb,1), salinityReference_column(jk), z_p(jk))
-          END DO
-#else
           rho(jc,1:levels,jb) = calculate_density_mpiom_onColumn( &
              & tracer(jc,1:levels,jb,1),  salinityReference_column(1:levels), z_p(1:levels))
-#endif
         END DO
         !$ACC END PARALLEL LOOP
       END DO
@@ -1471,14 +1580,8 @@ CONTAINS
           z_p(1:levels) = ( stretch_c(jc, jb) * patch_3d%p_patch_1d(1)%depth_CellMiddle(jc,1:levels,jb) &
             & - eta_c(jc, jb) ) &
             & * OceanReferenceDensity * sitodbar
-#ifdef _OPENACC
-          DO jk = 1, levels
-            rho(jc, jk, jb) = calculate_density_mpiom_onColumn(tracer(jc,jk,jb,1), tracer(jc,jk,jb,2), z_p(jk))
-          END DO
-#else
           rho(jc,1:levels,jb) = calculate_density_mpiom_onColumn( &
             & tracer(jc,1:levels,jb,1),  tracer(jc,1:levels,jb,2), z_p(1:levels))
-#endif
         END DO
         !$ACC END PARALLEL LOOP
       END DO
@@ -1496,14 +1599,8 @@ CONTAINS
           z_p(1:levels) = ( stretch_c(jc, jb) * patch_3d%p_patch_1d(1)%depth_CellMiddle(jc,1:levels,jb) &
             & - eta_c(jc, jb) ) &
             & * OceanReferenceDensity * sitodbar
-#ifdef _OPENACC
-          DO jk = 1, levels
-            rho(jc, jk, jb) = calculate_density_mpiom_onColumn(tracer(jc,jk,jb,1), salinityReference_column(jk), z_p(jk))
-          END DO
-#else
           rho(jc,1:levels,jb) = calculate_density_mpiom_onColumn( &
              & tracer(jc,1:levels,jb,1),  salinityReference_column(1:levels), z_p(1:levels))
-#endif
         END DO
         !$ACC END PARALLEL LOOP
       END DO

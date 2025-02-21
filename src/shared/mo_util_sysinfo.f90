@@ -132,66 +132,15 @@ CONTAINS
   !
   ! This should do the same as D. Sternkopf's suggestion:
   !
-  ! grep -B 11 'KernelPageSize:     2048 kB' /proc/$pid/smaps |  \
-  !       grep "^Size:" | awk 'BEGIN{sum=0}{sum+=$2}END{print sum/1024}'  
+  ! grep -B 11 'KernelPageSize:     2048 kB' /proc/$pid/smaps |    !       grep "^Size:" | awk 'BEGIN{sum=0}{sum+=$2}END{print sum/1024}'  
+
   !
   INTEGER FUNCTION get_smaps_sum(filename, opt_ierr)
     CHARACTER(LEN=*),   INTENT(IN)    :: filename   !< source file name.
     INTEGER, INTENT(OUT), OPTIONAL    :: opt_ierr   !< error code (0=SUCCESS).
     CHARACTER(LEN=*), PARAMETER :: routine = modname//"::get_smaps_sum"
-#ifndef _CRAYFTN
+
     CALL finish("get_smaps_sum", "Not implemented!")
-#else
-    ! local variables
-    INTEGER, PARAMETER               :: BUFFER_LEN = 512
-    CHARACTER(LEN=*), PARAMETER      :: KEYWORD1   = "Size:"
-    CHARACTER(LEN=*), PARAMETER      :: KEYWORD2   = "KernelPageSize"
-    INTEGER,          PARAMETER      :: KEYVAL2    = 2048
-
-    CHARACTER(len=BUFFER_LEN)        :: buffer, str1, str2
-    LOGICAL :: l_exist
-    INTEGER :: io_error, iunit, ierr, ival, sum, ival2
-
-    ierr = SUCCESS
-    INQUIRE (FILE=filename, EXIST=l_exist)
-    IF (.NOT.l_exist) THEN
-      ierr = ERROR_FILE_NOT_FOUND
-      IF (PRESENT(opt_ierr))  opt_ierr = ierr
-      RETURN
-    END IF
-
-    ! print input file's contents:
-    iunit = find_next_free_unit(10,100)
-    OPEN(unit=iunit, file=filename, status='old',action='read', iostat=io_error) 
-    IF ( io_error /= 0) THEN
-      ierr = ERROR_FILE_NOT_READABLE
-      IF (PRESENT(opt_ierr))  opt_ierr = ierr
-      RETURN
-    END IF
-
-    sum = 0
-    DO
-      READ (iunit, '(A)', iostat=io_error) buffer
-      IF (io_error /= 0)  EXIT
-
-      ! parse lines with trigger word KEYWORD1
-      IF (buffer(1:LEN(KEYWORD1)) == KEYWORD1) THEN
-        READ (buffer, *) str1, ival, str2
-      END IF
-
-      ! add last value if trigger word KEYWORD2 occurs:
-      IF (buffer(1:LEN(KEYWORD2)) == KEYWORD2) THEN
-        READ (buffer, *) str1, ival2, str2
-        IF (ival2 == KEYVAL2) THEN
-          sum = sum + ival
-        END IF
-      END IF
-    END DO
-
-    CLOSE(iunit) 
-    IF (PRESENT(opt_ierr))  opt_ierr = ierr
-    get_smaps_sum = sum/1024
-#endif
   END FUNCTION get_smaps_sum
 
 
@@ -200,19 +149,7 @@ CONTAINS
   SUBROUTINE wait_idle(wait_sec)
     INTEGER, INTENT(IN) :: wait_sec
     CHARACTER(LEN=*), PARAMETER :: routine = modname//"::wait_idle"
-#ifdef NOMPI
     CALL finish(routine, "Only implemented for parallel setups!")
-#else
-    ! local variables
-    REAL(wp) starttime, elapsed_sec
-    starttime = p_mpi_wtime()
-    LOOP: DO
-      ! Polling loop: Do not use in regions of spacetime exhibiting
-      ! strong gravitational effects, right?
-      elapsed_sec = p_mpi_wtime() - starttime
-      IF (INT(elapsed_sec) > wait_sec)  EXIT LOOP
-    END DO LOOP
-#endif
   END SUBROUTINE wait_idle
 
 

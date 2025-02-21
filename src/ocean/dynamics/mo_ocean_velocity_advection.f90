@@ -14,7 +14,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_ocean_velocity_advection
   !-------------------------------------------------------------------------
@@ -105,9 +115,6 @@ CONTAINS
 
       ELSEIF(NonlinearCoriolis_type==nonlinear_coriolis_primal_grid)THEN
 
-#ifdef _OPENACC
-        IF (lzacc) CALL finish(routine, 'OpenACC version currently for nonlinear_coriolis_primal_grid not implemented')
-#endif
 
         CALL veloc_adv_horz_mimetic_classicCgrid( patch_3D, &
           & vn_old,          &
@@ -117,9 +124,6 @@ CONTAINS
 
       ELSEIF(NonlinearCoriolis_type==no_coriolis)THEN
 
-#ifdef _OPENACC
-        IF (lzacc) CALL finish(routine, 'OpenACC version currently for no_coriolis not implemented')
-#endif
 
         CALL calculate_only_kineticGrad( patch_3D, &
           & vn_old,          &
@@ -131,9 +135,6 @@ CONTAINS
 
     ELSEIF (velocity_advection_form == divergence_form) THEN
 
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(routine, 'OpenACC version currently for divergence_form not implemented')
-#endif
 
       ! notInUse
       CALL veloc_adv_horz_mimetic_div( patch_3D,      &
@@ -173,17 +174,16 @@ CONTAINS
 
     CASE(VerticalAdvection_DivergenceForm)
 
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(routine, 'OpenACC version currently for VerticalAdvection_DivergenceForm not implemented')
-#endif
+
+
 
       CALL veloc_adv_vert_mimetic_div( patch_3D, p_diag,ocean_coefficients, veloc_adv_vert_e)
 
     CASE(VerticalAdvection_RotationalForm)
 
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(routine, 'OpenACC version currently for VerticalAdvection_RotationalForm not implemented')
-#endif
+
+
+
 
       CALL veloc_adv_vert_rot( patch_3D, p_diag,ocean_coefficients, veloc_adv_vert_e)
 

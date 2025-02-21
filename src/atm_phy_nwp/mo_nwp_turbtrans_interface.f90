@@ -21,12 +21,19 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
-#if defined __xlC__
-@PROCESS SPILL(988)
-#endif
 MODULE mo_nwp_turbtrans_interface
 
   USE mo_kind,                 ONLY: wp
@@ -66,10 +73,6 @@ MODULE mo_nwp_turbtrans_interface
   USE mo_fortran_tools,        ONLY: set_acc_host_or_device
 
 
-#ifdef ICON_USE_CUDA_GRAPH
-  USE openacc, ONLY: accgraph, accx_begin_capture, accx_end_capture, accx_graph_exec
-  USE, INTRINSIC :: iso_c_binding
-#endif
 
   IMPLICIT NONE
 
@@ -80,17 +83,14 @@ MODULE mo_nwp_turbtrans_interface
   PUBLIC  ::  nwp_turbtrans
 
 
-#ifdef ICON_USE_CUDA_GRAPH
-  TYPE(accgraph) :: graphs(max_dom*2)
-  TYPE(c_ptr) :: lnd_prog_new_cache(max_dom*2) = C_NULL_PTR
-  LOGICAL :: graph_captured
-  INTEGER :: cur_graph_id, ig
-  LOGICAL, PARAMETER :: multi_queue_processing = .TRUE.
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
+
+
+
+
+
   LOGICAL, PARAMETER :: multi_queue_processing = .FALSE.
   LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
+
   INTEGER :: acc_async_queue = 1
 
 CONTAINS
@@ -194,46 +194,6 @@ SUBROUTINE nwp_turbtrans  ( tcall_turb_jg,                     & !>in
   ! domain
   jg = p_patch%id
 
-#ifdef ICON_USE_CUDA_GRAPH
-  IF (lzacc) THEN
-    cur_graph_id = -1
-    DO ig=1,max_dom*2
-      IF (C_LOC(lnd_prog_new) == lnd_prog_new_cache(ig)) THEN
-        cur_graph_id = ig
-        graph_captured = .TRUE.
-        EXIT
-      END IF
-    END DO
-
-    IF (cur_graph_id < 0) THEN
-      DO ig=1,max_dom*2
-        IF (lnd_prog_new_cache(ig) == C_NULL_PTR) THEN
-          cur_graph_id = ig
-          lnd_prog_new_cache(ig) = C_LOC(lnd_prog_new)
-          graph_captured = .FALSE.
-          EXIT
-        END IF
-      END DO
-    END IF
-
-    IF (cur_graph_id < 0) THEN
-      CALL finish('mo_nwp_turbtrans_interface: ', 'error trying to allocate CUDA graph')
-    END IF
-
-    IF (graph_captured) THEN
-      WRITE(message_text,'(a,i2)') 'executing CUDA graph id ', cur_graph_id
-      IF (msg_level >= 14) CALL message('mo_nwp_turbtrans_interface: ', message_text)
-      CALL accx_graph_exec(graphs(cur_graph_id), 1)
-      !$ACC WAIT(1)
-      IF (timers_level > 9) CALL timer_stop(timer_nwp_turbtrans)
-      RETURN
-    ELSE
-      WRITE(message_text,'(a,i2)') 'starting to capture CUDA graph, id ', cur_graph_id
-      IF (msg_level >= 13) CALL message('mo_nwp_turbtrans_interface: ', message_text)
-      CALL accx_begin_capture(1)
-    END IF
-  END IF
-#endif
 
   !$ACC DATA PRESENT(p_patch, p_metrics, ext_data, p_prog, p_prog_rcf, p_diag) &
   !$ACC   PRESENT(prm_diag, prm_nwp_tend, wtr_prog_new, lnd_prog_new, lnd_diag) &
@@ -399,9 +359,6 @@ SUBROUTINE nwp_turbtrans  ( tcall_turb_jg,                     & !>in
 
     IF ( ltestcase .AND. l_scm_mode .AND. lzacc .AND. &   !lzacc false in init  step
       &  ((scm_sfc_mom .GE. 1) .OR. (scm_sfc_temp .GE. 1) .OR. (scm_sfc_qv .GE. 1)) ) THEN
-#ifdef _OPENACC
-      CALL finish( TRIM(routine),'set_scm_bnd is not supported with OpenACC.')
-#endif
       CALL set_scm_bnd( nvec=nproma, ivstart=i_startidx, ivend=i_endidx,   &
           & u_s          = p_diag%u(:,nlev,jb),                            & !in
           & v_s          = p_diag%v(:,nlev,jb),                            & !in
@@ -567,17 +524,13 @@ SUBROUTINE nwp_turbtrans  ( tcall_turb_jg,                     & !>in
           !$ACC   CREATE(urb_isa_t, sai_t, t_g_t, qv_s_t, i_count) &
           !$ACC   ASYNC(acc_async_queue) IF(lzacc)
 
-#ifndef _OPENACC
           IF (jt == 1) THEN
-#endif
           !$ACC KERNELS DEFAULT(PRESENT) ASYNC(acc_async_queue) IF(lzacc)
           fr_land_t(:)  = 1._wp
           depth_lk_t(:) = 0._wp
           h_ice_t(:)    = 0._wp
           !$ACC END KERNELS
-#ifndef _OPENACC
           END IF
-#endif
 
           IF (jt <= ntiles_total) THEN ! land tile points
             !$ACC KERNELS DEFAULT(PRESENT) ASYNC(acc_async_queue) IF(lzacc)
@@ -634,9 +587,7 @@ SUBROUTINE nwp_turbtrans  ( tcall_turb_jg,                     & !>in
             CALL finish( TRIM(routine),'wrong value of ntiles_total + ntiles_water')
           ENDIF
 
-#ifndef _OPENACC
           IF (i_count == 0) CYCLE ! skip loop if the index list for the given tile is empty
-#endif
 
           ! Copy input fields to the local re-indexed variables
           ! It remains to be determined which of the model levels are actually needed for non-init calls
@@ -825,9 +776,7 @@ SUBROUTINE nwp_turbtrans  ( tcall_turb_jg,                     & !>in
             ilist => ext_data%atm%list_seaice%idx(:,jb)
           ENDIF
 
-#ifndef _OPENACC
           IF (i_count == 0) CYCLE ! skip loop if the index list for the given tile is empty
-#endif
 
 !$NEC ivdep
           !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
@@ -1058,14 +1007,6 @@ SUBROUTINE nwp_turbtrans  ( tcall_turb_jg,                     & !>in
 
   !$ACC END DATA
 
-#ifdef ICON_USE_CUDA_GRAPH
-    IF (lzacc) THEN
-      CALL accx_end_capture(graphs(cur_graph_id), 1)
-      WRITE(message_text,'(a,i2,a)') 'finished to capture CUDA graph, id ', cur_graph_id, ', now executing it'
-      IF (msg_level >= 13) CALL message('mo_nwp_turbtrans_interface: ', message_text)
-      CALL accx_graph_exec(graphs(cur_graph_id), 1)
-    END IF
-#endif
 
   !$ACC WAIT(1)
   IF (timers_level > 9) CALL timer_stop(timer_nwp_turbtrans)

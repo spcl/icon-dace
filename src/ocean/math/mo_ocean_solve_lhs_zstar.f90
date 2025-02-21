@@ -51,9 +51,9 @@ MODULE mo_surface_height_lhs_zstar
         TYPE(t_solverCoeff_singlePrecision), POINTER :: op_coeffs_sp => NULL()
         REAL(wp), ALLOCATABLE, DIMENSION(:,:), PRIVATE :: z_grad_h_wp, z_e_wp
         REAL(wp), ALLOCATABLE, DIMENSION(:,:), PRIVATE :: stretch_e 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_grad_h_wp, z_e_wp
-#endif
+
+
+
       CONTAINS
         PROCEDURE :: lhs_wp => lhs_surface_height_zstar
         PROCEDURE :: construct => lhs_surface_height_construct
@@ -120,9 +120,9 @@ MODULE mo_surface_height_lhs_zstar
 
         CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-        IF (lzacc) CALL finish("lhs_surface_height_zstar()", "OpenACC version not implemented yet")
-#endif
+
+
+
 
         IF (this%use_shortcut) &
           & CALL finish("t_surface_height_lhs::lhs_surface_height_wp", &

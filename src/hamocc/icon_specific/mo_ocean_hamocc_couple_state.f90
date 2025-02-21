@@ -10,7 +10,134 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !=============================================================================================
 MODULE mo_ocean_hamocc_couple_state
 
@@ -49,30 +176,30 @@ MODULE mo_ocean_hamocc_couple_state
   
   !----------------------------------------------
   TYPE t_ocean_to_hamocc_state
-    onCells_2D :: top_dilution_coeff
-    onCells_2D :: h_old
-    onCells_2D :: h_new
-    onCells_2D :: h_old_withIce
-    onCells_2D :: ice_concentration_sum
+    REAL(wp), POINTER, DIMENSION(:,:) :: top_dilution_coeff
+    REAL(wp), POINTER, DIMENSION(:,:) :: h_old
+    REAL(wp), POINTER, DIMENSION(:,:) :: h_new
+    REAL(wp), POINTER, DIMENSION(:,:) :: h_old_withIce
+    REAL(wp), POINTER, DIMENSION(:,:) :: ice_concentration_sum
     
-    onCells    :: temperature
-    onCells    :: salinity
-    onCells    :: press_hyd   ! (agg)
+    REAL(wp),  POINTER, DIMENSION(:,:,:)    :: temperature
+    REAL(wp),  POINTER, DIMENSION(:,:,:)    :: salinity
+    REAL(wp),  POINTER, DIMENSION(:,:,:)    :: press_hyd   ! (agg)
 
     ! get the from the ocean the salinity diffusion coefficients
-    onEdges            :: hor_diffusion_coeff ! this is actually constant, needs to be initialized, not communicated
-    onCells_HalfLevels :: ver_diffusion_coeff
+    REAL(wp), POINTER, DIMENSION(:,:,:)            :: hor_diffusion_coeff ! this is actually constant, needs to be initialized, not communicated
+    REAL(wp), POINTER, DIMENSION(:,:,:) :: ver_diffusion_coeff
     
     ! thiese are actually from the atmosphere, but for the moment we will keep them here
-    onCells_2D :: short_wave_flux
-    onCells_2D :: wind10m
-    onCells_2D :: co2_mixing_ratio   
+    REAL(wp), POINTER, DIMENSION(:,:) :: short_wave_flux
+    REAL(wp), POINTER, DIMENSION(:,:) :: wind10m
+    REAL(wp), POINTER, DIMENSION(:,:) :: co2_mixing_ratio   
 
     ! thses are for the zstar
-!     onCells_2D :: eta_c  not used
-    onCells_2D :: stretch_c
-    onCells_2D :: stretch_c_new
-    onCells_2D :: draftave
+!     REAL(wp), POINTER, DIMENSION(:,:) :: eta_c  not used
+    REAL(wp), POINTER, DIMENSION(:,:) :: stretch_c
+    REAL(wp), POINTER, DIMENSION(:,:) :: stretch_c_new
+    REAL(wp), POINTER, DIMENSION(:,:) :: draftave
 
   END TYPE t_ocean_to_hamocc_state
   !-------------------------_state---------------------
@@ -81,9 +208,9 @@ MODULE mo_ocean_hamocc_couple_state
   TYPE t_hamocc_to_ocean_state
   
    ! this is actually to the atmosphere, but for the moment we keep it here
-   onCells_2D :: co2_flux
+   REAL(wp), POINTER, DIMENSION(:,:) :: co2_flux
 
-   onCells ::  swr_fraction 
+   REAL(wp),  POINTER, DIMENSION(:,:,:) ::  swr_fraction 
     
   END TYPE t_hamocc_to_ocean_state
   !----------------------------------------------

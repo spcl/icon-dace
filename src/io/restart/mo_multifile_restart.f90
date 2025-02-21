@@ -297,19 +297,6 @@ CONTAINS
       REAL(KIND=dp) :: timing
 
       CALL rArgs%construct(this_datetime, jstep, me%modelType, opt_output_jfile)
-#ifndef NOMPI
-      IF(isAsync()) THEN
-        IF (timers_level >= 7) CALL timer_start(timer_write_restart_wait)
-        CALL pmsg%pack(kWriteRestartOp)
-        CALL rArgs%packer(kPackOp, pmsg)
-        IF (my_process_is_mpi_workroot()) timing = p_mpi_wtime()
-        CALL pmsg%bcast(restartBcastRoot(), p_comm_work_2_restart)
-        IF (timers_level >= 7) CALL timer_stop(timer_write_restart_wait)
-        IF (my_process_is_mpi_workroot()) &
-          & CALL message(routine, 'compute procs waited ' // &
-            & TRIM(real2string(p_mpi_wtime() - timing))//' sec for dedicated restart procs to be ready...')
-      END IF
-#endif
     END SUBROUTINE createRestartArgs_compute
   END SUBROUTINE multifileRestartDescriptor_writeRestart
 
@@ -367,26 +354,6 @@ CONTAINS
       END DO
     END IF
     IF(iAmRestartMaster()) CALL createMultifileRestartLink(filename, TRIM(restartArgs%modelType))
-#ifndef NOMPI
-    IF(.NOT.(isAsync().AND.my_process_is_work())) THEN
-      IF(timers_level >= 7) CALL timer_start(timer_write_restart_wait)
-      IF(my_process_is_restart()) THEN
-        !dedicated proc mode: restart processes
-        totBWritten = p_reduce(bWritten, mpi_sum, 0, p_comm_work)
-      ELSE
-        !joint proc mode: all processes
-        totBWritten = p_reduce(bWritten, mpi_sum, 0, p_comm_work_restart)
-      END IF
-      IF(timers_level >= 7) CALL timer_stop(timer_write_restart_wait)
-      dpTime = p_mpi_wtime() - dpTime
-      IF(iAmRestartMaster()) THEN
-        gbWritten = REAL(totBWritten, dp)/1024.0_dp/1024.0_dp/1024.0_dp
-        CALL message(routine, "restart: finished: " // TRIM(real2string(gbWritten)) // &
-          & "GB of data in " // TRIM(real2string(dpTime)) // "s (" // &
-          & TRIM(real2string(gbWritten/dpTime)) // "GB/s)", all_print=.true.)
-      END IF
-    END IF
-#endif
   CONTAINS
 
     SUBROUTINE writeAttributeFile()
@@ -423,9 +390,6 @@ CONTAINS
          END DO
       END IF
       IF(my_process_is_work()) CALL packedMessage%bcast(0, p_comm_work)
-#ifndef NOMPI
-      IF(isAsync()) CALL packedMessage%bcast(restartBcastRoot(), p_comm_work_2_restart)
-#endif
       DO i = 1, SIZE(me%mPatchData)
          CALL me%mPatchData(i)%description%packer(kUnpackOp, packedMessage)
       END DO
@@ -451,70 +415,12 @@ CONTAINS
       CHARACTER(*), PARAMETER :: routine = modname//":sendStopToRestart"
       REAL(KIND=dp) :: timing
 
-#ifndef NOMPI
-      IF(.NOT.isAsync()) RETURN
-      IF(timers_level >= 7) CALL timer_start(timer_write_restart_wait)
-      CALL pmsg%pack(kShutdownOp)
-      IF(my_process_is_mpi_workroot()) timing = p_mpi_wtime()
-      CALL pmsg%bcast(restartBcastRoot(), p_comm_work_2_restart)
-      IF(timers_level >= 7) CALL timer_stop(timer_write_restart_wait)
-      IF(my_process_is_mpi_workroot()) THEN
-        timing = p_mpi_wtime() - timing
-        CALL message(routine, 'compute procs waited ' // TRIM(real2string(timing)) // &
-                              ' sec for dedicated restart procs to finish...')
-      END IF
-#endif
     END SUBROUTINE sendStopToRestart
   END SUBROUTINE multifileRestartDescriptor_destruct
 
   ! This IS ONLY called on dedicated restart writers. It's an event
   ! loop that's driven by the messages from the compute processes.
   SUBROUTINE multifileRestart_mainLoop()
-#ifndef NOMPI
-    TYPE(t_MultifileRestartDescriptor) :: restartDescriptor
-    INTEGER :: op_code
-    TYPE(t_restart_args) :: rArgs
-    CHARACTER(*), PARAMETER :: routine = modname//":multifileRestart_mainLoop"
-    LOGICAL :: atService
-
-    IF(.NOT.my_process_is_restart()) CALL finish(routine, "should not be here")
-    CALL restartDescriptor%construct('')    !the model TYPE will be supplied by the work processes
-    atService = .true.
-    DO WHILE(atService)
-      CALL createRestartArgs_restart()
-      SELECT CASE(op_code)
-      CASE(kWriteRestartOp)
-        IF(timers_level >= 5) CALL timer_start(timer_write_restart)
-        CALL restartDescriptor%writeRestartInternal(rArgs)
-        IF(timers_level >= 5) CALL timer_stop(timer_write_restart)
-      CASE(kShutdownOp)
-        atService = .false.
-      CASE DEFAULT
-        CALL finish(routine, "illegal restart operation received from work processes (the received &
-                             &value is "//TRIM(int2string(op_code))//")")
-      END SELECT
-    END DO
-    CALL restartDescriptor%destruct()
-  CONTAINS
-
-    SUBROUTINE createRestartArgs_restart()
-      TYPE(t_PackedMessage) :: pmsg
-      REAL(dp) :: timing
-  
-      IF(timers_level >= 7) CALL timer_start(timer_write_restart_wait)
-      IF(iAmRestartMaster()) timing = p_mpi_wtime()
-      CALL pmsg%bcast(restartBcastRoot(), p_comm_work_2_restart)
-      op_code = kIllegalOp
-      CALL pmsg%unpack(op_code)
-      IF (op_code == kWriteRestartOp) CALL rArgs%packer(kUnpackOp, pmsg)
-      IF(iAmRestartMaster()) THEN
-        timing = p_mpi_wtime() - timing
-        CALL message(routine, 'dedicated restart procs waited ' // &
-          & TRIM(real2string(timing)) // ' s for next event triggered by computes...')
-      END IF
-      IF(timers_level >= 7) CALL timer_stop(timer_write_restart_wait)
-    END SUBROUTINE createRestartArgs_restart
-#endif
   END SUBROUTINE multifileRestart_mainLoop
 
 END MODULE mo_multifile_restart

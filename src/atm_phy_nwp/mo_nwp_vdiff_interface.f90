@@ -58,11 +58,11 @@ MODULE mo_nwp_vdiff_interface
   USE mo_turb_vdiff_params, ONLY: vdiff_implfact => cvdifts, VDIFF_TURB_3DSMAGORINSKY
   USE mtime, ONLY: datetime, julianday, getJulianDayFromDatetime
 
-#ifndef __NO_JSBACH__
+
   USE mo_jsb_interface, ONLY: &
       & jsbach_interface, jsbach_finish_timestep, jsbach_start_timestep, jsbach_get_var
   USE mo_jsb_model_init, ONLY: jsbach_init
-#endif
+
 
   IMPLICIT NONE
   PRIVATE
@@ -373,101 +373,12 @@ CONTAINS
     ! Asynchronous data regions are a too recent feature. We have to resort to unstructured ones.
     ! This crutch ensures that we don't forget to delete any variable. The compiler complains when
     ! the line gets too long, so we have to split it into chunks, too. Yay...
-#   define LIST_CREATE1 \
-        zero2d, \
-        fr_sfc, \
-        fr_sft, \
-        temp_sfc, \
-        ocean_u, \
-        ocean_v, \
-        wind_lowest, \
-        tracer_srf_emission, \
-        cloud_water_total, \
-        rain_srf, \
-        snow_srf, \
-        wstar, \
-        qsat_sfc, \
-        height_top_dry_cbl, \
-        ri_number, \
-        ri_number_sfc
-#   define LIST_CREATE2 \
-        mixing_length, \
-        prefactor_exchange, \
-        exchange_coeff_water_var, \
-        exchange_coeff_tte, \
-        exchange_coeff_temp_var, \
-        a_matrices, \
-        a_matrices_btm, \
-        b_rhs, \
-        b_rhs_btm, \
-        ddt_u_smag, \
-        ddt_v_smag, \
-        ddt_w_smag, \
-        ddt_horiz_temp, \
-        ddt_horiz_qv, \
-        ddt_horiz_qc, \
-        ddt_horiz_qi, \
-        s_sfc, \
-        s_atm, \
-        theta_v_var_intermediate, \
-        total_turbulence_energy_intermediate
-#   define LIST_CREATE3 \
-        ch_sfc, \
-        bn_sfc, \
-        bhn_sfc, \
-        bm_sfc, \
-        bh_sfc, \
-        co2_concentration_srf, \
-        rho_ratio_delta_z, \
-        t_acoef, \
-        t_bcoef, \
-        q_acoef, \
-        q_bcoef, \
-        uv_acoef, \
-        u_bcoef, \
-        v_bcoef, \
-        flx_rad, \
-        drag_coef, \
-        t_eff_sft, \
-        qsat_sft, \
-        s_sft, \
-        t2m_sft
-#   define LIST_CREATE4 \
-        td2m_sft, \
-        rh2m_sft, \
-        qv2m_sft, \
-        u10m_sft, \
-        v10m_sft, \
-        wind_10m_sft, \
-        qv_sft, \
-        evapo_sft, \
-        evapo_potential, \
-        flx_heat_ground, \
-        cap_heat_ground, \
-        flx_heat_latent_sft, \
-        flx_heat_sensible_sft, \
-        flx_mom_u_sft, \
-        flx_mom_v_sft, \
-        Q_snowcanopymelt, \
-        alb, \
-        ekin_dissipation, \
-        ddt_u, \
-        ddt_v, \
-        ddt_Q
-#   define LIST_CREATE5 \
-        ddt_tracer, \
-        z0m_gbm, \
-        flx_humidity, \
-        flx_sensible, \
-        flx_mom_u, \
-        flx_mom_v, \
-        temp_srf_old
     !$ACC ENTER DATA ASYNC(1) &
-    !$ACC   CREATE(LIST_CREATE1) &
-    !$ACC   CREATE(LIST_CREATE2) &
-    !$ACC   CREATE(LIST_CREATE3) &
-    !$ACC   CREATE(LIST_CREATE4) &
-    !$ACC   CREATE(LIST_CREATE5)
+    !$ACC   CREATE(zero2d,         fr_sfc,         fr_sft,         temp_sfc,         ocean_u,         ocean_v,         wind_lowest,         tracer_srf_emission,         cloud_water_total,         rain_srf,         snow_srf,         wstar,         qsat_sfc,         height_top_dry_cbl,         ri_number,         ri_number_sfc) &
+    !$ACC   CREATE(mixing_length,         prefactor_exchange,         exchange_coeff_water_var,         exchange_coeff_tte,         exchange_coeff_temp_var,         a_matrices,         a_matrices_btm,         b_rhs,         b_rhs_btm,         ddt_u_smag,         ddt_v_smag,         ddt_w_smag,         ddt_horiz_temp,         ddt_horiz_qv,         ddt_horiz_qc,         ddt_horiz_qi,         s_sfc,         s_atm,         theta_v_var_intermediate,         total_turbulence_energy_intermediate) &
+    !$ACC   CREATE(ch_sfc,         bn_sfc,         bhn_sfc,         bm_sfc,         bh_sfc,         co2_concentration_srf,         rho_ratio_delta_z,         t_acoef,         t_bcoef,         q_acoef,         q_bcoef,         uv_acoef,         u_bcoef,         v_bcoef,         flx_rad,         drag_coef,         t_eff_sft,         qsat_sft,         s_sft,         t2m_sft) &
+    !$ACC   CREATE(td2m_sft,         rh2m_sft,         qv2m_sft,         u10m_sft,         v10m_sft,         wind_10m_sft,         qv_sft,         evapo_sft,         evapo_potential,         flx_heat_ground,         cap_heat_ground,         flx_heat_latent_sft,         flx_heat_sensible_sft,         flx_mom_u_sft,         flx_mom_v_sft,         Q_snowcanopymelt,         alb,         ekin_dissipation,         ddt_u,         ddt_v,         ddt_Q) &
+    !$ACC   CREATE(ddt_tracer,         z0m_gbm,         flx_humidity,         flx_sensible,         flx_mom_u,         flx_mom_v,         temp_srf_old)
 
     IF (PRESENT(initialize)) THEN
       linit = initialize
@@ -682,9 +593,7 @@ CONTAINS
         & diag_lnd%t_seasfc(:,:) &
       )
 
-#ifndef __NO_JSBACH__
     CALL jsbach_start_timestep(patch%id, datetime_now, delta_time)
-#endif
 
     !$OMP PARALLEL PRIVATE(i_blk, ic, ics, ice, isfc, isft, kl) &
     !$OMP   PRIVATE(drag_coef, t_acoef, t_bcoef, q_acoef, q_bcoef, uv_acoef, u_bcoef, v_bcoef) &
@@ -774,7 +683,6 @@ CONTAINS
           END DO
         !$ACC END PARALLEL
 
-#ifndef __NO_JSBACH__
         !$ACC WAIT
 
         CALL jsbach_interface( &
@@ -852,7 +760,6 @@ CONTAINS
             & albedo_lice=alb%alb_vis_dif(ics:ice,i_blk,SFT_LICE), &
             & ice_fract_lake=mem%fr_ice_on_lake(ics:ice,i_blk) &
           )
-#endif
 
         CALL sea_model( &
             & iblk=i_blk, &
@@ -1084,9 +991,7 @@ CONTAINS
       END DO
     !$OMP END PARALLEL
 
-#ifndef __NO_JSBACH__
     CALL jsbach_finish_timestep (patch%id, datetime_now, delta_time)
-#endif
 
     !$OMP PARALLEL
       ! For everything except land, the effective temperature for radiation is the surface
@@ -1282,16 +1187,11 @@ CONTAINS
 
     !$ACC WAIT(1)
     !$ACC EXIT DATA &
-    !$ACC   DELETE(LIST_CREATE1) &
-    !$ACC   DELETE(LIST_CREATE2) &
-    !$ACC   DELETE(LIST_CREATE3) &
-    !$ACC   DELETE(LIST_CREATE4) &
-    !$ACC   DELETE(LIST_CREATE5)
-#   undef LIST_CREATE5
-#   undef LIST_CREATE4
-#   undef LIST_CREATE3
-#   undef LIST_CREATE2
-#   undef LIST_CREATE1
+    !$ACC   DELETE(zero2d,         fr_sfc,         fr_sft,         temp_sfc,         ocean_u,         ocean_v,         wind_lowest,         tracer_srf_emission,         cloud_water_total,         rain_srf,         snow_srf,         wstar,         qsat_sfc,         height_top_dry_cbl,         ri_number,         ri_number_sfc) &
+    !$ACC   DELETE(mixing_length,         prefactor_exchange,         exchange_coeff_water_var,         exchange_coeff_tte,         exchange_coeff_temp_var,         a_matrices,         a_matrices_btm,         b_rhs,         b_rhs_btm,         ddt_u_smag,         ddt_v_smag,         ddt_w_smag,         ddt_horiz_temp,         ddt_horiz_qv,         ddt_horiz_qc,         ddt_horiz_qi,         s_sfc,         s_atm,         theta_v_var_intermediate,         total_turbulence_energy_intermediate) &
+    !$ACC   DELETE(ch_sfc,         bn_sfc,         bhn_sfc,         bm_sfc,         bh_sfc,         co2_concentration_srf,         rho_ratio_delta_z,         t_acoef,         t_bcoef,         q_acoef,         q_bcoef,         uv_acoef,         u_bcoef,         v_bcoef,         flx_rad,         drag_coef,         t_eff_sft,         qsat_sft,         s_sft,         t2m_sft) &
+    !$ACC   DELETE(td2m_sft,         rh2m_sft,         qv2m_sft,         u10m_sft,         v10m_sft,         wind_10m_sft,         qv_sft,         evapo_sft,         evapo_potential,         flx_heat_ground,         cap_heat_ground,         flx_heat_latent_sft,         flx_heat_sensible_sft,         flx_mom_u_sft,         flx_mom_v_sft,         Q_snowcanopymelt,         alb,         ekin_dissipation,         ddt_u,         ddt_v,         ddt_Q) &
+    !$ACC   DELETE(ddt_tracer,         z0m_gbm,         flx_humidity,         flx_sensible,         flx_mom_u,         flx_mom_v,         temp_srf_old)
 
   END SUBROUTINE nwp_vdiff
 
@@ -1303,9 +1203,7 @@ CONTAINS
 
     CALL vdiff_init(2, ntracer)
 
-#ifndef __NO_JSBACH__
     CALL jsbach_init(patch%id)
-#endif
 
     ! TODO: This does double work, but we need some of the AES routines in VDIFF.
     IF (patch%id == 1) THEN
@@ -2083,7 +1981,6 @@ CONTAINS
     TYPE(t_lnd_diag), INTENT(INOUT) :: diag_lnd !< Diagnostic land variables.
     TYPE(t_nwp_phy_diag), INTENT(INOUT) :: phy_diag !< Diagnostic atmosphere variables.
 
-#ifndef __NO_JSBACH__
     REAL(wp), POINTER :: p_runoff(:,:)
     REAL(wp), POINTER :: p_drainage(:,:)
 
@@ -2098,7 +1995,6 @@ CONTAINS
 
     CALL jsbach_get_var('hydro_runoff', patch%id, ptr2d=p_runoff)
     CALL jsbach_get_var('hydro_drainage', patch%id, ptr2d=p_drainage)
-#endif
 
     !$OMP PARALLEL
       CALL copy(prog_lnd_new%t_g(:,:), prog_lnd_new%t_g_t(:,:,1), opt_acc_async=.TRUE.)
@@ -2125,7 +2021,6 @@ CONTAINS
       CALL copy (phy_diag%lhfl_pl(:,:,:), phy_diag%lhfl_pl_t(:,:,:,1), opt_acc_async=.TRUE.)
       CALL copy (phy_diag%lhfl_bs(:,:), phy_diag%lhfl_bs_t(:,:,1), opt_acc_async=.TRUE.)
 
-#ifndef __NO_JSBACH__
       !$ACC ENTER DATA ATTACH(p_runoff, p_drainage) ASYNC(1)
         CALL copy(p_runoff(:,:), diag_lnd%runoff_s_inst_t(:,:,1), opt_acc_async=.TRUE.)
         CALL copy(p_drainage(:,:), diag_lnd%runoff_g_inst_t(:,:,1), opt_acc_async=.TRUE.)
@@ -2162,7 +2057,6 @@ CONTAINS
           END DO
         !$ACC END PARALLEL
       END DO
-#endif
     !$OMP END PARALLEL
 
   END SUBROUTINE update_nwp_tile_state

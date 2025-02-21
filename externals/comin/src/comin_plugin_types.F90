@@ -19,38 +19,38 @@ MODULE comin_plugin_types
   PUBLIC :: t_comin_plugin_description
   PUBLIC :: t_comin_plugin_info, t_comin_plugin_info_c
 
-#include "comin_global.inc"
+
 
 
   !> Data type, describing the dynamic libraries
   !! @ingroup host_interface
   TYPE :: t_comin_plugin_description
     ! name of the plugin - currently only used for messages
-    CHARACTER(LEN=MAX_LEN_PLUGIN_NAME) :: name = ""
+    CHARACTER(LEN=32) :: name = ""
 
     ! full name of plugin shared library (including `.so` file
     ! extension) or "icon" for static linking.
-    CHARACTER(LEN=MAX_LEN_PLUGIN_LIBRARY) :: plugin_library = ""
+    CHARACTER(LEN=256) :: plugin_library = ""
 
     ! name of primary constructor.
-    CHARACTER(LEN=MAX_LEN_PRIMARY_CONSTRUCTOR)  :: primary_constructor  = "comin_main"
+    CHARACTER(LEN=256)  :: primary_constructor  = "comin_main"
 
     ! options string: offers the possibility to pass a character
     ! string (e.g. a python script filename) to the plugin.
-    CHARACTER(LEN=MAX_LEN_OPTIONS)  :: options  = ""
+    CHARACTER(LEN=256)  :: options  = ""
 
     ! name of MPI communicator. left as an empty string if the
     ! application does not require a communicator for this plugin.
-    CHARACTER(LEN=MAX_LEN_COMM)  :: comm        = ""
+    CHARACTER(LEN=256)  :: comm        = ""
 
   END TYPE t_comin_plugin_description
 
   !> The elements of this derived data type describe a 3rd party plugin.
   TYPE, BIND(C) :: t_comin_plugin_info_c
     INTEGER(kind=c_int)                                         :: id
-    CHARACTER(LEN=1, kind=c_char), DIMENSION(MAX_LEN_PRIMARY_CONSTRUCTOR) :: name
-    CHARACTER(LEN=1, kind=c_char), DIMENSION(MAX_LEN_OPTIONS)   :: options
-    CHARACTER(LEN=1, kind=c_char), DIMENSION(MAX_LEN_COMM)      :: comm
+    CHARACTER(LEN=1, kind=c_char), DIMENSION(256) :: name
+    CHARACTER(LEN=1, kind=c_char), DIMENSION(256)   :: options
+    CHARACTER(LEN=1, kind=c_char), DIMENSION(256)      :: comm
   END TYPE t_comin_plugin_info_c
 
   !> The elements of this derived data type describe a 3rd party plugin.

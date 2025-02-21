@@ -33,7 +33,19 @@ MODULE mo_prepadv_state
   USE mo_cf_convention,           ONLY: t_cf_var
   USE mo_grib2,                   ONLY: t_grib2_var, grib2_var
 
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -194,7 +206,7 @@ CONTAINS
                 & GRID_UNSTRUCTURED_EDGE, ZA_REFERENCE, cf_desc, grib2_desc,       &
                 & ldims=shape3d_e, loutput=.FALSE.,                                &
                 & isteptype=TSTEP_INSTANT, lopenacc=.TRUE. )
-    __acc_attach(prep_adv%mass_flx_me)
+    
 
 
     ! mass_flx_ic      prep_adv%mass_flx_ic(nproma,nlevp1,nblks_c)
@@ -206,7 +218,7 @@ CONTAINS
                 & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,  &
                 & ldims=shape3d_chalf, loutput=.FALSE.,                            &
                 & isteptype=TSTEP_INSTANT, lopenacc=.TRUE. )
-    __acc_attach(prep_adv%mass_flx_ic)
+    
 
 
     ! vn_traj          prep_adv%vn_traj(nproma,nlev,nblks_e)
@@ -218,7 +230,7 @@ CONTAINS
                 & GRID_UNSTRUCTURED_EDGE, ZA_REFERENCE, cf_desc, grib2_desc,       &
                 & ldims=shape3d_e, loutput=.FALSE.,                                &
                 & isteptype=TSTEP_INSTANT, lopenacc=.TRUE. )
-    __acc_attach(prep_adv%vn_traj)
+    
 
 
     ! q_int        prep_adv%q_int(nproma,ntracer,nblks_c)
@@ -231,7 +243,7 @@ CONTAINS
                 & ldims=shape3d_tracer,                                       &
                 & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,       &
                 & lopenacc = .TRUE. )
-    __acc_attach(prep_adv%q_int)
+    
 
     ALLOCATE(prep_adv%q_int_ptr(ntracer))
     DO jt =1,ntracer
@@ -258,7 +270,7 @@ CONTAINS
                 & ldims=shape3d_tracer,                                       &
                 & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,       &
                 & lopenacc = .TRUE. )
-    __acc_attach(prep_adv%q_ubc)
+    
 
     ALLOCATE(prep_adv%q_ubc_ptr(ntracer))
     DO jt =1,ntracer

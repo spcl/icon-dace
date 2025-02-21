@@ -2,11 +2,11 @@
 ! Number model from which the SELECTED_*\\_KIND are requested: <br>
 !
 ! @f{tabular}{{r@{\hspace*{3em}}c@{\hspace*{3em}}c}
-!                     &4 byte REAL     &8 byte REAL        \\\
-!        CRAY:        &-               &precision =   13   \\\
-!                     &                &exponent  = 2465   \\\
-!        IEEE:        &precision = 6   &precision =   15   \\\
-!                     &exponent  = 37  &exponent  =  307
+!                     &4 byte REAL     &8 byte REAL        \\!        CRAY:        &-               &precision =   13   \\!                     &                &exponent  = 2465   \\!        IEEE:        &precision = 6   &precision =   15   \\!                     &exponent  = 37  &exponent  =  307
+
+
+
+
 ! @f}
 ! \\medskip
 !
@@ -47,11 +47,11 @@ MODULE mo_kind
   INTEGER, PARAMETER :: qp = SELECTED_REAL_KIND(32)
   INTEGER, PARAMETER :: wp = dp                        !< selected working precision
   !
-#ifdef __MIXED_PRECISION
-  INTEGER, PARAMETER :: vp = sp
-#else
+
+
+
   INTEGER, PARAMETER :: vp = wp
-#endif
+
 
 
   !

@@ -26,10 +26,10 @@ MODULE mo_output_coupling
   USE mo_parallel_config     ,ONLY: nproma
   USE mo_zaxis_type          ,ONLY: zaxisTypeList
 
-#ifdef _OPENACC
-  USE mo_mpi                 ,ONLY: i_am_accel_node
-  USE openacc
-#endif
+
+
+
+
 
   CHARACTER(len=*), PARAMETER :: str_module = 'mo_output_coupling' ! Output of module for debug
   CHARACTER(len=2), PARAMETER :: newline = ACHAR(13) // ACHAR(10)

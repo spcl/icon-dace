@@ -14,9 +14,130 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "icon_definitions.inc"
-#include "omp_definitions.inc"
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+!---------------------
+! mappings
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !----------------------------
 MODULE mo_ocean_tides
   !-------------------------------------------------------------------------
@@ -59,10 +180,10 @@ CONTAINS
   SUBROUTINE calculate_tides_potential(patch_3d,current_time,rho,h,tides_potential, SelfAtrractionLoad)
     TYPE(t_patch_3d ),TARGET, INTENT(in) :: patch_3d
     TYPE(datetime), POINTER              :: current_time
-    onCells                              :: rho
-    onCells_2D                           :: h
-    onCells_2D, INTENT(inout)            :: tides_potential
-    onCells_2D, INTENT(inout)            :: SelfAtrractionLoad
+    REAL(wp),  POINTER, DIMENSION(:,:,:)                              :: rho
+    REAL(wp), POINTER, DIMENSION(:,:)                           :: h
+    REAL(wp), POINTER, DIMENSION(:,:), INTENT(inout)            :: tides_potential
+    REAL(wp), POINTER, DIMENSION(:,:), INTENT(inout)            :: SelfAtrractionLoad
 
     IF (use_tides) THEN
       SELECT CASE(tides_mod)
@@ -90,15 +211,15 @@ CONTAINS
   !-------------------------------------------------------------------------
   SUBROUTINE calculate_tides_SAL_simple(patch_3d,rho,h,SelfAtrractionLoad)
     TYPE(t_patch_3d ),TARGET, INTENT(in) :: patch_3d
-    onCells                              :: rho
-    onCells_2D                           :: h
-    onCells_2D, INTENT(inout)            :: SelfAtrractionLoad
+    REAL(wp),  POINTER, DIMENSION(:,:,:)                              :: rho
+    REAL(wp), POINTER, DIMENSION(:,:)                           :: h
+    REAL(wp), POINTER, DIMENSION(:,:), INTENT(inout)            :: SelfAtrractionLoad
     
     TYPE(t_patch), POINTER :: patch_2D
     TYPE(t_subset_range), POINTER :: all_cells
     INTEGER :: jb,jc,jk,start_index,end_index, levels
     REAL(wp) :: grav_eps_explicit, smooth, barotropic_part, z_grav_rho_inv_eps
-    onCells :: cell_thickness
+    REAL(wp),  POINTER, DIMENSION(:,:,:) :: cell_thickness
    
     patch_2D        => patch_3d%p_patch_2d(1)
     all_cells       => patch_2D%cells%ALL
@@ -130,15 +251,15 @@ CONTAINS
   !-------------------------------------------------------------------------
   SUBROUTINE calculate_tides_SAL_Thomas(patch_3d,rho,h,SelfAtrractionLoad)
     TYPE(t_patch_3d ),TARGET, INTENT(in) :: patch_3d
-    onCells                              :: rho
-    onCells_2D                           :: h
-    onCells_2D, INTENT(inout)            :: SelfAtrractionLoad
+    REAL(wp),  POINTER, DIMENSION(:,:,:)                              :: rho
+    REAL(wp), POINTER, DIMENSION(:,:)                           :: h
+    REAL(wp), POINTER, DIMENSION(:,:), INTENT(inout)            :: SelfAtrractionLoad
     
     TYPE(t_patch), POINTER :: patch_2D
     TYPE(t_subset_range), POINTER :: all_cells
     INTEGER :: jb,jc,jk,start_index,end_index, levels
     REAL(wp) :: grav_eps_explicit, smooth, barotropic_part, z_grav_rho_inv_eps
-    onCells :: cell_thickness
+    REAL(wp),  POINTER, DIMENSION(:,:,:) :: cell_thickness
    
     patch_2D        => patch_3d%p_patch_2d(1)
     all_cells       => patch_2D%cells%ALL

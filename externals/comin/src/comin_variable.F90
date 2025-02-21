@@ -55,7 +55,7 @@ MODULE comin_variable
   PUBLIC :: comin_var_get_from_exposed
 
 
-#include "comin_global.inc"
+
 
 CONTAINS
 

@@ -37,7 +37,7 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 !> collection of simple comparison functions
-#include "fc_feature_defs.inc"
+
 MODULE ppm_compare
   USE ppm_std_type_kinds, ONLY: i4, i8, dp
   IMPLICIT NONE

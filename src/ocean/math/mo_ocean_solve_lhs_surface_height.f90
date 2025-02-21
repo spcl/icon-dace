@@ -12,9 +12,9 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#endif
+
+
+
 
 MODULE mo_surface_height_lhs
 
@@ -55,9 +55,9 @@ MODULE mo_surface_height_lhs
     TYPE(t_operator_coeff), POINTER :: op_coeffs_wp => NULL()
     TYPE(t_solverCoeff_singlePrecision), POINTER :: op_coeffs_sp => NULL()
     REAL(wp), ALLOCATABLE, DIMENSION(:,:), PRIVATE :: z_grad_h_wp, z_e_wp
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_grad_h_wp, z_e_wp
-#endif
+
+
+
   CONTAINS
     PROCEDURE :: lhs_wp => lhs_surface_height_wp
     PROCEDURE :: construct => lhs_surface_height_construct

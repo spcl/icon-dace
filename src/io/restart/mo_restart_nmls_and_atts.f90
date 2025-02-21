@@ -161,9 +161,9 @@ CONTAINS
   END SUBROUTINE restartAttributeList_read
 
   SUBROUTINE restartAttributeList_write_to_ncdf(kvs, ncid)
-#ifdef __PGI
-    USE mo_util_texthash, ONLY: t_char_workaround
-#endif
+
+
+
     TYPE(t_key_value_store), INTENT(IN) :: kvs
     INTEGER, INTENT(IN) :: ncid
     CHARACTER(*), PARAMETER :: routine = modname//"write_to_ncdf"
@@ -175,23 +175,23 @@ CONTAINS
     iterator => kvs%getIterator()
     DO WHILE (iterator%nextEntry(curKey, curVal))
       SELECT TYPE(curKey)
-#ifdef __PGI
-      TYPE IS(t_char_workaround)
-        ccKey => curKey%c
-#endif
+
+
+
+
       TYPE IS(CHARACTER(*))
         ccKey => curKey
       CLASS DEFAULT
         CALL finish(routine, "key: invalid type")
       END SELECT
       SELECT TYPE(curVal)
-#ifdef __PGI
-      TYPE IS(t_char_workaround)
-        CALL nf(nf_put_att_text(ncid, NF_GLOBAL, ccKey, LEN(curVal%c), curVal%c), routine)
-#else
+
+
+
+
       TYPE IS(CHARACTER(*))
         CALL nf(nf_put_att_text(ncid, NF_GLOBAL, ccKey, LEN(curVal), curVal), routine)
-#endif
+
       TYPE IS(REAL(wp))
         CALL nf(nfx_put_att(ncid, NF_GLOBAL, ccKey, NF_DOUBLE, curVal), routine)
       TYPE IS(INTEGER)

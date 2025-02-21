@@ -52,9 +52,9 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(this_mod_name, 'OpenACC version currently not tested/validated')
-#endif
+
+
+
 
     CALL ocean_restart_gmres(this%x_wp, this%lhs, this%b_wp, &
       & this%par%tol, this%par%use_atol, this%par%m, maxiterex, &
@@ -191,9 +191,9 @@ CONTAINS
 !    TYPE(t_patch), POINTER :: patch_2d
     CONTIGUOUS :: b, x
 
-#ifdef _OPENMP
-    INTEGER OMP_GET_THREAD_NUM
-#endif
+
+
+
     !-------------------------------------------------------------------------
     !  write(0,*) "--------------- gmres --------------------------"
 
@@ -337,9 +337,9 @@ CONTAINS
 
         IF (ltimer) CALL timer_start(trans%timer_glob_sum)
 !ICON_OMP_PARALLEL PRIVATE(myThreadNo)
-#ifdef _OPENMP
-        myThreadNo = OMP_GET_THREAD_NUM()
-#endif
+
+
+
 !ICON_OMP_DO ICON_OMP_DEFAULT_SCHEDULE
         DO jb = 1, no_of_blocks
           sum_aux(jb) = SUM(w(1:nproma,jb) * v(1:nproma,jb,k))

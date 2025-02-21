@@ -16,7 +16,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_grf_nudgintp
@@ -39,9 +49,6 @@ USE mo_parallel_config,     ONLY: nproma
 USE mo_loopindices,         ONLY: get_indices_c, get_indices_e, get_indices_v
 
 USE mo_grf_intp_data_strc,  ONLY: t_gridref_single_state
-#ifdef _OPENACC
-  USE mo_mpi,               ONLY: i_am_accel_node
-#endif
 
 IMPLICIT NONE
 
@@ -155,13 +162,8 @@ DO jb = i_startblk, i_endblk
 
   !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
   !$ACC LOOP COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-  DO jv = i_startidx, i_endidx
-    DO jk = 1, nlev_c
-#else
   DO jk = 1, nlev_c
     DO jv = i_startidx, i_endidx
-#endif
 
       u_vert(jv,jk,jb) =  &
         ptr_rvcoeff(1,1,jv,jb)*p_vn_in(irvidx(1,jv,jb),jk+js,irvblk(1,jv,jb)) + &
@@ -198,13 +200,11 @@ DO jb =  i_startblk, i_endblk
 ! child edges 1 and 2
   !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
   !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-  DO je = i_startidx, i_endidx
-    DO jk = 1, nlev_c
-#else
+
+
   DO jk = 1, nlev_c
     DO je = i_startidx, i_endidx
-#endif
+
       dvn_tang =     u_vert(ividx(je,jb,2),jk,ivblk(je,jb,2)) *    &
                      ptr_pp%edges%primal_normal_vert(je,jb,2)%v1 + &
                      v_vert(ividx(je,jb,2),jk,ivblk(je,jb,2)) *    &
@@ -221,13 +221,13 @@ DO jb =  i_startblk, i_endblk
 
 ! child edge 3
   !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-  DO je = i_startidx, i_endidx
-    DO jk = 1, nlev_c
-#else
+
+
+
+
   DO jk = 1, nlev_c
     DO je = i_startidx, i_endidx
-#endif
+
       vn_aux(je,jk,jb,3) = ptr_grf%grf_vec_coeff_2a(1,je,jb) * &
         p_vn_in(iidx_2a(je,1,jb),jk+js,iblk_2a(je,1,jb)) +     &
         ptr_grf%grf_vec_coeff_2a(2,je,jb) *                    &
@@ -243,13 +243,13 @@ DO jb =  i_startblk, i_endblk
 
 ! child edge 4
   !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-  DO je = i_startidx, i_endidx
-    DO jk = 1, nlev_c
-#else
+
+
+
+
   DO jk = 1, nlev_c
     DO je = i_startidx, i_endidx
-#endif
+
       vn_aux(je,jk,jb,4) = ptr_grf%grf_vec_coeff_2b(1,je,jb) * &
         p_vn_in(iidx_2b(je,1,jb),jk+js,iblk_2b(je,1,jb)) +     &
         ptr_grf%grf_vec_coeff_2b(2,je,jb) *                    &
@@ -288,19 +288,19 @@ DO jb =  i_startblk, i_endblk
 
   !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
   !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-  DO je = i_startidx, i_endidx
-      DO jk = 1, nlev_c
-        p_vn_out(je,jk,jb) = vn_aux(ipeidx(je,jb),jk,ipeblk(je,jb),ipcidx(je,jb))
-      ENDDO
-  ENDDO
-#else
+
+
+
+
+
+
+
   DO jk = 1, nlev_c
     DO je = i_startidx, i_endidx
         p_vn_out(je,jk,jb) = vn_aux(ipeidx(je,jb),jk,ipeblk(je,jb),ipcidx(je,jb))
     ENDDO
   ENDDO
-#endif
+
   !$ACC END PARALLEL
 
 ENDDO
@@ -349,15 +349,15 @@ SUBROUTINE interpol_scal_nudging_core(ptr_pp, jb, i_startblk, i_endblk, all_enab
   !$ACC   CREATE(minval_neighb) PRESENT(h_aux, ptr_dist, l_enabled, ptr_coeff) &
   !$ACC   PRESENT(p_in_fld, iblk, iidx) IF(i_am_accel_node)
   IF (all_enabled) THEN ! Use vectorizable form with loop reordering
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-      DO jk = 1, elev
-#else
+
+
+
+
     !$ACC LOOP GANG(STATIC: 1)
     DO jk = 1, elev
       !$ACC LOOP VECTOR
       DO jc = i_startidx, i_endidx
-#endif
+
         grad_x(jc,jk) =  &
           ptr_coeff(1,1,jc,jb)* p_in_fld(jc,jk+js,jb) + &
           ptr_coeff(2,1,jc,jb)* p_in_fld(iidx(2,jc,jb),jk+js,iblk(2,jc,jb)) + &
@@ -743,18 +743,18 @@ DO jn = 1, nfields
     IF (l_limit_nneg(jn)) THEN
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, elev
-          IF (.NOT. l_enabled(jk)) CYCLE
-#else
+
+
+
+
+
       !$ACC LOOP SEQ
       DO jk = 1, elev
         IF (.NOT. l_enabled(jk)) CYCLE
         !$ACC LOOP GANG VECTOR
 !$NEC ivdep
         DO jc = i_startidx, i_endidx
-#endif
+
           p_out_fld(ichcidx(jc,jb,1),jk,ichcblk(jc,jb,1)) = &
             MAX(h_aux(jc,jk,1,jb,jn),r_limval(jn))
           p_out_fld(ichcidx(jc,jb,2),jk,ichcblk(jc,jb,2)) = &
@@ -771,17 +771,17 @@ DO jn = 1, nfields
     ELSE
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, elev
-          IF (.NOT. l_enabled(jk)) CYCLE
-#else
+
+
+
+
+
       DO jk = 1, elev
         IF (.NOT. l_enabled(jk)) CYCLE
         !$ACC LOOP GANG VECTOR
 !$NEC ivdep
         DO jc = i_startidx, i_endidx
-#endif
+
 
           p_out_fld(ichcidx(jc,jb,1),jk,ichcblk(jc,jb,1)) = h_aux(jc,jk,1,jb,jn)
           p_out_fld(ichcidx(jc,jb,2),jk,ichcblk(jc,jb,2)) = h_aux(jc,jk,2,jb,jn)

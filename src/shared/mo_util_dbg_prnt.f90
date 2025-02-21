@@ -15,7 +15,26 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
 !----------------------------
 MODULE mo_util_dbg_prnt
   !-------------------------------------------------------------------------
@@ -368,7 +387,7 @@ CONTAINS
 
     IF ((idbg_val < inDetail_level) .AND. (idbg_mxmn < inDetail_level)) RETURN
 
-    start_detail_timer(timer_dbg_prnt,10)    
+    IF (timers_level >= 10) CALL timer_start(timer_dbg_prnt)    
     
 
     ! ! valid g-format without offset of decimal point
@@ -409,7 +428,7 @@ CONTAINS
       
       ! if place not found in str_mod_tst - no output
       IF (icheck_str_mod == 0) THEN
-        stop_detail_timer(timer_dbg_prnt,10)
+        IF (timers_level >= 10) CALL timer_stop(timer_dbg_prnt)
         RETURN
       ENDIF
 
@@ -475,7 +494,7 @@ CONTAINS
       
       ! if place not found in str_mod_tst - no output
       IF (icheck_str_mod == 0) THEN
-        stop_detail_timer(timer_dbg_prnt,10)
+        IF (timers_level >= 10) CALL timer_stop(timer_dbg_prnt)
         RETURN
       ENDIF
       
@@ -517,7 +536,7 @@ CONTAINS
       
     END IF
     
-    stop_detail_timer(timer_dbg_prnt,10)
+    IF (timers_level >= 10) CALL timer_stop(timer_dbg_prnt)
     
   END SUBROUTINE dbg_print_3d
   !-------------------------------------------------------------------------
@@ -542,7 +561,7 @@ CONTAINS
 
     IF ((idbg_val < inDetail_level) .AND. (idbg_mxmn < inDetail_level)) RETURN
     
-    start_detail_timer(timer_dbg_prnt,10)
+    IF (timers_level >= 10) CALL timer_start(timer_dbg_prnt)
     
     ! dimensions - first dimension is nproma
     ndimblk = SIZE(p_array,2)
@@ -559,7 +578,7 @@ CONTAINS
     
     ! if place not found in str_mod_tst - no output
     IF (icheck_str_mod == 0) THEN
-      stop_detail_timer(timer_dbg_prnt,10)
+      IF (timers_level >= 10) CALL timer_stop(timer_dbg_prnt)
       RETURN
     ENDIF
     
@@ -622,7 +641,7 @@ CONTAINS
       
     END IF
     
-    stop_detail_timer(timer_dbg_prnt,10)
+    IF (timers_level >= 10) CALL timer_stop(timer_dbg_prnt)
     
   END SUBROUTINE dbg_print_2d
   !-------------------------------------------------------------------------

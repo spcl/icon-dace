@@ -18,7 +18,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_les_turb_interface
@@ -129,9 +139,6 @@ SUBROUTINE les_turbulence  ( tcall_turb_jg,                   & !>in
                                      tcall_turb_jg,   & !in
                                      lacc=.TRUE.      ) !in
   ELSE
-#ifdef _OPENACC
-      CALL finish ('mo_les_turb_interface:', 'inwp_turb=ismag,iprog only available for les_metric on OpenACC')
-#endif
       CALL drive_subgrid_diffusion(p_sim_time,        & !in (Christopher Moseley)
                                    p_prog,            & !inout for w (it is updated inside)
                                    p_prog_now_rcf,    & !inout   

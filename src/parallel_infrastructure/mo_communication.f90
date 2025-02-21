@@ -17,12 +17,31 @@
 ! (GZ, 2013-08-30): So far, the Cray compiler is the only one for which an OpenMP parallelization
 ! of copying data into / back from the MPI-buffer seems to give a benefit. Further compilers may
 ! be added here once the OpenMP implementation is sufficiently efficient
-#if ((defined(_CRAYFTN) && !defined(_OPENACC)) || defined(__INTEL_COMPILER))
-#define __OMPPAR_COPY__
-#endif
+
+
+
 
 !----------------------------
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
 !----------------------------
 MODULE mo_communication
 !-------------------------------------------------------------------------
@@ -46,16 +65,10 @@ USE mo_mpi,                  ONLY: p_send, p_recv, p_barrier, &
      &                             p_allgatherv, MPI_COMM_NULL
 USE mo_parallel_config,      ONLY: blk_no, idx_no, idx_1d, nproma
 USE mo_util_sort,            ONLY: quicksort
-#ifdef __SX__
-USE mo_util_sort,            ONLY: radixsort
-#endif
 USE mo_util_string,          ONLY: int2string
 USE mo_fortran_tools,        ONLY: t_ptr_3d, t_ptr_3d_sp
 USE mo_communication_types,  ONLY: t_comm_pattern, t_comm_pattern_collection, &
   &                                t_p_comm_pattern
-#ifdef _OPENACC
-USE mo_mpi,                  ONLY: i_am_accel_node
-#endif
 USE mo_communication_types,  ONLY: t_comm_pattern, t_comm_pattern_collection, &
   &                                t_p_comm_pattern, xfer_list
 
@@ -241,11 +254,7 @@ CONTAINS
     DEALLOCATE(pack_mask)
 
     ! sort loc_index according to the respective global indices
-#ifdef __SX__
-    CALL radixsort(packed_glb_index(:), gather_pattern%loc_index(:))
-#else
     CALL quicksort(packed_glb_index(:), gather_pattern%loc_index(:))
-#endif
     ! determine number of points that need to be sent to each collector
     gather_pattern%collector_send_size(:) = 0
     DO i = 1, num_local_points
@@ -327,11 +336,7 @@ CONTAINS
       DEALLOCATE(gather_pattern%recv_buffer_reorder)
     ALLOCATE(gather_pattern%recv_buffer_reorder(num_recv_points))
     gather_pattern%recv_buffer_reorder(:) = (/(i, i = 1, num_recv_points)/)
-#ifdef __SX__
-    CALL radixsort(recv_buffer(:), gather_pattern%recv_buffer_reorder(:))
-#else
     CALL quicksort(recv_buffer(:), gather_pattern%recv_buffer_reorder(:))
-#endif
     IF (ALLOCATED(gather_pattern%recv_buffer_reorder_fill)) &
       DEALLOCATE(gather_pattern%recv_buffer_reorder_fill)
     ALLOCATE(gather_pattern%recv_buffer_reorder_fill(num_recv_points))
@@ -1311,10 +1316,6 @@ CONTAINS
          comm=comm)
     IF (SIZE(out_array, 1) < SUM(collector_buffer_sizes)) &
       CALL finish("allgather_r_1d_deblock", "invalid out_array size")
-#if defined (__SX__) || defined (__NEC_VH__)
-    ! Workaround for occasional segfaults
-    CALL p_barrier(comm)
-#endif
     CALL p_allgatherv(collector_buffer(1,:), out_array, collector_buffer_sizes,&
       &               comm=comm)
 

@@ -12,27 +12,27 @@
 ! the Intel compiler has an interesting behaviour: if optimization is off,
 ! actual arguments to dummy arguments with attribute CONTIGUOUS will always
 ! be copied
-#if ((! defined __INTEL_COMPILER) || defined __OPTIMIZE__)
-#define USE_CONTIGUOUS 1
-#else
-#undef USE_CONTIGUOUS
-#endif
-#undef USE_CONTIGUOUS
+
+
+
+
+
+
 MODULE mo_reorder_info
   USE mo_kind, ONLY: i4, i8, dp, sp
   USE mo_mpi, ONLY: p_bcast, p_comm_remote_size, p_allgather, p_allgatherv, &
        p_comm_size, p_int_i8
   USE mo_exception, ONLY: finish, message_text
   USE mo_communication,             ONLY: idx_no, blk_no
-#ifndef NOMPI
-  USE mpi
-#endif
+
+
+
   USE mo_util_sort, ONLY: quicksort
-#ifdef HAVE_CDI_PIO
-  USE yaxt, ONLY: xt_idxlist, xt_is_null, xt_idxvec_new, &
-       xt_idxlist_delete, xt_idxstripes_from_idxlist_new, &
-       xt_int_kind
-#endif
+
+
+
+
+
   IMPLICIT NONE
   PRIVATE
   !------------------------------------------------------------------------------------------------
@@ -61,11 +61,11 @@ MODULE mo_reorder_info
     !! (should ONLY be set on I/O servers)
     INTEGER, ALLOCATABLE       :: reorder_index(:)
 
-#ifdef HAVE_CDI_PIO
-    ! describe which parts of a global array this MPI rank provides for an
-    ! array of nlev in reorder_idxlst_xt(nlev)
-    TYPE(xt_idxlist), ALLOCATABLE :: reorder_idxlst_xt(:)
-#endif
+
+
+
+
+
 
     ! Index how to reorder the contributions of all compute PEs
     ! into the global array (set on all PEs)
@@ -94,24 +94,15 @@ CONTAINS
   SUBROUTINE release_reorder_info(ri)
     TYPE(t_reorder_info), INTENT(INOUT) :: ri
 
-#ifdef HAVE_CDI_PIO
-    INTEGER :: i, n
-#endif
+
+
+
     IF (ALLOCATED(ri%reorder_index_own)) DEALLOCATE(ri%reorder_index_own)
     IF (ALLOCATED(ri%reorder_index)) DEALLOCATE(ri%reorder_index)
     IF (ALLOCATED(ri%own_idx)) DEALLOCATE(ri%own_idx)
     IF (ALLOCATED(ri%own_blk)) DEALLOCATE(ri%own_blk)
     IF (ALLOCATED(ri%pe_own)) DEALLOCATE(ri%pe_own)
     IF (ALLOCATED(ri%pe_off)) DEALLOCATE(ri%pe_off)
-#ifdef HAVE_CDI_PIO
-    IF (ALLOCATED(ri%reorder_idxlst_xt)) THEN
-      n = SIZE(ri%reorder_idxlst_xt)
-      DO i = 1, n
-        IF (.NOT. xt_is_null(ri%reorder_idxlst_xt(i))) &
-             CALL xt_idxlist_delete(ri%reorder_idxlst_xt(i))
-      END DO
-    END IF
-#endif
 
   END SUBROUTINE release_reorder_info
 
@@ -120,9 +111,6 @@ CONTAINS
     TYPE(t_reorder_info), INTENT(inout) :: ri
     LOGICAL, INTENT(in) :: mask(:)
     INTEGER, INTENT(in) :: n_points_g, glb_index(:), group_comm
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: glb_index, mask
-#endif
     INTEGER(i8), ALLOCATABLE, OPTIONAL, INTENT(out) :: &
          retained_occupation_mask(:)
     LOGICAL, OPTIONAL, INTENT(in) :: create_idxlist
@@ -134,9 +122,6 @@ CONTAINS
     INTEGER(i8), ALLOCATABLE :: occupation_mask(:)
     INTEGER(i8), PARAMETER :: nbits_i8 = BIT_SIZE(occupation_mask)
     CHARACTER(LEN=*), PARAMETER :: routine = modname//"::set_reorder_data"
-#ifdef HAVE_CDI_PIO
-    TYPE(xt_idxlist) :: idxvec
-#endif
     LOGICAL :: create_idxlist_
 
     IF (PRESENT(create_idxlist)) THEN
@@ -193,12 +178,6 @@ CONTAINS
     ! per grid cell, i.e. decomposition makes sense but takes additional coding
     ! effort
     CALL indices2occmask(occupation_mask, n_points_g, ri%n_own, glbidx_own)
-#ifndef NOMPI
-    ! 2. reduce occupation over all ranks in group_comm
-    CALL mpi_allreduce(mpi_in_place, occupation_mask, SIZE(occupation_mask), &
-      &                p_int_i8, mpi_bor, group_comm, ierror)
-    IF (ierror /= MPI_SUCCESS) CALL finish(routine, 'mpi_allreduce failed')
-#endif
 
     ! 3. now compute number of bits set in preceding entries of occupation_mask.
     ! After the following loop, occ_pfxsum(i) equals the number of set bits
@@ -211,14 +190,6 @@ CONTAINS
     ! for CDI-PIO
     CALL glb_idx2reorder_idx(ri%reorder_index_own, glbidx_own(1:ri%n_own), &
          occ_pfxsum, occupation_mask)
-#ifdef HAVE_CDI_PIO
-    IF (create_idxlist_) THEN
-      ALLOCATE(ri%reorder_idxlst_xt(1))
-      idxvec = xt_idxvec_new(INT(ri%reorder_index_own, xt_int_kind))
-      ri%reorder_idxlst_xt(1) = xt_idxstripes_from_idxlist_new(idxvec)
-      CALL xt_idxlist_delete(idxvec)
-    END IF
-#endif
     DO i = 1, ri%n_own
       ri%reorder_index_own(i) = ri%reorder_index_own(i) + 1
     END DO
@@ -258,9 +229,6 @@ CONTAINS
     INTEGER, ALLOCATABLE, INTENT(out) :: pfxsum(:)
     INTEGER(i8), INTENT(in) :: bmask(0:)
     INTEGER, INTENT(in) :: n_glb ! number of bits set in total
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: bmask
-#endif
     INTEGER(i8) :: occ_temp, occ_accum
     INTEGER :: i, nocc, ub
     CHARACTER(len=*), PARAMETER :: routine = modname//'::occmask_pfxsum'
@@ -285,9 +253,6 @@ CONTAINS
     INTEGER, INTENT(out) :: reorder_index(:)
     INTEGER, INTENT(in) :: glbidx(:), pfxsum(0:)
     INTEGER(i8), INTENT(in) :: bmask(0:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: reorder_index, glbidx, pfxsum, bmask
-#endif
     INTEGER(i8) :: pos, apos, bpos, occ_accum
     INTEGER(i8), PARAMETER :: nbits_i8 = BIT_SIZE(pos)
     INTEGER :: i, n
@@ -306,9 +271,6 @@ CONTAINS
     INTEGER, ALLOCATABLE, INTENT(inout) :: a_perm(:)
     INTEGER, INTENT(in) :: permutation(:)
     CHARACTER(len=*), PARAMETER :: routine=modname//"::permute"
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: permutation
-#endif
     INTEGER, ALLOCATABLE :: temp(:)
     INTEGER :: i, n
     n = SIZE(a)
@@ -376,9 +338,6 @@ CONTAINS
     INTEGER, INTENT(in) :: part_idx
     REAL(dp), INTENT(in) :: part_data(:)
     REAL(dp), INTENT(inout) :: whole_data(:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, whole_data
-#endif
     INTEGER :: i, n, ofs
 
     ofs = ri%pe_off(part_idx)
@@ -393,9 +352,6 @@ CONTAINS
     INTEGER, INTENT(in) :: part_idx
     REAL(sp), INTENT(in) :: part_data(:)
     REAL(sp), INTENT(inout) :: whole_data(:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, whole_data
-#endif
     INTEGER :: i, n, ofs
 
     ofs = ri%pe_off(part_idx)
@@ -410,9 +366,6 @@ CONTAINS
     INTEGER, INTENT(in) :: part_idx
     REAL(sp), INTENT(in) :: part_data(:)
     REAL(dp), INTENT(inout) :: whole_data(:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, whole_data
-#endif
     INTEGER :: i, n, ofs
 
     ofs = ri%pe_off(part_idx)
@@ -427,9 +380,6 @@ CONTAINS
     INTEGER, INTENT(in) :: part_idx
     REAL(dp), INTENT(in) :: part_data(:)
     REAL(sp), INTENT(inout) :: whole_data(:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, whole_data
-#endif
     INTEGER :: i, n, ofs
 
     ofs = ri%pe_off(part_idx)
@@ -444,9 +394,6 @@ CONTAINS
     INTEGER, INTENT(in) :: part_idx
     INTEGER(i4), INTENT(in) :: part_data(:)
     INTEGER(i4), INTENT(inout) :: whole_data(:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, whole_data
-#endif
     INTEGER :: i, n, ofs
 
     ofs = ri%pe_off(part_idx)
@@ -461,9 +408,6 @@ CONTAINS
     INTEGER, INTENT(in) :: part_idx
     REAL(dp), INTENT(in) :: part_data(:,:)
     REAL(dp), INTENT(inout) :: whole_data(:,:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, whole_data
-#endif
     INTEGER :: i, k, n, nlev, ofs
 
     ofs = ri%pe_off(part_idx)
@@ -482,9 +426,6 @@ CONTAINS
     INTEGER, INTENT(in) :: part_idx
     REAL(sp), INTENT(in) :: part_data(:,:)
     REAL(sp), INTENT(inout) :: whole_data(:,:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, whole_data
-#endif
     INTEGER :: i, k, n, nlev, ofs
 
     ofs = ri%pe_off(part_idx)
@@ -503,9 +444,6 @@ CONTAINS
     INTEGER, INTENT(in) :: part_idx
     REAL(sp), INTENT(in) :: part_data(:,:)
     REAL(dp), INTENT(inout) :: whole_data(:,:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, whole_data
-#endif
     INTEGER :: i, k, n, nlev, ofs
 
     ofs = ri%pe_off(part_idx)
@@ -524,9 +462,6 @@ CONTAINS
     INTEGER, INTENT(in) :: part_idx
     REAL(dp), INTENT(in) :: part_data(:,:)
     REAL(sp), INTENT(inout) :: whole_data(:,:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, whole_data
-#endif
     INTEGER :: i, k, n, nlev, ofs
 
     ofs = ri%pe_off(part_idx)
@@ -545,9 +480,6 @@ CONTAINS
     INTEGER, INTENT(in) :: part_idx
     INTEGER(i4), INTENT(in) :: part_data(:,:)
     INTEGER(i4), INTENT(inout) :: whole_data(:,:)
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, whole_data
-#endif
     INTEGER :: i, k, n, nlev, ofs
 
     ofs = ri%pe_off(part_idx)
@@ -567,9 +499,6 @@ CONTAINS
     REAL(dp), INTENT(inout) :: part_data(:)
     INTEGER, INTENT(inout) :: offset
     INTEGER :: i, n
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, blk_data
-#endif
 
     n = ri%n_own
 !$omp do
@@ -586,9 +515,6 @@ CONTAINS
     REAL(sp), INTENT(inout) :: part_data(:)
     INTEGER, INTENT(inout) :: offset
     INTEGER :: i, n
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, blk_data
-#endif
 
     n = ri%n_own
 !$omp do
@@ -621,9 +547,6 @@ CONTAINS
     INTEGER(i4), INTENT(inout) :: part_data(:)
     INTEGER, INTENT(inout) :: offset
     INTEGER :: i, n
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, blk_data
-#endif
 
     n = ri%n_own
 !$omp do
@@ -640,9 +563,6 @@ CONTAINS
     REAL(dp), INTENT(inout) :: part_data(:)
     INTEGER, INTENT(inout) :: offset
     INTEGER :: i, n
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, blk_data
-#endif
 
     n = ri%n_own
 !$omp do
@@ -659,9 +579,6 @@ CONTAINS
     REAL(dp), INTENT(inout) :: part_data(:)
     INTEGER, INTENT(inout) :: offset
     INTEGER :: i, j, n, nlev, ofs
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, blk_data
-#endif
 
     n = ri%n_own
     nlev = SIZE(blk_data, 2)
@@ -682,9 +599,6 @@ CONTAINS
     REAL(sp), INTENT(inout) :: part_data(:)
     INTEGER, INTENT(inout) :: offset
     INTEGER :: i, j, n, nlev, ofs
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, blk_data
-#endif
 
     n = ri%n_own
     nlev = SIZE(blk_data, 2)
@@ -705,9 +619,6 @@ CONTAINS
     REAL(dp), INTENT(inout) :: part_data(:)
     INTEGER, INTENT(inout) :: offset
     INTEGER :: i, j, n, nlev, ofs
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, blk_data
-#endif
 
     n = ri%n_own
     nlev = SIZE(blk_data, 2)
@@ -728,9 +639,6 @@ CONTAINS
     INTEGER(i4), INTENT(inout) :: part_data(:)
     INTEGER, INTENT(inout) :: offset
     INTEGER :: i, j, n, nlev, ofs
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, blk_data
-#endif
 
     n = ri%n_own
     nlev = SIZE(blk_data, 2)
@@ -751,9 +659,6 @@ CONTAINS
     REAL(dp), INTENT(inout) :: part_data(:)
     INTEGER, INTENT(inout) :: offset
     INTEGER :: i, j, n, nlev, ofs
-#ifdef USE_CONTIGUOUS
-    CONTIGUOUS :: part_data, blk_data
-#endif
 
     n = ri%n_own
     nlev = SIZE(blk_data, 2)

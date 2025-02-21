@@ -17,9 +17,9 @@ MODULE mo_checksum
     USE mo_mpi,         ONLY: p_comm_size, p_comm_rank, p_comm_work, p_gather
     USE mo_util_string, ONLY: int2string
     USE mo_cdi,         ONLY: DATATYPE_INT, DATATYPE_FLT64
-#ifndef NOMPI
-    USE mpi !, ONLY: MPI_INT32_T, MPI_GATHER
-#endif
+
+
+
 
     IMPLICIT NONE
 
@@ -98,48 +98,8 @@ CONTAINS
         printDetails = .FALSE.
         IF(PRESENT(opt_lDetails)) printDetails = opt_lDetails
 
-#ifndef NOMPI
-        !gather the process local checksums on process 0
-        communicator = p_comm_work
-        IF(PRESENT(opt_comm)) communicator = opt_comm
-        processCount = p_comm_size(communicator)
-        ALLOCATE(processChecksums(processCount))
-
-        CALL p_gather(local_chksum, processChecksums, 0, communicator)
-
-        !hash the results of the different processes down to a single VALUE AND print that.
-        IF (p_comm_rank(communicator) == 0) THEN
-
-          IF (ALL(processChecksums == 0)) THEN
-
-            WRITE(0, *) prefix//' zero size array - no checksum available.'
-
-          ELSE
-
-            ! HACKHACKHACKHACK:: stupid serializeGetSizeInCore() from cdilib does not know about
-            ! a DATATYPE_INT32, so use DATATYPE_INT as workaround
-            ! (which SHOULD hopefully have same storage size...)
-            hash = cdi_check_sum(DATATYPE_INT, processCount, c_loc(processChecksums))
-
-            IF (printDetails) THEN
-              WRITE(0, *) prefix//"details:"
-              DO i = 1, processCount
-                CALL checksum_to_string(processChecksums(i), chksum_string)
-                WRITE(0, *) "checksum from process "//TRIM(int2string(i - 1))//": "//chksum_string
-              END DO
-            END IF
-
-            !print the RESULT
-            CALL checksum_to_string(hash, chksum_string)
-            WRITE(0, *) prefix//chksum_string
-          END IF
-        ENDIF
-
-        DEALLOCATE(processChecksums)
-#else
         CALL checksum_to_string(local_chksum, chksum_string)
         WRITE(0, *) prefix//chksum_string
-#endif
     END SUBROUTINE printChecksum_second_step
 
 

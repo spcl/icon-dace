@@ -13,10 +13,10 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#if defined __xlC__ && !defined NOXLFPROCESS
-@PROCESS HOT
-@PROCESS SPILLSIZE(5000)
-#endif
+
+
+
+
 !OCL NOALIAS
 
 MODULE mo_aes_phy_main
@@ -40,10 +40,10 @@ MODULE mo_aes_phy_main
     &                               finalize
 
   USE mo_aes_diagnostics     ,ONLY: aes_global_diagnostics
-#if defined( _OPENACC )
-  USE mo_exception           ,ONLY: warning
-  USE mo_var_list_gpu        ,ONLY: gpu_update_var_list
-#endif
+
+
+
+
 
   USE mo_diagnose_cov        ,ONLY: diagnose_cov
 
@@ -117,11 +117,11 @@ CONTAINS
     !--------------------------------------------------------------------
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_zero ) THEN
-#if defined( _OPENACC )
-       CALL warning('GPU:aes_art_main','GPU host synchronization should be removed when port is done!')
-       CALL gpu_update_var_list('prm_field_D', .false., jg, lacc=.TRUE.)
-       CALL gpu_update_var_list('prm_tend_D' , .false., jg, lacc=.TRUE.)
-#endif
+
+
+
+
+
        !
        aes_phy_tc(jg)%is_in_sd_ed_interval_two = (aes_phy_tc(jg)%sd_two <= datetime) .AND. (aes_phy_tc(jg)%ed_two > datetime)
        aes_phy_tc(jg)%is_active_two            = isCurrentEventActive(aes_phy_tc(jg)%ev_two, datetime)
@@ -132,11 +132,11 @@ CONTAINS
        !
        CALL omp_block_loop_cell(patch, interface_cloud_two)
        !
-#if defined( _OPENACC )
-       CALL warning('GPU:aes_art_main','GPU device synchronization should be removed when port is done!')
-       CALL gpu_update_var_list('prm_field_D', .true., jg, lacc=.TRUE.)
-       CALL gpu_update_var_list('prm_tend_D' , .true., jg, lacc=.TRUE.)
-#endif
+
+
+
+
+
     END IF
 
     !-------------------------------------------------------------------
@@ -222,11 +222,11 @@ CONTAINS
     !-------------------------------------------------------------------
     !
     IF (aes_phy_tc(jg)%dt_art > dt_zero) THEN
-#if defined( _OPENACC )
-       CALL warning('GPU:aes_art_main','GPU host synchronization should be removed when port is done!')
-       CALL gpu_update_var_list('prm_field_D', .false., jg, lacc=.TRUE.)
-       CALL gpu_update_var_list('prm_tend_D' , .false., jg, lacc=.TRUE.)
-#endif
+
+
+
+
+
        !
        aes_phy_tc(jg)%is_in_sd_ed_interval_art = (aes_phy_tc(jg)%sd_art <= datetime) .AND. (aes_phy_tc(jg)%ed_art > datetime)
        aes_phy_tc(jg)%is_active_art            = isCurrentEventActive(aes_phy_tc(jg)%ev_art, datetime)
@@ -242,11 +242,11 @@ CONTAINS
        !
        CALL interface_aes_art(patch)
        !
-#if defined( _OPENACC )
-       CALL warning('GPU:aes_art_main','GPU device synchronization should be removed when port is done!')
-       CALL gpu_update_var_list('prm_field_D', .true., jg, lacc=.TRUE.)
-       CALL gpu_update_var_list('prm_tend_D' , .true., jg, lacc=.TRUE.)
-#endif
+
+
+
+
+
     END IF
 
     !-------------------------------------------------------------------

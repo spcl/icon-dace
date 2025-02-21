@@ -147,9 +147,9 @@ MODULE mo_adjust
      !>*    1.           DEFINE CONSTANTS
      !!                  ----------------
 
-#ifndef _OPENACC
+
      IF (lhook) CALL dr_hook('SATUR',0,zhook_handle)
-#endif
+
      zqmax=0.5_JPRB
 
      !     *
@@ -205,9 +205,9 @@ MODULE mo_adjust
 
      ENDIF
 
-#ifndef _OPENACC
+
      IF (lhook) CALL dr_hook('SATUR',1,zhook_handle)
-#endif
+
 
    END SUBROUTINE satur
 
@@ -328,9 +328,9 @@ MODULE mo_adjust
      !     1.           DEFINE CONSTANTS
      !                  ----------------
 
-#ifndef _OPENACC
+
      IF (lhook) CALL dr_hook('CUADJTQ',0,zhook_handle)
-#endif
+
 
      zqmax=0.5_JPRB
 
@@ -763,9 +763,9 @@ MODULE mo_adjust
      ENDIF  ! lphylin
      !*********************************************
     
-#ifndef _OPENACC
+
      IF (lhook) CALL dr_hook('CUADJTQ',1,zhook_handle)
-#endif
+
 
   END SUBROUTINE cuadjtq
   

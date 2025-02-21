@@ -37,20 +37,20 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_extents_mp
   USE ppm_base, ONLY: abort_ppm, assertion
   USE ppm_extents, ONLY: extent, OPERATOR(==)
   USE ppm_std_type_kinds, ONLY: i4
   USE ppm_std_type_kinds_mp, ONLY: mp_i4
-#ifdef USE_MPI_MOD
-  USE mpi
-#endif
+
+
+
   IMPLICIT NONE
   PRIVATE
-#if defined USE_MPI && ! defined USE_MPI_MOD
-  INCLUDE 'mpif.h'
-#endif
+
+
+
 
   INTEGER, SAVE :: extent_mp
 
@@ -66,13 +66,13 @@ CONTAINS
          (/ mp_i4 /), &
          extent_mp, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_create_struct failed", filename, __LINE__)
+         CALL abort_ppm("mpi_type_create_struct failed", filename, 69)
     CALL mpi_type_commit(extent_mp, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_commit failed", filename, __LINE__)
+         CALL abort_ppm("mpi_type_commit failed", filename, 72)
     CALL mpi_comm_dup(mpi_comm_self, comm_self_clone, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_dup failed", filename, __LINE__)
+         CALL abort_ppm("mpi_comm_dup failed", filename, 75)
     a(1) = extent(123456_i4, 78901_i4)
     DO i = 2, SIZE(a)
       a(i)%first = a(i - 1)%first + 333
@@ -81,19 +81,19 @@ CONTAINS
     CALL mpi_isend(a, msg_count, extent_mp, 0, 1, comm_self_clone, &
          request, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_isend failed", filename, __LINE__)
+         CALL abort_ppm("mpi_isend failed", filename, 84)
     CALL mpi_recv(b, msg_count, extent_mp, 0, 1, comm_self_clone, &
          mpi_status_ignore, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_recv failed", filename, __LINE__)
+         CALL abort_ppm("mpi_recv failed", filename, 88)
     CALL mpi_wait(request, mpi_status_ignore, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_wait failed", filename, __LINE__)
+         CALL abort_ppm("mpi_wait failed", filename, 91)
     CALL assertion(request == mpi_request_null .AND. ALL(a == b), &
-         filename, __LINE__, 'error in transfer')
+         filename, 93, 'error in transfer')
     CALL mpi_comm_free(comm_self_clone, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_comm_free failed", filename, __LINE__)
+         CALL abort_ppm("mpi_comm_free failed", filename, 96)
     CALL ppm_create_extents_mp
   END SUBROUTINE create_extents_mp
 
@@ -101,7 +101,7 @@ CONTAINS
     INTEGER :: ierror
     CALL mpi_type_free(extent_mp, ierror)
     IF (ierror /= mpi_success) &
-         CALL abort_ppm("mpi_type_free failed", filename, __LINE__)
+         CALL abort_ppm("mpi_type_free failed", filename, 104)
   END SUBROUTINE destroy_extents_mp
 END MODULE ppm_extents_mp
 !

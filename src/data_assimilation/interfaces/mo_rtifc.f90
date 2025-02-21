@@ -41,7 +41,59 @@ MODULE mo_rtifc
 !
 !-------------------------------------------------------------------------------------
 
-#include "mo_rtifc_macros.incf"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+!
+!+ Preprocessor macros for mo_rtifc_*.f90
+!
+!
+! Description:
+!   This file contains the Macro definitions
+!
+! Current Code Owner: DWD, Robin Faulwetter
+!    phone: +49 69 8062 2746
+!    fax:   +49 69 8062 3721
+!    email:  robin.faulwetter@dwd.de
+!
+! History:
+! Version      Date       Name
+! ------------ ---------- ----
+! @VERSION@    @DATE@     Robin Faulwetter
+!  Initial release
+!
+! Code Description:
+! Language: Fortran 2003.
+! Software Standards:
+!
+! Heritage: mo_rtifc_10.f90
+!=======================================================================
+
+
+!---------------
+! MACRO SETTINGS
+!---------------
+
+! Take into account _DACE_ and __DACE__
+
+! Icon without RTTOV
+
+! Set macros for RTTOV coefficient distribution
+
+! Select mpi routines to be used for coefficient distribution
+
+
+
+
+!-------------------------
+!--------------------------------
 
 
   !-------------
@@ -50,80 +102,6 @@ MODULE mo_rtifc
 
   use mo_rtifc_base
 
-#if (_RTTOV_VERSION == 13)
-  use mo_rtifc_13,       only: rtifc_vers,             &! RTTOV version number this interface is compiled for
-                               rtifc_version,          &! version string
-                               rtifc_init,             &! Initialize RTTOV, i.e. read coeffs
-                               rtifc_coef_index,       &! Return index of coeffs for given satid/instr
-                               rtifc_cleanup,          &! Cleanup RTTOV and mo_rtifc structures
-                               rtifc_fill_input,       &! Fill rttov profile structure
-                               rtifc_direct,           &! rttov_direct call
-                               rtifc_k,                &! rttov_k call
-                               rtifc_l2c_god,          &! god-corrected l2c
-                               rtifc_print_profiles,   &! print rttov profile structure
-                               rtifc_coef_prop,        &! get coef properties
-                               rtifc_set_opts_sub,     &! set RTTOV options
-                               rtifc_get_opts_sub,     &! get RTTOV options
-                               rttov_options,          &! Options for RTTOV (type definition)
-                               gas_unit_specconc,      &! specific concentration (kg/kg over wet air)
-                               gas_unit_ppmv,          &! ppmv over wet air
-                               gas_unit_ppmvdry,       &! ppmv over dry air
-                               rt_gas_id_o3  => gas_id_ozone, &!
-                               rt_gas_id_co2 => gas_id_co2
-#if defined(_RTTOV_ATLAS)
-  use mo_rtifc_13,       only: rtifc_init_atlas,       &!
-                               rtifc_emis_atlas,       &! get emissivity from atlas
-                               rtifc_emis_retrieve,    &! retrieve emissivity (by Karbou-method)
-                               rtifc_init_brdf_atlas,  &!
-                               rtifc_brdf_atlas
-#endif
-
-#elif (_RTTOV_VERSION == 12)
-  use mo_rtifc_12,       only: rtifc_vers,             &! RTTOV version number this interface is compiled for
-                               rtifc_version,          &! version string
-                               rtifc_init,             &! Initialize RTTOV, i.e. read coeffs
-                               rtifc_coef_index,       &! Return index of coeffs for given satid/instr
-                               rtifc_cleanup,          &! Cleanup RTTOV and mo_rtifc structures
-                               rtifc_fill_input,       &! Fill rttov profile structure
-                               rtifc_direct,           &! rttov_direct call
-                               rtifc_k,                &! rttov_k call
-                               rtifc_l2c_god,          &! god-corrected l2c
-                               rtifc_print_profiles,   &! print rttov profile structure
-                               rtifc_coef_prop,        &! get coef properties
-                               rtifc_set_opts_sub,     &! set RTTOV options
-                               rtifc_get_opts_sub,     &! get RTTOV options
-                               rttov_options,          &! Options for RTTOV (type definition)
-                               gas_unit_specconc,      &! specific concentration (kg/kg over wet air)
-                               gas_unit_ppmv,          &! ppmv over wet air
-                               gas_unit_ppmvdry,       &! ppmv over dry air
-                               rt_gas_id_o3  => gas_id_ozone, &!
-                               rt_gas_id_co2 => gas_id_co2
-#if defined(_RTTOV_ATLAS)
-  use mo_rtifc_12,       only: rtifc_init_atlas,       &!
-                               rtifc_emis_atlas,       &! get emissivity from atlas
-                               rtifc_emis_retrieve,    &! retrieve emissivity (by Karbou-method)
-                               rtifc_init_brdf_atlas,  &!
-                               rtifc_brdf_atlas
-#endif
-
-#elif (_RTTOV_VERSION == 10)
-  use mo_rtifc_10,       only: rtifc_vers,             &! RTTOV version this interface is compiled for
-                               rtifc_version,          &! version string
-                               rtifc_init,             &! Initialize RTTOV, i.e. read coeffs
-                               rtifc_coef_index,       &! Return index of coeffs for given satid/instr
-                               rtifc_cleanup,          &! Cleanup RTTOV and mo_rtifc structures
-                               rtifc_fill_input,       &! Fill rttov profile structure
-                               rtifc_direct,           &! rttov_direct call
-                               rtifc_k,                &! rttov_k call
-                               rtifc_l2c_god,          &! god-corrected l2c
-                               rtifc_print_profiles,   &! print rttov profile structure
-                               rtifc_coef_prop,        &! get coef properties
-                               rtifc_set_opts_sub,     &! set RTTOV options
-                               rtifc_get_opts_sub,     &! get RTTOV options
-                               rttov_options,          &! Options for RTTOV (type definition)
-                               rt_gas_id_o3  => gas_id_ozone, &!
-                               rt_gas_id_co2 => gas_id_co2
-#elif (_RTTOV_VERSION <= 0)
   use mo_rtifc_nort,     only: rtifc_vers,             &! RTTOV version this interface is compiled for
                                rtifc_version,          &! version string
                                rtifc_init,             &! Initialize RTTOV, i.e. read coeffs
@@ -138,7 +116,6 @@ MODULE mo_rtifc
                                rttov_options,          &! Options for RTTOV (type definition)
                                rt_gas_id_o3  => gas_id_ozone, &!
                                rt_gas_id_co2 => gas_id_co2
-#endif
 
 
   implicit none
@@ -168,14 +145,6 @@ MODULE mo_rtifc
   public :: rtifc_errmsg           ! gives error message corresponding to exit status
   public :: rtifc_coef_prop        ! get properties of coefs
   public :: rtifc_check_nlevs
-#if defined(_RTTOV_ATLAS)
-  ! Emissivity atlases
-  public :: rtifc_init_atlas
-  public :: rtifc_init_brdf_atlas
-  public :: rtifc_emis_atlas
-  public :: rtifc_emis_retrieve
-  public :: rtifc_brdf_atlas
-#endif
 
   ! Optimization
   public :: read1pe
@@ -209,11 +178,7 @@ MODULE mo_rtifc
   public :: default_sunazangle
   public :: default_ctp
   public :: default_cfraction
-#if (_RTTOV_VERSION >= 13)
-  public :: default_ice_scheme
-#else
   public :: default_idg
-#endif
   public :: default_clw_scheme
   public :: default_gas_units
 
@@ -225,11 +190,6 @@ MODULE mo_rtifc
 
   ! RTTOV "constants"
   public :: min_od
-#if (_RTTOV_VERSION >= 12)
-  public :: gas_unit_specconc
-  public :: gas_unit_ppmv
-  public :: gas_unit_ppmvdry
-#endif
   public :: rt_gas_id_o3
   public :: rt_gas_id_co2
 
@@ -347,110 +307,6 @@ contains
 
     character(len=14),   parameter :: proc = 'rtifc_set_opts'
 
-#if (_RTTOV_VERSION == 13)
-    call rtifc_set_opts_sub(iopt              = iopt,               &!
-                            new               = new,                &!
-                            init              = init,               &!
-                            tmpl              = tmpl,               &!
-                            iopt_tmpl         = iopt_tmpl,          &!
-                            name              = name,               &!
-                            satid             = satid,              &!
-                            instr             = instr,              &!
-                            grid              = grid,               &!
-                            rttov_opts        = rttov_opts,         &!
-                            addinterp         = addinterp,          &!
-                            interp_mode       = interp_mode,        &!
-                            addrefrac         = addrefrac,          &!
-                            addclouds         = addclouds,          &!
-                            addaerosl         = addaerosl,          &!
-                            addsolar          = addsolar,           &!
-                            addpc             = addpc,              &!
-                            apply_reg_lims    = apply_reg_lims,     &!
-                            verbose_reg_lims  = verbose_reg_lims,   &!
-                            crop_k_reg_lims   = crop_k_reg_lims,    &!
-                            switchrad         = switchrad,          &!
-                            conv_overc        = conv_overc,         &!
-                            fix_hgpl          = fix_hgpl,           &!
-                            fastem_version    = fastem_version,     &!
-                            ir_sea_emis_model = ir_sea_emis_model,  &!
-                            use_t2m_opdep     = use_t2m_opdep,      &!
-                            use_q2m           = use_q2m,            &!
-                            do_lambertian     = do_lambertian,      &!
-                            cloud_overlap     = cloud_overlap,      &!
-                            do_checkinput     = do_checkinput,      &!
-                            ozone_data        = ozone_data,         &!
-                            co2_data          = co2_data,           &!
-                            n2o_data          = n2o_data,           &!
-                            co_data           = co_data,            &!
-                            ch4_data          = ch4_data,           &!
-                            so2_data          = so2_data,           &!
-                            clw_data          = clw_data,           &!
-                            dom_rayleigh      = dom_rayleigh,       &!
-                            dom_nstreams      = dom_nstreams,       &!
-                            ir_scatt_model    = ir_scatt_model,     &!
-                            vis_scatt_model   = vis_scatt_model,    &!
-                            clip_gas_opdep    = clip_gas_opdep      &!
-                           )
-#elif (_RTTOV_VERSION == 12)
-    call rtifc_set_opts_sub(iopt              = iopt,               &!
-                            new               = new,                &!
-                            init              = init,               &!
-                            tmpl              = tmpl,               &!
-                            iopt_tmpl         = iopt_tmpl,          &!
-                            name              = name,               &!
-                            satid             = satid,              &!
-                            instr             = instr,              &!
-                            grid              = grid,               &!
-                            rttov_opts        = rttov_opts,         &!
-                            addinterp         = addinterp,          &!
-                            interp_mode       = interp_mode,        &!
-                            addrefrac         = addrefrac,          &!
-                            addclouds         = addclouds,          &!
-                            addaerosl         = addaerosl,          &!
-                            addsolar          = addsolar,           &!
-                            addpc             = addpc,              &!
-                            apply_reg_lims    = apply_reg_lims,     &!
-                            verbose_reg_lims  = verbose_reg_lims,   &!
-                            crop_k_reg_lims   = crop_k_reg_lims,    &!
-                            switchrad         = switchrad,          &!
-                            conv_overc        = conv_overc,         &!
-                            fix_hgpl          = fix_hgpl,           &!
-                            fastem_version    = fastem_version,     &!
-                            ir_sea_emis_model = ir_sea_emis_model,  &!
-                            use_q2m           = use_q2m,            &!
-                            do_lambertian     = do_lambertian,      &!
-                            ozone_data        = ozone_data,         &!
-                            co2_data          = co2_data,           &!
-                            n2o_data          = n2o_data,           &!
-                            co_data           = co_data,            &!
-                            ch4_data          = ch4_data,           &!
-                            so2_data          = so2_data,           &!
-                            clw_data          = clw_data            &!
-                           )
-#elif (_RTTOV_VERSION == 10)
-    call rtifc_set_opts_sub(iopt              = iopt,               &!
-                            new               = new,                &!
-                            init              = init,               &!
-                            tmpl              = tmpl,               &!
-                            iopt_tmpl         = iopt_tmpl,          &!
-                            name              = name,               &!
-                            satid             = satid,              &!
-                            instr             = instr,              &!
-                            grid              = grid,               &!
-                            rttov_opts        = rttov_opts,         &!
-                            addinterp         = addinterp,          &!
-                            addrefrac         = addrefrac,          &!
-                            addclouds         = addclouds,          &!
-                            addaerosl         = addaerosl,          &!
-                            addsolar          = addsolar,           &!
-                            addpc             = addpc,              &!
-                            apply_reg_lims    = apply_reg_lims,     &!
-                            verbose_reg_lims  = verbose_reg_lims,   &!
-                            switchrad         = switchrad,          &!
-                            fastem_version    = fastem_version,     &!
-                            use_q2m           = use_q2m             &!
-                           )
-#endif
 
   end subroutine rtifc_set_opts
 
@@ -538,113 +394,6 @@ contains
 
     character(len=14),   parameter :: proc = 'rtifc_get_opts'
 
-#if (_RTTOV_VERSION == 13)
-    call rtifc_get_opts_sub(iopt              = iopt,               &!
-                            tmpl              = tmpl,               &!
-                            name              = name,               &!
-                            satid             = satid,              &!
-                            instr             = instr,              &!
-                            grid              = grid,               &!
-                            rttov_opts        = rttov_opts,         &!
-                            addinterp         = addinterp,          &!
-                            interp_mode       = interp_mode,        &!
-                            addrefrac         = addrefrac,          &!
-                            addclouds         = addclouds,          &!
-                            addaerosl         = addaerosl,          &!
-                            addsolar          = addsolar,           &!
-                            addpc             = addpc,              &!
-                            apply_reg_lims    = apply_reg_lims,     &!
-                            verbose_reg_lims  = verbose_reg_lims,   &!
-                            crop_k_reg_lims   = crop_k_reg_lims,    &!
-                            switchrad         = switchrad,          &!
-                            conv_overc        = conv_overc,         &!
-                            fix_hgpl          = fix_hgpl,           &!
-                            fastem_version    = fastem_version,     &!
-                            ir_sea_emis_model = ir_sea_emis_model,  &!
-                            use_t2m_opdep     = use_t2m_opdep,      &!
-                            use_q2m           = use_q2m,            &!
-                            do_lambertian     = do_lambertian,      &!
-                            cloud_overlap     = cloud_overlap,      &!
-                            do_checkinput     = do_checkinput,      &!
-                            ozone_data        = ozone_data,         &!
-                            co2_data          = co2_data,           &!
-                            n2o_data          = n2o_data,           &!
-                            co_data           = co_data,            &!
-                            ch4_data          = ch4_data,           &!
-                            so2_data          = so2_data,           &!
-                            clw_data          = clw_data,           &!
-                            dom_rayleigh      = dom_rayleigh,       &!
-                            dom_nstreams      = dom_nstreams,       &!
-                            ir_scatt_model    = ir_scatt_model,     &!
-                            vis_scatt_model   = vis_scatt_model,    &!
-                            clip_gas_opdep    = clip_gas_opdep      &!
-                           )
-#elif (_RTTOV_VERSION == 12)
-    call rtifc_get_opts_sub(iopt              = iopt,               &!
-                            tmpl              = tmpl,               &!
-                            name              = name,               &!
-                            satid             = satid,              &!
-                            instr             = instr,              &!
-                            grid              = grid,               &!
-                            rttov_opts        = rttov_opts,         &!
-                            addinterp         = addinterp,          &!
-                            interp_mode       = interp_mode,        &!
-                            addrefrac         = addrefrac,          &!
-                            addclouds         = addclouds,          &!
-                            addaerosl         = addaerosl,          &!
-                            addsolar          = addsolar,           &!
-                            addpc             = addpc,              &!
-                            apply_reg_lims    = apply_reg_lims,     &!
-                            verbose_reg_lims  = verbose_reg_lims,   &!
-                            crop_k_reg_lims   = crop_k_reg_lims,    &!
-                            switchrad         = switchrad,          &!
-                            conv_overc        = conv_overc,         &!
-                            fix_hgpl          = fix_hgpl,           &!
-                            fastem_version    = fastem_version,     &!
-                            ir_sea_emis_model = ir_sea_emis_model,  &!
-                            use_q2m           = use_q2m,            &!
-                            do_lambertian     = do_lambertian,      &!
-                            ozone_data        = ozone_data,         &!
-                            co2_data          = co2_data,           &!
-                            n2o_data          = n2o_data,           &!
-                            co_data           = co_data,            &!
-                            ch4_data          = ch4_data,           &!
-                            so2_data          = so2_data,           &!
-                            clw_data          = clw_data            &!
-                           )
-#elif (_RTTOV_VERSION == 10)
-    call rtifc_get_opts_sub(iopt              = iopt,               &!
-                            tmpl              = tmpl,               &!
-                            name              = name,               &!
-                            satid             = satid,              &!
-                            instr             = instr,              &!
-                            grid              = grid,               &!
-                            rttov_opts        = rttov_opts,         &!
-                            addinterp         = addinterp,          &!
-                            interp_mode       = interp_mode,        &!
-                            addrefrac         = addrefrac,          &!
-                            addclouds         = addclouds,          &!
-                            addaerosl         = addaerosl,          &!
-                            addsolar          = addsolar,           &!
-                            addpc             = addpc,              &!
-                            apply_reg_lims    = apply_reg_lims,     &!
-                            verbose_reg_lims  = verbose_reg_lims,   &!
-                            crop_k_reg_lims   = crop_k_reg_lims,    &!
-                            switchrad         = switchrad,          &!
-                            conv_overc        = conv_overc,         &!
-                            fix_hgpl          = fix_hgpl,           &!
-                            fastem_version    = fastem_version,     &!
-                            ir_sea_emis_model = ir_sea_emis_model,  &!
-                            use_q2m           = use_q2m,            &!
-                            do_lambertian     = do_lambertian,      &!
-                            ozone_data        = ozone_data,         &!
-                            co2_data          = co2_data,           &!
-                            n2o_data          = n2o_data,           &!
-                            co_data           = co_data,            &!
-                            ch4_data          = ch4_data,           &!
-                            clw_data          = clw_data            &!
-                           )
-#endif
 
   end subroutine rtifc_get_opts
 

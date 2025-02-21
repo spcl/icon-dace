@@ -389,9 +389,9 @@ CONTAINS
   END FUNCTION iinterval_equality
 
   ELEMENTAL FUNCTION extent_intersect_1d(a, b) RESULT(intersection)
-#if defined(_CRAYFTN) && _RELEASE_MAJOR == 13 && _RELEASE_MINOR == 0 && _RELEASE_PATCHLEVEL == 0
-!dir$ optimize(-O0)
-#endif
+
+
+
     TYPE(extent) :: intersection
     TYPE(extent), INTENT(in) :: a, b
     TYPE(iinterval) :: a_i, b_i, temp_i

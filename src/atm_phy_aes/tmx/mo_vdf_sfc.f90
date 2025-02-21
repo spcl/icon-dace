@@ -13,7 +13,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_vdf_sfc
@@ -28,12 +38,6 @@ MODULE mo_vdf_sfc
   USE mo_variable,          ONLY: t_variable
   USE mo_variable_list,     ONLY: t_variable_list, t_variable_set
 
-#ifdef _OPENACC
-  use openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)
-#else
-#define __acc_attach(ptr)
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -100,13 +104,9 @@ MODULE mo_vdf_sfc
       & zf(:,:) => NULL(), & !< geom. height of lowest atm. full level [m]
       & zh(:,:) => NULL(), & !< geom. height of surface (interface level) [m]
       & fract_tile(:,:,:) => NULL()
-#ifdef __MIXED_PRECISION
-    REAL(sp), POINTER :: &
-      & dz(:,:) => NULL()
-#else
     REAL(wp), POINTER :: &
       & dz(:,:) => NULL()
-#endif
+
 
   CONTAINS
     ! PROCEDURE :: Init => init_t_vdf_sfc_variable_set
@@ -266,34 +266,34 @@ CONTAINS
     TYPE IS (t_vdf_sfc_config)
       conf => set
     END SELECT
-    __acc_attach(conf)
+    
     SELECT TYPE (set => this%inputs)
     TYPE IS (t_vdf_sfc_inputs)
       ins => set
     END SELECT
-    __acc_attach(ins)
+    
     SELECT TYPE (set => this%diagnostics)
     TYPE IS (t_vdf_sfc_diagnostics)
       diags => set
     END SELECT
-    __acc_attach(diags)
+    
     ! set => this%config
     ! SELECT TYPE (set)
     ! TYPE IS (t_vdf_sfc_config)
     !   conf => set
-    !   __acc_attach(conf)
+    !   
     ! END SELECT
     ! set => this%inputs
     ! SELECT TYPE (set)
     ! TYPE IS (t_vdf_sfc_inputs)
     !   ins => set
-    !   __acc_attach(ins)
+    !   
     ! END SELECT
     ! set => this%diagnostics
     ! SELECT TYPE (set)
     ! TYPE IS (t_vdf_sfc_diagnostics)
     !   diags => set
-    !   __acc_attach(diags)
+    !   
     ! END SELECT
 
     old_tsfc  => this%states    %Get_ptr_r3d('surface temperature')
@@ -509,16 +509,16 @@ CONTAINS
     TYPE IS (t_vdf_sfc_config)
       conf => set
     END SELECT
-    __acc_attach(conf)
+    
     SELECT TYPE (set => this%inputs)
     TYPE IS (t_vdf_sfc_inputs)
       ins => set
     END SELECT
-    __acc_attach(ins)
+    
     SELECT TYPE (set => this%diagnostics)
     TYPE IS (t_vdf_sfc_diagnostics)
       diags => set
-      __acc_attach(diags)
+      
     END SELECT
 
     old_tsfc => this%states%Get_ptr_r3d('surface temperature')
@@ -699,17 +699,17 @@ CONTAINS
     TYPE IS (t_vdf_sfc_config)
       conf => set
     END SELECT
-    __acc_attach(conf)
+    
     SELECT TYPE (set => this%inputs)
     TYPE IS (t_vdf_sfc_inputs)
       ins => set
     END SELECT
-    __acc_attach(ins)
+    
     SELECT TYPE (set => this%diagnostics)
     TYPE IS (t_vdf_sfc_diagnostics)
       diags => set
     END SELECT
-    __acc_attach(diags)
+    
     
     ! CALL message(routine, 'start')
 
@@ -830,18 +830,8 @@ CONTAINS
 
     IF (domain%ntiles < 1) CALL finish(routine, 'This should not happen - ntiles < 1')
 
-#ifdef _OPENACC
-    not_is_present = .NOT. acc_is_present(var_in)
-    IF (not_is_present) THEN
-      ALLOCATE(ptr3d(SIZE(var_in,1),SIZE(var_in,2),SIZE(var_in,3)))
-      ptr3d(:,:,:) = var_in(:,:,:)
-    ELSE
-      ptr3d => var_in
-    END IF
-#else
     not_is_present = .TRUE.
     ptr3d => var_in
-#endif
     !$ACC DATA COPYIN(ptr3d) IF(not_is_present)
 
     IF (domain%ntiles == 1) THEN
@@ -875,11 +865,6 @@ CONTAINS
     END IF
 
     !$ACC END DATA
-#ifdef _OPENACC
-    IF (not_is_present) THEN
-      DEALLOCATE(ptr3d)
-    END IF
-#endif
 
     ! IF (PRESENT(msg)) CALL message(routine, 'average complete for '//msg)
 
@@ -920,23 +905,23 @@ CONTAINS
     SELECT TYPE (this)
     TYPE IS (t_vdf_sfc_config)
       this%dtime => this%list%Get_ptr_r0d('time step')
-      __acc_attach(this%dtime)
+      
       this%cpd => this%list%Get_ptr_r0d('cpd')
-      __acc_attach(this%cpd)
+      
       this%cvd => this%list%Get_ptr_r0d('cvd')
-      __acc_attach(this%cvd)
+      
       this%min_sfc_wind => this%list%Get_ptr_r0d('minimum surface wind speed')
-      __acc_attach(this%min_sfc_wind)
+      
       this%min_rough   => this%list%Get_ptr_r0d('minimal roughness length')
-      __acc_attach(this%min_rough)
+      
       this%rough_m_oce => this%list%Get_ptr_r0d('ocean roughness length')
-      __acc_attach(this%rough_m_oce)
+      
       this%rough_m_ice => this%list%Get_ptr_r0d('ice roughness length')
-      __acc_attach(this%rough_m_ice)
+      
       this%fsl         => this%list%Get_ptr_r0d('weight for interpolation to surface_layer mid level')
-      __acc_attach(this%fsl)
+      
       this%nice_thickness_classes => this%list%Get_ptr_i0d('number of sea ice thickness classes')
-      __acc_attach(this%nice_thickness_classes)
+      
     END SELECT
 
   END SUBROUTINE Set_pointers_config
@@ -965,11 +950,7 @@ CONTAINS
     CALL inlist%append(t_variable('surface pressure', shape_2d, "Pa", type_id="real"))
     CALL inlist%append(t_variable('atm geometric height full', shape_2d, "Pa", type_id="real"))
     CALL inlist%append(t_variable('sfc geometric height half', shape_2d, "Pa", type_id="real"))
-#ifdef __MIXED_PRECISION
-    CALL inlist%append(t_variable('reference height in surface layer times 2', shape_2d, "m", type_id="single"))
-#else
     CALL inlist%append(t_variable('reference height in surface layer times 2', shape_2d, "m", type_id="real"))
-#endif
     CALL inlist%append(t_variable('surface rain flux, large-scale', shape_2d, "kg m-2 s-1", type_id="real"))
     CALL inlist%append(t_variable('surface snow flux, large-scale', shape_2d, "kg m-2 s-1", type_id="real"))
 
@@ -1005,72 +986,68 @@ CONTAINS
     SELECT TYPE (this)
     TYPE IS (t_vdf_sfc_inputs)
       this%ta => this%list%Get_ptr_r2d('atm temperature')
-      __acc_attach(this%ta)
+      
       this%tv => this%list%Get_ptr_r2d('atm virtual temperature')
-      __acc_attach(this%tv)
+      
       this%ua => this%list%Get_ptr_r2d('atm zonal wind')
-      __acc_attach(this%ua)
+      
       this%va => this%list%Get_ptr_r2d('atm meridional wind')
-      __acc_attach(this%va)
+      
       this%qa => this%list%Get_ptr_r2d('atm total water')
-      __acc_attach(this%qa)
+      
       this%pa => this%list%Get_ptr_r2d('atm full level pressure')
-      __acc_attach(this%pa)
+      
       this%psfc => this%list%Get_ptr_r2d('surface pressure')
-      __acc_attach(this%psfc)
+      
       this%rsfl => this%list%Get_ptr_r2d('surface rain flux, large-scale')
-      __acc_attach(this%rsfl)
+      
       this%ssfl => this%list%Get_ptr_r2d('surface snow flux, large-scale')
-      __acc_attach(this%ssfl)
+      
 
       this%rlds     => this%list%Get_ptr_r2d('surface downward longwave radiation')
-      __acc_attach(this%rlds)
+      
       this%rsds     => this%list%Get_ptr_r2d('surface downward shortwave radiation')
-      __acc_attach(this%rsds)
+      
       this%rvds_dir => this%list%Get_ptr_r2d('all-sky surface downward direct visible radiation')
-      __acc_attach(this%rvds_dir)
+      
       this%rnds_dir => this%list%Get_ptr_r2d('all-sky surface downward direct near-IR radiation')
-      __acc_attach(this%rnds_dir)
+      
       this%rpds_dir => this%list%Get_ptr_r2d('all-sky surface downward direct PAR radiation') 
-      __acc_attach(this%rpds_dir)
+      
       this%rvds_dif => this%list%Get_ptr_r2d('all-sky surface downward diffuse visible radiation')
-      __acc_attach(this%rvds_dif)
+      
       this%rnds_dif => this%list%Get_ptr_r2d('all-sky surface downward diffuse near-IR radiation')
-      __acc_attach(this%rnds_dif)
+      
       this%rpds_dif => this%list%Get_ptr_r2d('all-sky surface downward diffuse PAR radiation')
-      __acc_attach(this%rpds_dif)
+      
 
       this%emissivity => this%list%Get_ptr_r2d('longwave surface emissivity')
-      __acc_attach(this%emissivity)
+      
       this%cosmu0     => this%list%Get_ptr_r2d('cosine of zenith angle')
-      __acc_attach(this%cosmu0)
+      
       this%co2        => this%list%Get_ptr_r2d('atm CO2 concentration')
-      __acc_attach(this%co2)
+      
 
       this%tsfc_tile => this%list%Get_ptr_r3d('surface temperature, tile')
-      __acc_attach(this%tsfc_tile)
+      
       ! this%rough_m => this%list%Get_ptr_r3d('roughness length momentum')
       ! this%rough_h => this%list%Get_ptr_r3d('roughness length heat')
       this%u_oce_current => this%list%Get_ptr_r2d('u-component of ocean current')
-      __acc_attach(this%u_oce_current)
+      
       this%v_oce_current => this%list%Get_ptr_r2d('v-component of ocean current')
-      __acc_attach(this%v_oce_current)
+      
 
       this%ice_thickness  => this%list%Get_ptr_r2d('thickness of sea ice')
-      __acc_attach(this%ice_thickness)
+      
   
       this%zf => this%list%Get_ptr_r2d('atm geometric height full')
-      __acc_attach(this%zf)
+      
       this%zh => this%list%Get_ptr_r2d('sfc geometric height half')
-      __acc_attach(this%zh)
-#ifdef __MIXED_PRECISION
-      this%dz => this%list%Get_ptr_s2d('reference height in surface layer times 2')
-#else
+      
       this%dz => this%list%Get_ptr_r2d('reference height in surface layer times 2')
-#endif
-      __acc_attach(this%dz)
+      
       this%fract_tile => this%list%get_ptr_r3d('grid box fraction of tiles')
-      __acc_attach(this%fract_tile)
+      
 
     END SELECT
 
@@ -1183,136 +1160,136 @@ CONTAINS
     SELECT TYPE (this)
     TYPE IS (t_vdf_sfc_diagnostics)
       this%wind            => this%list%Get_ptr_r2d('atm wind speed')
-      __acc_attach(this%wind)
+      
       this%theta_atm       => this%list%Get_ptr_r2d('atm potential temperature')
-      __acc_attach(this%theta_atm)
+      
       this%thetav_atm      => this%list%Get_ptr_r2d('atm virtual potential temperature')
-      __acc_attach(this%thetav_atm)
+      
       this%theta_tile      => this%list%Get_ptr_r3d('sfc potential temperature, tile')
-      __acc_attach(this%theta_tile)
+      
       this%thetav_tile     => this%list%Get_ptr_r3d('sfc virtual potential temperature, tile')
-      __acc_attach(this%thetav_tile)
+      
       !
       this%rough_h_tile    => this%list%Get_ptr_r3d('roughness length heat, tile')
-      __acc_attach(this%rough_h_tile)
+      
       this%rough_m_tile    => this%list%Get_ptr_r3d('roughness length momentum, tile')
-      __acc_attach(this%rough_m_tile)
+      
       this%rough_h         => this%list%Get_ptr_r2d('roughness length heat')
-      __acc_attach(this%rough_h)
+      
       this%rough_m         => this%list%Get_ptr_r2d('roughness length momentum')
-      __acc_attach(this%rough_m)
+      
       !
       this%qsat_tile       => this%list%Get_ptr_r3d('sfc saturation specific humidity, tile')
-      __acc_attach(this%qsat_tile)
+      
       ! this%pcpt_tile        => this%list%Get_ptr_r3d('dry static energy')
       !
       this%kh_tile         => this%list%Get_ptr_r3d('exchange coefficient for scalar, tile')
-      __acc_attach(this%kh_tile)
+      
       this%km_tile         => this%list%Get_ptr_r3d('exchange coefficient for momentum, tile')
-      __acc_attach(this%km_tile)
+      
       this%kh              => this%list%Get_ptr_r2d('exchange coefficient for scalar')
-      __acc_attach(this%kh)
+      
       this%km              => this%list%Get_ptr_r2d('exchange coefficient for momentum')
-      __acc_attach(this%km)
+      
       this%kh_neutral_tile => this%list%Get_ptr_r3d('neutral exchange coefficient for scalar, tile')
-      __acc_attach(this%kh_neutral_tile)
+      
       this%km_neutral_tile => this%list%Get_ptr_r3d('neutral exchange coefficient for momentum, tile')
-      __acc_attach(this%km_neutral_tile)
+      
       this%kh_neutral      => this%list%Get_ptr_r2d('neutral exchange coefficient for scalar')
-      __acc_attach(this%kh_neutral)
+      
       this%km_neutral      => this%list%Get_ptr_r2d('neutral exchange coefficient for momentum')
-      __acc_attach(this%km_neutral)
+      
       this%moist_rich_tile => this%list%Get_ptr_r3d('moist richardson number, tile')
-      __acc_attach(this%moist_rich_tile)
+      
       !
       this%rho_tile        => this%list%Get_ptr_r3d('sfc density, tile')
-      __acc_attach(this%rho_tile)
+      
       !
       this%evapotrans_tile => this%list%Get_ptr_r3d('sfc evapotranspiration, tile')
-      __acc_attach(this%evapotrans_tile)
+      
       this%lhfl_tile       => this%list%Get_ptr_r3d('sfc latent heat flux, tile')
-      __acc_attach(this%lhfl_tile)
+      
       this%shfl_tile       => this%list%Get_ptr_r3d('sfc sensible heat flux, tile')
-      __acc_attach(this%shfl_tile)
+      
       this%q_snocpymlt_lnd => this%list%Get_ptr_r2d('heating used to melt snow on canopy')
-      __acc_attach(this%q_snocpymlt_lnd)
+      
       this%ustress_tile    => this%list%Get_ptr_r3d('sfc zonal wind stress, tile')
-      __acc_attach(this%ustress_tile)
+      
       this%vstress_tile    => this%list%Get_ptr_r3d('sfc mer. wind stress, tile')
-      __acc_attach(this%vstress_tile)
+      
       this%evapotrans      => this%list%Get_ptr_r2d('sfc evapotranspiration')
-      __acc_attach(this%evapotrans)
+      
       this%lhfl            => this%list%Get_ptr_r2d('sfc latent heat flux')
-      __acc_attach(this%lhfl)
+      
       this%shfl            => this%list%Get_ptr_r2d('sfc sensible heat flux')
-      __acc_attach(this%shfl)
+      
       this%ustress         => this%list%Get_ptr_r2d('sfc zonal wind stress')
-      __acc_attach(this%ustress)
+      
       this%vstress         => this%list%Get_ptr_r2d('sfc mer. wind stress')
-      __acc_attach(this%vstress)
+      
    
       this%tsfc            => this%list%Get_ptr_r2d('sfc temperature')
-      __acc_attach(this%tsfc)
+      
       this%tsfc_rad        => this%list%Get_ptr_r2d('sfc radiative temperature')
-      __acc_attach(this%tsfc_rad)
+      
       this%lwfl_up         => this%list%Get_ptr_r2d('sfc longwave upward flux')
-      __acc_attach(this%lwfl_up)
+      
       this%swfl_up         => this%list%Get_ptr_r2d('sfc shortwave upward flux')
-      __acc_attach(this%swfl_up)
+      
       this%lwfl_net_tile   => this%list%Get_ptr_r3d('sfc longwave net flux, tile')
-      __acc_attach(this%lwfl_net_tile)
+      
       this%swfl_net_tile   => this%list%Get_ptr_r3d('sfc shortwave net flux, tile')
-      __acc_attach(this%swfl_net_tile)
+      
 
       this%albvisdir_tile  => this%list%Get_ptr_r3d('albedo VIS direct, tile')
-      __acc_attach(this%albvisdir_tile)
+      
       this%albvisdif_tile  => this%list%Get_ptr_r3d('albedo VIS diffuse, tile')
-      __acc_attach(this%albvisdif_tile)
+      
       this%albnirdir_tile  => this%list%Get_ptr_r3d('albedo NIR direct, tile')
-      __acc_attach(this%albnirdir_tile)
+      
       this%albnirdif_tile  => this%list%Get_ptr_r3d('albedo NIR diffuse, tile')
-      __acc_attach(this%albnirdif_tile)
+      
       this%albedo_tile     => this%list%Get_ptr_r3d('albedo, tile')
-      __acc_attach(this%albedo_tile)
+      
       this%albvisdir       => this%list%Get_ptr_r2d('albedo VIS direct')
-      __acc_attach(this%albvisdir)
+      
       this%albvisdif       => this%list%Get_ptr_r2d('albedo VIS diffuse')
-      __acc_attach(this%albvisdif)
+      
       this%albnirdir       => this%list%Get_ptr_r2d('albedo NIR direct')
-      __acc_attach(this%albnirdir)
+      
       this%albnirdif       => this%list%Get_ptr_r2d('albedo NIR diffuse')
-      __acc_attach(this%albnirdif)
+      
       this%albedo          => this%list%Get_ptr_r2d('albedo')
-      __acc_attach(this%albedo)
+      
 
       this%q_ice_top       => this%list%Get_ptr_r2d('energy flux available for surface melting of sea ice')
-      __acc_attach(this%q_ice_top)
+      
       this%q_ice_bot       => this%list%Get_ptr_r2d('energy flux at ice-ocean interface')
-      __acc_attach(this%q_ice_bot)
+      
       this%snow_thickness  => this%list%Get_ptr_r2d('thickness of snow on sea ice')
-      __acc_attach(this%snow_thickness)
+      
 
       this%t2m             => this%list%Get_ptr_r2d('2m temperature')
-      __acc_attach(this%t2m)
+      
       this%t2m_tile        => this%list%Get_ptr_r3d('2m temperature, tile')
-      __acc_attach(this%t2m_tile)
+      
       this%wind10m         => this%list%Get_ptr_r2d('10m wind speed')
-      __acc_attach(this%wind10m)
+      
       this%u10m            => this%list%Get_ptr_r2d('10m zonal wind')
-      __acc_attach(this%u10m)
+      
       this%v10m            => this%list%Get_ptr_r2d('10m meridional wind')
-      __acc_attach(this%v10m)
+      
       this%wind10m_tile    => this%list%Get_ptr_r3d('10m wind speed, tile')
-      __acc_attach(this%wind10m_tile)
+      
       this%u10m_tile       => this%list%Get_ptr_r3d('10m zonal wind, tile')
-      __acc_attach(this%u10m_tile)
+      
       this%v10m_tile       => this%list%Get_ptr_r3d('10m meridional wind, tile')
-      __acc_attach(this%v10m_tile)
+      
 
       this%nvalid          => this%list%get_ptr_i2d('number of valid points per block, tile')
-      __acc_attach(this%nvalid)
+      
       this%indices         => this%list%get_ptr_i3d('indices of valid points on chunk per block, tile')
-      __acc_attach(this%indices)
+      
 
     END SELECT
 

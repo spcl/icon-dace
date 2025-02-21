@@ -11,11 +11,11 @@
 
 MODULE mo_emvorado_init
 
-#ifdef HAVE_RADARFWO
-  USE radar_mpi_init_icon, ONLY: init_radar_mpi
-  USE radar_data,          ONLY: prep_domains_radar
-  USE radar_data_namelist, ONLY: prep_domains_radar_nml, crosscheck_domains_radar_nml
-#endif
+
+
+
+
+
 
   IMPLICIT NONE
 
@@ -28,10 +28,10 @@ CONTAINS
     INTEGER, INTENT(in) :: n_dom_model                            ! Number of model domains
     LOGICAL, INTENT(in) :: radar_flag_doms_model (1:n_dom_model)  ! Switch for running EMVORADO for each domain
     
-#ifdef HAVE_RADARFWO
-    CALL prep_domains_radar (n_dom_model, radar_flag_doms_model(1:n_dom_model))
-    CALL prep_domains_radar_nml ()
-#endif
+
+
+
+
 
   END SUBROUTINE prep_emvorado_domains
   
@@ -58,17 +58,7 @@ CONTAINS
     INTEGER,          INTENT(out)   :: ierror
     CHARACTER(len=*), INTENT(inout) :: errmsg
 
-#ifdef HAVE_RADARFWO
-    CALL init_radar_mpi (luse_radarfwo,                                              & ! INPUT
-                         comm_world_icon, my_world_id_icon, nproc_icon,              & ! INPUT
-                         comm_work_icon, my_work_id_icon, num_work_icon,             & ! INPUT
-                         lwork_pe_icon,                                              & ! INPUT
-                         nprocio_radar_icon, radar_master_icon, radario_master_icon, & ! INPUT
-                         ierror, errmsg,                                             & ! OUTPUT
-                         .FALSE. )                                                     ! INPUT (debug flag for developers)
-#else
     ierror = 0
-#endif
 
     
   END SUBROUTINE init_emvorado_mpi

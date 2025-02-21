@@ -58,18 +58,8 @@ CONTAINS
     vec_size = SIZE(z)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
+
     z(1:vec_size) = x(1:vec_size)/y(1:vec_size)
-#else
-#if (defined HAVE_MASS)
-    CALL vdiv(z(1:vec_size), x(1:vec_size), y(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vddiv(vec_size, x(1:vec_size), y(1:vec_size), z(1:vec_size))
-#else
-    z(1:vec_size) = x(1:vec_size)/y(1:vec_size)
-    ! div - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_div
 
@@ -81,16 +71,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = aint(x(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vdint(y(1:vec_size), x(1:vec_size), vec_size)
-#else
-    y(1:vec_size) = aint(x(1:vec_size))
-    ! aint - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_aint
 
@@ -102,18 +83,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = anint(x(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vdnint(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdround( vec_size, x(1:vec_size), y(1:vec_size) )
-#else
-    y(1:vec_size) = anint(x(1:vec_size))
-    ! anint - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_anint
 
@@ -125,20 +95,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = exp(x(1:vec_size))
-#else
-#if (defined HAVE_ACML)
-    CALL vrda_exp(vec_size, x(1:vec_size), y(1:vec_size))
-#elif (defined HAVE_MASS)
-    CALL vexp(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdexp(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = exp(x(1:vec_size))
-    ! exp - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_exp
 
@@ -150,18 +107,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = exp(x(1:vec_size))-1.0_dp
-#else
-#if (defined HAVE_MASS)
-    CALL vexpm1(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdexpm1( vec_size, x(1:vec_size), y(1:vec_size) )
-#else
-    y(1:vec_size) = exp(x(1:vec_size))-1.0_dp
-    ! expm1 - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_expm1
 
@@ -173,20 +119,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = log(x(1:vec_size))
-#else
-#if (defined HAVE_ACML)
-    CALL vrda_log(vec_size, x(1:vec_size), y(1:vec_size))
-#elif (defined HAVE_MASS)
-    CALL vlog(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdln(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = log(x(1:vec_size))
-    ! log - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_log
 
@@ -198,18 +131,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = log(x(1:vec_size)+1)
-#else
-#if (defined HAVE_MASS)
-    CALL vlog1p(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdlog1p( vec_size, x(1:vec_size), y(1:vec_size) )
-#else
-    y(1:vec_size) = log(x(1:vec_size)+1)
-    ! logp1 - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_logp1
 
@@ -221,20 +143,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = log10(x(1:vec_size))
-#else
-#if (defined HAVE_ACML)
-    CALL vrda_log10(vec_size, x(1:vec_size), y(1:vec_size))
-#elif (defined HAVE_MASS)
-    CALL vlog10(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdlog10(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = log10(x(1:vec_size))
-    ! log10 - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_log10
 
@@ -247,18 +156,7 @@ CONTAINS
     vec_size = SIZE(z)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     z(1:vec_size) = x(1:vec_size)**y(1:vec_size)
-#else
-#if (defined HAVE_MASS)
-    CALL vpow(z(1:vec_size), x(1:vec_size), y(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdpow(vec_size, x(1:vec_size), y(1:vec_size), z(1:vec_size))
-#else
-    z(1:vec_size) = x(1:vec_size)**y(1:vec_size)
-    ! pow - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_pow
 
@@ -270,18 +168,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = sqrt(x(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vsqrt(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdsqrt(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = sqrt(x(1:vec_size))
-    ! sqrt - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_sqrt
 
@@ -295,36 +182,9 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef _OPENACC
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = x(1:vec_size)**onethird
-#else
-#if (defined HAVE_MASS)
-    CALL vcbrt(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdcbrt(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = x(1:vec_size)**onethird
-    ! cbrt - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
-#else
-
-    IF (PRESENT(lopenacc)) THEN
-      lzopenacc = lopenacc
-    ELSE
-      lzopenacc = .FALSE.
-    ENDIF
-
-    !$ACC DATA PRESENT(x, y)
-    !$ACC PARALLEL LOOP GANG VECTOR ASYNC(1) IF(lzopenacc)
-    DO i = 1, vec_size
-      y(i) = x(i)**onethird
-    END DO
-    !$ACC END DATA
-#endif
 
   END SUBROUTINE vec_cbrt
 
@@ -336,16 +196,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = x(1:vec_size)**onefourth
-#else
-#if (defined HAVE_MASS)
-    CALL vqdrt(y(1:vec_size), x(1:vec_size), vec_size)
-#else
-    y(1:vec_size) = x(1:vec_size)**onefourth
-    ! qdrt - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_qdrt
 
@@ -357,18 +208,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = 1.0_dp/x(1:vec_size)
-#else
-#if (defined HAVE_MASS)
-    CALL vrec(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdinv(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = 1.0_dp/x(1:vec_size)
-    ! rec - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_rec
 
@@ -380,18 +220,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = 1.0_dp/sqrt(x(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vrsqrt(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdinvsqrt(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = 1.0_dp/sqrt(x(1:vec_size))
-    ! rsqrt - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_rsqrt
 
@@ -403,18 +232,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = 1.0_dp/x(1:vec_size)**onethird
-#else
-#if (defined HAVE_MASS)
-    CALL vrcbrt(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdinvcbrt(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = 1.0_dp/x(1:vec_size)**onethird
-    ! rcbrt - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_rcbrt
 
@@ -426,16 +244,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = 1.0_dp/x(1:vec_size)**onefourth
-#else
-#if (defined HAVE_MASS)
-    CALL vrqdrt(y(1:vec_size), x(1:vec_size), vec_size)
-#else
-    y(1:vec_size) = 1.0_dp/x(1:vec_size)**onefourth
-    ! rqdrt - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_rqdrt
 
@@ -448,24 +257,9 @@ CONTAINS
     vec_size = SIZE(ys)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     ys(1:vec_size) = sin(x(1:vec_size))
     yc(1:vec_size) = cos(x(1:vec_size))
     
-#else
-#if (defined HAVE_ACML)
-    CALL vrda_sincos(vec_size, x(1:vec_size), ys(1:vec_size), yc(1:vec_size))
-#elif (defined HAVE_MASS)
-    CALL vsincos(ys(1:vec_size), yc(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdsincos(vec_size, x(1:vec_size), ys(1:vec_size), yc(1:vec_size))
-#else
-    ys(1:vec_size) = sin(x(1:vec_size))
-    yc(1:vec_size) = cos(x(1:vec_size))
-    
-    ! sincos - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_sincos
 
@@ -477,20 +271,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = cos(x(1:vec_size))
-#else
-#if (defined HAVE_ACML)
-    CALL vrda_cos(vec_size, x(1:vec_size), y(1:vec_size))
-#elif (defined HAVE_MASS)
-    CALL vcos(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdcos(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = cos(x(1:vec_size))
-    ! cos - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_cos
 
@@ -502,18 +283,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = acos(x(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vacos(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdacos(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = acos(x(1:vec_size))
-    ! acos - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_acos
 
@@ -525,18 +295,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = cosh(x(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vcosh(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdcosh(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = cosh(x(1:vec_size))
-    ! cosh - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_cosh
 
@@ -548,20 +307,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = sin(x(1:vec_size))
-#else
-#if (defined HAVE_ACML)
-    CALL vrda_sin(vec_size, x(1:vec_size), y(1:vec_size))
-#elif (defined HAVE_MASS)
-    CALL vsin(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdsin(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = sin(x(1:vec_size))
-    ! sin - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_sin
 
@@ -573,18 +319,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = asin(x(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vasin(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdasin(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = asin(x(1:vec_size))
-    ! asin - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_asin
 
@@ -596,18 +331,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = sinh(x(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vsinh(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdsinh(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = sinh(x(1:vec_size))
-    ! sinh - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_sinh
 
@@ -619,18 +343,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = tan(x(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vtan(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdtan(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = tan(x(1:vec_size))
-    ! tan - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_tan
 
@@ -643,18 +356,7 @@ CONTAINS
     vec_size = SIZE(z)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     z(1:vec_size) = atan2(x(1:vec_size),y(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vatan2(z(1:vec_size), x(1:vec_size), y(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdatan2(vec_size, x(1:vec_size), y(1:vec_size), z(1:vec_size))
-#else
-    z(1:vec_size) = atan2(x(1:vec_size),y(1:vec_size))
-    ! atan2 - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_atan2
 
@@ -666,18 +368,7 @@ CONTAINS
     vec_size = SIZE(y)
     IF (PRESENT(n)) vec_size = n
 
-#ifndef HAVE_FAST_MATH_LIB
     y(1:vec_size) = tanh(x(1:vec_size))
-#else
-#if (defined HAVE_MASS)
-    CALL vtanh(y(1:vec_size), x(1:vec_size), vec_size)
-#elif (defined HAVE_MKL)
-    CALL vdtanh(vec_size, x(1:vec_size), y(1:vec_size))
-#else
-    y(1:vec_size) = tanh(x(1:vec_size))
-    ! tanh - no fast math library call available, use native Fortran ...
-#endif
-#endif
 
   END SUBROUTINE vec_tanh
 

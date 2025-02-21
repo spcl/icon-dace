@@ -11,7 +11,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "handle_mpi_error.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 
 MODULE mo_multifile_restart_util
   USE mo_kind,           ONLY: dp, sp
@@ -23,12 +33,7 @@ MODULE mo_multifile_restart_util
   USE mo_io_config,      ONLY: restartWritingParameters, ALL_WORKERS_INVOLVED
   USE mo_mpi,            ONLY: num_work_procs, p_comm_work_restart, p_comm_rank, &
     &                          p_real_dp, p_real_sp, p_int
-#ifndef NOMPI
-  HANDLE_MPI_ERROR_USE
-  USE mpi,               ONLY: addr => MPI_ADDRESS_KIND
-#else
   USE mo_kind,           ONLY: addr => i8
-#endif
 
 
   IMPLICIT NONE
@@ -68,14 +73,9 @@ CONTAINS
       mpiDtype(:) = [p_real_dp, p_real_sp, p_int]
       DO i = 1, 3
         typeMap(typeID(i)) = i
-#ifndef NOMPI
-        CALL MPI_Type_get_extent(mpiDtype(i), tLB, typeByte(i), ierr)
-        HANDLE_MPI_ERROR(ierr, 'MPI_Type_get_extent')
-#endif
       END DO
-#ifdef NOMPI
-      typeByte(:) = (/ 8, 4, 4 /) ! set some defaults (e.g. p_int_byte would be zero, if NOMPI)
-#endif
+      typeByte(:) = (/ 8, 4, 4 /) ! set some defaults (e.g. p_int_byte would be zero, if 1)
+
       facTtoSp(:) = typeByte(:) / typeByte(2)
       IF (facTtoSp(1) .NE. (typeByte(1)+typeByte(2)-1_addr) / typeByte(2)) &
         CALL finish(routine, "sizeof(DP) not an integer multiple of sizeof(SP)!")

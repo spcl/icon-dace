@@ -26,7 +26,152 @@ module radiation_cloud_optics
 contains
 
   ! Provides elemental function "delta_eddington_scat_od"
-#include "radiation_delta_eddington.h"
+! radiation_delta_eddington.h - Delta-Eddington scaling -*- f90 -*-
+!
+! (C) Copyright 2015- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! This file is intended to be included inside a module to ensure that
+! these simple functions may be inlined
+
+!---------------------------------------------------------------------
+! Perform in-place delta-Eddington scaling of the phase function
+elemental subroutine delta_eddington(od, ssa, g)
+
+  use parkind1, only : jprb
+  
+  ! Total optical depth, single scattering albedo and asymmetry
+  ! factor
+  real(jprb), intent(inout) :: od, ssa, g
+  
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+  
+  f   = g*g
+  od  = od * (1.0_jprb - ssa*f)
+  ssa = ssa * (1.0_jprb - f) / (1.0_jprb - ssa*f)
+  g   = g / (1.0_jprb + g)
+  
+end subroutine delta_eddington
+
+
+!---------------------------------------------------------------------
+! Perform in-place delta-Eddington scaling of the phase function, but
+! using extensive variables (i.e. the scattering optical depth,
+! scat_od, rather than the single-scattering albedo, and the
+! scattering-optical-depth-multiplied-by-asymmetry-factor, scat_od_g,
+! rather than the asymmetry factor.
+elemental subroutine delta_eddington_extensive(od, scat_od, scat_od_g)
+
+  !$ACC ROUTINE SEQ
+
+  use parkind1, only : jprb
+
+  ! Total optical depth, scattering optical depth and asymmetry factor
+  ! multiplied by the scattering optical depth
+  real(jprb), intent(inout) :: od, scat_od, scat_od_g
+
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f, g
+
+  if (scat_od > 0.0_jprb) then
+    g = scat_od_g / scat_od
+  else
+    g = 0.0
+  end if
+
+  f         = g*g
+  od        = od - scat_od * f
+  scat_od   = scat_od * (1.0_jprb - f)
+  scat_od_g = scat_od * g / (1.0_jprb + g)
+  
+end subroutine delta_eddington_extensive
+
+
+!---------------------------------------------------------------------
+! Array version of delta_eddington_extensive, more likely to vectorize
+ subroutine delta_eddington_extensive_vec(ng, od, scat_od, scat_od_g)
+
+  use parkind1, only : jprb
+
+  ! Total optical depth, scattering optical depth and asymmetry factor
+  ! multiplied by the scattering optical depth
+  integer,                   intent(in)    :: ng
+  real(jprb), dimension(ng), intent(inout) :: od, scat_od, scat_od_g
+
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f, g
+  integer :: j
+
+  do j = 1,ng
+    g            = scat_od_g(j) / max(scat_od(j), 1.0e-24)
+    f            = g*g
+    od(j)        = od(j) - scat_od(j) * f
+    scat_od(j)   = scat_od(j) * (1.0_jprb - f)
+    scat_od_g(j) = scat_od(j) * g / (1.0_jprb + g)
+  end do
+  
+end subroutine delta_eddington_extensive_vec
+
+
+!---------------------------------------------------------------------
+! Perform in-place delta-Eddington scaling of the phase function,
+! using the scattering optical depth rather than the single scattering
+! albedo
+elemental subroutine delta_eddington_scat_od(od, scat_od, g)
+
+  use parkind1, only : jprb
+  
+  ! Total optical depth, scattering optical depth and asymmetry factor
+  real(jprb), intent(inout) :: od, scat_od, g
+
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+
+  !$ACC ROUTINE SEQ
+
+  f       = g*g
+  od      = od - scat_od * f
+  scat_od = scat_od * (1.0_jprb - f)
+  g       = g / (1.0_jprb + g)
+
+end subroutine delta_eddington_scat_od
+
+
+!---------------------------------------------------------------------
+! Revert delta-Eddington-scaled quantities in-place, back to their
+! original state
+elemental subroutine revert_delta_eddington(od, ssa, g)
+
+  use parkind1, only : jprb
+  
+  ! Total optical depth, single scattering albedo and asymmetry
+  ! factor
+  real(jprb), intent(inout) :: od, ssa, g
+  
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+  
+  g   = g / (1.0_jprb - g)
+  f   = g*g
+  ssa = ssa / (1.0_jprb - f + f*ssa);
+  od  = od / (1.0_jprb - ssa*f)
+  
+end subroutine revert_delta_eddington
 
   !---------------------------------------------------------------------
   ! Load cloud scattering data; this subroutine delegates to one
@@ -339,9 +484,7 @@ contains
             ! Only compute liquid properties if liquid cloud is
             ! present
             if (lwp_in_cloud > 0.0_jprb) then
-#ifndef _OPENACC
               if (config%i_liq_model == ILiquidModelSOCRATES) then
-#endif
                 ! Compute longwave properties
                 call calc_liq_optics_socrates(config%n_bands_lw, &
                     &  config%cloud_optics%liq_coeff_lw, &
@@ -352,7 +495,6 @@ contains
                     &  config%cloud_optics%liq_coeff_sw, &
                     &  lwp_in_cloud, cloud%re_liq(jcol,jlev), &
                     &  od_sw_liq, scat_od_sw_liq, g_sw_liq)
-#ifndef _OPENACC
               else if (config%i_liq_model == ILiquidModelSlingo) then
                 ! Compute longwave properties
                 call calc_liq_optics_lindner_li(config%n_bands_lw, &
@@ -369,7 +511,6 @@ contains
                     &          config%i_liq_model
                 call radiation_abort()
               end if
-#endif
 
               ! Delta-Eddington scaling in the shortwave only
               if (.not. config%do_sw_delta_scaling_with_gases) then
@@ -390,7 +531,6 @@ contains
 
             ! Only compute ice properties if ice cloud is present
             if (iwp_in_cloud > 0.0_jprb) then
-#ifndef _OPENACC
               if (config%i_ice_model == IIceModelBaran) then
                 ! Compute longwave properties
                 call calc_ice_optics_baran(config%n_bands_lw, &
@@ -435,7 +575,6 @@ contains
                     &  temperature, &
                     &  od_sw_ice, scat_od_sw_ice, g_sw_ice)
               else if (config%i_ice_model == IIceModelFu) then
-#endif
                 ! Compute longwave properties
                 call calc_ice_optics_fu_lw(config%n_bands_lw, &
                     &  config%cloud_optics%ice_coeff_lw, &
@@ -450,7 +589,6 @@ contains
                     &  config%cloud_optics%ice_coeff_sw, &
                     &  iwp_in_cloud, cloud%re_ice(jcol,jlev), &
                     &  od_sw_ice, scat_od_sw_ice, g_sw_ice)
-#ifndef _OPENACC
               else if (config%i_ice_model == IIceModelYi) then
                 ! Compute longwave properties
                 call calc_ice_optics_yi_lw(config%n_bands_lw, &
@@ -467,7 +605,6 @@ contains
                     &          config%i_ice_model
                 call radiation_abort()
               end if
-#endif
 
               ! Delta-Eddington scaling in both longwave and shortwave
               ! (assume that particles are larger than wavelength even

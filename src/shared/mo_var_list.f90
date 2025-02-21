@@ -9,15 +9,20 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 
 MODULE mo_var_list
 
-#if defined (__INTEL_COMPILER) || defined (__PGI) || defined (NAGFOR)
-#ifdef VARLIST_INITIZIALIZE_WITH_NAN
-  USE, INTRINSIC :: ieee_arithmetic
-#endif
-#endif
   USE mo_kind,             ONLY: sp, dp, i8
   USE mo_cf_convention,    ONLY: t_cf_var
   USE mo_grib2,            ONLY: t_grib2_var, grib2_var
@@ -343,11 +348,6 @@ CONTAINS
     NULLIFY(new_elem%r_ptr, new_elem%s_ptr, new_elem%i_ptr, new_elem%l_ptr)
     d(1:ndims)    = new_elem%info%used_dimensions(1:ndims)
     d((ndims+1):) = 1
-#if    defined (VARLIST_INITIZIALIZE_WITH_NAN) \
-    && (defined (__INTEL_COMPILER) || defined (__PGI) || defined (NAGFOR))
-    ivals%rval = ieee_value(ptr, ieee_signaling_nan)
-    ivals%sval = ieee_value(ptr, ieee_signaling_nan)
-#endif
     IF (ANY([PRESENT(initval_r), PRESENT(initval_s), PRESENT(initval_i), PRESENT(initval_l)])) THEN
       ivals = initval
     ELSE IF (PRESENT(lmiss)) THEN

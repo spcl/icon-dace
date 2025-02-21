@@ -43,51 +43,8 @@ CONTAINS
   !
   SUBROUTINE metainfo_allocate_memory_window(memwin, nvars)
 
-#ifndef NOMPI
-    USE mpi, ONLY: MPI_ADDRESS_KIND, MPI_INFO_NULL, MPI_Type_get_extent
-# ifndef NO_MPI_CHOICE_ARG
-    USE mpi, ONLY: MPI_Win_create
-# endif
-# ifndef NO_MPI_CPTR_ARG
-    USE mpi, ONLY: MPI_Alloc_mem
-# endif
-#endif
     TYPE(t_mem_win),      INTENT(INOUT) :: memwin ! MPI memory window
     INTEGER,              INTENT(IN)    :: nvars  ! total no. of variables
-#ifndef NOMPI
-    CHARACTER(*), PARAMETER :: routine = modname//"::metainfo_allocate_memory_window"
-    INTEGER                         :: ierror, comm_rank, mem_size
-    INTEGER, TARGET                 :: dummy(1, 1)
-    INTEGER (KIND=MPI_ADDRESS_KIND) :: mem_bytes, nbytes_int, lb
-    TYPE(c_ptr)                     :: c_mem_ptr
-
-    ! total number of required integer variables
-    mem_size = var_metadata_get_size()
-    ! Get amount of bytes per INTEGER variable (in MPI communication)
-    CALL MPI_Type_get_extent(p_int, lb, nbytes_int, ierror)
-    IF (ierror /= 0) CALL finish(routine, "MPI error!")
-    mem_bytes = INT(nvars, mpi_address_kind) * INT(mem_size, mpi_address_kind) &
-         * nbytes_int
-    comm_rank = p_comm_rank(p_comm_work_io)
-    IF (comm_rank == 0) THEN
-      CALL MPI_Alloc_mem(mem_bytes, MPI_INFO_NULL, c_mem_ptr, ierror)
-      IF (ierror /= 0) CALL finish(routine, "MPI error!")
-      CALL C_F_POINTER(c_mem_ptr, memwin%mem_ptr_metainfo_pe0, &
-           (/ mem_size, nvars /) )
-      memwin%mem_ptr_metainfo_pe0 = 0
-    ELSE
-      mem_bytes = 0_mpi_address_kind
-      memwin%mem_ptr_metainfo_pe0 => dummy
-    END IF
-    ! Create memory window for meta-data communication
-#ifndef NO_ASYNC_IO_RMA
-    CALL MPI_Win_create(memwin%mem_ptr_metainfo_pe0, mem_bytes, &
-      &                 INT(nbytes_int), mpi_info_null, p_comm_work_io, &
-      &                 memwin%mpi_win_metainfo, ierror)
-    IF (ierror /= 0) CALL finish(routine, "MPI error!")
-#endif
-    IF (comm_rank /= 0) NULLIFY(memwin%mem_ptr_metainfo_pe0)
-#endif
   END SUBROUTINE metainfo_allocate_memory_window
 
 

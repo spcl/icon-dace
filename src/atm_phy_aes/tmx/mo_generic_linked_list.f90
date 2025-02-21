@@ -32,9 +32,9 @@ module mo_generic_linked_list
   !
   ! A list item can be in at most one list at a time.
   !
-#ifdef USE_CLAW
-  use, intrinsic :: iso_c_binding, only: c_loc, c_associated
-#endif
+
+
+
   implicit none
   private
   public :: t_generic_linked_list, t_generic_linked_list_item, newitem, deleteitem
@@ -147,11 +147,11 @@ contains
     class(t_generic_linked_list), intent(in) :: list
     class(t_generic_linked_list_item), pointer :: last
     last => list%firstptr
-#ifdef USE_CLAW
-    if (C_associated(C_loc(last))) last => last%prevptr
-#else
+
+
+
     if (associated(last)) last => last%prevptr
-#endif
+
   end function last
   !
   ! Insert an item at the beginning of a list.
@@ -265,16 +265,16 @@ contains
       end if
     type is (complex)
       write(tmp,'(a,f0.0,sp,f0.0,a)') 'complex = ', v, "i"
-#ifndef USE_CLAW
+
     type is (complex(kind(0d0)))
       write(tmp,'(a,i0,a,f0.0,sp,f0.0,a)') 'complex(kind=', kind(v), ') = ', v, "i"      
-#endif
+
     type is (real)
       write(tmp,'(a,es23.16)') 'real = ', v
-#ifndef USE_CLAW
+
     type is (real(kind(0d0)))
       write(tmp,'(a,i0,a,es23.16)') 'real(kind=', kind(v), ') = ', v      
-#endif
+
     type is (integer)
       write(tmp,'(a,i0)') 'integer = ', v
     type is (logical)

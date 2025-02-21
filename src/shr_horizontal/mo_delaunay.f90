@@ -42,9 +42,9 @@
 
 MODULE mo_delaunay
 
-#ifdef _OPENMP
-  USE OMP_LIB
-#endif
+
+
+
   USE mo_exception,      ONLY: finish
   USE mo_impl_constants, ONLY: SUCCESS
   USE mo_kind,           ONLY: wp
@@ -113,11 +113,11 @@ CONTAINS
       pxyz%a(i)        = pxyz%a(i)/pxyz%a(i)%norm2()
       pxyz%a(i)%ps     = pxyz%a(i) * subset%sorting_direction
     END DO
-#ifdef __SX__
-    CALL pxyz%radixsort()
-#else
+
+
+
     CALL pxyz%quicksort()
-#endif
+
     ! assume triangulation covers entire sphere (data structure grows
     ! dynamically if not)
     CALL tri%reserve(2*npts-4)
@@ -339,11 +339,11 @@ CONTAINS
                               
     INTEGER                   :: jmin_t
 
-#ifdef __SX__
-    LOGICAL, ALLOCATABLE :: inside_f(:), inside_arr(:)
-    INTEGER, ALLOCATABLE :: complete_lst(:), inside_lst(:), oedge_t_lst(:), oedge_f_lst(:)
-    INTEGER :: cnt_c, jc, cnt_i, ji, cnt_t, cnt_f, jo
-#endif
+
+
+
+
+
 
     ! copy all points since they will be re-ordered:
     npts = points%nentries
@@ -353,11 +353,11 @@ CONTAINS
       pxyz%a(i)        = pxyz%a(i)/pxyz%a(i)%norm2()
       pxyz%a(i)%ps     = pxyz%a(i) * subset%sorting_direction
     END DO
-#ifdef __SX__
-    CALL pxyz%radixsort()
-#else
+
+
+
     CALL pxyz%quicksort()
-#endif
+
     ! assume triangulation covers entire sphere (data structure grows
     ! dynamically if not)
     CALL tri%reserve(2*npts-4 + cleanup_limit)
@@ -418,153 +418,12 @@ CONTAINS
       new_ndiscard = 0
 !$omp parallel private(ithread,jtri,jmin,j,inside, oedge, jmin0, bedge, this_edge,k) &
 !$omp          reduction(min:jmin_t)
-#ifdef _OPENMP
-      ithread = omp_get_thread_num()
-#else
+
+
+
       ithread = 0
-#endif
+
       jmin    = ntri
-#ifdef __SX__
-
-      ! NEC_PL: splitting of j-loop to separate verctorizable and non-vectorizable parts
-
-      ! NEC_PL: precalculate insides using vectorized functions
-      ALLOCATE(inside_f(j0:ntri-1))
-      ALLOCATE(complete_lst(((ntri-1)-j0) +1))
-
-      inside_f = circum_circle_spherical_vec(ipoint, tri, pxyz, j0, ntri-1)
-
-      ! NEC_PL: set up index list for jtri%complete == 0
-      cnt_c = 0
-      DO j=j0,(ntri-1)
-        jtri => tri%a(j)
-        IF (jtri%complete == 0) THEN
-          ! test if triangle remains on "discard" list
-          IF (-1._wp*ipoint%ps < jtri%rdiscard) THEN
-            new_ndiscard  = new_ndiscard-1
-            jtri%rdiscard = -1._wp
-          END IF
-          cnt_c = cnt_c + 1
-          complete_lst(cnt_c) = j
-        END IF
-      END DO
-
-      !NEC_PL: separated jmin-update (scalar)
-      IF(cnt_c > 0) THEN
-        ALLOCATE(inside_lst(cnt_c))
-        ALLOCATE(inside_arr(cnt_c))
-        ALLOCATE(oedge_f_lst(cnt_c))
-        ALLOCATE(oedge_t_lst(cnt_c))
-
-        DO jc=1,cnt_c
-          j = complete_lst(jc)
-          jtri => tri%a(j)
-          oedge = jtri%oedge
-
-          jmin0 = jmin
-          IF (jmin == ntri)  jmin = j
-          IF (oedge /= -1) THEN
-            EXIT
-          ELSE
-            inside = inside_f(j)
-            IF (.NOT. inside .AND. ((ipoint%ps - jtri%cc%ps) > jtri%r)) THEN
-              jmin          = jmin0
-            ELSE
-                EXIT
-            END IF
-          END IF
-        END DO !jc
-
-        ! NEC_PL: set up index lists to separate true-/false tree
-        cnt_t = 0
-        cnt_f = 0
-
-        DO jc = 1, cnt_c
-          j = complete_lst(jc)
-          jtri => tri%a(j)
-          oedge = jtri%oedge
-
-          IF (oedge /= -1) THEN
-            cnt_t = cnt_t + 1
-            oedge_t_lst(cnt_t) = jc
-          ELSE
-            cnt_f = cnt_f + 1
-            oedge_f_lst(cnt_f) = jc
-          END IF
-
-        END DO !jc
-
-        IF (cnt_t > 0) THEN
-          DO jo = 1, cnt_t
-            jc = oedge_t_lst(jo)
-            j = complete_lst(jc)
-            jtri => tri%a(j)
-            oedge = jtri%oedge
-            bedge  = triangle_edge(jtri%p, oedge) !jtri%edge(oedge)
-            inside_arr(jc) = (ccw_spherical(pxyz%a(bedge%p1), pxyz%a(bedge%p2), ipoint)<0)
-          END DO !jo
-        END IF
-
-        IF (cnt_f > 0) THEN
-          DO jo = 1, cnt_f
-            jc = oedge_f_lst(jo)
-            j = complete_lst(jc)
-            jtri => tri%a(j)
-            oedge = jtri%oedge
-            inside_arr(jc) = inside_f(j)
-            IF (.NOT. inside_arr(jc) .AND. ((ipoint%ps - jtri%cc%ps) > jtri%r)) THEN
-               jtri%complete =     1
-             END IF
-          END DO !jo
-        END IF
-
-        !NEC_PL: set up index list for case inside
-        cnt_i = 0
-        DO jc = 1, cnt_c
-          IF (inside_arr(jc)) THEN
-            cnt_i = cnt_i + 1
-            inside_lst(cnt_i) = jc
-          END IF
-        END DO
-
-        IF (cnt_i > 0) THEN
-          DO ji = 1, cnt_i
-            jc = inside_lst(ji)
-            j = complete_lst(jc)
-            jtri => tri%a(j)
-            oedge = jtri%oedge
-
-            this_edge = ne
-            ne = ne + 3
-            DO k = 0,2
-              edges(this_edge)       = triangle_edge(jtri%p, k) !jtri%edge(k)
-              edges_oedge(this_edge) = next_oedge(k,oedge)
-              edges_valid(this_edge) = .TRUE.
-              this_edge = this_edge + 1
-             END DO
-          END DO !ji
-
-          DO ji=1,cnt_i
-            jc = inside_lst(ji)
-            j = complete_lst(jc)
-            jtri => tri%a(j)
-            jtri%complete =       2 ! mark triangle for removal
-            new_ninvalid = new_ninvalid + 1
-            IF (jtri%rdiscard > -1._wp)  new_ndiscard=new_ndiscard-1
-          END DO !ji
-        END IF !cnt_i
-
-        DEALLOCATE(inside_lst)
-        DEALLOCATE(inside_arr)
-        DEALLOCATE(oedge_f_lst)
-        DEALLOCATE(oedge_t_lst)
-
-      END IF !cnt_c
-
-      DEALLOCATE(complete_lst)
-      DEALLOCATE(inside_f)
-
-#else
 
 !$omp do reduction(+:new_ninvalid,new_ndiscard) 
       DO j=j0,(ntri-1)
@@ -613,7 +472,6 @@ CONTAINS
         END IF
       END DO
 !$omp end do
-#endif
       IF (jmin >= j0) THEN
         jmin_t = jmin
       ELSE
@@ -625,12 +483,7 @@ CONTAINS
       DO j=0,(ne-1)
         IF (edges_valid(j)) THEN
           DO k=j+1,(ne-1)
-#ifndef __SX__
             IF (edges(j) == edges(k)) THEN
-#else
-      IF ( ( (edges(j)%p1 == edges(k)%p2) .AND. (edges(j)%p2 == edges(k)%p1) )  .OR.  &
-  &    ( (edges(j)%p1 == edges(k)%p1) .AND. (edges(j)%p2 == edges(k)%p2)) ) THEN
-#endif
               edges_valid(j) = .FALSE.
               edges_valid(k) = .FALSE.
             END IF
@@ -738,167 +591,6 @@ CONTAINS
     CALL pxyz%destructor()
   END SUBROUTINE triangulate_mthreaded
 
-#ifdef __SX__
-  FUNCTION ccw_spherical_vec(tri,pxyz,ipt,start,end)
-    USE mo_delaunay_types, ONLY: t_triangle, t_point, t_edge,t_triangulation,t_point_list
-    INTEGER, INTENT(IN) :: start,end,ipt
-    LOGICAL :: ccw_spherical_vec(start:end)
-    TYPE (t_point_list), INTENT(IN)   :: pxyz
-    TYPE (t_triangulation), INTENT(IN), TARGET :: tri
-    TYPE(t_triangle), POINTER :: jtri
-    TYPE(t_edge) :: bedge
-    TYPE(t_point) :: v1(start:end),v2(start:end),v3(start:end)
-    REAL(wp) :: ccw
-    REAL(SELECTED_REAL_KIND (32)) :: v1_x, v1_y, v1_z,v2_x, v2_y, v2_z,v3_x, v3_y, v3_z
-    INTEGER :: j, oedge, num , unvec_lst(end-start), i
-
-    num = 0
-
-    DO j = start, end
-      jtri => tri%a(j)
-         oedge = jtri%oedge
-         IF (oedge /= -1) THEN
-           bedge = triangle_edge(jtri%p, oedge)
-
-           v1(j) = pxyz%a(bedge%p1)
-           v2(j) = pxyz%a(bedge%p2)
-           v3(j) = pxyz%a(ipt)
-
-           ccw =           v3(j)%x*(v1(j)%y*v2(j)%z - v2(j)%y*v1(j)%z) &
-             &        -    v3(j)%y*(v1(j)%x*v2(j)%z - v2(j)%x*v1(j)%z) &
-             &        +    v3(j)%z*(v1(j)%x*v2(j)%y - v2(j)%x*v1(j)%y)
-
-
-        IF (ABS(ccw) >1.1e-14_wp) THEN
-          ccw_spherical_vec(j) = ccw <= 0._wp
-
-        ELSE
-          num = num +1
-          unvec_lst(num) = j
-        END IF
-      END IF
-      END DO
-
-  IF (num > 0) THEN
-    DO i = 1,num
-      j = unvec_lst(i)
-
-            v1_x = v1(j)%x
-            v1_y = v1(j)%y
-            v1_z = v1(j)%z
-            v2_x = v2(j)%x
-            v2_y = v2(j)%y
-            v2_z = v2(j)%z
-            v3_x = v3(j)%x
-            v3_y = v3(j)%y
-            v3_z = v3(j)%z
-
-            ccw_spherical_vec(j) = v3_x*(v1_y*v2_z - v2_y*v1_z) &
-              &             -    v3_y*(v1_x*v2_z - v2_x*v1_z) &
-              &             +    v3_z*(v1_x*v2_y - v2_x*v1_y)  <= 0._wp
-
-    END DO
-  END IF
-
-  END FUNCTION ccw_spherical_vec
-
-  FUNCTION circum_circle_spherical_vec(p,tri, pxyz, start, end)
-    USE mo_delaunay_types, ONLY: t_triangle, t_point, t_point_list,t_triangulation,t_triangle
-    INTEGER, INTENT(IN) :: start, end
-    LOGICAL :: circum_circle_spherical_vec(start:end)
-    TYPE (t_point),      INTENT(IN)   :: p
-    TYPE (t_point_list), INTENT(IN)   :: pxyz
-    TYPE (t_triangulation), INTENT(IN), TARGET :: tri
-    TYPE(t_triangle), POINTER :: jtri
-    TYPE (t_point) :: v1(start:end),v2(start:end),v3(start:end)
-    ! INTEGER, INTENT(IN)   :: ip(0:2)
-    INTEGER :: j, num, unvec_lst(end-start), i
-    ! local variables
-    REAL(wp) :: d1_x, d1_y, d1_z,d2_x, &
-      &         d2_y, d2_z,d3_x, d3_y, &
-      &         d3_z, d1(start:end), d2(start:end)
-    REAL(SELECTED_REAL_KIND (32)) :: dd1_x, dd1_y, dd1_z,dd2_x, dd2_y, dd2_z,dd3_x, dd3_y, dd3_z
-    REAL(SELECTED_REAL_KIND (32)) :: v1_x,v1_y,v1_z,v2_x,v2_y,v2_z,v3_x,v3_y,v3_z
-
-    num = 0
-
-
-    DO j=start, end
-      jtri => tri%a(j)
-
-      v1(j) = pxyz%a(jtri%p(0))
-      v2(j) = pxyz%a(jtri%p(1))
-      v3(j) = pxyz%a(jtri%p(2))
-
-      d1_x = v1(j)%x - p%x
-      d1_y = v1(j)%y - p%y
-      d1_z = v1(j)%z - p%z
-      d2_x = v2(j)%x - p%x
-      d2_y = v2(j)%y - p%y
-      d2_z = v2(j)%z - p%z
-      d3_x = v3(j)%x - p%x
-      d3_y = v3(j)%y - p%y
-      d3_z = v3(j)%z - p%z
-
-      d1(j) = d2_x*d3_y*d1_z  +  d2_y*d1_x*d3_z + d2_z*d3_x*d1_y
-      d2(j) = d2_y*d3_x*d1_z + d2_x*d1_y*d3_z + d2_z*d1_x*d3_y
-      IF (ABS(d1(j)-d2(j)) > 1.e-12_wp) THEN
-        circum_circle_spherical_vec(j) = (d1(j) > d2(j))
-      ELSE
-        num = num +1
-        unvec_lst(num) = j
-      END IF
-    END DO
-
-
-
-
-    IF (num > 0) THEN
-
-      DO i = 1, num
-        j = unvec_lst(i)
-
-          num = num * 1
-          v1_x = v1(j)%x
-          v1_y = v1(j)%y
-          v1_z = v1(j)%z
-          v2_x = v2(j)%x
-          v2_y = v2(j)%y
-          v2_z = v2(j)%z
-          v3_x = v3(j)%x
-          v3_y = v3(j)%y
-          v3_z = v3(j)%z
-
-          dd1_x = v1_x - p%x
-          dd1_y = v1_y - p%y
-          dd1_z = v1_z - p%z
-          dd2_x = v2_x - p%x
-          dd2_y = v2_y - p%y
-          dd2_z = v2_z - p%z
-          dd3_x = v3_x - p%x
-          dd3_y = v3_y - p%y
-          dd3_z = v3_z - p%z
-
-
-          IF ( dd2_x*dd3_y*dd1_z  +  dd2_y*dd1_x*dd3_z + dd2_z*dd3_x*dd1_y &
-            > dd2_y*dd3_x*dd1_z + dd2_x*dd1_y*dd3_z + dd2_z*dd1_x*dd3_y ) THEN
-            circum_circle_spherical_vec(j) = .TRUE.
-          ELSE
-            circum_circle_spherical_vec(j) = .FALSE.
-          END IF
-      END DO
-    END IF
-  END FUNCTION circum_circle_spherical_vec
-
-  PURE FUNCTION triangle_edge(p, i)
-    USE mo_delaunay_types, ONLY: t_edge
-    TYPE(t_edge) :: triangle_edge
-    INTEGER,  INTENT(IN) :: p(0:2)
-    INTEGER,  INTENT(IN) :: i
-
-    triangle_edge = t_edge( p1=p(i), p2=p(MOD(i+1,3)) )
-  END FUNCTION triangle_edge
-#endif
   
   !> Upper bound for point cloud diameter
   REAL(wp)  FUNCTION point_cloud_diam(pts, p0)

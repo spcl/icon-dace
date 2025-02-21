@@ -14,7 +14,19 @@
 ! ---------------------------------------------------------------
 
 !------------------
-#include "fsel.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 !------------------
 
 
@@ -656,13 +668,8 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
       DO jk = 2, nlev
         DO je = i_startidx, i_endidx
-#endif
           vn_ie(je,jk,jb) = p_nh_metrics%wgtfac_e(je,jk,jb) * vn(je,jk,jb) +            &
                             ( 1._wp - p_nh_metrics%wgtfac_e(je,jk,jb) ) * vn(je,jk-1,jb)
         END DO
@@ -714,13 +721,8 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
       DO jk = 1, nlev
         DO je = i_startidx, i_endidx
-#endif
 
           vn_vert1 = u_vert(ividx(je,jb,1),jk,ivblk(je,jb,1))     *   &
                      p_patch%edges%primal_normal_vert(je,jb,1)%v1 +   &
@@ -838,13 +840,11 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
       DO jk = 1, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           div_c(jc,jk,jb) =                                                                       &
                   ( div_of_stress(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%e_bln_c_s(jc,1,jb) +  &
                     div_of_stress(ieidx(jc,jb,2),jk,ieblk(jc,jb,2)) * p_int%e_bln_c_s(jc,2,jb) +  &
@@ -871,13 +871,13 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
 
           mech_prod(jc,jk,jb) = p_nh_metrics%wgtfac_c(jc,jk,jb) * (                      &
                       shear(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%e_bln_c_s(jc,1,jb)   +      &
@@ -917,13 +917,13 @@ CONTAINS
                           i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2 , nlev
-#else
+
+
+
+
       DO jk = 2 , nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           kh_ic(jc,jk,jb) = rho_ic(jc,jk,jb) * rturb_prandtl *                           &
                             p_nh_metrics%mixing_length_sq(jc,jk,jb) *                    &
                             SQRT( MAX( 0._wp, mech_prod(jc,jk,jb) * 0.5_wp -             &
@@ -968,13 +968,13 @@ CONTAINS
                           i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1 , nlev
-#else
+
+
+
+
       DO jk = 1 , nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           km_c(jc,jk,jb) = MAX( km_min,                                   &
                                 ( kh_ic(jc,jk,jb) + kh_ic(jc,jk+1,jb) ) * &
                                 0.5_wp * turb_prandtl )
@@ -1016,13 +1016,13 @@ CONTAINS
                           i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, nlev-1
-#else
+
+
+
+
       DO jk = 1, nlev-1
         DO jc = i_startidx, i_endidx
-#endif
+
           pcfm(jc,jk,jb) = km_ic(jc,jk+1,jb)
           pcfh(jc,jk,jb) = kh_ic(jc,jk+1,jb)
 
@@ -1129,13 +1129,13 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO je = i_startidx, i_endidx
-#endif
+
           inv_rhoe(je,jk,jb) = 1._wp / inv_rhoe(je,jk,jb)
         END DO
       END DO
@@ -1152,13 +1152,13 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO je = i_startidx, i_endidx
-#endif
+
           vn_vert1 = u_vert(ividx(je,jb,1),jk,ivblk(je,jb,1))     *   &
                      p_patch%edges%primal_normal_vert(je,jb,1)%v1 +   &
                      v_vert(ividx(je,jb,1),jk,ivblk(je,jb,1))     *   &
@@ -1364,13 +1364,13 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           inv_rho_ic(jc,jk,jb) = 1._wp / rho_ic(jc,jk,jb)
         END DO
       END DO
@@ -1394,13 +1394,13 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO je = i_startidx, i_endidx
-#endif
+
 
           ! tendency in normal direction
           ! flux = visc_c * D_31_c where D_31(=D_13) is calculated at half level
@@ -1495,13 +1495,13 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           ddt_w(jc,jk,jb)    = inv_rho_ic(jc,jk,jb)       *                                       &
                                ( hor_tend(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) *                     &
                                  p_int%e_bln_c_s(jc,1,jb) +                                       &
@@ -1525,13 +1525,13 @@ CONTAINS
                           i_startidx, i_endidx, rl_start, rl_end)
      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-     DO jc = i_startidx, i_endidx
-       DO jk = 3, nlev-1
-#else
+
+
+
+
      DO jk = 3, nlev-1
        DO jc = i_startidx, i_endidx
-#endif
+
 
            a(jc,jk)   = - 2._wp * km_c(jc,jk-1,jb) * p_nh_metrics%inv_ddqz_z_full(jc,jk-1,jb) * &
                           p_nh_metrics%inv_ddqz_z_half(jc,jk,jb) * inv_rho_ic(jc,jk,jb)
@@ -1595,13 +1595,13 @@ CONTAINS
 
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = 2, nlev
-#else
+
+
+
+
         DO jk = 2, nlev
           DO jc = i_startidx, i_endidx
-#endif
+
             ddt_w(jc,jk,jb) = ddt_w(jc,jk,jb) +                                  &
                                      ( var_new(jc,jk) - pwm1(jc,jk,jb) ) * inv_dt
           END DO
@@ -1712,14 +1712,14 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       ! compute kh_ie * grad_horiz(var)
       DO jk = 1, nlev
         DO je = i_startidx, i_endidx
-#endif
+
           nabla2_e(je,jk,jb) = 0.5_wp * ( km_ie(je,jk,jb) + km_ie(je,jk+1,jb) ) *               &
                                rturb_prandtl *                                                  &
                                p_patch%edges%inv_dual_edge_length(je,jb) *                      &
@@ -1744,13 +1744,13 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           ! horizontal tendency
           hori_tend(jc,jk,jb) = (                                                  &
                         nabla2_e(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%geofac_div(jc,1,jb) +  &

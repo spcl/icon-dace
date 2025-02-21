@@ -67,7 +67,7 @@ MODULE comin_setup_constants
   PUBLIC :: COMIN_HGRID_UNSTRUCTURED_CELL
 
 
-#include "comin_global.inc"
+
 
   !> List of entry points, named constants and accessor functions that
   !> are exposed to both, the host interface and the plugin interface.
@@ -139,7 +139,7 @@ MODULE comin_setup_constants
 
    !> Entry point names (character strings)
    !! @ingroup common
-   CHARACTER(LEN=MAX_LEN_EP_NAME), PARAMETER :: EP_NAME(EP_DESTRUCTOR) = [ &
+   CHARACTER(LEN=32), PARAMETER :: EP_NAME(EP_DESTRUCTOR) = [ &
      &  "EP_SECONDARY_CONSTRUCTOR    ",  &
      &  "EP_ATM_YAC_DEFCOMP_BEFORE   ",  &
      &  "EP_ATM_YAC_DEFCOMP_AFTER    ",  &
@@ -234,7 +234,7 @@ CONTAINS
   SUBROUTINE comin_callback_get_ep_name_c( iep, out_ep_name, ierr ) &
     &     BIND(C, name="comin_callback_get_ep_name")
     INTEGER(c_int), VALUE, INTENT(IN)  :: iep   !< entry point ID
-    CHARACTER(len=1, kind=c_char),DIMENSION(MAX_LEN_EP_NAME+1)  :: out_ep_name
+    CHARACTER(len=1, kind=c_char),DIMENSION(32+1)  :: out_ep_name
     INTEGER(c_int), INTENT(OUT) :: ierr  !< error return code
     !
     CHARACTER(LEN=:), ALLOCATABLE :: ep_name

@@ -16,13 +16,13 @@
 
 MODULE mo_delaunay_types
 
-#ifndef NOMPI
-  USE mpi
-#endif
 
-#ifdef _OPENMP
-  USE OMP_LIB
-#endif
+
+
+
+
+
+
 
   USE mo_util_file,         ONLY: util_file_is_writable
   USE mo_netcdf_errhandler, ONLY: nf
@@ -31,9 +31,9 @@ MODULE mo_delaunay_types
   USE mo_impl_constants,    ONLY: SUCCESS
   USE mo_kind,              ONLY: wp
   USE mo_mpi,               ONLY: p_comm_work, p_real_dp
-#ifdef __SX__
-  USE mo_util_sort,         ONLY: radixsort
-#endif
+
+
+
   IMPLICIT NONE
   
   PRIVATE
@@ -48,13 +48,13 @@ MODULE mo_delaunay_types
   CHARACTER(LEN=*), PARAMETER :: modname = 'mo_delaunay_types'
 
   ! quadruple precision, needed for some determinant computations
-#if ( defined __PGI )
-#define _NO_QUAD_PRECISION
-#elif ( ! defined NAGFOR && ! defined _SX )
+
+
+
   INTEGER, PARAMETER :: QR_K = SELECTED_REAL_KIND (32)
-#else
-  INTEGER, PARAMETER :: QR_K = SELECTED_REAL_KIND (2*precision(1.0_wp))
-#endif
+
+
+
 
 
   ! --------------------------------------------------------------------
@@ -138,9 +138,9 @@ MODULE mo_delaunay_types
     PROCEDURE :: push_back  => push_back_point_list
     PROCEDURE :: sync       => sync_point_list
     PROCEDURE, PUBLIC :: quicksort  => quicksort_point_list
-#ifdef __SX__
-    PROCEDURE, PUBLIC :: radixsort => radixsort_point_list
-#endif
+
+
+
   END TYPE t_point_list
 
   !> type declaration: list of triangles
@@ -281,9 +281,9 @@ CONTAINS
   !  Renka, R. J. Interpolation of Data on the Surface of a Sphere
   !               ACM Trans. Math. Softw., ACM, 1984, 10, 417-436
   !  Renka's STRIPACK algorithm (http://www.netlib.org/toms/772)
-#ifndef _NO_QUAD_PRECISION
+
   PURE &
-#endif
+
   FUNCTION circum_circle_spherical(p, pxyz, ip)
     LOGICAL :: circum_circle_spherical
     TYPE (t_point),      INTENT(IN)   :: p
@@ -326,7 +326,7 @@ CONTAINS
   !  Renka, R. J. Interpolation of Data on the Surface of a Sphere
   !               ACM Trans. Math. Softw., ACM, 1984, 10, 417-436
   !  Renka's STRIPACK algorithm (http://www.netlib.org/toms/772)
-#ifndef _NO_QUAD_PRECISION
+
   PURE FUNCTION circum_circle_spherical_q128(p, pxyz, ip)
     LOGICAL :: circum_circle_spherical_q128
     TYPE (t_point),      INTENT(IN)   :: p
@@ -358,19 +358,6 @@ CONTAINS
       circum_circle_spherical_q128 = .FALSE.
     END IF
   END FUNCTION circum_circle_spherical_q128
-#else
-  FUNCTION circum_circle_spherical_q128(p, pxyz, ip)
-    LOGICAL :: circum_circle_spherical_q128
-    TYPE (t_point),      INTENT(IN)   :: p
-    TYPE (t_point_list), INTENT(IN)   :: pxyz
-    INTEGER,             INTENT(IN)   :: ip(0:2)
-    CALL finish("circum_circle_spherical_q128", &
-      "This function cannot be used without quadruple precision support. " // &
-      "Please consider applying `icondeluny` from the DWD ICON Tools on " // &
-      "the grid files manually to pre-generate the variable `cc_delaunay`.")
-    circum_circle_spherical_q128 = .FALSE.
-  END FUNCTION circum_circle_spherical_q128
-#endif
 
 
   ! --------------------------------------------------------------------
@@ -992,31 +979,6 @@ CONTAINS
     END IF
   END SUBROUTINE quicksort_sortable_list
 
-#ifdef __SX__
-  ! Wrapper for NEC's vecorized radix sort algorithm
-  SUBROUTINE radixsort_point_list(this)
-    CLASS(t_point_list), INTENT(INOUT) :: this
-    TYPE(t_point) :: tmp(size(this%a))
-    REAL(wp) :: ps_arr(size(this%a))
-    INTEGER :: co_arr(size(this%a))
-    INTEGER :: n, i
-
-    n = size(this%a)
-
-    DO i=1,n
-      ps_arr(i) = this%a(i-1)%ps
-      tmp(i) = this%a(i-1)
-      co_arr(i) = i
-    END DO
-
-    CALL radixsort(ps_arr,co_arr)
-
-    DO i=1,n
-      this%a(i-1) = tmp(co_arr(i))
-    END DO
-
-  END SUBROUTINE radixsort_point_list
-#endif
 
   ! --------------------------------------------------------------------
   !> Simple recursive implementation of Hoare's QuickSort algorithm
@@ -1078,84 +1040,6 @@ CONTAINS
     CLASS(t_point_list) :: this
     LOGICAL, INTENT(IN), OPTIONAL :: sync_gindex
     ! local variables
-#if (!defined(NOMPI))
-    CHARACTER(*), PARAMETER :: routine = modname//":sync_point_list"
-    INTEGER                        :: ierr, mpi_t_point, local_nentries, global_nentries, mpi_comm,    &
-      &                               oldtypes(2), blockcounts(2), ierrstat, nranks, i, irank, &
-      &                               this_start, this_end
-    INTEGER(MPI_ADDRESS_KIND)      :: offsets(2), typeLB, extent
-    INTEGER, ALLOCATABLE           :: recv_count(:), recv_displs(:)
-    TYPE(t_mpi_point), ALLOCATABLE :: tmp(:), recv_tmp(:)
-    LOGICAL                        :: lsync_gindex
-
-    lsync_gindex = .TRUE.
-    IF (PRESENT(sync_gindex))  lsync_gindex = sync_gindex
-
-    mpi_comm = p_comm_work
-
-    ! get no. of available MPI ranks:
-    CALL MPI_COMM_SIZE (mpi_comm, nranks, ierr)
-    CALL MPI_COMM_RANK (mpi_comm, irank,  ierr)
-
-    ! communicate max. number of points
-    local_nentries = this%nentries
-    ALLOCATE(recv_count(0:(nranks-1)), recv_displs(0:(nranks-1)), STAT=ierrstat)
-    IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-    CALL MPI_ALLGATHER(local_nentries, 1, MPI_INTEGER, recv_count, 1, MPI_INTEGER, mpi_comm, ierr)
-    global_nentries = SUM(recv_count(:))
-
-    ! create an MPI-sendable copy of the point list
-    ALLOCATE(tmp(0:(local_nentries-1)), STAT=ierrstat)
-    IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-    tmp(0:(local_nentries-1))%x      = this%a(0:(local_nentries-1))%x
-    tmp(0:(local_nentries-1))%y      = this%a(0:(local_nentries-1))%y
-    tmp(0:(local_nentries-1))%z      = this%a(0:(local_nentries-1))%z
-    tmp(0:(local_nentries-1))%ps     = this%a(0:(local_nentries-1))%ps
-    tmp(0:(local_nentries-1))%gindex = this%a(0:(local_nentries-1))%gindex
-
-    ! create an MPI type for a single point
-    !
-    ! setup description of the 4 REAL(wp) fields: x, y, z, ps
-    offsets(1)     = 0_MPI_ADDRESS_KIND
-    oldtypes(1)    = p_real_dp
-    blockcounts(1) = 4 
-    CALL MPI_TYPE_GET_EXTENT(p_real_dp, typeLB, extent, ierr) 
-    offsets(2)     = 4*extent
-    oldtypes(2)    = MPI_INTEGER
-    blockcounts(2) = 2
-    CALL MPI_TYPE_CREATE_STRUCT(2, blockcounts, offsets, oldtypes, mpi_t_point, ierr) 
-    CALL MPI_TYPE_COMMIT(mpi_t_point, ierr) 
-
-    ! perform gather operation
-    ALLOCATE(recv_tmp(0:(global_nentries-1)), STAT=ierrstat)
-    IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-    recv_displs(0) = 0
-    DO i=1,(nranks-1)
-      recv_displs(i) = recv_displs(i-1) + recv_count(i-1)
-    END DO
-    CALL MPI_ALLGATHERV(tmp, local_nentries, mpi_t_point, recv_tmp, recv_count, recv_displs, &
-      &                 mpi_t_point, mpi_comm, ierr)
-
-    CALL MPI_TYPE_FREE(mpi_t_point, ierr) 
-
-    CALL this%resize(global_nentries)
-    this%a(0:(this%nentries-1))%x      = recv_tmp(0:(this%nentries-1))%x 
-    this%a(0:(this%nentries-1))%y      = recv_tmp(0:(this%nentries-1))%y 
-    this%a(0:(this%nentries-1))%z      = recv_tmp(0:(this%nentries-1))%z 
-    this%a(0:(this%nentries-1))%ps     = recv_tmp(0:(this%nentries-1))%ps
-    IF (lsync_gindex) THEN
-      this%a(0:(this%nentries-1))%gindex = recv_tmp(0:(this%nentries-1))%gindex
-    ELSE
-      this%a(0:(this%nentries-1))%gindex = -1
-      this_start = recv_displs(irank)
-      this_end   = this_start+recv_count(irank)-1
-      this%a(this_start:this_end)%gindex = recv_tmp(this_start:this_end)%gindex
-    END IF
-
-    ! clean up
-    DEALLOCATE(tmp, recv_tmp, recv_count, recv_displs, STAT=ierrstat)
-    IF (ierrstat /= SUCCESS) CALL finish(routine, "DEALLOCATE failed!")
-#endif
   END SUBROUTINE sync_point_list
 
 
@@ -1305,204 +1189,6 @@ CONTAINS
   RECURSIVE SUBROUTINE sync_triangulation(this, opt_mpi_comm)
     CLASS(t_triangulation) :: this
     INTEGER, INTENT(IN), OPTIONAL :: opt_mpi_comm
-#if (!defined(NOMPI))
-    ! local variables
-    CHARACTER(*), PARAMETER :: routine = modname//":sync_triangulation"
-    INTEGER,      PARAMETER :: root_pe      = 0
-    LOGICAL,      PARAMETER :: print_timers = .FALSE.
-
-    INTEGER                           :: ierr, mpi_t_triangle, local_nentries,   &
-      &                                  global_nentries, mpi_comm, oldtypes(2), &
-      &                                  blockcounts(2), ierrstat, nranks, i,    &
-      &                                  count, ngroups, comm1, comm2,           &
-      &                                  irank, irank2, color1, color2,          &
-      &                                  alloc_size
-    INTEGER(MPI_ADDRESS_KIND)         :: offsets(2)
-    INTEGER, ALLOCATABLE              :: recv_count(:), recv_displs(:)
-    TYPE(t_mpi_triangle), ALLOCATABLE :: tmp(:), recv_tmp(:)
-    TYPE(t_min_heap_elt), ALLOCATABLE :: kway_merge_array_out(:)
-#ifdef _OPENMP
-    DOUBLE PRECISION                  :: time_s, toc
-#endif
-
-    mpi_comm = p_comm_work
-    IF (PRESENT(opt_mpi_comm))  mpi_comm = opt_mpi_comm
-
-    IF (mpi_comm /= MPI_COMM_NULL) THEN
-      ! create an MPI type for a single triangle
-      offsets(1)     = 0_MPI_ADDRESS_KIND
-      oldtypes(1)    = MPI_INTEGER
-      blockcounts(1) = 3
-      CALL MPI_TYPE_CREATE_STRUCT(1, blockcounts, offsets, oldtypes, mpi_t_triangle, ierr) 
-      CALL MPI_TYPE_COMMIT(mpi_t_triangle, ierr) 
-    ELSE
-      RETURN
-    END IF
-
-    ! get no. of available MPI ranks
-    CALL MPI_COMM_SIZE (mpi_comm, nranks, ierr)
-    ! determine this worker's rank
-    CALL MPI_COMM_RANK (mpi_comm, irank, ierr)
-
-    IF (.NOT. PRESENT(opt_mpi_comm)) THEN
-      ! we form SQRT(nranks) different groups
-      ngroups = INT( SQRT(REAL(nranks)) )
-      ! split MPI communicator: communicator for gather stage 1
-      color1 = INT(irank/ngroups)
-      CALL MPI_COMM_SPLIT(mpi_comm, color1, irank, comm1, ierr)
-      ! split MPI communicator: communicator for gather stage 2
-      CALL MPI_COMM_RANK (comm1, irank2, ierr)
-      color2 = MPI_UNDEFINED
-      IF (MOD(irank2, ngroups) == root_pe)  color2 = 1
-      CALL MPI_COMM_SPLIT(mpi_comm, color2, irank, comm2, ierr)
-#ifdef _OPENMP
-      time_s = omp_get_wtime()
-#endif
-
-      ! local sort on each PE
-      IF (this%nentries > 0)  CALL this%quicksort()
-#ifdef _OPENMP
-      toc = omp_get_wtime() - time_s
-      IF (print_timers .AND. (irank == 0))  WRITE (0,*) "sorting: ", toc
-      time_s = omp_get_wtime()
-#endif
-      ! recursive call, gather stage 1
-      CALL sync_triangulation(this, comm1)
-#ifdef _OPENMP
-      toc = omp_get_wtime() - time_s
-
-      IF (print_timers .AND. (irank == 0))  WRITE (0,*) "sync, stage 1: ", toc
-      time_s = omp_get_wtime()
-#endif
-      ! recursive call, gather stage 2
-      CALL sync_triangulation(this, comm2)
-#ifdef _OPENMP
-      toc = omp_get_wtime() - time_s
-
-      IF (print_timers .AND. (irank == 0))  WRITE (0,*) "sync, stage 2: ", toc
-      time_s = omp_get_wtime()
-#endif
-      IF (irank /= 0) THEN
-        local_nentries = 0
-      ELSE
-        local_nentries = this%nentries
-      END IF
-      alloc_size = local_nentries
-      ! broadcast buffer size from PE "irank == 0"
-      CALL MPI_BCAST(alloc_size, 1, MPI_INTEGER, 0, mpi_comm, ierr)
-#ifdef _OPENMP
-      toc = omp_get_wtime() - time_s
-      IF (print_timers .AND. (irank == 0))  WRITE (0,*) "epilogue 1: ", toc
-#endif
-    ELSE
-      local_nentries = this%nentries
-      alloc_size     = local_nentries
-    END IF
-
-    ! create an MPI-sendable copy of the triangle list
-    IF (alloc_size > 0) THEN
-      ALLOCATE(tmp(0:(alloc_size-1)), STAT=ierrstat)
-      IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-      IF (local_nentries > 0) THEN
-        tmp(0:(local_nentries-1))%p(0) = this%a(0:(local_nentries-1))%p(0)
-        tmp(0:(local_nentries-1))%p(1) = this%a(0:(local_nentries-1))%p(1)
-        tmp(0:(local_nentries-1))%p(2) = this%a(0:(local_nentries-1))%p(2)
-      END IF
-    ELSE
-      ALLOCATE(tmp(0:0), STAT=ierrstat)
-      IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-    END IF
-
-    IF (.NOT. PRESENT(opt_mpi_comm)) THEN
-      ! broadcast result from PE "irank == 0"
-#ifdef _OPENMP
-      time_s = omp_get_wtime()
-#endif
-      CALL MPI_BCAST(tmp, alloc_size, mpi_t_triangle, 0, mpi_comm, ierr)
-#ifdef _OPENMP
-      toc = omp_get_wtime() - time_s
-      IF (print_timers .AND. (irank == 0))  WRITE (0,*) "bcast: ", toc
-      time_s = omp_get_wtime()
-#endif
-      IF (irank /= 0) THEN
-        CALL this%resize(alloc_size)
-        IF (alloc_size > 0) THEN
-          this%a(0:(alloc_size-1))%p(0) = tmp(0:(alloc_size-1))%p(0)
-          this%a(0:(alloc_size-1))%p(1) = tmp(0:(alloc_size-1))%p(1)
-          this%a(0:(alloc_size-1))%p(2) = tmp(0:(alloc_size-1))%p(2)
-        END IF
-      END IF
-
-      DEALLOCATE(tmp, STAT=ierrstat)
-      IF (ierrstat /= SUCCESS) CALL finish(routine, "DEALLOCATE failed!")
-#ifdef _OPENMP
-      toc = omp_get_wtime() - time_s
-      IF (print_timers .AND. (irank == 0))  WRITE (0,*) "epilogue 2: ", toc
-#endif
-    ELSE
-      ! communicate max. number of points
-      ALLOCATE(recv_count(0:(nranks-1)), recv_displs(0:(nranks-1)), STAT=ierrstat)
-      IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-      CALL MPI_GATHER(local_nentries, 1, MPI_INTEGER, recv_count, 1, MPI_INTEGER, root_pe, mpi_comm, ierr)
-      IF (irank == root_pe) THEN
-        global_nentries = SUM(recv_count(:)) ! gather a total of "global_nentries" entries
-      
-        ! perform gather operation
-        IF (global_nentries > 0) THEN
-          ALLOCATE(recv_tmp(0:(global_nentries-1)), STAT=ierrstat)
-        ELSE
-          ALLOCATE(recv_tmp(0:0), STAT=ierrstat)
-        END IF
-        IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-        recv_displs(0) = 0
-        DO i=1,(nranks-1)
-          recv_displs(i) = recv_displs(i-1) + recv_count(i-1)
-        END DO
-      ELSE
-        ALLOCATE(recv_tmp(0:1), STAT=ierrstat)
-        IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-      END IF
-      CALL MPI_GATHERV(tmp, local_nentries, mpi_t_triangle, recv_tmp, recv_count, recv_displs, &
-        &              mpi_t_triangle, root_pe, mpi_comm, ierr)
-
-      DEALLOCATE(tmp, STAT=ierrstat)
-      IF (ierrstat /= SUCCESS) CALL finish(routine, "DEALLOCATE failed!")
-               
-      IF (irank == root_pe) THEN
-        ! NEC_RP exclude processes without local data from kway_merge
-        IF (local_nentries > 0) THEN
-          IF (global_nentries > 0) THEN
-            ALLOCATE(kway_merge_array_out(0:global_nentries-1), STAT=ierrstat)
-          ELSE
-            ALLOCATE(kway_merge_array_out(0:0), STAT=ierrstat)
-          END IF
-          IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-      
-          ! perform a k-way merging of the sorted arrays from the k MPI
-          ! processes, merge this to "count" entries.
-          CALL kway_merge(recv_tmp, recv_count, kway_merge_array_out, count)
-
-          DEALLOCATE(recv_tmp, recv_count, recv_displs, STAT=ierrstat)
-          IF (ierrstat /= SUCCESS) CALL finish(routine, "DEALLOCATE failed!")
-
-          CALL this%resize(count)
-          IF (this%nentries > 0) THEN
-            this%a(0:(this%nentries-1))%p(0) = kway_merge_array_out(0:(this%nentries-1))%p%p(0)
-            this%a(0:(this%nentries-1))%p(1) = kway_merge_array_out(0:(this%nentries-1))%p%p(1)
-            this%a(0:(this%nentries-1))%p(2) = kway_merge_array_out(0:(this%nentries-1))%p%p(2)
-          END IF
-          DEALLOCATE(kway_merge_array_out, STAT=ierrstat)
-          IF (ierrstat /= SUCCESS) CALL finish(routine, "DEALLOCATE failed!")
-        END IF
-      ELSE
-        DEALLOCATE(recv_tmp, STAT=ierrstat)
-        IF (ierrstat /= SUCCESS) CALL finish(routine, "DEALLOCATE failed!")
-      END IF
-    END IF
-
-    ! clean up
-    CALL MPI_TYPE_FREE(mpi_t_triangle, ierr) 
-#endif
   END SUBROUTINE sync_triangulation
 
 
@@ -1520,60 +1206,6 @@ CONTAINS
   SUBROUTINE bcast_triangulation(this, root, mpi_comm)
     CLASS(t_triangulation) :: this
     INTEGER, INTENT(IN) :: root, mpi_comm
-#if (!defined(NOMPI))
-    ! local variables
-    CHARACTER(*), PARAMETER :: routine = modname//":bcast_triangulation"
-    INTEGER                           :: ierr, irank, mpi_t_triangle, oldtypes(2), &
-      &                                  blockcounts(2), alloc_size
-    INTEGER(MPI_ADDRESS_KIND)         :: offsets(2)
-    TYPE(t_mpi_triangle), ALLOCATABLE :: tmp(:)
-
-    IF (mpi_comm == MPI_COMM_NULL)  RETURN
-
-    ! determine this worker's rank
-    CALL MPI_COMM_RANK (mpi_comm, irank, ierr)
-    IF ((irank /= root) .AND. (this%nentries > 0)) THEN
-      CALL finish(routine, "Triangulation broadcast failed, non-empty receive buffer!")
-    END IF
-
-    ! broadcast buffer size from root PE
-    alloc_size = this%nentries
-    CALL MPI_BCAST(alloc_size, 1, MPI_INTEGER, root, mpi_comm, ierr)
-
-    ! create an MPI type for a single triangle
-    offsets(1)     = 0_MPI_ADDRESS_KIND
-    oldtypes(1)    = MPI_INTEGER
-    blockcounts(1) = 3
-    CALL MPI_TYPE_CREATE_STRUCT(1, blockcounts, offsets, oldtypes, mpi_t_triangle, ierr) 
-    CALL MPI_TYPE_COMMIT(mpi_t_triangle, ierr) 
-
-    ! create an MPI-sendable copy of the triangle list
-    ALLOCATE(tmp(0:(alloc_size-1)), STAT=ierr)
-    IF (ierr /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-    IF ((irank == root) .AND. (alloc_size > 0)) THEN
-      tmp(0:(alloc_size-1))%p(0) = this%a(0:(alloc_size-1))%p(0)
-      tmp(0:(alloc_size-1))%p(1) = this%a(0:(alloc_size-1))%p(1)
-      tmp(0:(alloc_size-1))%p(2) = this%a(0:(alloc_size-1))%p(2)
-    END IF
-
-    ! broadcast data
-    CALL MPI_BCAST(tmp, alloc_size, mpi_t_triangle, root, mpi_comm, ierr)
-
-    ! copy-back of received triangle data
-    IF (irank /= root) THEN
-      CALL this%resize(alloc_size)
-      IF (this%nentries > 0) THEN
-        this%a(0:(this%nentries-1))%p(0) = tmp(0:(this%nentries-1))%p(0)
-        this%a(0:(this%nentries-1))%p(1) = tmp(0:(this%nentries-1))%p(1)
-        this%a(0:(this%nentries-1))%p(2) = tmp(0:(this%nentries-1))%p(2)
-      END IF
-    END IF
-
-    ! clean up
-    CALL MPI_TYPE_FREE(mpi_t_triangle, ierr) 
-    DEALLOCATE(tmp, STAT=ierr)
-    IF (ierr /= SUCCESS) CALL finish(routine, "DEALLOCATE failed!")
-#endif
   END SUBROUTINE bcast_triangulation
 
 

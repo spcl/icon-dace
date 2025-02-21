@@ -14,32 +14,6 @@
 MODULE mo_name_list_output_printvars
 
   USE, INTRINSIC :: ISO_C_BINDING, ONLY: c_char
-#ifdef GRIBAPI
-  USE mo_cdi,                               ONLY: streamOpenWrite, FILETYPE_GRB2, gridCreate,                &
-    &                                             GRID_UNSTRUCTURED, TAXIS_ABSOLUTE,                         &
-    &                                             vlistDestroy, streamClose, streamDefVlist,                 &
-    &                                             streamWriteVarSlice, gridDestroy,            &
-    &                                             streamOpenRead, streamInqVlist, vlistinqvarname,           &
-    &                                             taxisDestroy, vlistCreate, taxisCreate, institutInq,       &
-    &                                             vlistDefTaxis, vlistDefInstitut
-  USE mo_mpi,                               ONLY: get_my_global_mpi_id
-  USE mo_util_file,                         ONLY: util_unlink
-  USE mo_name_list_output_zaxes_types,      ONLY: t_verticalAxisList, t_verticalAxis
-  USE mo_level_selection_types,             ONLY: t_level_selection
-  USE mo_name_list_output_zaxes,            ONLY: setup_ml_axes_atmo, setup_zaxes_oce
-  USE mo_master_control,                    ONLY: my_process_is_atmo, my_process_is_ocean, my_process_is_jsbach, &
-    &                                             my_process_is_waves
-#ifndef __NO_ICON_WAVES__
-  USE mo_waves_vertical_axes,               ONLY: setup_zaxes_waves
-#endif
-#ifndef __NO_JSBACH__
-  USE mo_atm_phy_nwp_config,                ONLY: atm_phy_nwp_config
-  USE mo_grid_config,                       ONLY: n_dom
-  USE mo_impl_constants,                    ONLY: LSS_JSBACH
-  USE mo_jsb_vertical_axes,                 ONLY: setup_zaxes_jsbach
-#endif
-  USE mo_util_cdi,                          ONLY: create_cdi_variable
-#endif
   USE mo_cdi,                               ONLY: cdi_max_name
   USE mo_gribout_config,                    ONLY: t_gribout_config
   USE mo_kind,                              ONLY: wp, dp
@@ -120,76 +94,6 @@ CONTAINS
     END FUNCTION is_number
   END FUNCTION get_var_basename
 
-#ifdef GRIBAPI
-  !------------------------------------------------------------------------------------------------
-  !> @return GRIB2 short name of a given variable.
-  !
-  !  In order to make sure that we really get the true GRIB2 shortName
-  !  (which depends on the definition files used), we choose a rather
-  !  awkward approach: A temporary file is created and read in
-  !  immediately afterwards. This is slow!
-  !
-  SUBROUTINE identify_grb2_shortname(info, vname, verticalAxisList, gribout_config, i_lctype, &
-    &                                out_varnames_dict)
-    TYPE (t_var_metadata),                      INTENT(IN)    :: info
-    CHARACTER(kind=c_char, LEN=cdi_max_name+1), INTENT(OUT)   :: vname
-    TYPE(t_verticalAxisList),                   INTENT(INOUT) :: verticalAxisList
-    TYPE(t_gribout_config),                     INTENT(IN)    :: gribout_config
-    INTEGER,                                    INTENT(IN)    :: i_lctype
-    TYPE(t_dictionary),                         INTENT(IN)    :: out_varnames_dict
-    ! local variables
-    CHARACTER(*), PARAMETER :: routine = modname//"::identify_grb2_shortname"
-    CHARACTER(*), PARAMETER :: tmp_filename_base = "tmpfile.grb"
-    TYPE(t_verticalAxis), POINTER :: zaxis
-    INTEGER :: tmp_vlistID, tmp_gridID, tmp_zaxisID, tmp_varID, tmp_streamID, &
-      & nmiss, tmp_taxisID, tmp_cdiInstID,  ierrstat
-    REAL(wp) :: tmp_var1(1)
-    CHARACTER(LEN=LEN(tmp_filename_base)+32) :: tmp_filename
-
-    ! retrieve vertical axis object
-    zaxis => verticalAxisList%getEntry(icon_zaxis_type=info%vgrid)
-    IF (.NOT. ASSOCIATED(zaxis)) THEN
-      WRITE (message_text,*) "variable '", TRIM(info%name), "' :Zaxis no. ", info%vgrid, " undefined."
-      CALL finish(routine, message_text)
-    END IF
-    tmp_zaxisID = zaxis%cdi_id
-    ! create dummy variable list
-    tmp_vlistID = vlistCreate()
-    tmp_cdiInstID = institutInq(gribout_config%generatingCenter,          &
-      &                         gribout_config%generatingSubcenter, '', '')
-    ! define Institute
-    CALL vlistDefInstitut(tmp_vlistID, tmp_cdiInstID)
-    ! create a dummy time axis 
-    tmp_taxisID = taxisCreate(TAXIS_ABSOLUTE) 
-    ! assign the time axis to the variable list 
-    CALL vlistDefTaxis(tmp_vlistID, tmp_taxisID) 
-    ! create dummy grid (size=1):
-    tmp_gridID  = gridCreate(GRID_UNSTRUCTURED, 1)
-    ! add the variable in question to the vlist:
-    tmp_varID = create_cdi_variable(tmp_vlistID, tmp_gridID, tmp_zaxisID,        &
-      &                             info, 0._dp, FILETYPE_GRB2,                  &
-      &                             gribout_config, i_lctype, out_varnames_dict)
-    ! open temporary GRIB2 file, write variable:
-    tmp_filename = tmp_filename_base//"."//int2string(get_my_global_mpi_id(),'(i0)')
-    tmp_streamID = streamOpenWrite(TRIM(tmp_filename), FILETYPE_GRB2) 
-    CALL streamDefVlist(tmp_streamID, tmp_vlistID) 
-    tmp_var1(:) = 0._wp
-    nmiss       = 0
-    CALL streamWriteVarSlice(tmp_streamID, tmp_varID, 0, tmp_var1, nmiss) 
-    CALL streamClose(tmp_streamID) 
-    CALL vlistDestroy(tmp_vlistID)
-    CALL taxisDestroy(tmp_taxisID)
-    CALL gridDestroy(tmp_gridID) 
-    ! Re-open file:
-    tmp_streamID = streamOpenRead(TRIM(tmp_filename)) 
-    ! Get the variable list of the dataset 
-    tmp_vlistID = streamInqVlist(tmp_streamID) 
-    CALL vlistInqVarName(tmp_vlistID, tmp_varID, vname)   
-    ! Close the input stream 
-    CALL streamClose(tmp_streamID) 
-    ierrstat = util_unlink(TRIM(tmp_filename))
-  END SUBROUTINE identify_grb2_shortname
-#endif
 
   !------------------------------------------------------------------------------------------------
   !> Print list of all output variables (LaTeX table formatting).
@@ -205,11 +109,6 @@ CONTAINS
     CHARACTER(*), PARAMETER :: varprefix = "\varname{", CR = " \\[0.5em]"
     CHARACTER(*), PARAMETER :: descrprefix = "\vardescr{"
     INTEGER,      PARAMETER :: PREF = LEN_TRIM(varprefix) + 1
-#ifdef GRIBAPI
-    TYPE(t_level_selection),  POINTER              :: tmp_level_selection => NULL()
-    TYPE(t_verticalAxisList), TARGET               :: tmp_verticalAxisList
-    TYPE(t_verticalAxisList), POINTER              :: it
-#endif
     TYPE (t_var_metadata),    POINTER              :: info
     TYPE(t_var),     POINTER              :: elem
     TYPE(t_cf_var),           POINTER              :: this_cf
@@ -220,33 +119,6 @@ CONTAINS
     TYPE(t_vl_register_iter) :: vl_iter
     ! ---------------------------------------------------------------------------
 
-#ifdef GRIBAPI
-    IF (my_process_is_ocean()) THEN
-      CALL setup_zaxes_oce(tmp_verticalAxisList, tmp_level_selection)
-
-    ELSE IF (my_process_is_atmo()) THEN
-      CALL setup_ml_axes_atmo(tmp_verticalAxisList, tmp_level_selection, print_patch_id)
-#ifndef __NO_JSBACH__
-      IF (ANY(atm_phy_nwp_config(1:n_dom)%inwp_surface == LSS_JSBACH)) &
-          & CALL setup_zaxes_jsbach(tmp_verticalAxisList)
-#endif
-    ELSE IF (my_process_is_jsbach()) THEN
-#ifndef __NO_JSBACH__
-      CALL setup_zaxes_jsbach(tmp_verticalAxisList)
-#endif
-    ELSE IF (my_process_is_waves()) THEN
-#ifndef __NO_ICON_WAVES__
-      CALL setup_zaxes_waves(tmp_verticalAxisList, tmp_level_selection, print_patch_id)
-#endif
-    ENDIF
-    it => tmp_verticalAxisList
-    DO
-      IF (.NOT. ASSOCIATED(it%axis)) CALL finish(routine, "Internal error!")
-      CALL it%axis%cdiZaxisCreate()
-      IF (.NOT. ASSOCIATED(it%next)) EXIT
-      it => it%next
-    END DO
-#endif
 
     ! count the no. of output variables:
     nout_vars = 0
@@ -284,13 +156,7 @@ CONTAINS
             IF (elem%ref_to%info%ncontained > 0) this_cf => elem%ref_to%info%cf
           END IF
         END IF
-#ifdef GRIBAPI
-        CALL identify_grb2_shortname(info, vname, tmp_verticalAxisList,     &
-          &                          gribout_config, i_lctype,       &
-          &                          out_varnames_dict)
-#else
         vname = info%name
-#endif
         vname = tolower(vname)
         IF ((vname(1:3) == "var") .OR. (vname(1:5) == "param")) THEN
           vname = ""
@@ -308,9 +174,6 @@ CONTAINS
           & TRIM(vname), ' & ', descrprefix, TRIM(descr_string), "}"
       ENDDO
     ENDDO
-#ifdef GRIBAPI
-    CALL tmp_verticalAxisList%finalize()
-#endif
     ! sort and remove duplicates
     CALL quicksort(out_vars(1:nout_vars))
     CALL remove_duplicates(out_vars(1:nout_vars), nout_vars)

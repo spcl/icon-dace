@@ -29,23 +29,15 @@ MODULE mo_real_timer
   USE mo_impl_constants,  ONLY: MAX_CHAR_LENGTH, TIMER_MODE_WRITE_FILES,      &
     &                           TIMER_MODE_DETAILED, TIMER_MODE_AGGREGATED
 
-#ifdef _OPENMP
-  USE omp_lib,            ONLY: omp_get_thread_num, omp_get_max_threads, &
-                                omp_in_parallel, omp_get_num_threads
-#endif
 
-#ifdef _USE_NVTX
-  USE nvtx
-#endif
 
-#ifndef NOMPI
-  USE mo_mpi,             ONLY: p_recv, p_send, p_barrier, p_real_dp, &
-                                p_pe, get_my_mpi_all_comm_size, p_io, &
-                                p_comm_size, p_n_work, num_work_procs
-# ifndef NO_MPI_CHOICE_ARG
-  USE mpi,                ONLY: MPI_Gather
-# endif
-#endif
+
+
+
+
+
+
+
   USE mo_parallel_config, ONLY: p_test_run, proc0_shift
 
   USE mo_mpi,             ONLY: num_test_procs, get_my_mpi_work_id, &
@@ -64,12 +56,8 @@ MODULE mo_real_timer
 
   PRIVATE
 
-#ifndef NOMPI
-  INTEGER, PARAMETER :: report_tag = 12345
-#else
   INTEGER, PARAMETER :: p_n_work = 1
   INTEGER, PARAMETER :: num_work_procs = 1
-#endif
 
   ! raw timers
 
@@ -99,17 +87,10 @@ MODULE mo_real_timer
 
   ! elementary time marks
 
-#ifdef __xlC__
-  TYPE t_time_mark
-    INTEGER :: t(4)                     ! 'raw' timer mark
-  END TYPE t_time_mark
-  TYPE(t_time_mark), PARAMETER :: init_mark = t_time_mark( (/ 0, 0, 0, 0 /) )
-#else
   TYPE t_time_mark
     REAL(dp) :: t
   END TYPE t_time_mark
   TYPE(t_time_mark), PARAMETER :: init_mark = t_time_mark( 0.0_dp )
-#endif
 
 
   ! thread-shared part of timer
@@ -123,11 +104,7 @@ MODULE mo_real_timer
   !! Conditions: when `call_n == 0`, then `active_under = -1, min = HUGE(1._dp), max = 0, tot = 0,
   !! stat = rt_undef_stat`.
   TYPE :: t_rt
-#ifdef __xlC__
-    INTEGER  :: mark1(4)
-#else
     REAL(dp) :: mark1                   ! last start time
-#endif
     REAL(dp) :: tot                     ! total sum of active time
     REAL(dp) :: min                     ! min. active time
     REAL(dp) :: max                     ! max. ..
@@ -161,11 +138,7 @@ MODULE mo_real_timer
 
   TYPE(t_srt), PARAMETER :: srt_init = t_srt(.FALSE., 'noname')
   TYPE(t_rt) , PARAMETER :: rt_init  = t_rt( &
-#ifdef __xlC__
-        (/ 0, 0, 0, 0/),  &     ! mark1
-#else
         0.0_dp, &               ! mark1
-#endif
         0.0_dp, &               ! tot
         HUGE(0.0_dp), &         ! min
         0.0_dp, &               ! max
@@ -189,10 +162,6 @@ CONTAINS
     CALL util_init_real_time()
     CALL util_get_real_time_size(sz)
 
-#ifdef __xlC__
-    IF (BIT_SIZE(rt(1)%mark1)*SIZE(rt(1)%mark1) < sz*8) &
-         CALL real_timer_abort(0,'buffer size for time stamps too small')
-#else
     integer_byte_size = BIT_SIZE(ii)/8
     INQUIRE (iolength=io_size) ii
     integer_io_size = io_size
@@ -200,7 +169,6 @@ CONTAINS
     realdp_byte_size = io_size/integer_io_size*integer_byte_size
     IF (realdp_byte_size < sz) &
          CALL real_timer_abort(0,'buffer size for time stamps too small')
-#endif
 
     ! initialize call stack variables
     !$omp parallel
@@ -273,10 +241,6 @@ CONTAINS
     INTEGER :: jt
 
   !------------------------------------------------------------------------------------------------
-#ifdef _OPENMP
-    IF ( omp_in_parallel() ) &
-         CALL real_timer_abort(0,'new_timer called in parallel region')
-#endif
 
     IF (need_init) CALL mo_real_timer_init
 
@@ -319,10 +283,6 @@ CONTAINS
 
     INTEGER :: jt
 
-#ifdef _OPENMP
-    IF ( omp_in_parallel() ) &
-         CALL real_timer_abort(0,'del_timer called in parallel region')
-#endif
 
     srt(it)%reserved = .FALSE.
     DO jt = timer_top, 1, -1
@@ -348,9 +308,6 @@ CONTAINS
     rt(it)%stat = rt_on_stat
 
     !$ACC WAIT
-#ifdef _USE_NVTX
-    call nvtxStartRange(srt(it)%text)
-#endif
 
     ! call-hierarchy bookkeeping: set <active_under>
     ! The actual superordinate timer is always active_timers(active_timers_top).
@@ -408,11 +365,7 @@ CONTAINS
 
   REAL(dp) FUNCTION timer_val(it)
     INTEGER, INTENT(in) :: it
-#ifdef __xlC__
-    INTEGER :: mark2(4)
-#else
     REAL(dp) :: mark2
-#endif
     REAL(dp) :: dt
 
     IF (it < 1 .OR. it > timer_top) &
@@ -471,18 +424,11 @@ CONTAINS
   SUBROUTINE timer_stop(it)
     INTEGER, INTENT(in) :: it
 
-#ifdef __xlC__
-    INTEGER  :: mark2(4)
-#else
     REAL(dp) :: mark2
-#endif
     REAL(dp) :: dt
 
   !------------------------------------------------------------------------------------------------
     !$ACC WAIT
-#ifdef _USE_NVTX
-    call nvtxEndRange()
-#endif
     ! do the time measurement first to minimize section c overhead
     CALL util_read_real_time(mark2)
     CALL util_diff_real_time(rt(it)%mark1,mark2,dt)
@@ -593,24 +539,14 @@ CONTAINS
         itlist = (/ (it, it=1, timer_top) /)
       ENDIF
 
-#ifdef _OPENMP
-      n = omp_get_num_threads()
-#else
       n = 1
-#endif
 
       DO it = it1, it2
         iit = itlist(it)
         sbuf(:,it) = rt(iit)%tot
       ENDDO
 
-#ifndef NOMPI
-      CALL MPI_GATHER(sbuf, SIZE(sbuf), p_real_dp, &
-           rbuf, SIZE(sbuf), p_real_dp, &
-           output_pe, icomm, p_error)
-#else
       rbuf(:,:,1) = sbuf(:,:)
-#endif
 
       IF (my_id == output_pe) THEN
 
@@ -677,15 +613,8 @@ CONTAINS
     INTEGER :: timer_file_id
     LOGICAL :: unit_is_occupied
 
-#ifndef NOMPI
-    INTEGER :: ibuf(2)
-#endif
 
   !------------------------------------------------------------------------------------------------
-#ifdef _OPENMP
-    IF ( omp_in_parallel() ) &
-         CALL real_timer_abort(0,'timer_report called in parallel region')
-#endif
 
     IF (profiling_output == TIMER_MODE_WRITE_FILES) THEN
       DO timer_file_id = 500, 5000
@@ -700,12 +629,6 @@ CONTAINS
           &  get_my_mpi_work_id()
   !       write(0,*) "get_my_process_name() /= ''"
       ELSE
-#ifndef NOMPI
-        ! order mpi:
-        IF (p_pe > 0) THEN
-          CALL p_recv(ibuf(1), p_pe-1, report_tag)
-        ENDIF
-#endif
         WRITE(message_text,'(a,i4.4)') 'timer.', get_my_mpi_work_id()
       ENDIF
   !     write(0,*) "timer filename=", TRIM(message_text)
@@ -760,12 +683,6 @@ CONTAINS
     IF (profiling_output == TIMER_MODE_WRITE_FILES) THEN
       CLOSE(timer_file_id)
     ELSE
-#ifndef NOMPI
-      IF (p_pe < get_my_mpi_all_comm_size()-1) THEN
-        CALL p_send(ibuf(1), p_pe+1, report_tag)
-      ENDIF
-      CALL p_barrier(MERGE(p_comm_work, p_comm_work_test, .NOT. p_test_run))
-#endif
       CALL message ('',separator,all_print=.TRUE.)
     END IF
 
@@ -812,28 +729,10 @@ CONTAINS
     INTEGER, INTENT(in) :: it1, timer_file_id, &
                            nd              ! nesting depth (determines the print indention)
     INTEGER :: tid
-#if defined(_OPENMP)
-    INTEGER :: itid
-#endif
     ! order omp:
-#if defined(_OPENMP)
-!$OMP PARALLEL PRIVATE(itid,tid)
-!$OMP DO ORDERED
-    DO itid = 1, omp_get_num_threads()
-      tid = omp_get_thread_num()
-!$OMP ORDERED
-#else
       tid = 1
-#endif
 
       CALL print_reportline(it1, timer_file_id, nd)
-#if defined(_OPENMP)
-!$OMP FLUSH
-!$OMP END ORDERED
-    ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-#endif
   END SUBROUTINE print_report
 
 
@@ -847,11 +746,7 @@ CONTAINS
     INTEGER             :: tid                  ! actual OMP thread ID
 
   !------------------------------------------------------------------------------------------------
-#if defined(_OPENMP)
-    tid = omp_get_thread_num()
-#else
     tid = 0
-#endif
 
     total = timer_val(it)
 
@@ -894,10 +789,6 @@ CONTAINS
     TYPE (t_table)                 :: table
     TYPE(t_timer_reductions)        :: tmr
 
-#ifdef _OPENMP
-    IF ( omp_in_parallel() ) &
-         CALL real_timer_abort(0,'timer_report called in parallel region')
-#endif
 
     CALL get_timer_reductions(tmr)
 
@@ -916,11 +807,7 @@ CONTAINS
 
       CALL message ('',message_text,all_print=.TRUE.)
 
-#ifdef _OPENMP
-      max_threads = omp_get_max_threads()
-#else
       max_threads = 1
-#endif
       IF (max_threads > 1) THEN
         WRITE (message_text,'(a)') '(master thread only)'
         CALL message ('',message_text,all_print=.TRUE.)
@@ -960,11 +847,7 @@ CONTAINS
          tmr%rank_min(timer_top), tmr%rank_max(timer_top), &
          tmr%active_under(timer_top), tmr%num_workers(timer_top))
 
-#ifndef NOMPI
-    ntasks = p_comm_size(p_comm_work_only)
-#else
     ntasks = 1
-#endif
 
     ALLOCATE(parent_timer(timer_top, ntasks))
 
@@ -1483,20 +1366,12 @@ CONTAINS
   END SUBROUTINE mrgrnk
 
   SUBROUTINE util_read_real_time(it)
-#ifdef __xlC__
-    INTEGER, INTENT(out), TARGET :: it(4)
-#else
     REAL(dp), INTENT(out), TARGET :: it
-#endif
     CALL c_util_read_real_time(c_loc(it))
   END SUBROUTINE util_read_real_time
 
   SUBROUTINE util_diff_real_time(it1, it2, t)
-#ifdef __xlC__
-    INTEGER, INTENT(in), TARGET :: it1(4), it2(4)
-#else
     REAL(dp), INTENT(IN), TARGET :: it1, it2
-#endif
     REAL(dp), INTENT(out) :: t
     CALL c_util_diff_real_time(c_loc(it1), c_loc(it2), t)
   END SUBROUTINE util_diff_real_time

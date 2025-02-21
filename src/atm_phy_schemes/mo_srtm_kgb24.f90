@@ -31,12 +31,12 @@
 ! Code has been modified for the use in ICON (and formerly in ECHAM)
 
 !option! -Nv -NO
-#ifdef VPP
-!OCL SCALAR
-#endif
-#ifdef __xlC__
-@PROCESS NOOPTIMIZE
-#endif
+
+
+
+
+
+
 !pgi$r opt=0
 MODULE mo_srtm_kgb24
 PUBLIC :: srtm_kgb24

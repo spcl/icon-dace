@@ -75,10 +75,10 @@ module radiation_gas
      procedure :: get        => get_gas
      procedure :: reverse    => reverse_gas
      procedure :: out_of_physical_bounds
-#ifdef _OPENACC
-    procedure :: update_host
-    procedure :: update_device
-#endif
+
+
+
+
 
   end type gas_type
 
@@ -511,10 +511,10 @@ contains
 
     if (lhook) call dr_hook('radiation_gas:get',0,hook_handle)
 
-#ifdef _OPENACC
-    write(nulerr,'(a)') '*** Error: radiation_gas:get not ported to GPU'
-    call radiation_abort()
-#endif
+
+
+
+
 
     if (present(scale_factor)) then
       sf = scale_factor
@@ -627,28 +627,5 @@ contains
 
   end function out_of_physical_bounds
 
-#ifdef _OPENACC
-  !---------------------------------------------------------------------
-  ! updates fields on host
-  subroutine update_host(this)
-
-    class(gas_type), intent(inout) :: this
-
-    !$ACC UPDATE HOST(this%mixing_ratio) &
-    !$ACC   IF(allocated(this%mixing_ratio))
-
-  end subroutine update_host
-
-  !---------------------------------------------------------------------
-  ! updates fields on device
-  subroutine update_device(this)
-
-    class(gas_type), intent(inout) :: this
-
-    !$ACC UPDATE DEVICE(this%mixing_ratio) &
-    !$ACC   IF(allocated(this%mixing_ratio))
-
-  end subroutine update_device
-#endif 
 
 end module radiation_gas

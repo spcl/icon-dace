@@ -43,7 +43,7 @@
 !! array expression with the condition evaluating to .TRUE., in case
 !! this is relatively sparse or the ensuing conditional is expensive
 !! in comparison to the WHERE/FORALL body
-#include "fc_feature_defs.inc"
+
 MODULE ppm_sparse_mask_index
   USE ppm_extents, ONLY: iinterval
   IMPLICIT NONE

@@ -16,7 +16,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_advection_geometry
 
@@ -32,9 +42,6 @@ MODULE mo_advection_geometry
   USE mo_math_utilities,      ONLY: lintersect, line_intersect
   USE mo_advection_utils,     ONLY: t_list2D
   USE mo_index_list,          ONLY: generate_index_list_batched
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
 
   IMPLICIT NONE
@@ -367,7 +374,6 @@ CONTAINS
           icnt_c3m = icnt_c3m + 1
           idxlist_c3m(icnt_c3m,jb) = je
           levlist_c3m(icnt_c3m,jb) = jk
-#ifndef __SX__
         ELSE IF ( ABS(p_vn(je,jk,jb)) < 0.1_wp ) THEN
 
           ! CASE IV
@@ -375,19 +381,13 @@ CONTAINS
           icnt_vn0 = icnt_vn0 + 1
           idxlist_vn0(icnt_vn0,jb) = je
           levlist_vn0(icnt_vn0,jb) = jk
-#endif
         ELSE     ! error index list
         ! Workaround for compiler optimization bug: vectorization fails with one additional branch
-#ifdef __SX__
-        IF ( .NOT. (ABS(p_vn(je,jk,jb)) < 0.1_wp) ) THEN
-#endif
           ! ERROR
           icnt_err = icnt_err + 1
           idxlist_err(icnt_err,jb) = je
           levlist_err(icnt_err,jb) = jk
-#ifdef __SX__
-        ENDIF
-#endif
+
           ! adding the error points to the weak-vn list is done in order to ensure
           ! reproducible (though bad) results in cases of too high wind speed
           icnt_vn0 = icnt_vn0 + 1
@@ -881,51 +881,24 @@ CONTAINS
                           !< of the coordinate system is at the circumcenter of
                           !< the upwind cell. Unit vectors point to local East
                           !< and North. (geographical coordinates)
-#ifdef _OPENACC
-      &  arrival_pts(nproma*p_patch%nlev,2,2) ! ACCWA (nvhpc 23.3): allocation with the fixed size
-                                              ! nproma*p_patch%nlev is required to avoid reaching
-                                              ! the memory limit, which then triggers the error
-                                              ! CUDA_ERROR_ALREADY_MAPPED (with the dynamic size
-                                              ! falist%npoints, OpenACC only deallocates the arrays
-                                              ! when approaching the memory limit)
-#else
       &  arrival_pts(falist%npoints,2,2)
-#endif
 
     REAL(wp) ::    &   !< coordinates of departure points. The origin
                        !< of the coordinate system is at the circumcenter of
                        !< the upwind cell. Unit vectors point to local East
                        !< and North. (geographical coordinates)
-#ifdef _OPENACC
-      &  depart_pts(nproma*p_patch%nlev,2,2)
-#else
       &  depart_pts(falist%npoints,2,2)
-#endif
 
     TYPE(t_line) ::                  & !< departure-line segment
-#ifdef _OPENACC
-      &  fl_line(nproma*p_patch%nlev)
-#else
       &  fl_line(falist%npoints)
-#endif
 
     TYPE(t_line) ::             & !< departure area edges
-#ifdef _OPENACC
-      &  fl_e1(nproma*p_patch%nlev), & !< edge 1
-      &  fl_e2(nproma*p_patch%nlev)    !< edge 2
-#else
       &  fl_e1(falist%npoints), & !< edge 1
       &  fl_e2(falist%npoints)    !< edge 2
-#endif
 
     TYPE(t_line) ::                 & !< triangle edge
-#ifdef _OPENACC
-      &  tri_line1(nproma*p_patch%nlev), &
-      &  tri_line2(nproma*p_patch%nlev)
-#else
       &  tri_line1(falist%npoints), &
       &  tri_line2(falist%npoints)
-#endif
 
     TYPE(t_geographical_coordinates), POINTER :: & !< pointer to coordinates of vertex3
       &  ptr_v3(:,:,:)
@@ -953,16 +926,6 @@ CONTAINS
     INTEGER :: icnt_rem, icnt_err, icnt_vn0
 
     INTEGER ::           &         !< ie index list
-#ifdef _OPENACC
-      &  ielist_c1 (nproma*p_patch%nlev), &
-      &  ielist_c2p(nproma*p_patch%nlev), &
-      &  ielist_c3p(nproma*p_patch%nlev), &
-      &  ielist_c2m(nproma*p_patch%nlev), &
-      &  ielist_c3m(nproma*p_patch%nlev), &
-      &  ielist_rem(nproma*p_patch%nlev), &
-      &  ielist_vn0(nproma*p_patch%nlev), &
-      &  ielist_err(nproma*p_patch%nlev)
-#else
       &  ielist_c1 (falist%npoints), &
       &  ielist_c2p(falist%npoints), &
       &  ielist_c3p(falist%npoints), &
@@ -971,19 +934,8 @@ CONTAINS
       &  ielist_rem(falist%npoints), &
       &  ielist_vn0(falist%npoints), &
       &  ielist_err(falist%npoints)
-#endif
 
     INTEGER ::           &         !< je index list
-#ifdef _OPENACC
-      &  idxlist_c1 (nproma*p_patch%nlev), &
-      &  idxlist_c2p(nproma*p_patch%nlev), &
-      &  idxlist_c3p(nproma*p_patch%nlev), &
-      &  idxlist_c2m(nproma*p_patch%nlev), &
-      &  idxlist_c3m(nproma*p_patch%nlev), &
-      &  idxlist_rem(nproma*p_patch%nlev), &
-      &  idxlist_vn0(nproma*p_patch%nlev), &
-      &  idxlist_err(nproma*p_patch%nlev)
-#else
       &  idxlist_c1 (falist%npoints), &
       &  idxlist_c2p(falist%npoints), &
       &  idxlist_c3p(falist%npoints), &
@@ -992,20 +944,9 @@ CONTAINS
       &  idxlist_rem(falist%npoints), &
       &  idxlist_vn0(falist%npoints), &
       &  idxlist_err(falist%npoints)
-#endif
 
 
     INTEGER ::           &         !< jk index list
-#ifdef _OPENACC
-      &  levlist_c1 (nproma*p_patch%nlev), &
-      &  levlist_c2p(nproma*p_patch%nlev), &
-      &  levlist_c3p(nproma*p_patch%nlev), &
-      &  levlist_c2m(nproma*p_patch%nlev), &
-      &  levlist_c3m(nproma*p_patch%nlev), &
-      &  levlist_rem(nproma*p_patch%nlev), &
-      &  levlist_vn0(nproma*p_patch%nlev), &
-      &  levlist_err(nproma*p_patch%nlev)
-#else
       &  levlist_c1 (falist%npoints), &
       &  levlist_c2p(falist%npoints), &
       &  levlist_c3p(falist%npoints), &
@@ -1014,16 +955,10 @@ CONTAINS
       &  levlist_rem(falist%npoints), &
       &  levlist_vn0(falist%npoints), &
       &  levlist_err(falist%npoints)
-#endif
 
     INTEGER ::           &
-#ifdef _OPENACC
-      &  conditions(nproma*p_patch%nlev,4),&
-      &  indices   (nproma*p_patch%nlev,4)
-#else
       &  conditions(falist%npoints,4),&
       &  indices   (falist%npoints,4)
-#endif
     INTEGER :: nvalid(4)
 
     CHARACTER(len=*), PARAMETER ::  &
@@ -1031,10 +966,6 @@ CONTAINS
 
   !-------------------------------------------------------------------------
 
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-!ACCWA (Cray Fortran <= 16.0.1.1) zero sized arrays are not properly supported CAST-33010
-    IF ( falist%npoints == 0 ) RETURN
-#endif
 
     ! Check for optional arguments
     IF ( PRESENT(opt_rlstart) ) THEN
@@ -1204,11 +1135,7 @@ CONTAINS
       ENDDO ! loop over index list
       !$ACC END PARALLEL
 
-#ifdef _OPENACC
-      CALL generate_index_list_batched(conditions, indices, 1, falist%len(jb), nvalid, 1, i_am_accel_node)
-#else
       CALL generate_index_list_batched(conditions, indices, 1, falist%len(jb), nvalid, 1, .false.)
-#endif
       !$ACC UPDATE HOST(nvalid) ASYNC(1) IF(i_am_accel_node)
       !$ACC WAIT(1) IF(i_am_accel_node)
       icnt_c1 = nvalid(1)
@@ -1306,11 +1233,7 @@ CONTAINS
       ENDDO  !jl
       !$ACC END PARALLEL
 
-#ifdef _OPENACC
-      CALL generate_index_list_batched(conditions, indices, 1, icnt_rem, nvalid, 1, i_am_accel_node)
-#else
       CALL generate_index_list_batched(conditions, indices, 1, icnt_rem, nvalid, 1, .false.)
-#endif
       !$ACC UPDATE HOST(nvalid) ASYNC(1) IF(i_am_accel_node)
       !$ACC WAIT(1) IF(i_am_accel_node)
       icnt_c3p = nvalid(1)

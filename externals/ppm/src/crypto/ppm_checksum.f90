@@ -38,7 +38,7 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_checksum
   USE ppm_std_type_kinds, ONLY: i4, i8, dp, sp
   IMPLICIT NONE
@@ -92,7 +92,7 @@ MODULE ppm_checksum
   PUBLIC :: ppm_md5, ppm_sha1, digest_description
   PUBLIC :: hashes
 
-#if defined __GNUC__ && __GNUC__ > 4
+
   INTERFACE
     SUBROUTINE ppm_hex_checksum_f(a,n,es,hd,hex)
       IMPORT :: digest_description
@@ -107,7 +107,7 @@ MODULE ppm_checksum
       CHARACTER(len=*) :: hex
     END SUBROUTINE ppm_hex_checksum_f
   END INTERFACE
-#endif
+
 CONTAINS
   SUBROUTINE init_digests
     INTERFACE

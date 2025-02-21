@@ -66,11 +66,11 @@ CONTAINS
       CALL multifileRestartLinkName(modelType, multifileLinkName)
       !check whether the respective files exist
       INQUIRE(file = singlefileLinkName, exist = haveSinglefileLink)
-#if defined (__INTEL_COMPILER)
-      INQUIRE(directory = multifileLinkName, exist = haveMultifileLink)
-#else
+
+
+
       INQUIRE(file = multifileLinkName, exist = haveMultifileLink)
-#endif
+
       !determine which path to USE
       IF(haveMultifileLink) THEN
         cache_isMultifile = .TRUE.

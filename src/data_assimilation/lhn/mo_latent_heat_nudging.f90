@@ -12,7 +12,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_latent_heat_nudging
@@ -333,14 +343,6 @@ SUBROUTINE organize_lhn ( dt_loc, p_sim_time,             & !>in
   !$ACC   PRESENT(prm_nwp_tend%ddt_temp_pconv, pt_diag, pt_diag%temp, p_metrics, p_metrics%z_ifc, p_metrics%z_mc) &
   !$ACC   PRESENT(pt_patch, pt_patch%cells%area)
 
-#ifdef _OPENACC
-  CALL init(wobs_space(:,:), opt_acc_async=.TRUE.)
-  CALL init(zprmod(:,:), opt_acc_async=.TRUE.)
-  CALL init(zprmod_ref(:,:), opt_acc_async=.TRUE.)
-  CALL init(zprmod_ref_f(:,:), opt_acc_async=.TRUE.)
-  CALL init(zprrad(:,:), opt_acc_async=.TRUE.)
-  CALL init(zprrad_f(:,:), opt_acc_async=.TRUE.)
-#endif
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb,jc,jk,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
@@ -635,11 +637,9 @@ SUBROUTINE organize_lhn ( dt_loc, p_sim_time,             & !>in
           END DO
         END DO
         
-#ifdef _OPENACC
-        kqrs_min = 1
-#else
+
         kqrs_min = MINVAL(kqrs(i_startidx:i_endidx))   ! CPU optimization for loop with qrsflux_int and vcoordsum
-#endif
+
         !$ACC LOOP SEQ
         DO jk = kqrs_min, nlev
           !$ACC LOOP GANG(STATIC: 1) VECTOR
@@ -2308,10 +2308,10 @@ SUBROUTINE lhn_t_inc (i_startidx, i_endidx,jg,ke,zlev,tt_lheat,wobs_time, wobs_s
 
       IF ( w < 0.0_wp .OR. w > 1.0_wp ) THEN
 
-#if !defined(__SX__) && !defined(_OPENACC)
+
         WRITE(message_text, '(a,f8.4,i6)') 'lhn_pr_ana w unvalid : ', w, ip
         CALL warning('', message_text)
-#endif
+
         CYCLE
       ELSE
         pr_ana(ip) = w * pr_obs(ip) + (1.0_wp - w) * pr_mod(ip)

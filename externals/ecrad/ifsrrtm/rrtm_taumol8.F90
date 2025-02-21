@@ -82,7 +82,7 @@ REAL(KIND=JPRB) :: taufor,tauself, abso3, absco2, absn2o
     !$ACC             selffac, selffrac, indself, fracs, indfor, forfrac, forfac, &
     !$ACC             minorfrac, indminor)
 
-#ifndef _OPENACC
+
     laytrop_min = MINVAL(laytrop)
     laytrop_max = MAXVAL(laytrop)
 
@@ -105,17 +105,6 @@ REAL(KIND=JPRB) :: taufor,tauself, abso3, absco2, absn2o
       enddo
       ixc(lay) = icl
     enddo
-#else
-    laytrop_min = HUGE(laytrop_min) 
-    laytrop_max = -HUGE(laytrop_max)
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR REDUCTION(min:laytrop_min) REDUCTION(max:laytrop_max)
-    do jc = KIDIA,KFDIA
-      laytrop_min = MIN(laytrop_min, laytrop(jc))
-      laytrop_max = MAX(laytrop_max, laytrop(jc))
-    end do
-    !$ACC END PARALLEL
-#endif
 
 ! Minor gas mapping level:
 !     lower - co2, p = 1053.63 mb, t = 294.2 k
@@ -235,15 +224,10 @@ REAL(KIND=JPRB) :: taufor,tauself, abso3, absco2, absn2o
         !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(chi_co2, ratco2, adjfac, adjcolco2, ind0, ind1, inds, indf, indm)
         do lay = laytrop_min+1, laytrop_max
-#ifdef _OPENACC
-          do jl = KIDIA, KFDIA
-            if ( lay <= laytrop(jl) ) then
-#else
           ixc0 = ixc(lay)
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixlow(ixp,lay)
-#endif
 
             !  In atmospheres where the amount of CO2 is too great to be considered
             !  a minor species, adjust the column amount of CO2 by an empirical factor
@@ -288,9 +272,6 @@ REAL(KIND=JPRB) :: taufor,tauself, abso3, absco2, absn2o
                   + wx(jl,4,lay) * cfc22adj(ig)
               fracs(jl,ngs7+ig,lay) = fracrefa(ig)
             enddo
-#ifdef _OPENACC
-         else
-#else
           enddo
 
           ! Upper atmosphere loop
@@ -298,7 +279,6 @@ REAL(KIND=JPRB) :: taufor,tauself, abso3, absco2, absn2o
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixhigh(ixp,lay)
-#endif
 
             !  In atmospheres where the amount of CO2 is too great to be considered
             !  a minor species, adjust the column amount of CO2 by an empirical factor
@@ -333,9 +313,6 @@ REAL(KIND=JPRB) :: taufor,tauself, abso3, absco2, absn2o
                   + wx(jl,4,lay) * cfc22adj(ig)
               fracs(jl,ngs7+ig,lay) = fracrefb(ig)
             enddo
-#ifdef _OPENACC
-           endif
-#endif
           enddo
 
         enddo

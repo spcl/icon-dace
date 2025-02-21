@@ -14,7 +14,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_ice_fem_interface
@@ -51,9 +61,6 @@ MODULE mo_ice_fem_interface
                                       rotate_cvec_v, gvec2cvec_v_fem, cvec2gvec_v_fem,  &
                                       cells2verts_scalar_seaice
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device
-#ifdef _OPENACC
-  USE openacc, ONLY: acc_is_present 
-#endif
 
   IMPLICIT NONE
 
@@ -382,9 +389,6 @@ CONTAINS
     !**************************************************************
     ! (2) Interpolate 3D wind stress from cell centers to edges
     !**************************************************************
-#ifdef NAGFOR
-    tau_n = 0.0_wp
-#endif
     CALL map_cell2edges_3D(p_patch_3D, p_tau_n_c, tau_n ,p_op_coeff, 1, lacc=lzacc)
 
     CALL sync_patch_array(SYNC_E, p_patch, tau_n)
@@ -392,11 +396,7 @@ CONTAINS
     !**************************************************************
     ! (3) Interpolate 3D wind stress from edges to vertices
     !**************************************************************
-#ifdef NAGFOR
-    p_tau_n_dual(:,:)%x(1) = 0.0_wp
-    p_tau_n_dual(:,:)%x(2) = 0.0_wp
-    p_tau_n_dual(:,:)%x(3) = 0.0_wp
-#endif
+
     CALL map_edges2verts(p_patch, tau_n, p_op_coeff%edge2vert_coeff_cc, p_tau_n_dual, lacc=lzacc)
 
     CALL sync_patch_array(SYNC_V, p_patch, p_tau_n_dual%x(1))
@@ -460,14 +460,6 @@ CONTAINS
     p_patch => p_patch_3D%p_patch_2D(1)
     rot_mat_3D_trans(:,:) = TRANSPOSE(rot_mat_3D(:,:))
 
-#ifdef NAGFOR
-    p_vn_c_3D(:,:,:)%x(1) = 0.0_wp
-    p_vn_c_3D(:,:,:)%x(2) = 0.0_wp
-    p_vn_c_3D(:,:,:)%x(3) = 0.0_wp
-    p_vn_dual_fem(:,:)%x(1) = 0.0_wp
-    p_vn_dual_fem(:,:)%x(2) = 0.0_wp
-    p_vn_dual_fem(:,:)%x(3) = 0.0_wp
-#endif
 
     !$ACC DATA CREATE(vn_e_tmp, p_vn_dual_fem, p_vn_dual, p_vn_c_3D, p_vn_c_2D) &
     !$ACC   COPYIN(rot_mat_3D_trans) &

@@ -17,18 +17,22 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nh_diffusion
 
-#ifdef __SX__
-! for strange reasons, this routine is faster without mixed precision on the NEC
-#undef __MIXED_PRECISION
-  USE mo_kind,                ONLY: wp, vp => wp
-#else 
   USE mo_kind,                ONLY: wp, vp
-#endif
   USE mo_nonhydro_types,      ONLY: t_nh_prog, t_nh_diag, t_nh_metrics
   USE mo_model_domain,        ONLY: t_patch
   USE mo_grid_config,         ONLY: l_limited_area, lfeedback
@@ -70,9 +74,6 @@ MODULE mo_nh_diffusion
   ! the condition is not given and therefore the global field not allocated. If this
   ! happens, this would results in a corrupted memory.
   ! (Requested by G. Zaengl based on earlier problems with similar constructs.)
-#ifndef __SX__
-#define __ENABLE_DDT_VN_XYZ__
-#endif
 
   CONTAINS
 
@@ -144,12 +145,11 @@ MODULE mo_nh_diffusion
     INTEGER :: diffu_type, discr_vn, discr_t
     INTEGER :: jg                 !< patch ID
 
-#ifdef _OPENACC
-! Workaround limitations in OpenACC of updating derived types
-    REAL(wp), DIMENSION(:,:,:),   POINTER    :: vn_tmp, w_tmp, exner_tmp, theta_v_tmp, theta_v_ic_tmp
-    REAL(vp), DIMENSION(:,:,:),   POINTER    :: div_ic_tmp, hdef_ic_tmp, dwdx_tmp, dwdy_tmp, vt_tmp
-    REAL(vp), DIMENSION(nproma,p_patch%nlev-1:p_patch%nlev,p_patch%nblks_c) :: enh_diffu_3d
-#endif
+
+
+
+
+
 
     ! Variables for tendency diagnostics
     REAL(wp) :: z_d_vn_hdf
@@ -310,14 +310,6 @@ MODULE mo_nh_diffusion
 !!! Should actually be in a separate data region with correct IF condition.
 !!! !$ACC               p_nh_diag%div_ic, p_nh_diag%dwdx, p_nh_diag%dwdy, p_nh_diag%hdef_ic,                     &
 
-#ifdef _OPENACC
-    vn_tmp          => p_nh_prog%vn
-    w_tmp           => p_nh_prog%w
-    theta_v_tmp     => p_nh_prog%theta_v
-    exner_tmp       => p_nh_prog%exner
-    vt_tmp          => p_nh_diag%vt
-    theta_v_ic_tmp  => p_nh_diag%theta_v_ic
-#endif
 
     ! The diffusion is an intrinsic part of the NH solver, thus it is added to the timer
     IF (ltimer) CALL timer_start(timer_nh_hdiffusion)
@@ -343,13 +335,8 @@ MODULE mo_nh_diffusion
       rl_start = start_bdydiff_e
       rl_end   = min_rledge_int - 2
 
-#ifdef __MIXED_PRECISION
-      CALL sync_patch_array_mult_mp(SYNC_V,p_patch,0,2,f3din1_sp=u_vert,f3din2_sp=v_vert, &
-                                    opt_varname="diffusion: u_vert and v_vert")
-#else
       CALL sync_patch_array_mult(SYNC_V,p_patch,2,u_vert,v_vert,                          &
                                  opt_varname="diffusion: u_vert and v_vert")
-#endif
 
 !$OMP PARALLEL PRIVATE(i_startblk,i_endblk)
 
@@ -366,15 +353,9 @@ MODULE mo_nh_diffusion
         ! Computation of wind field deformation
 
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-        DO je = i_startidx, i_endidx
-!DIR$ IVDEP
-          DO jk = 1, nlev
-#else
 !$NEC outerloop_unroll(4)
         DO jk = 1, nlev
           DO je = i_startidx, i_endidx
-#endif
 
             vn_vert1 =  u_vert(ividx(je,jb,1),jk,ivblk(je,jb,1)) * &
                         p_patch%edges%primal_normal_vert(je,jb,1)%v1 + &
@@ -430,13 +411,6 @@ MODULE mo_nh_diffusion
               (vn_vert2 + vn_vert1 - 2._wp*p_nh_prog%vn(je,jk,jb))  &
               *p_patch%edges%inv_primal_edge_length(je,jb)**2 )
 
-#if defined (__LOOP_EXCHANGE) && !defined (_OPENACC)
-          ENDDO
-        ENDDO
-
-        DO jk = 1, nlev
-          DO je = i_startidx, i_endidx
-#endif
             kh_smag_ec(je,jk,jb) = kh_smag_e(je,jk,jb)
             ! Subtract part of the fourth-order background diffusion coefficient
             kh_smag_e(je,jk,jb) = MAX(0._vp,kh_smag_e(je,jk,jb) - smag_offset)
@@ -468,13 +442,8 @@ MODULE mo_nh_diffusion
       rl_start = start_bdydiff_e
       rl_end   = min_rledge_int - 2
 
-#ifdef __MIXED_PRECISION
-      CALL sync_patch_array_mult_mp(SYNC_V,p_patch,0,2,f3din1_sp=u_vert,f3din2_sp=v_vert, &
-                                    opt_varname="diffusion: u_vert and v_vert 2")
-#else
       CALL sync_patch_array_mult(SYNC_V,p_patch,2,u_vert,v_vert,                          &
                                  opt_varname="diffusion: u_vert and v_vert 2")
-#endif
 
       CALL cells2verts_scalar(p_nh_prog%w, p_patch, p_int%cells_aw_verts, z_w_v, opt_rlend=min_rlvert_int)
       CALL sync_patch_array(SYNC_V,p_patch,z_w_v,opt_varname="diffusion: z_w_v")
@@ -530,15 +499,9 @@ MODULE mo_nh_diffusion
         ! Computation of wind field deformation
 
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-        DO je = i_startidx, i_endidx
-!DIR$ IVDEP
-          DO jk = 1, nlev
-#else
 !$NEC outerloop_unroll(4)
         DO jk = 1, nlev
           DO je = i_startidx, i_endidx
-#endif
 
             vn_vert1 =  u_vert(ividx(je,jb,1),jk,ivblk(je,jb,1)) * &
                         p_patch%edges%primal_normal_vert(je,jb,1)%v1 + &
@@ -688,15 +651,9 @@ MODULE mo_nh_diffusion
         ! Computation of wind field deformation
 
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-        DO je = i_startidx, i_endidx
-!DIR$ IVDEP
-          DO jk = 1, nlev
-#else
 !$NEC outerloop_unroll(4)
         DO jk = 1, nlev
           DO je = i_startidx, i_endidx
-#endif
 
             vn_vert1 =        u_vert(ividx(je,jb,1),jk,ivblk(je,jb,1)) * &
                               p_patch%edges%primal_normal_vert(je,jb,1)%v1 + &
@@ -753,13 +710,11 @@ MODULE mo_nh_diffusion
               (vn_vert2 + vn_vert1 - 2._wp*p_nh_prog%vn(je,jk,jb))  &
               *p_patch%edges%inv_primal_edge_length(je,jb)**2 )
 
-#ifndef _OPENACC
           ENDDO
         ENDDO
 
         DO jk = 1, nlev
           DO je = i_startidx, i_endidx
-#endif
 
             kh_smag_ec(je,jk,jb) = kh_smag_e(je,jk,jb)
             ! Subtract part of the fourth-order background diffusion coefficient
@@ -793,13 +748,8 @@ MODULE mo_nh_diffusion
                            i_startidx, i_endidx, rl_start, rl_end)
 
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = 1, nlev
-#else
         DO jk = 1, nlev
           DO jc = i_startidx, i_endidx
-#endif
 
             kh_c(jc,jk) = (kh_smag_ec(ieidx(jc,jb,1),jk,ieblk(jc,jb,1))*p_int%e_bln_c_s(jc,1,jb) + &
                            kh_smag_ec(ieidx(jc,jb,2),jk,ieblk(jc,jb,2))*p_int%e_bln_c_s(jc,2,jb) + &
@@ -858,13 +808,8 @@ MODULE mo_nh_diffusion
       rl_start = grf_bdywidth_e+1
       rl_end   = min_rledge_int
 
-#ifdef __MIXED_PRECISION
-      CALL sync_patch_array_mult_mp(SYNC_V,p_patch,0,2,f3din1_sp=u_vert,f3din2_sp=v_vert, &
-                                    opt_varname="diffusion: u_vert and v_vert 3")
-#else
       CALL sync_patch_array_mult(SYNC_V,p_patch,2,u_vert,v_vert,                          &
                                  opt_varname="diffusion: u_vert and v_vert 3")
-#endif
 
 !$OMP PARALLEL PRIVATE(i_startblk,i_endblk)
 
@@ -881,14 +826,9 @@ MODULE mo_nh_diffusion
          ! Compute nabla4(v)
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
         !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4) PRIVATE(nabv_tang, nabv_norm)
-#ifdef __LOOP_EXCHANGE
-        DO je = i_startidx, i_endidx
-          DO jk = 1, nlev
-#else
 !$NEC outerloop_unroll(4)
         DO jk = 1, nlev
           DO je = i_startidx, i_endidx
-#endif
 
             nabv_tang = u_vert(ividx(je,jb,1),jk,ivblk(je,jb,1)) * &
                         p_patch%edges%primal_normal_vert(je,jb,1)%v1 + &
@@ -936,7 +876,6 @@ MODULE mo_nh_diffusion
               !
               p_nh_prog%vn(je,jk,jb)            =  p_nh_prog%vn(je,jk,jb)         + z_d_vn_hdf
               !
-#ifdef __ENABLE_DDT_VN_XYZ__
               IF (p_nh_diag%ddt_vn_hdf_is_associated) THEN
                 p_nh_diag%ddt_vn_hdf(je,jk,jb)  =  p_nh_diag%ddt_vn_hdf(je,jk,jb) + z_d_vn_hdf * r_dtime
               END IF
@@ -944,7 +883,6 @@ MODULE mo_nh_diffusion
               IF (p_nh_diag%ddt_vn_dyn_is_associated) THEN
                 p_nh_diag%ddt_vn_dyn(je,jk,jb)  =  p_nh_diag%ddt_vn_dyn(je,jk,jb) + z_d_vn_hdf * r_dtime
               END IF
-#endif
               !
             ENDDO
           ENDDO
@@ -965,7 +903,6 @@ MODULE mo_nh_diffusion
               !
               p_nh_prog%vn(je,jk,jb)            =  p_nh_prog%vn(je,jk,jb)         + z_d_vn_hdf
               !
-#ifdef __ENABLE_DDT_VN_XYZ__
               IF (p_nh_diag%ddt_vn_hdf_is_associated) THEN
                 p_nh_diag%ddt_vn_hdf(je,jk,jb)  =  p_nh_diag%ddt_vn_hdf(je,jk,jb) + z_d_vn_hdf * r_dtime
               END IF
@@ -973,7 +910,6 @@ MODULE mo_nh_diffusion
               IF (p_nh_diag%ddt_vn_dyn_is_associated) THEN
                 p_nh_diag%ddt_vn_dyn(je,jk,jb)  =  p_nh_diag%ddt_vn_dyn(je,jk,jb) + z_d_vn_hdf * r_dtime
               END IF
-#endif
               !
             ENDDO
           ENDDO
@@ -994,7 +930,6 @@ MODULE mo_nh_diffusion
               !
               p_nh_prog%vn(je,jk,jb)            =  p_nh_prog%vn(je,jk,jb)         + z_d_vn_hdf
               !
-#ifdef __ENABLE_DDT_VN_XYZ__
               IF (p_nh_diag%ddt_vn_hdf_is_associated) THEN
                 p_nh_diag%ddt_vn_hdf(je,jk,jb)  =  p_nh_diag%ddt_vn_hdf(je,jk,jb) + z_d_vn_hdf * r_dtime
               END IF
@@ -1002,7 +937,6 @@ MODULE mo_nh_diffusion
               IF (p_nh_diag%ddt_vn_dyn_is_associated) THEN
                 p_nh_diag%ddt_vn_dyn(je,jk,jb)  =  p_nh_diag%ddt_vn_dyn(je,jk,jb) + z_d_vn_hdf * r_dtime
               END IF
-#endif
               !
             ENDDO
           ENDDO
@@ -1044,7 +978,6 @@ MODULE mo_nh_diffusion
             !
             p_nh_prog%vn(je,jk,jb)            =  p_nh_prog%vn(je,jk,jb)         + z_d_vn_hdf
             !
-#ifdef __ENABLE_DDT_VN_XYZ__
             IF (p_nh_diag%ddt_vn_hdf_is_associated) THEN
               p_nh_diag%ddt_vn_hdf(je,jk,jb)  =  p_nh_diag%ddt_vn_hdf(je,jk,jb) + z_d_vn_hdf * r_dtime
             END IF
@@ -1052,7 +985,6 @@ MODULE mo_nh_diffusion
             IF (p_nh_diag%ddt_vn_dyn_is_associated) THEN
               p_nh_diag%ddt_vn_dyn(je,jk,jb)  =  p_nh_diag%ddt_vn_dyn(je,jk,jb) + z_d_vn_hdf * r_dtime
             END IF
-#endif
             !
           ENDDO
         ENDDO
@@ -1083,7 +1015,6 @@ MODULE mo_nh_diffusion
             !
             p_nh_prog%vn(je,jk,jb)            =  p_nh_prog%vn(je,jk,jb)         + z_d_vn_hdf
             !
-#ifdef __ENABLE_DDT_VN_XYZ__
             IF (p_nh_diag%ddt_vn_hdf_is_associated) THEN
               p_nh_diag%ddt_vn_hdf(je,jk,jb)  =  p_nh_diag%ddt_vn_hdf(je,jk,jb) + z_d_vn_hdf * r_dtime
             END IF
@@ -1091,7 +1022,6 @@ MODULE mo_nh_diffusion
             IF (p_nh_diag%ddt_vn_dyn_is_associated) THEN
               p_nh_diag%ddt_vn_dyn(je,jk,jb)  =  p_nh_diag%ddt_vn_dyn(je,jk,jb) + z_d_vn_hdf * r_dtime
             END IF
-#endif
             !
           ENDDO
         ENDDO
@@ -1122,17 +1052,8 @@ MODULE mo_nh_diffusion
                            i_startidx, i_endidx, rl_start, rl_end)
 
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-#ifdef _CRAYFTN
-!DIR$ PREFERVECTOR
-#endif
-          DO jk = 1, nlev
-#else
         DO jk = 1, nlev
           DO jc = i_startidx, i_endidx
-#endif
             z_nabla2_c(jc,jk,jb) =  &
               p_nh_prog%w(jc,jk,jb)                        *p_int%geofac_n2s(jc,1,jb) + &
               p_nh_prog%w(icidx(jc,jb,1),jk,icblk(jc,jb,1))*p_int%geofac_n2s(jc,2,jb) + &
@@ -1144,14 +1065,8 @@ MODULE mo_nh_diffusion
 
         IF (turbdiff_config(jg)%itype_sher == 2) THEN ! compute horizontal gradients of w
           !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-            DO jk = 2, nlev
-#else
           DO jk = 2, nlev
             DO jc = i_startidx, i_endidx
-#endif
              p_nh_diag%dwdx(jc,jk,jb) =  p_int%geofac_grg(jc,1,jb,1)*p_nh_prog%w(jc,jk,jb) + &
                p_int%geofac_grg(jc,2,jb,1)*p_nh_prog%w(icidx(jc,jb,1),jk,icblk(jc,jb,1))   + &
                p_int%geofac_grg(jc,3,jb,1)*p_nh_prog%w(icidx(jc,jb,2),jk,icblk(jc,jb,2))   + &
@@ -1187,14 +1102,8 @@ MODULE mo_nh_diffusion
                            i_startidx, i_endidx, rl_start, rl_end)
 
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-          DO jk = 1, nlev
-#else
         DO jk = 1, nlev
           DO jc = i_startidx, i_endidx
-#endif
             p_nh_prog%w(jc,jk,jb) = p_nh_prog%w(jc,jk,jb) - diff_multfac_w * p_patch%cells%area(jc,jb)**2 * &
              (z_nabla2_c(jc,jk,jb)                        *p_int%geofac_n2s(jc,1,jb) +                      &
               z_nabla2_c(icidx(jc,jb,1),jk,icblk(jc,jb,1))*p_int%geofac_n2s(jc,2,jb) +                      &
@@ -1301,18 +1210,10 @@ MODULE mo_nh_diffusion
             ! - at least 5 K colder than the average of the neighbor points on valley points (determined by trefdiff < 0.) or
             ! - at least 7.5 K colder than the average of the neighbor points otherwise
             IF (tdiff-trefdiff < thresh_tdiff .AND. trefdiff < 0._wp .OR. tdiff-trefdiff < 1.5_wp*thresh_tdiff) THEN
-#ifndef _OPENACC
               ic = ic+1
               iclist(ic,jb) = jc
               iklist(ic,jb) = jk
               tdlist(ic,jb) = thresh_tdiff - tdiff + trefdiff
-#else
-      ! Enhance Smagorinsky coefficients at the three edges of the cells included in the list
-! Attention: this operation is neither vectorizable nor OpenMP-parallelizable (race conditions!)
-              enh_diffu_3d(jc,jk,jb) = (thresh_tdiff - tdiff + trefdiff)*5.e-4_vp
-            ELSE
-              enh_diffu_3d(jc,jk,jb) = -HUGE(0._vp)   ! In order that this is never taken as the MAX
-#endif
             ENDIF
           ENDDO
         ENDDO
@@ -1325,7 +1226,6 @@ MODULE mo_nh_diffusion
       ! Enhance Smagorinsky coefficients at the three edges of the cells included in the list
       ! Attention: this operation is neither vectorizable nor OpenMP-parallelizable (race conditions!)
 
-#ifndef _OPENACC
 !$OMP MASTER
       DO jb = i_startblk,i_endblk
 
@@ -1345,28 +1245,6 @@ MODULE mo_nh_diffusion
 !$OMP END MASTER
 !$OMP BARRIER
 
-#else
-
-     rl_start = grf_bdywidth_e+1
-     rl_end   = min_rledge_int
-
-     i_startblk = p_patch%edges%start_block(rl_start)
-     i_endblk   = p_patch%edges%end_block(rl_end)
-
-     DO jb = i_startblk,i_endblk
-
-       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
-
-       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-       DO jk = nlev-1, nlev
-         DO je = i_startidx, i_endidx
-            kh_smag_e(je,jk,jb) = MAX(kh_smag_e(je,jk,jb), enh_diffu_3d(iecidx(je,jb,1),jk,iecblk(je,jb,1)), &
-                 enh_diffu_3d(iecidx(je,jb,2),jk,iecblk(je,jb,2)) )
-         ENDDO
-       ENDDO
-       !$ACC END PARALLEL LOOP
-     ENDDO
-#endif
 
       IF (discr_t == 1) THEN  ! use discretization K*nabla(theta)
 
@@ -1384,17 +1262,8 @@ MODULE mo_nh_diffusion
 
           ! interpolated diffusion coefficient times nabla2(theta)
           !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-#ifdef _CRAYFTN
-!DIR$ PREFERVECTOR
-#endif
-            DO jk = 1, nlev
-#else
           DO jk = 1, nlev
             DO jc = i_startidx, i_endidx
-#endif
               z_temp(jc,jk,jb) =  &
                (kh_smag_e(ieidx(jc,jb,1),jk,ieblk(jc,jb,1))*p_int%e_bln_c_s(jc,1,jb)          + &
                 kh_smag_e(ieidx(jc,jb,2),jk,ieblk(jc,jb,2))*p_int%e_bln_c_s(jc,2,jb)          + &
@@ -1425,17 +1294,8 @@ MODULE mo_nh_diffusion
 
           ! compute kh_smag_e * grad(theta) (stored in z_nabla2_e for memory efficiency)
           !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-          DO je = i_startidx, i_endidx
-!DIR$ IVDEP
-#ifdef _CRAYFTN
-!DIR$ PREFERVECTOR
-#endif
-            DO jk = 1, nlev
-#else
           DO jk = 1, nlev
             DO je = i_startidx, i_endidx
-#endif
               z_nabla2_e(je,jk,jb) = kh_smag_e(je,jk,jb) *              &
                 p_patch%edges%inv_dual_edge_length(je,jb)*              &
                (p_nh_prog%theta_v(iecidx(je,jb,2),jk,iecblk(je,jb,2)) - &
@@ -1460,13 +1320,8 @@ MODULE mo_nh_diffusion
 
           ! now compute the divergence of the quantity above
           !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-            DO jk = 1, nlev
-#else
           DO jk = 1, nlev
             DO jc = i_startidx, i_endidx
-#endif
               z_temp(jc,jk,jb) =                                                         &
                 z_nabla2_e(ieidx(jc,jb,1),jk,ieblk(jc,jb,1))*p_int%geofac_div(jc,1,jb) + &
                 z_nabla2_e(ieidx(jc,jb,2),jk,ieblk(jc,jb,2))*p_int%geofac_div(jc,2,jb) + &
@@ -1483,7 +1338,6 @@ MODULE mo_nh_diffusion
       IF (l_zdiffu_t) THEN ! Compute temperature diffusion truly horizontally over steep slopes
                            ! A conservative discretization is not possible here
 !$OMP DO PRIVATE(jb,jc,ic,nlen_zdiffu,ishift) ICON_OMP_DEFAULT_SCHEDULE
-#ifndef _OPENACC
         DO jb = 1, nblks_zdiffu
           IF (jb == nblks_zdiffu) THEN
             nlen_zdiffu = npromz_zdiffu
@@ -1494,14 +1348,6 @@ MODULE mo_nh_diffusion
 !$NEC ivdep
 !DIR$ IVDEP
           DO jc = 1, nlen_zdiffu
-#else
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(ic, ishift)
-        DO jb = 1, nblks_zdiffu
-          DO jc = 1, nproma_zdiffu
-            IF (jb == nblks_zdiffu .AND. jc > npromz_zdiffu) CYCLE
-            ishift = (jb-1)*nproma_zdiffu
-#endif
             ic = ishift+jc
             z_temp(icell(1,ic),ilev(1,ic),iblk(1,ic)) =                                          &
               z_temp(icell(1,ic),ilev(1,ic),iblk(1,ic)) + p_nh_metrics%zd_diffcoef(ic)*          &
@@ -1570,17 +1416,6 @@ MODULE mo_nh_diffusion
     !$ACC WAIT(1)
     !$ACC END DATA
 
-#ifdef _OPENACC
-    vn_tmp         => p_nh_prog%vn
-    w_tmp          => p_nh_prog%w
-    theta_v_tmp    => p_nh_prog%theta_v
-    theta_v_ic_tmp => p_nh_diag%theta_v_ic
-    exner_tmp      => p_nh_prog%exner
-    div_ic_tmp     => p_nh_diag%div_ic
-    hdef_ic_tmp    => p_nh_diag%hdef_ic
-    dwdx_tmp       => p_nh_diag%dwdx
-    dwdy_tmp       => p_nh_diag%dwdy
-#endif
 
   END SUBROUTINE diffusion
 

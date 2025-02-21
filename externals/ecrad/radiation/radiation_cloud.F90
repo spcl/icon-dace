@@ -93,10 +93,10 @@ module radiation_cloud
     procedure :: param_cloud_effective_separation_eta
     procedure :: crop_cloud_fraction
     procedure :: out_of_physical_bounds
-#ifdef _OPENACC
-    procedure :: update_host
-    procedure :: update_device
-#endif
+
+
+
+
 
   end type cloud_type
 
@@ -110,9 +110,9 @@ contains
 
     use ecradhook,     only : lhook, dr_hook, jphook
 
-#ifdef _OPENACC
-    use openacc,       only : acc_attach
-#endif
+
+
+
 
     class(cloud_type), intent(inout), target :: this
     integer, intent(in)              :: ncol   ! Number of columns
@@ -148,12 +148,12 @@ contains
       this%q_ice  => this%mixing_ratio(:,:,2)
       this%re_liq => this%effective_radius(:,:,1)
       this%re_ice => this%effective_radius(:,:,2)
-#ifdef _OPENACC
-      CALL acc_attach(this%q_liq)
-      CALL acc_attach(this%q_ice)
-      CALL acc_attach(this%re_liq)
-      CALL acc_attach(this%re_ice)
-#endif
+
+
+
+
+
+
     end if
 
     allocate(this%fraction(ncol,nlev))
@@ -352,9 +352,9 @@ contains
     use ecradhook,                  only : lhook, dr_hook, jphook
     use radiation_thermodynamics, only : thermodynamics_type
     use radiation_constants,      only : GasConstantDryAir, AccelDueToGravity
-#ifdef _OPENACC
-    use radiation_io,             only : nulerr, radiation_abort
-#endif
+
+
+
 
     class(cloud_type),         intent(inout) :: this
     type(thermodynamics_type), intent(in)    :: thermodynamics
@@ -869,42 +869,5 @@ contains
 
   end function out_of_physical_bounds
 
-#ifdef _OPENACC
-  !---------------------------------------------------------------------
-  ! updates fields on host
-  subroutine update_host(this)
-
-    class(cloud_type), intent(inout) :: this
-
-    !$ACC UPDATE HOST(this%q_liq) IF(allocated(this%q_liq))
-    !$ACC UPDATE HOST(this%re_liq) IF(allocated(this%re_liq))
-    !$ACC UPDATE HOST(this%q_ice) IF(allocated(this%q_ice))
-    !$ACC UPDATE HOST(this%re_ice) IF(allocated(this%re_ice))
-    !$ACC UPDATE HOST(this%fraction) IF(allocated(this%fraction))
-    !$ACC UPDATE HOST(this%overlap_param) IF(allocated(this%overlap_param))
-    !$ACC UPDATE HOST(this%fractional_std) IF(allocated(this%fractional_std))
-    !$ACC UPDATE HOST(this%inv_cloud_effective_size) IF(allocated(this%inv_cloud_effective_size))
-    !$ACC UPDATE HOST(this%inv_inhom_effective_size) IF(allocated(this%inv_inhom_effective_size))
-
-  end subroutine update_host
-
-  !---------------------------------------------------------------------
-  ! updates fields on device
-  subroutine update_device(this)
-
-    class(cloud_type), intent(inout) :: this
-
-    !$ACC UPDATE DEVICE(this%q_liq) IF(allocated(this%q_liq))
-    !$ACC UPDATE DEVICE(this%re_liq) IF(allocated(this%re_liq))
-    !$ACC UPDATE DEVICE(this%q_ice) IF(allocated(this%q_ice))
-    !$ACC UPDATE DEVICE(this%re_ice) IF(allocated(this%re_ice))
-    !$ACC UPDATE DEVICE(this%fraction) IF(allocated(this%fraction))
-    !$ACC UPDATE DEVICE(this%overlap_param) IF(allocated(this%overlap_param))
-    !$ACC UPDATE DEVICE(this%fractional_std) IF(allocated(this%fractional_std))
-    !$ACC UPDATE DEVICE(this%inv_cloud_effective_size) IF(allocated(this%inv_cloud_effective_size))
-    !$ACC UPDATE DEVICE(this%inv_inhom_effective_size) IF(allocated(this%inv_inhom_effective_size))
-
-  end subroutine update_device
-#endif 
 
 end module radiation_cloud

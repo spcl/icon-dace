@@ -14,10 +14,177 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "iconfor_dsl_definitions.inc"
-#include "omp_definitions.inc"
-#include "icon_definitions.inc"
-#include "crayftn_ptr_fail.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! Cray ftn compilers 8.4 and 8.6 are known to misidentify argument INTENT
+! of pointer components, i.e. will disallow changes to an array pointed to
+! by a pointer component of a TYPE
+! therefore this case needs to be handled specially
+!
 !----------------------------
 MODULE mo_ocean_ab_timestepping_mimetic
 
@@ -249,16 +416,16 @@ CONTAINS
     ! Apply windstress
     CALL top_bound_cond_horz_veloc(patch_3d, ocean_state, op_coeffs, p_oce_sfc, lacc=lzacc)
 
-    start_timer(timer_ab_expl,3)
+    IF (timers_level >= 3) CALL timer_start(timer_ab_expl)
     CALL calculate_explicit_term_ab(patch_3d, ocean_state, p_phys_param, &
       & is_initial_timestep(timestep), op_coeffs, p_as, lacc=lzacc)
-    stop_timer(timer_ab_expl,3)
+    IF (timers_level >= 3) CALL timer_stop(timer_ab_expl)
 
     IF(.NOT.l_rigid_lid)THEN
       ! Calculate RHS of surface equation
-      start_detail_timer(timer_ab_rhs4sfc,5)
+      IF (timers_level >= 5) CALL timer_start(timer_ab_rhs4sfc)
       CALL fill_rhs4surface_eq_ab(patch_3d, ocean_state, op_coeffs, lacc=lzacc)
-      stop_detail_timer(timer_ab_rhs4sfc,5)
+      IF (timers_level >= 5) CALL timer_stop(timer_ab_rhs4sfc)
 
       ! Solve surface equation with solver
       ! decide on guess to use in solver
@@ -415,7 +582,7 @@ CONTAINS
     CALL set_acc_host_or_device(lzacc, lacc)
 
     ! STEP 1: horizontal advection
-    start_detail_timer(timer_extra1,4)
+    IF (timers_level >= 4) CALL timer_start(timer_extra1)
     IF(is_first_timestep)THEN
       CALL veloc_adv_horz_mimetic( patch_3d,         &
         & ocean_state%p_prog(nold(1))%vn,    &
@@ -431,12 +598,12 @@ CONTAINS
         & ocean_state%p_diag%veloc_adv_horz, &
         & op_coeffs, lacc=lzacc)
     ENDIF
-    stop_detail_timer(timer_extra1,4)
+    IF (timers_level >= 4) CALL timer_stop(timer_extra1)
 
     ! STEP 2: compute 3D contributions: gradient of hydrostatic pressure and vertical velocity advection
     IF ( iswm_oce /= 1 ) THEN
       ! calculate density from EOS using temperature and salinity at timelevel n
-      start_detail_timer(timer_extra2,4)
+      IF (timers_level >= 4) CALL timer_start(timer_extra2)
 
       !------------------------------------------------------------------------
       ! this is calculated before the dynamics
@@ -455,7 +622,7 @@ CONTAINS
         & ocean_state%p_diag, op_coeffs,     &
         & ocean_state%p_diag%veloc_adv_vert, &
         & lacc=lzacc )
-      stop_detail_timer(timer_extra2,4)
+      IF (timers_level >= 4) CALL timer_stop(timer_extra2)
 
     ELSE  !  iswm_oce=1
       ocean_state%p_diag%veloc_adv_vert = 0.0_wp
@@ -477,16 +644,16 @@ CONTAINS
     !         This term is discretized explicitly. Order and form of the laplacian
     !         are determined in mo_oce_diffusion according to namelist settings
 
-    start_detail_timer(timer_extra3,5)
+    IF (timers_level >= 5) CALL timer_start(timer_extra3)
     CALL velocity_diffusion(patch_3d,      &
       & ocean_state%p_prog(nold(1))%vn,    &
       & p_phys_param,                      &
       & ocean_state%p_diag,op_coeffs,      &
       & ocean_state%p_diag%laplacian_horz, &
       & lacc=lzacc)
-    stop_detail_timer(timer_extra3,5)
+    IF (timers_level >= 5) CALL timer_stop(timer_extra3)
 
-    start_detail_timer(timer_extra4,4)
+    IF (timers_level >= 4) CALL timer_start(timer_extra4)
     IF (   MASS_MATRIX_INVERSION_TYPE == MASS_MATRIX_INVERSION_ALLTERMS&
       &.OR.MASS_MATRIX_INVERSION_TYPE == MASS_MATRIX_INVERSION_ADVECTION) THEN
       CALL explicit_vn_pred_invert_mass_matrix( patch_3d, ocean_state, op_coeffs, p_phys_param, is_first_timestep )
@@ -494,7 +661,7 @@ CONTAINS
       CALL explicit_vn_pred( patch_3d, ocean_state, op_coeffs, p_phys_param, is_first_timestep, lacc=lzacc )
     ENDIF!
 
-    stop_detail_timer(timer_extra4,4)
+    IF (timers_level >= 4) CALL timer_stop(timer_extra4)
     !---------DEBUG DIAGNOSTICS-------------------------------------------
     idt_src=3  ! output print level (1-5, fix)
     idt_src = 4  ! output print level (1-5, fix)
@@ -749,9 +916,6 @@ CONTAINS
     !-----------------------------------------------------------------------
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, "OpenACC version currently not tested/validated")
-#endif
 
     !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     DO je = start_edge_index, end_edge_index
@@ -1120,9 +1284,6 @@ CONTAINS
 
     IF (iswm_oce == 1) THEN ! shallow water case
 
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(method_name, 'OpenACC version currently not tested/validated')
-#endif
 
       z_grad_h(1:nproma,1:patch%nblks_e) = 0.0_wp
       ! Step 1) Compute normal derivative of new surface height
@@ -1289,9 +1450,6 @@ CONTAINS
     !-------------------------------------------------------------------------------
     IF( l_edge_based )THEN
 
-#ifdef _OPENACC
-      IF (lzacc) CALL finish (routine, 'OpenACC version currently not implemented')
-#endif
 
       DO blockNo = edges_in_domain%start_block, edges_in_domain%end_block
         CALL get_index_range(edges_in_domain, blockNo, start_index, end_index)
@@ -1349,9 +1507,6 @@ CONTAINS
 
       ELSE
 
-#ifdef _OPENACC
-        IF (lzacc) CALL finish (routine, 'OpenACC version currently not implemented')
-#endif
 
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index,end_index, jc, jk) ICON_OMP_DEFAULT_SCHEDULE
         DO blockNo = cells_in_domain%start_block, cells_in_domain%end_block
@@ -1374,9 +1529,6 @@ CONTAINS
 
     IF(l_rigid_lid)THEN
 
-#ifdef _OPENACC
-      IF (lzacc) CALL finish (routine, 'OpenACC version currently not implemented')
-#endif
 
       vertical_velocity(:,1,:) = 0.0_wp
     ENDIF
@@ -1410,9 +1562,6 @@ CONTAINS
     !---------------------------------------------------------------------
     IF (debug_check_level > 8) THEN
 
-#ifdef _OPENACC
-      IF (lzacc) CALL finish (routine, 'OpenACC version currently not implemented')
-#endif
 
       z_c          (1:nproma,1:patch_2D%alloc_cell_blocks)   = 0.0_wp
       DO blockNo = cells_in_domain%start_block, cells_in_domain%end_block
@@ -1453,9 +1602,6 @@ CONTAINS
     !---------------------------------------------------------------------
     IF (debug_check_level > 20) THEN
 
-#ifdef _OPENACC
-      IF (lzacc) CALL finish (routine, 'OpenACC version currently not implemented')
-#endif
 
       DO blockNo = cells_in_domain%start_block, cells_in_domain%end_block
         CALL get_index_range(cells_in_domain, blockNo, start_index, end_index)

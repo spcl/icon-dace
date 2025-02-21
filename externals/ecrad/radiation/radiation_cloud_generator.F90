@@ -539,11 +539,11 @@ contains
     use parkind1,              only : jprb
     use radiation_pdf_sampler, only : pdf_sampler_type
     implicit none
-#if defined(__GFORTRAN__) || defined(__PGI) || defined(__NEC__)
-#else
-    !$omp declare simd(sample_from_pdf_simd) uniform(this) &
-    !$omp linear(ref(fsd)) linear(ref(cdf))
-#endif
+
+
+
+
+
     type(pdf_sampler_type), intent(in)  :: this
 
     ! Fractional standard deviation (0 to 4) and cumulative

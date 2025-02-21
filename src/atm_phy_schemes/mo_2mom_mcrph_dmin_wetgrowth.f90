@@ -205,76 +205,6 @@ CONTAINS
     !=================================================================================
     ! .. Fixpoint iteration for the equilibrium diameter Dnew
     
-#if defined (__SX__) || defined (__NEC_VH__) || defined (__NECSX__)
-
-    !=================================================================================
-    ! .. Vectorized version:
-
-    ALLOCATE(iiv(n_qw,n_qi), Doldv(n_qw,n_qi), Dnewv(n_qw,n_qi), D0v(n_qw,n_qi))
-    
-!$OMP parallel do private(i,j,k,l,iiv,Doldv,D0v,Dnewv)
-    DO j = 1, n_temp
-
-      IF (temp(j) < 0.0_dp) THEN
-
-        DO i = 1, n_pres
-
-          ! .. 1) initialization of the iteration:
-          iiv(:,:) = 0
-          Doldv(:,:) = 5.e-3_dp
-          D0v(:,:) = 1.0_dp
-
-          ! .. Actual vectorizable iteration:
-          iteration: DO WHILE (ANY(ABS(D0v) > 1.e-4_dp .AND. iiv < maxiter))
-
-            DO l = 1, n_qi
-!$NEC ivdep
-              DO k = 1, n_qw
-
-                IF ( ABS(D0v(k,l)) > 1.e-4_dp .AND. iiv(k,l) < maxiter) THEN
-                  iiv(k,l) = iiv(k,l) + 1
-                  Dnewv(k,l) = dwg_fpi(phail%a_geo,phail%b_geo,phail%a_vel,phail%b_vel,Doldv(k,l),temp(j),pres(i),qw(k),qi(l))
-                  IF (Dnewv(k,l) <= 0.0_dp) THEN
-                    ! This means that ice and supercooled liquid are so cold
-                    ! that wet growth cannot occur.
-                    iiv(k,l) = maxiter + 1;
-                  END IF
-                  D0v(k,l)   = ( Dnewv(k,l)-Doldv(k,l) ) / Doldv(k,l)
-                  Doldv(k,l) = Dnewv(k,l)
-                END IF
-                
-              END DO
-            END DO
-            
-          END DO iteration
-            
-          DO l = 1, n_qi
-!$NEC ivdep
-            DO k = 1, n_qw
-              IF (ABS(D0v(k,l)) > 1.e-4_dp) THEN
-                Dmin(k,l,i,j) = miss_value
-              ELSE
-                Dmin(k,l,i,j) = MIN(Dnewv(k,l),999.99_dp)
-              END IF  
-            END DO
-          END DO
-          
-        END DO
-        
-      ELSE
-        
-        ! Enforce correct behaviour for Tvec(i) = 0 grad C, because
-        ! iteration would lead to DIV0 in the first step otherwise:
-        Dmin(:,:,:,j) = 0.0_dp
-        
-      END IF
-
-    END DO
-!$OMP end parallel do
-
-    DEALLOCATE(iiv,Doldv,Dnewv,D0v)
-
-#else
     
     !=================================================================================
     ! .. Unvectorized version:
@@ -328,7 +258,6 @@ CONTAINS
     END DO
 !$OMP end parallel do
 
-#endif
 
     !=================================================================================
     ! .. Check table:

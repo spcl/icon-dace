@@ -14,15 +14,22 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_statistics
   !-------------------------------------------------------------------------
   USE mo_kind,               ONLY: wp,sp
   USE mo_exception,          ONLY: warning, finish
-#ifdef _OPENMP
-  USE omp_lib
-#endif
 
   USE mo_grid_subset,        ONLY: t_subset_range, get_index_range, t_subset_indexed
   USE mo_mpi,                ONLY: process_mpi_stdio_id, get_my_mpi_work_communicator, p_max, p_min, &
@@ -32,15 +39,11 @@ MODULE mo_statistics
   USE mo_impl_constants, ONLY: on_cells, on_edges, on_vertices
   USE mo_math_types,     ONLY: t_geographical_coordinates
   USE mo_math_constants, ONLY: rad2deg
-#ifdef _OPENACC
-  USE mo_mpi,            ONLY: i_am_accel_node
-#endif
   USE mo_fortran_tools,  ONLY: set_acc_host_or_device
 
   IMPLICIT NONE
 
   PRIVATE
-#define VerticalDim_Position 2
 
   !-------------------------------------------------------------------------
   ! NOTE: in order to get correct results make sure you provide the proper in_subset (ie, owned)!
@@ -349,7 +352,7 @@ CONTAINS
     IF (PRESENT(end_level)) THEN
       end_vertical = end_level
     ELSE
-      end_vertical = SIZE(values, VerticalDim_Position)
+      end_vertical = SIZE(values, 2)
     ENDIF
     IF (start_vertical > end_vertical) &
       & CALL finish(method_name, "start_vertical > end_vertical")
@@ -512,9 +515,6 @@ CONTAINS
 
     ELSE ! no in_subset%vertical_levels
 
-#ifdef _OPENACC
-        IF (lzacc) CALL finish("MinMaxMean_2D_InRange", "OpenACC version not implemented for global_minmaxmean with no subset")
-#endif
 
 !ICON_OMP_PARALLEL_DO PRIVATE(block, start_index, end_index, min_in_block, max_in_block) &
 !ICON_OMP  reduction(MIN:min_value) reduction(MAX:max_value) reduction(+:sum_value)
@@ -562,7 +562,7 @@ CONTAINS
     IF (PRESENT(end_level)) THEN
       end_vertical = end_level
     ELSE
-      end_vertical = SIZE(values, VerticalDim_Position)
+      end_vertical = SIZE(values, 2)
     ENDIF
     IF (start_vertical > end_vertical) &
       & CALL finish(method_name, "start_vertical > end_vertical")
@@ -659,7 +659,7 @@ CONTAINS
     IF (PRESENT(end_level)) THEN
       end_vertical = end_level
     ELSE
-      end_vertical = SIZE(values, VerticalDim_Position)
+      end_vertical = SIZE(values, 2)
     ENDIF
     IF (start_vertical > end_vertical) &
       & CALL finish(method_name, "start_vertical > end_vertical")
@@ -739,7 +739,7 @@ CONTAINS
     IF (PRESENT(end_level)) THEN
       end_vertical = end_level
     ELSE
-      end_vertical = SIZE(values, VerticalDim_Position)
+      end_vertical = SIZE(values, 2)
     ENDIF
     IF (start_vertical > end_vertical) &
       & CALL finish(method_name, "start_vertical > end_vertical")
@@ -786,9 +786,9 @@ CONTAINS
 
     no_of_threads = 1
     myThreadNo = 0
-#ifdef _OPENMP
-    no_of_threads = omp_get_max_threads()
-#endif
+
+
+
 
     allocated_levels = SIZE(total_sum)
     ALLOCATE( sum_value(allocated_levels, 0:no_of_threads-1), &
@@ -807,19 +807,19 @@ CONTAINS
     IF (PRESENT(end_level)) THEN
       end_vertical = end_level
     ELSE
-      end_vertical = SIZE(values, VerticalDim_Position)
+      end_vertical = SIZE(values, 2)
     ENDIF
     IF (start_vertical > end_vertical) &
       & CALL finish(method_name, "start_vertical > end_vertical")
 
 !ICON_OMP_PARALLEL PRIVATE(myThreadNo)
-#ifdef _OPENMP
-    myThreadNo = omp_get_thread_num()
-#endif
+
+
+
 !ICON_OMP_SINGLE
-#ifdef _OPENMP
-    no_of_threads = OMP_GET_NUM_THREADS()
-#endif
+
+
+
 !ICON_OMP_END_SINGLE NOWAIT
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzopenacc)
     !$ACC LOOP GANG VECTOR
@@ -970,8 +970,8 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: start_level, end_level
     LOGICAL, OPTIONAL, INTENT(in)   :: lopenacc                 ! Flag to run on GPU
 
-    REAL(wp) :: levelWeights(SIZE(values, VerticalDim_Position)), &
-         levelWeightedSum(SIZE(values, VerticalDim_Position))
+    REAL(wp) :: levelWeights(SIZE(values, 2)), &
+         levelWeightedSum(SIZE(values, 2))
     REAL(wp) ::  totalWeight, totalSum
     INTEGER :: level, start_vertical, end_vertical
     LOGICAL :: lzopenacc
@@ -990,7 +990,7 @@ CONTAINS
     IF (PRESENT(end_level)) THEN
       end_vertical = end_level
     ELSE
-      end_vertical = SIZE(values, VerticalDim_Position)
+      end_vertical = SIZE(values, 2)
     ENDIF
 
     !$ACC DATA CREATE(levelWeights, levelWeightedSum) IF(lzopenacc)
@@ -1049,9 +1049,9 @@ CONTAINS
 
     no_of_threads = 1
     myThreadNo = 0
-#ifdef _OPENMP
-    no_of_threads = omp_get_max_threads()
-#endif
+
+
+
 
     allocated_levels = SIZE(total_sum)
     ALLOCATE( sum_value(allocated_levels, 0:no_of_threads-1), &
@@ -1070,7 +1070,7 @@ CONTAINS
     IF (PRESENT(end_level)) THEN
       end_vertical = end_level
     ELSE
-      end_vertical = SIZE(values, VerticalDim_Position)
+      end_vertical = SIZE(values, 2)
     ENDIF
     IF (start_vertical > end_vertical) &
       & CALL finish(method_name, "start_vertical > end_vertical")
@@ -1078,13 +1078,13 @@ CONTAINS
       & CALL finish(method_name, "allocated_levels < end_vertical")
 
 !ICON_OMP_PARALLEL PRIVATE(myThreadNo)
-#ifdef _OPENMP
-    myThreadNo = omp_get_thread_num()
-#endif
+
+
+
 !ICON_OMP_SINGLE
-#ifdef _OPENMP
-    no_of_threads = OMP_GET_NUM_THREADS()
-#endif
+
+
+
 !ICON_OMP_END_SINGLE NOWAIT
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzopenacc)
     !$ACC LOOP GANG VECTOR
@@ -1254,9 +1254,9 @@ CONTAINS
     no_of_threads = 1
     myThreadNo = 0
     no_of_additions = 0
-#ifdef _OPENMP
-    no_of_threads = omp_get_max_threads()
-#endif
+
+
+
 
     ALLOCATE( sum_value(0:no_of_threads-1) )
 
@@ -1264,13 +1264,13 @@ CONTAINS
     !$ACC DATA CREATE(sum_value) IF(lzopenacc)
 
 !ICON_OMP_PARALLEL PRIVATE(myThreadNo)
-#ifdef _OPENMP
-    myThreadNo = omp_get_thread_num()
-#endif
+
+
+
 !ICON_OMP_SINGLE
-#ifdef _OPENMP
-    no_of_threads = OMP_GET_NUM_THREADS()
-#endif
+
+
+
 !ICON_OMP_END_SINGLE NOWAIT
     !$ACC KERNELS DEFAULT(PRESENT) IF(lzopenacc)
     sum_value(myThreadNo) = 0.0_wp
@@ -1363,9 +1363,9 @@ CONTAINS
 
     no_of_threads = 1
     myThreadNo = 0
-#ifdef _OPENMP
-    no_of_threads = omp_get_max_threads()
-#endif
+
+
+
 
     ALLOCATE( sum_value(0:no_of_threads-1), &
       & sum_weight(0:no_of_threads-1) )
@@ -1374,13 +1374,13 @@ CONTAINS
     !$ACC DATA CREATE(sum_value, sum_weight) IF(lzopenacc)
 
 !ICON_OMP_PARALLEL PRIVATE(myThreadNo)
-#ifdef _OPENMP
-    myThreadNo = omp_get_thread_num()
-#endif
+
+
+
 !ICON_OMP_SINGLE
-#ifdef _OPENMP
-    no_of_threads = OMP_GET_NUM_THREADS()
-#endif
+
+
+
 !ICON_OMP_END_SINGLE NOWAIT
     !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzopenacc)
     sum_value(myThreadNo) = 0.0_wp
@@ -2098,7 +2098,7 @@ CONTAINS
     IF (PRESENT(missval)) my_miss = missval
 
     ! use constant levels
-    mylevels                       = SIZE(sum_field, VerticalDim_Position)
+    mylevels                       = SIZE(sum_field, 2)
     IF (PRESENT(levels))  mylevels = levels
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, idx, level) SCHEDULE(dynamic)
     DO block = subset%start_block, subset%end_block
@@ -2167,7 +2167,7 @@ CONTAINS
     IF (PRESENT(missval)) my_miss = missval
 
       ! use constant levels
-      mylevels                       = SIZE(sum_field, VerticalDim_Position)
+      mylevels                       = SIZE(sum_field, 2)
       IF (PRESENT(levels))  mylevels = levels
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, idx, level) SCHEDULE(dynamic)
       DO block = subset%start_block, subset%end_block
@@ -2245,7 +2245,7 @@ CONTAINS
 
     ELSE
       ! use constant levels
-      mylevels   = SIZE(field_3D, VerticalDim_Position)
+      mylevels   = SIZE(field_3D, 2)
       IF (PRESENT(levels)) mylevels = levels
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, idx, level)
 !SCHEDULE(dynamic)
@@ -2290,7 +2290,7 @@ CONTAINS
 
     ELSE
       ! use constant levels
-      mylevels   = SIZE(field_3D, VerticalDim_Position)
+      mylevels   = SIZE(field_3D, 2)
       IF (PRESENT(levels)) mylevels = levels
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, idx, level) SCHEDULE(dynamic)
       DO block = subset%start_block, subset%end_block
@@ -2342,7 +2342,7 @@ CONTAINS
 
     ELSE
       ! use constant levels
-      mylevels   = SIZE(field_3D, VerticalDim_Position)
+      mylevels   = SIZE(field_3D, 2)
       IF (PRESENT(levels)) mylevels = levels
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, idx, level) SCHEDULE(dynamic)
       DO block = subset%start_block, subset%end_block
@@ -2389,7 +2389,7 @@ CONTAINS
 
     ELSE
       ! use constant levels
-      mylevels   = SIZE(field_3D, VerticalDim_Position)
+      mylevels   = SIZE(field_3D, 2)
       IF (PRESENT(levels)) mylevels = levels
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, idx, level) SCHEDULE(dynamic)
       DO block = subset%start_block, subset%end_block
@@ -2426,9 +2426,9 @@ CONTAINS
     ! Result
     REAL(wp) :: psi_avg_new                   !< updated time average
 
-#ifdef _OPENACC
-    !$ACC ROUTINE SEQ
-#endif
+
+
+
 
     !--------------------------------------------------------------------
 

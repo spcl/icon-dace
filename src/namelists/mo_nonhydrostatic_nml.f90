@@ -235,11 +235,11 @@ CONTAINS
     ! for values between 1/2 and 2/3, whereas for high resolutions, where stability limitations
     ! arise from large-amplitude breaking gravity waves rather than sound wave reflections, values
     ! around 1/3 are better.
-#ifdef __INTEL_COMPILER
-    exner_expol       = 0.333333333333333_wp    
-#else
+
+
+
     exner_expol       = 1._wp/3._wp
-#endif
+
 
     ! dummy values for nested domains; will be reset to value of domain 1 
     ! if not specified explicitly in the namelist

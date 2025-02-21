@@ -98,9 +98,9 @@ MODULE mo_pp_tasks
   USE mo_advection_config,        ONLY: advection_config
   USE mo_fortran_tools,           ONLY: init, copy, assert_acc_device_only, assert_acc_host_only, &
    &                                    assert_lacc_equals_i_am_accel_node
-#ifdef _OPENACC
-  USE mo_mpi,                     ONLY: i_am_accel_node
-#endif
+
+
+
 
   ! Workaround for SMI computation. Not nice, however by making 
   ! direct use of the states below, we avoid enhancing the type t_data_input.
@@ -234,9 +234,9 @@ MODULE mo_pp_tasks
   !--- MODULE DATA -------------------------------------------------------------------
   TYPE(t_job_queue), POINTER   :: job_queue  =>  NULL() !< head of (ordered) job queue
 
-#ifndef _OPENACC
+
   LOGICAL, PARAMETER :: i_am_accel_node=.FALSE.
-#endif
+
 
 CONTAINS
 
@@ -274,24 +274,6 @@ CONTAINS
     ptr_int_lonlat => lonlat_grids%list(lonlat_id)%intp(jg)
     hintp_type     = p_info%hor_interp%hor_intp_type
 
-#ifdef _OPENACC
-      IF(i_am_accel_node .AND. .NOT. p_info%lopenacc) THEN
-        CALL message(routine, "WARNING: " // TRIM(p_info%name) // " is temporarily copied onto accelerator. If " // &
-          "this warning appears at every output step, consider making the variable present permanently. However " // &
-          "as this variable is not present on the device it is unlikely that it changes over time as it is not " // &
-          "part of any physics. Therefore one might want to limit the output frequency of " // TRIM(p_info%name))
-        ! MJ: Some fields that are constant over time are not necessary to be available on the devices. Their memory
-        ! can be saved. In principle it would be enough to output them only at the first time step. Thus this warning
-        ! should only appear once.
-        IF(ASSOCIATED(in_var%r_ptr)) THEN
-          !$ACC ENTER DATA COPYIN(in_var%r_ptr)
-        ELSEIF(ASSOCIATED(in_var%s_ptr)) THEN
-          !$ACC ENTER DATA COPYIN(in_var%s_ptr)
-        ELSEIF(ASSOCIATED(in_var%i_ptr)) THEN
-          !$ACC ENTER DATA COPYIN(in_var%i_ptr)
-        ENDIF
-      ENDIF
-#endif
 
     ! --------------------------------------------------------------------------
     !
@@ -1368,9 +1350,6 @@ CONTAINS
         ELSE
           lclip = .FALSE.
         ENDIF
-#ifdef _OPENACC
-        CALL finish(routine, 'not yet ported postproc RH_METHOD_IFS, RH_METHOD_IFS_CLIP for variable '//TRIM(p_info%name) )
-#endif
         CALL compute_field_rel_hum_ifs(p_patch, p_prog, p_diag,        &
           &                        out_var%r_ptr(:,:,:,out_var_idx,1), &
           &                        opt_lclip=lclip)
@@ -1464,30 +1443,18 @@ CONTAINS
            &                 ext_data(jg), out_var%r_ptr(:,:,:,out_var_idx,1), lacc=i_am_accel_node)
 
     CASE (TASK_COMPUTE_WSHEAR_U)
-#ifdef _OPENACC
-      CALL finish(routine, 'not yet ported postproc TASK_COMPUTE_WSHEAR_U for variable '//TRIM(p_info%name) )
-#endif
       CALL compute_field_wshear( p_patch, ptr_task%data_input%p_nh_state%metrics, &
            &                     p_diag%u, wshear_uv_heights(1:n_wshear), out_var%r_ptr(:,:,:,out_var_idx,1) )
       
     CASE (TASK_COMPUTE_WSHEAR_V)
-#ifdef _OPENACC
-      CALL finish(routine, 'not yet ported postproc TASK_COMPUTE_WSHEAR_V for variable '//TRIM(p_info%name) )
-#endif
       CALL compute_field_wshear( p_patch, ptr_task%data_input%p_nh_state%metrics, &
            &                     p_diag%v, wshear_uv_heights(1:n_wshear), out_var%r_ptr(:,:,:,out_var_idx,1) )
 
     CASE (TASK_COMPUTE_LAPSERATE)
-#ifdef _OPENACC
-      CALL finish(routine, 'not yet ported postproc TASK_COMPUTE_LAPSERATE for variable '//TRIM(p_info%name) )
-#endif
       CALL compute_field_lapserate( p_patch, ptr_task%data_input%p_nh_state%metrics, &
            &                        p_diag, 500e2_wp, 850e2_wp, out_var%r_ptr(:,:,out_var_idx,1,1) )
 
     CASE (TASK_COMPUTE_SRH)
-#ifdef _OPENACC
-      CALL finish(routine, 'not yet ported postproc TASK_COMPUTE_SRH for variable '//TRIM(p_info%name) )
-#endif
       CALL compute_field_srh( ptr_patch     = p_patch,   &
            &                  p_metrics     = ptr_task%data_input%p_nh_state%metrics, &
            &                  p_diag        = p_diag,    &

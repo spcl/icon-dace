@@ -16,7 +16,7 @@
 MODULE mo_time_base
 
 
-#undef IAU
+
 !!!#define IAU
   !
   ! References:
@@ -196,26 +196,6 @@ CONTAINS
        ib = INT(iy/400)-INT(iy/100)
     END IF
 
-#ifdef IAU
-    IF (ky > 1582 .OR. (ky == 1582 .AND. km > 10 &
-         .OR. (km == 10 .AND. kd >= 15))) THEN
-      ! 15th October 1582 AD or later no changes
-
-    ELSE IF (ky == 1582 .AND. km == 10 .AND. (4 < kd .AND. kd < 15) ) THEN
-      ! a small pice from the history:
-      !     Papst Gregor XIII corrected the calendar,
-      !     he skipped 10 days between the 4th and the 15th of October 1582
-      !
-      WRITE (message_text, '(a,i2.2,a1,i2.2,a1,i4.4,a)') &
-           'date ', km, '/', kd, '/', ky, ' not valid'
-      CALL finish ('mo_time_base:set_julian_day', message_text)
-    ELSE
-
-      ! 4th October 1582 AD or earlier
-      ib = -2
-
-    ENDIF
-#endif
 
     ! check the length of the month
     idmax = get_julian_monlen (ky, km)
@@ -260,9 +240,6 @@ CONTAINS
     zb = REAL(FLOOR((za-1867216.25_wp)/36524.25_wp),wp)
     zc = za+zb-REAL(FLOOR(zb/4._wp),wp)+1525._wp
 
-#ifdef IAU
-    IF (za < 2299161.0_wp) zc = za+1524.0_wp
-#endif
 
     zd = REAL(FLOOR((zc-122.1_wp)/365.25_wp),wp)
     ze = REAL(FLOOR(365.25_wp*zd),wp)
@@ -345,21 +322,11 @@ CONTAINS
 
     INTEGER :: ylen
 
-#ifdef IAU
-    IF (ky == 1582) THEN
-       ylen = 355
-    ELSE IF ( (MOD(ky,4)==0 .AND. MOD(ky,100)/=0) .OR. MOD(ky,400)==0 ) THEN
-       ylen = 366
-    ELSE
-       ylen = 365
-    END IF
-#else
     IF ( (MOD(ky,4)==0 .AND. MOD(ky,100)/=0) .OR. MOD(ky,400)==0 ) THEN
        ylen = 366
     ELSE
        ylen = 365
     END IF
-#endif
     get_julian_yearlen = ylen
 
   END FUNCTION get_julian_yearlen
@@ -443,10 +410,6 @@ CONTAINS
     my_day %day      = INT(360*ky+(km-1)*30+(kd-1),i8)
     my_day %fraction = sec2frac(ksec)
 
-#ifdef DEBUG
-    write (0,*) 'date2internal: ', ky, km, kd, ksec, &
-                ' -> ', my_day%day, my_day%fraction
-#endif
 
   END SUBROUTINE set_ly360_day
 
@@ -485,10 +448,6 @@ CONTAINS
 
     ksec = frac2sec(my_day%fraction)
 
-#ifdef DEBUG
-    write (0,*) 'internal2date: ', my_day%day, my_day%fraction,  &
-                ' -> ', ky, km, kd, ksec
-#endif
 
   END SUBROUTINE set_ly360_calendar
 
@@ -521,10 +480,6 @@ CONTAINS
 
     ksec = frac2sec(my_day%fraction)
 
-#ifdef DEBUG
-    write (0,*) 'internal2date: ', my_day%day, my_day%fraction,  &
-                ' -> (2) ', ky, kd, ksec
-#endif
 
   END SUBROUTINE get_ly360_yearday
 

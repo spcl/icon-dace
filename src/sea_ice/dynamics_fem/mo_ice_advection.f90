@@ -13,7 +13,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_ice_advection
@@ -324,15 +334,10 @@ CONTAINS
 
       CALL get_index_range(edges_in_domain, jb, i_startidx, i_endidx)
 
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
 !CDIR UNROLL=6
       !$ACC PARALLEL LOOP GANG VECTOR COLLAPSE(2) DEFAULT(PRESENT) IF(lzacc)
       DO jk = slev, elev
         DO je = i_startidx, i_endidx
-#endif
           !
           ! compute the first order upwind flux; notice
           ! that multiplication by edge length is avoided to

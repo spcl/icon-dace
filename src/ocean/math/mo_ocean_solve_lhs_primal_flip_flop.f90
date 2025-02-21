@@ -67,9 +67,9 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish("lhs_primal_flip_flop_wp()", "OpenACC version not implemented yet")
-#endif
+
+
+
 
     IF(.NOT.this%is_init .OR. this%jk .EQ. solve_invalid) &
       CALL finish("lhs_primal_flip_flop_wp()", "not correctly initialized")

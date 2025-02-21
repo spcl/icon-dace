@@ -23,16 +23,16 @@ MODULE mo_icon_testbed
     & test_bench_exchange_data_mult
   USE mo_icon_testbed_nml,    ONLY: read_icon_testbed_namelist
 
-#ifndef __NO_ICON_ATMO__
+
   USE mo_test_communication,  ONLY: test_communication
   USE mo_test_jitter,         ONLY: test_jitter
   USE mo_test_netcdf_read,    ONLY: test_netcdf_read
-#endif
 
-#ifndef __NO_ICON_COMIN__
-  USE mo_mpi,               ONLY: p_comm_comin
-  USE comin_host_interface, ONLY: mpi_handshake_dummy
-#endif
+
+
+
+
+
 !-------------------------------------------------------------------------
   IMPLICIT NONE
   PRIVATE
@@ -54,10 +54,10 @@ CONTAINS
     
     CALL read_icon_testbed_namelist(testbed_namelist_filename)
 
-#ifndef __NO_ICON_COMIN__
-    ! we dont participate at comin (yet) but we need to be friendly and shake hands
-    CALL mpi_handshake_dummy(p_comm_comin)
-#endif
+
+
+
+
 
     SELECT CASE(testbed_model)
     
@@ -66,7 +66,7 @@ CONTAINS
       RETURN
 
 
-#ifndef __NO_ICON_ATMO__
+
 
     CASE(test_halo_communication, test_gather_communication, &
          test_exchange_communication, test_bench_exchange_data_mult)
@@ -77,7 +77,7 @@ CONTAINS
 
     CASE(test_netcdf_read_model)
       CALL test_netcdf_read(testbed_namelist_filename,shr_namelist_filename)
-#endif
+
 
     CASE default
       CALL finish(method_name, "Unrecognized testbed_model")

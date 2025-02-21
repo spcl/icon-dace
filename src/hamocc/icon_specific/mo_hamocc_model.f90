@@ -117,14 +117,14 @@ MODULE mo_hamocc_model
   USE mo_ocean_hamocc_interface, ONLY: hamocc_to_ocean_init, hamocc_to_ocean_end, hamocc_to_ocean_interface
   USE mo_dynamics_config,        ONLY: nold, nnew
   USE mo_ocean_math_operators,   ONLY: update_height_hamocc
-#ifdef YAC_coupling
-  USE mo_io_coupling_frame,      ONLY: construct_io_coupling, destruct_io_coupling
-#endif
+
+
+
   USE mo_icon_output_tools,      ONLY: init_io_processes, prepare_output
-#ifndef __NO_ICON_COMIN__
-  USE mo_mpi,               ONLY: p_comm_comin
-  USE comin_host_interface, ONLY: mpi_handshake_dummy
-#endif
+
+
+
+
 
   IMPLICIT NONE
 
@@ -355,9 +355,9 @@ MODULE mo_hamocc_model
 
     IF (output_mode%l_nml) CALL close_name_list_output
    
-#ifdef YAC_coupling
-     CALL destruct_io_coupling ( get_my_process_name() )
-#endif
+
+
+
 
     CALL destruct_icon_communication()
 
@@ -414,19 +414,11 @@ MODULE mo_hamocc_model
     CALL set_mpi_work_communicators(p_test_run, l_test_openmp, num_io_procs, &
       &  dedicatedRestartProcs, my_comp_id=hamocc_process, num_test_pe=num_test_pe, pio_type=pio_type)
 
-#ifndef __NO_ICON_COMIN__
-    ! we dont participate at comin (yet) but we need to be friendly and shake hands
-    CALL mpi_handshake_dummy(p_comm_comin)
-#endif
 
-#ifdef YAC_coupling
-      ! The initialisation of YAC needs to be called by all (!) MPI processes
-      ! in MPI_COMM_WORLD.
-      ! construct_io_coupling needs to be called before init_name_list_output
-      ! due to calling sequence in subroutine atmo_model for other atmosphere
-      ! processes
-      CALL construct_io_coupling ( get_my_process_name()  )
-#endif
+
+
+
+
 
     !-------------------------------------------------------------------
     ! 3.2 Initialize various timers

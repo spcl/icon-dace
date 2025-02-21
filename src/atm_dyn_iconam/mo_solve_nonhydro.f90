@@ -17,7 +17,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_solve_nonhydro
@@ -60,9 +70,6 @@ MODULE mo_solve_nonhydro
   USE mo_prepadv_types,     ONLY: t_prepare_adv
   USE mo_initicon_config,   ONLY: is_iau_active, iau_wgt_dyn
   USE mo_fortran_tools,     ONLY: init_zero_contiguous_dp, init_zero_contiguous_sp ! Import both for mixed prec.
-#ifdef _OPENACC
-  USE mo_mpi,               ONLY: my_process_is_work
-#endif
 
 
   IMPLICIT NONE
@@ -77,9 +84,6 @@ MODULE mo_solve_nonhydro
 
   PUBLIC :: solve_nh
 
-#ifdef _CRAYFTN
-#define __CRAY_FTN_VERSION (_RELEASE_MAJOR * 100 + _RELEASE_MINOR)
-#endif
 
   ! On the vectorizing DWD-NEC the diagnostics for the tendencies of the normal wind
   ! from terms xyz, ddt_vn_xyz, is disabled by default due to the fear that the
@@ -87,9 +91,6 @@ MODULE mo_solve_nonhydro
   ! the condition is not given and therefore the global field not allocated. If this
   ! happens, this would results in a corrupted memory.
   ! (Requested by G. Zaengl based on earlier problems with similar constructs.)
-#ifndef __SX__
-#define __ENABLE_DDT_VN_XYZ__
-#endif
 
   CONTAINS
 
@@ -142,17 +143,6 @@ MODULE mo_solve_nonhydro
 
     ! The data type vp (variable precision) is by default the same as wp but reduces
     ! to single precision when the __MIXED_PRECISION cpp flag is set at compile time
-#ifdef __SWAPDIM
-    REAL(vp) :: z_th_ddz_exner_c(nproma,p_patch%nlev  ,p_patch%nblks_c), &
-                z_dexner_dz_c   (nproma,p_patch%nlev  ,p_patch%nblks_c,2), &
-                z_vt_ie         (nproma,p_patch%nlev  ,p_patch%nblks_e), &
-                z_kin_hor_e     (nproma,p_patch%nlev  ,p_patch%nblks_e), &
-                z_exner_ex_pr   (nproma,p_patch%nlevp1,p_patch%nblks_c), & 
-                z_gradh_exner   (nproma,p_patch%nlev  ,p_patch%nblks_e), &
-                z_rth_pr        (nproma,p_patch%nlev  ,p_patch%nblks_c,2), &
-                z_grad_rth      (nproma,p_patch%nlev  ,p_patch%nblks_c,4), &
-                z_w_concorr_me  (nproma,p_patch%nlev  ,p_patch%nblks_e)
-#else
     REAL(vp) :: z_th_ddz_exner_c(nproma,p_patch%nlev,p_patch%nblks_c), &
                 z_dexner_dz_c (2,nproma,p_patch%nlev,p_patch%nblks_c), &
                 z_vt_ie         (nproma,p_patch%nlev,p_patch%nblks_e), &
@@ -162,13 +152,8 @@ MODULE mo_solve_nonhydro
                 z_rth_pr      (2,nproma,p_patch%nlev,p_patch%nblks_c), &
                 z_grad_rth    (4,nproma,p_patch%nlev,p_patch%nblks_c), &
                 z_w_concorr_me  (nproma,p_patch%nlev,p_patch%nblks_e)
-#endif
     ! This field in addition has reversed index order (vertical first) for optimization
-#ifdef __LOOP_EXCHANGE
-    REAL(vp) :: z_graddiv_vn    (p_patch%nlev,nproma,p_patch%nblks_e)
-#else
     REAL(vp) :: z_graddiv_vn    (nproma,p_patch%nlev,p_patch%nblks_e)
-#endif
 
     REAL(wp) :: z_w_expl        (nproma,p_patch%nlevp1),          &
                 z_vn_avg        (nproma,p_patch%nlev  ),          &
@@ -201,9 +186,6 @@ MODULE mo_solve_nonhydro
     REAL(vp) :: z_a, z_b, z_c, z_g, z_gamma,      &
                 z_w_backtraj, z_theta_v_pr_mc_m1, z_theta_v_pr_mc
 
-#ifdef _OPENACC
-    REAL(vp) :: z_w_concorr_mc_m0, z_w_concorr_mc_m1, z_w_concorr_mc_m2
-#endif
 
     REAL(wp) :: z_theta1, z_theta2, wgt_nnow_vel, wgt_nnew_vel,     &
                dt_shift, wgt_nnow_rth, wgt_nnew_rth, dthalf,        &
@@ -222,18 +204,6 @@ MODULE mo_solve_nonhydro
     REAL(wp) :: z_ddt_vn_dyn, z_ddt_vn_apc, z_ddt_vn_cor, &
       &         z_ddt_vn_pgr, z_ddt_vn_ray, z_d_vn_dmp, z_d_vn_iau
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_theta_v_fl_e,z_theta_v_e,z_rho_e
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_theta_v_v,z_rho_v,z_dwdz_dd
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_th_ddz_exner_c,z_dexner_dz_c,z_vt_ie,z_kin_hor_e
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_exner_ex_pr,z_gradh_exner,z_rth_pr,z_grad_rth
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_w_concorr_me,z_graddiv_vn,z_w_expl
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_vn_avg,z_mflx_top,z_contr_w_fl_l,z_contr_wq_fl_l,z_rho_expl
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_exner_expl,z_alpha,z_beta,z_beta_q,z_q,z_graddiv2_vn
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_theta_v_pr_ic,z_exner_ic,z_w_concorr_mc
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_flxdiv_mass,z_flxdiv_theta,z_flxdiv_vol,z_hydro_corr
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_raylfac,scal_divdamp,bdy_divdamp,enh_divdamp_fac
-#endif
 
     INTEGER :: nproma_gradp, nblks_gradp, npromz_gradp, nlen_gradp, jk_start
     LOGICAL :: lvn_only, lvn_pos, lapply_moist_thdyn
@@ -256,10 +226,6 @@ MODULE mo_solve_nonhydro
       ! for igradp_method = 3
       iplev(:), ipeidx(:), ipeblk(:)
 
-#ifdef __SX__
-      REAL(wp) :: z_rho_tavg_m1_v(nproma), z_theta_tavg_m1_v(nproma)
-      REAL(vp) :: z_theta_v_pr_mc_m1_v(nproma)
-#endif
     !-------------------------------------------------------------------
     IF (use_dycore_barrier) THEN
       CALL timer_start(timer_barrier)
@@ -481,36 +447,14 @@ MODULE mo_solve_nonhydro
       ! initialize nest boundary points of z_rth_pr with zero
       IF (istep == 1 .AND. (jg > 1 .OR. l_limited_area)) THEN
 
-#ifdef __SWAPDIM
-#ifdef __MIXED_PRECISION
-          CALL init_zero_contiguous_sp(z_rth_pr(1,1,1,1), nproma*nlev*i_startblk, opt_acc_async=.TRUE., &
-            & lacc=i_am_accel_node)
-          CALL init_zero_contiguous_sp(z_rth_pr(1,1,1,2), nproma*nlev*i_startblk, opt_acc_async=.TRUE., &
-            & lacc=i_am_accel_node)
-#else
-          CALL init_zero_contiguous_dp(z_rth_pr(1,1,1,1), nproma*nlev*i_startblk, opt_acc_async=.TRUE., &
-            & lacc=i_am_accel_node)
-          CALL init_zero_contiguous_dp(z_rth_pr(1,1,1,2), nproma*nlev*i_startblk, opt_acc_async=.TRUE., &
-            & lacc=i_am_accel_node)
-#endif
-#else
-#ifdef __MIXED_PRECISION
-          CALL init_zero_contiguous_sp(z_rth_pr(1,1,1,1), 2*nproma*nlev*i_startblk, opt_acc_async=.TRUE., &
-            & lacc=i_am_accel_node)
-#else
           CALL init_zero_contiguous_dp(z_rth_pr(1,1,1,1), 2*nproma*nlev*i_startblk, opt_acc_async=.TRUE., &
             & lacc=i_am_accel_node)
-#endif
-#endif
 
 !$OMP BARRIER
       ENDIF
 
 !$OMP DO PRIVATE(jb,i_startidx,i_endidx,jk,jc,z_exner_ic,z_theta_v_pr_ic,z_w_backtraj,&
 !$OMP            z_theta_v_pr_mc_m1,z_theta_v_pr_mc,z_rho_tavg_m1,z_rho_tavg, &
-#ifdef __SX__
-!$OMP            z_rho_tavg_m1_v,z_theta_tavg_m1_v,z_theta_v_pr_mc_m1_v, &
-#endif
 !$OMP            z_theta_tavg_m1,z_theta_tavg) ICON_OMP_DEFAULT_SCHEDULE
       DO jb = i_startblk, i_endblk
 
@@ -579,11 +523,7 @@ MODULE mo_solve_nonhydro
               DO jc = i_startidx, i_endidx
 
                 ! First vertical derivative of perturbation Exner pressure
-#ifdef __SWAPDIM
-                z_dexner_dz_c(jc,jk,jb,1) =                     &
-#else
                 z_dexner_dz_c(1,jc,jk,jb) =                     &
-#endif
                   (z_exner_ic(jc,jk) - z_exner_ic(jc,jk+1)) *   &
                   p_nh%metrics%inv_ddqz_z_full(jc,jk,jb)
               ENDDO
@@ -602,11 +542,7 @@ MODULE mo_solve_nonhydro
                   p_nh%metrics%wgtfacq1_c(jc,3,jb)*z_exner_ex_pr(jc,3,jb)
 
                 ! First vertical derivative of perturbation Exner pressure
-#ifdef __SWAPDIM
-                z_dexner_dz_c(jc,1,jb,1) =                    &
-#else
                 z_dexner_dz_c(1,jc,1,jb) =                    &
-#endif
                   (z_exner_ic(jc,1) - z_exner_ic(jc,2)) *   &
                   p_nh%metrics%inv_ddqz_z_full(jc,1,jb)
               ENDDO
@@ -616,15 +552,6 @@ MODULE mo_solve_nonhydro
           ENDIF
 
           !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
-#ifdef __SWAPDIM
-          !$ACC LOOP GANG VECTOR
-          DO jc = i_startidx, i_endidx
-            z_rth_pr(jc,1,jb,1) = p_nh%prog(nnow)%rho(jc,1,jb) - &
-              p_nh%metrics%rho_ref_mc(jc,1,jb)
-            z_rth_pr(jc,1,jb,2) = p_nh%prog(nnow)%theta_v(jc,1,jb) - &
-              p_nh%metrics%theta_ref_mc(jc,1,jb)
-          ENDDO
-#else
           !$ACC LOOP GANG VECTOR
           DO jc = i_startidx, i_endidx
             z_rth_pr(1,jc,1,jb) =  p_nh%prog(nnow)%rho(jc,1,jb) - &
@@ -632,7 +559,6 @@ MODULE mo_solve_nonhydro
             z_rth_pr(2,jc,1,jb) =  p_nh%prog(nnow)%theta_v(jc,1,jb) - &
               p_nh%metrics%theta_ref_mc(jc,1,jb)
           ENDDO
-#endif
           !$ACC END PARALLEL
 
           !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
@@ -646,35 +572,13 @@ MODULE mo_solve_nonhydro
 
               ! perturbation density and virtual potential temperature at main levels for horizontal flux divergence term
               ! (needed in the predictor step only)
-#ifdef __SWAPDIM
-              z_rth_pr(jc,jk,jb,1) =  p_nh%prog(nnow)%rho(jc,jk,jb)     - p_nh%metrics%rho_ref_mc(jc,jk,jb)
-              z_rth_pr(jc,jk,jb,2) =  p_nh%prog(nnow)%theta_v(jc,jk,jb) - p_nh%metrics%theta_ref_mc(jc,jk,jb)
-#else
               z_rth_pr(1,jc,jk,jb) =  p_nh%prog(nnow)%rho(jc,jk,jb)     - p_nh%metrics%rho_ref_mc(jc,jk,jb)
               z_rth_pr(2,jc,jk,jb) =  p_nh%prog(nnow)%theta_v(jc,jk,jb) - p_nh%metrics%theta_ref_mc(jc,jk,jb)
-#endif
-#ifdef _OPENACC
-            ENDDO
-          ENDDO
-          !$ACC END PARALLEL
-
-          !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
-          !$ACC LOOP GANG VECTOR COLLAPSE(2)
-          DO jk = 2, nlev
-!DIR$ IVDEP
-            DO jc = i_startidx, i_endidx
-#endif
 
               ! perturbation virtual potential temperature at interface levels
-#ifdef __SWAPDIM
-              z_theta_v_pr_ic(jc,jk) =                                           &
-                       p_nh%metrics%wgtfac_c(jc,jk,jb) *z_rth_pr(jc,jk  ,jb,2) + &
-                (1._vp-p_nh%metrics%wgtfac_c(jc,jk,jb))*z_rth_pr(jc,jk-1,jb,2)
-#else
               z_theta_v_pr_ic(jc,jk) =                                           &
                        p_nh%metrics%wgtfac_c(jc,jk,jb) *z_rth_pr(2,jc,jk  ,jb) + &
                 (1._vp-p_nh%metrics%wgtfac_c(jc,jk,jb))*z_rth_pr(2,jc,jk-1,jb)
-#endif
               ! virtual potential temperature at interface levels
               p_nh%diag%theta_v_ic(jc,jk,jb) =                                                &
                        p_nh%metrics%wgtfac_c(jc,jk,jb) *p_nh%prog(nnow)%theta_v(jc,jk  ,jb) + &
@@ -691,17 +595,6 @@ MODULE mo_solve_nonhydro
 
         ELSE  ! istep = 2 - in this step, an upwind-biased discretization is used for rho_ic and theta_v_ic
           ! in order to reduce the numerical dispersion errors
-#ifdef __SX__
-          ! precompute values for jk = 1 which are previous values in first iteration of jk compute loop
-          jk = 2
-            DO jc = i_startidx, i_endidx
-              z_rho_tavg_m1_v(jc) = wgt_nnow_rth*p_nh%prog(nnow)%rho(jc,jk-1,jb) + &
-                              wgt_nnew_rth*p_nh%prog(nvar)%rho(jc,jk-1,jb)
-              z_theta_tavg_m1_v(jc) = wgt_nnow_rth*p_nh%prog(nnow)%theta_v(jc,jk-1,jb) + &
-                                wgt_nnew_rth*p_nh%prog(nvar)%theta_v(jc,jk-1,jb)
-              z_theta_v_pr_mc_m1_v(jc)  = z_theta_tavg_m1_v(jc) - p_nh%metrics%theta_ref_mc(jc,jk-1,jb)
-            ENDDO
-#endif
 
           !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
           !$ACC LOOP GANG VECTOR TILE(128, 1) &
@@ -716,15 +609,10 @@ MODULE mo_solve_nonhydro
 
               ! temporally averaged density and virtual potential temperature depending on rhotheta_offctr
               ! (see pre-computation above)
-#ifndef __SX__
               z_rho_tavg_m1 = wgt_nnow_rth*p_nh%prog(nnow)%rho(jc,jk-1,jb) + &
                               wgt_nnew_rth*p_nh%prog(nvar)%rho(jc,jk-1,jb)
               z_theta_tavg_m1 = wgt_nnow_rth*p_nh%prog(nnow)%theta_v(jc,jk-1,jb) + &
                                 wgt_nnew_rth*p_nh%prog(nvar)%theta_v(jc,jk-1,jb)
-#else
-              z_rho_tavg_m1   = z_rho_tavg_m1_v(jc)
-              z_theta_tavg_m1 = z_theta_tavg_m1_v(jc)
-#endif
 
               z_rho_tavg = wgt_nnow_rth*p_nh%prog(nnow)%rho(jc,jk,jb) + &
                            wgt_nnew_rth*p_nh%prog(nvar)%rho(jc,jk,jb)
@@ -737,11 +625,7 @@ MODULE mo_solve_nonhydro
                 z_w_backtraj*(z_rho_tavg_m1-z_rho_tavg)
 
               ! perturbation virtual potential temperature at main levels
-#ifndef __SX__
               z_theta_v_pr_mc_m1  = z_theta_tavg_m1 - p_nh%metrics%theta_ref_mc(jc,jk-1,jb)
-#else
-              z_theta_v_pr_mc_m1 = z_theta_v_pr_mc_m1_v(jc)
-#endif
               z_theta_v_pr_mc     = z_theta_tavg    - p_nh%metrics%theta_ref_mc(jc,jk,jb)
 
               ! perturbation virtual potential temperature at interface levels
@@ -760,12 +644,6 @@ MODULE mo_solve_nonhydro
                 p_nh%diag%exner_pr(jc,jk,jb)) / p_nh%metrics%ddqz_z_half(jc,jk,jb) +   &
                 z_theta_v_pr_ic(jc,jk)*p_nh%metrics%d_exner_dz_ref_ic(jc,jk,jb)
 
-#ifdef __SX__
-              ! save current values as previous values for next iteration
-              z_rho_tavg_m1_v(jc) = z_rho_tavg
-              z_theta_tavg_m1_v(jc) = z_theta_tavg
-              z_theta_v_pr_mc_m1_v(jc) = z_theta_v_pr_mc
-#endif
 
             ENDDO
           ENDDO
@@ -783,15 +661,9 @@ MODULE mo_solve_nonhydro
           DO jc = i_startidx, i_endidx
             z_theta_v_pr_ic(jc,1)      = 0._wp
             z_theta_v_pr_ic(jc,nlevp1) =                                   &
-#ifdef __SWAPDIM
-              p_nh%metrics%wgtfacq_c(jc,1,jb)*z_rth_pr(jc,nlev  ,jb,2) +     &
-              p_nh%metrics%wgtfacq_c(jc,2,jb)*z_rth_pr(jc,nlev-1,jb,2) +   &
-              p_nh%metrics%wgtfacq_c(jc,3,jb)*z_rth_pr(jc,nlev-2,jb,2)
-#else
               p_nh%metrics%wgtfacq_c(jc,1,jb)*z_rth_pr(2,jc,nlev  ,jb) +     &
               p_nh%metrics%wgtfacq_c(jc,2,jb)*z_rth_pr(2,jc,nlev-1,jb) +   &
               p_nh%metrics%wgtfacq_c(jc,3,jb)*z_rth_pr(2,jc,nlev-2,jb)
-#endif
             p_nh%diag%theta_v_ic(jc,nlevp1,jb) =                                  &
               p_nh%metrics%theta_ref_ic(jc,nlevp1,jb) + z_theta_v_pr_ic(jc,nlevp1)
           ENDDO
@@ -805,15 +677,9 @@ MODULE mo_solve_nonhydro
 !DIR$ IVDEP
               DO jc = i_startidx, i_endidx
                 ! Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
-#ifdef __SWAPDIM
-                z_dexner_dz_c(jc,jk,jb,2) = -0.5_vp *                              &
-                  ((z_theta_v_pr_ic(jc,jk) - z_theta_v_pr_ic(jc,jk+1)) *           &
-                  p_nh%metrics%d2dexdz2_fac1_mc(jc,jk,jb) + z_rth_pr(jc,jk,jb,2) * &
-#else
                 z_dexner_dz_c(2,jc,jk,jb) = -0.5_vp *                              &
                   ((z_theta_v_pr_ic(jc,jk) - z_theta_v_pr_ic(jc,jk+1)) *           &
                   p_nh%metrics%d2dexdz2_fac1_mc(jc,jk,jb) + z_rth_pr(2,jc,jk,jb) * &
-#endif
                   p_nh%metrics%d2dexdz2_fac2_mc(jc,jk,jb))
               ENDDO
             ENDDO
@@ -844,13 +710,8 @@ MODULE mo_solve_nonhydro
           DO jk = 1, nlev
 !DIR$ IVDEP
             DO jc = i_startidx, i_endidx
-#ifdef __SWAPDIM
-              z_rth_pr(jc,jk,jb,1) = p_nh%prog(nnow)%rho(jc,jk,jb)     - p_nh%metrics%rho_ref_mc(jc,jk,jb)
-              z_rth_pr(jc,jk,jb,2) = p_nh%prog(nnow)%theta_v(jc,jk,jb) - p_nh%metrics%theta_ref_mc(jc,jk,jb)
-#else
               z_rth_pr(1,jc,jk,jb) = p_nh%prog(nnow)%rho(jc,jk,jb)     - p_nh%metrics%rho_ref_mc(jc,jk,jb)
               z_rth_pr(2,jc,jk,jb) = p_nh%prog(nnow)%theta_v(jc,jk,jb) - p_nh%metrics%theta_ref_mc(jc,jk,jb)
-#endif
             ENDDO
           ENDDO
           !$ACC END PARALLEL
@@ -934,14 +795,8 @@ MODULE mo_solve_nonhydro
             ! Also the back-trajectory computation is inlined to improve efficiency
             !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4) &
             !$ACC   PRIVATE(lvn_pos, ilc0, ibc0, z_ntdistv_bary_1, z_ntdistv_bary_2, distv_bary_1, distv_bary_2)
-#ifdef __LOOP_EXCHANGE
-            DO je = i_startidx, i_endidx
-!DIR$ IVDEP, PREFERVECTOR
-              DO jk = 1, nlev
-#else
             DO jk = 1, nlev
               DO je = i_startidx, i_endidx
-#endif
                 lvn_pos = p_nh%prog(nnow)%vn(je,jk,jb) >= 0._wp
 
                 ! line and block indices of upwind neighbor cell
@@ -979,16 +834,6 @@ MODULE mo_solve_nonhydro
                 ! Calculate "edge values" of rho and theta_v
                 ! Note: z_rth_pr contains the perturbation values of rho and theta_v,
                 ! and the corresponding gradients are stored in z_grad_rth.
-#ifdef __SWAPDIM
-                z_rho_e(je,jk,jb) =                                                     &
-                  REAL(p_nh%metrics%rho_ref_me(je,jk,jb),wp) + z_rth_pr(ilc0,jk,ibc0,1) &
-                  + distv_bary_1 * z_grad_rth(ilc0,jk,ibc0,1) &
-                  + distv_bary_2 * z_grad_rth(ilc0,jk,ibc0,2)
-                z_theta_v_e(je,jk,jb) =                                                   &
-                  REAL(p_nh%metrics%theta_ref_me(je,jk,jb),wp) + z_rth_pr(ilc0,jk,ibc0,2) &
-                  + distv_bary_1 * z_grad_rth(ilc0,jk,ibc0,3)                             &
-                  + distv_bary_2 * z_grad_rth(ilc0,jk,ibc0,4)
-#else
                 z_rho_e(je,jk,jb) = REAL(p_nh%metrics%rho_ref_me(je,jk,jb),wp) &
                   +                      z_rth_pr(1,ilc0,jk,ibc0)              &
                   + distv_bary_1 * z_grad_rth(1,ilc0,jk,ibc0)                  &
@@ -998,7 +843,6 @@ MODULE mo_solve_nonhydro
                   +                          z_rth_pr(2,ilc0,jk,ibc0)                &
                   + distv_bary_1 * z_grad_rth(3,ilc0,jk,ibc0)                        &
                   + distv_bary_2 * z_grad_rth(4,ilc0,jk,ibc0)
-#endif
               ENDDO   ! loop over vertical levels
             ENDDO ! loop over edges
             !$ACC END PARALLEL
@@ -1007,14 +851,8 @@ MODULE mo_solve_nonhydro
 
             !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
             !$ACC LOOP GANG VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-            DO je = i_startidx, i_endidx
-!DIR$ IVDEP
-              DO jk = 1, nlev
-#else
             DO jk = 1, nlev
               DO je = i_startidx, i_endidx
-#endif
 
                 ! Compute upwind-biased values for rho and theta starting from centered differences
                 ! Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
@@ -1064,20 +902,11 @@ MODULE mo_solve_nonhydro
                              i_startidx, i_endidx, rl_start, rl_end)
           !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
           !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-          DO je = i_startidx, i_endidx
-!DIR$ IVDEP, PREFERVECTOR
-            DO jk = kstart_dd3d(jg), nlev
-              z_graddiv_vn(jk,je,jb) = z_graddiv_vn(jk,je,jb) +  p_nh%metrics%hmask_dd3d(je,jb)*            &
-                p_nh%metrics%scalfac_dd3d(jk) * p_patch%edges%inv_dual_edge_length(je,jb)*                  &
-                ( z_dwdz_dd(icidx(je,jb,2),jk,icblk(je,jb,2)) - z_dwdz_dd(icidx(je,jb,1),jk,icblk(je,jb,1)) )
-#else
           DO jk = kstart_dd3d(jg), nlev
             DO je = i_startidx, i_endidx
               z_graddiv_vn(je,jk,jb) = z_graddiv_vn(je,jk,jb) +  p_nh%metrics%hmask_dd3d(je,jb)*            &
                 p_nh%metrics%scalfac_dd3d(jk) * p_patch%edges%inv_dual_edge_length(je,jb)*                  &
                 ( z_dwdz_dd(icidx(je,jb,2),jk,icblk(je,jb,2)) - z_dwdz_dd(icidx(je,jb,1),jk,icblk(je,jb,1)) )
-#endif
             ENDDO
           ENDDO
           !$ACC END PARALLEL
@@ -1115,13 +944,8 @@ MODULE mo_solve_nonhydro
 
           !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
           !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-          DO je = i_startidx, i_endidx
-            DO jk = 1, nflatlev(jg)-1
-#else
           DO jk = 1, nflatlev(jg)-1
             DO je = i_startidx, i_endidx
-#endif
               ! horizontal gradient of Exner pressure where coordinate surfaces are flat
               z_gradh_exner(je,jk,jb) = p_patch%edges%inv_dual_edge_length(je,jb)* &
                p_nh%metrics%deepatmo_gradh_mc(jk)*                                 &
@@ -1135,58 +959,31 @@ MODULE mo_solve_nonhydro
 
             !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
             !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-            DO je = i_startidx, i_endidx
-!DIR$ IVDEP
-              DO jk = nflatlev(jg), nflat_gradp(jg)
-#else
 !$NEC outerloop_unroll(8)
             DO jk = nflatlev(jg), nflat_gradp(jg)
               DO je = i_startidx, i_endidx
-#endif
                 ! horizontal gradient of Exner pressure, including metric correction
                 z_gradh_exner(je,jk,jb) = p_patch%edges%inv_dual_edge_length(je,jb)*         &
                  p_nh%metrics%deepatmo_gradh_mc(jk)*                                         &
                  (z_exner_ex_pr(icidx(je,jb,2),jk,icblk(je,jb,2)) -                          &
                   z_exner_ex_pr(icidx(je,jb,1),jk,icblk(je,jb,1)) ) -                        &
                   p_nh%metrics%ddxn_z_full(je,jk,jb) *                                       &
-#ifdef __SWAPDIM
-                 (p_int%c_lin_e(je,1,jb)*z_dexner_dz_c(icidx(je,jb,1),jk,icblk(je,jb,1),1) + &
-                  p_int%c_lin_e(je,2,jb)*z_dexner_dz_c(icidx(je,jb,2),jk,icblk(je,jb,2),1))
-#else
                  (p_int%c_lin_e(je,1,jb)*z_dexner_dz_c(1,icidx(je,jb,1),jk,icblk(je,jb,1)) + &
                   p_int%c_lin_e(je,2,jb)*z_dexner_dz_c(1,icidx(je,jb,2),jk,icblk(je,jb,2)))
-#endif
               ENDDO
             ENDDO
             !$ACC END PARALLEL
 
             !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
             !$ACC LOOP GANG VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-            DO je = i_startidx, i_endidx
-!DIR$ IVDEP, PREFERVECTOR
-              DO jk = nflat_gradp(jg)+1, nlev
-#else
 !$NEC outerloop_unroll(8)
             DO jk = nflat_gradp(jg)+1, nlev
               DO je = i_startidx, i_endidx
-#endif
                 ! horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
                 z_gradh_exner(je,jk,jb) = p_patch%edges%inv_dual_edge_length(je,jb)*          &
                   p_nh%metrics%deepatmo_gradh_mc(jk)*                                         &
                   (z_exner_ex_pr(icidx(je,jb,2),ikidx(2,je,jk,jb),icblk(je,jb,2)) +           &
                    p_nh%metrics%zdiff_gradp(2,je,jk,jb)*                                      &
-#ifdef __SWAPDIM
-                  (z_dexner_dz_c(icidx(je,jb,2),ikidx(2,je,jk,jb),icblk(je,jb,2),1) +         &
-                   p_nh%metrics%zdiff_gradp(2,je,jk,jb)*                                      &
-                   z_dexner_dz_c(icidx(je,jb,2),ikidx(2,je,jk,jb),icblk(je,jb,2),2)) -        &
-                  (z_exner_ex_pr(icidx(je,jb,1),ikidx(1,je,jk,jb),icblk(je,jb,1)) +           &
-                   p_nh%metrics%zdiff_gradp(1,je,jk,jb)*                                      &
-                  (z_dexner_dz_c(icidx(je,jb,1),ikidx(1,je,jk,jb),icblk(je,jb,1),1) +         &
-                   p_nh%metrics%zdiff_gradp(1,je,jk,jb)* &
-                   z_dexner_dz_c(icidx(je,jb,1),ikidx(1,je,jk,jb),icblk(je,jb,1),2))))
-#else
                   (z_dexner_dz_c(1,icidx(je,jb,2),ikidx(2,je,jk,jb),icblk(je,jb,2)) +         &
                    p_nh%metrics%zdiff_gradp(2,je,jk,jb)*                                      &
                    z_dexner_dz_c(2,icidx(je,jb,2),ikidx(2,je,jk,jb),icblk(je,jb,2))) -        &
@@ -1195,7 +992,6 @@ MODULE mo_solve_nonhydro
                   (z_dexner_dz_c(1,icidx(je,jb,1),ikidx(1,je,jk,jb),icblk(je,jb,1)) +         &
                    p_nh%metrics%zdiff_gradp(1,je,jk,jb)*                                      &
                    z_dexner_dz_c(2,icidx(je,jb,1),ikidx(1,je,jk,jb),icblk(je,jb,1)))))
-#endif
               ENDDO
             ENDDO
             !$ACC END PARALLEL
@@ -1204,13 +1000,8 @@ MODULE mo_solve_nonhydro
 
             !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
             !$ACC LOOP GANG VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-            DO je = i_startidx, i_endidx
-              DO jk = nflatlev(jg), nlev
-#else
             DO jk = nflatlev(jg), nlev
               DO je = i_startidx, i_endidx
-#endif
                 ! horizontal gradient of Exner pressure, cubic/quadratic interpolation
                 z_gradh_exner(je,jk,jb) =  p_patch%edges%inv_dual_edge_length(je,jb)*   &
                   p_nh%metrics%deepatmo_gradh_mc(jk)*                                   &
@@ -1361,7 +1152,6 @@ MODULE mo_solve_nonhydro
               !
               p_nh%prog(nnew)%vn(je,jk,jb)      =  p_nh%prog(nnow)%vn(je,jk,jb)   + dtime       * z_ddt_vn_dyn
               !
-#ifdef __ENABLE_DDT_VN_XYZ__
               IF (p_nh%diag%ddt_vn_adv_is_associated .OR. p_nh%diag%ddt_vn_cor_is_associated) THEN
                 z_ddt_vn_cor                    =  p_nh%diag%ddt_vn_cor_pc(je,jk,jb,ntl1)*wgt_nnow_vel  &
                   &                               +p_nh%diag%ddt_vn_cor_pc(je,jk,jb,ntl2)*wgt_nnew_vel
@@ -1387,7 +1177,6 @@ MODULE mo_solve_nonhydro
               IF (p_nh%diag%ddt_vn_dyn_is_associated) THEN
                 p_nh%diag%ddt_vn_dyn(je,jk,jb)  =  p_nh%diag%ddt_vn_dyn(je,jk,jb) + r_nsubsteps * z_ddt_vn_dyn
               END IF
-#endif
               !
             ENDDO
           ENDDO
@@ -1414,16 +1203,6 @@ MODULE mo_solve_nonhydro
           IF (divdamp_order == 4 .OR. divdamp_order == 24) THEN ! fourth-order divergence damping
           ! Compute gradient of divergence of gradient of divergence for fourth-order divergence damping
             !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-            DO je = i_startidx, i_endidx
-!DIR$ IVDEP
-              DO jk = 1, nlev
-                z_graddiv2_vn(je,jk) = p_int%geofac_grdiv(je,1,jb)*z_graddiv_vn(jk,je,jb)      &
-                  + p_int%geofac_grdiv(je,2,jb)*z_graddiv_vn(jk,iqidx(je,jb,1),iqblk(je,jb,1)) &
-                  + p_int%geofac_grdiv(je,3,jb)*z_graddiv_vn(jk,iqidx(je,jb,2),iqblk(je,jb,2)) &
-                  + p_int%geofac_grdiv(je,4,jb)*z_graddiv_vn(jk,iqidx(je,jb,3),iqblk(je,jb,3)) &
-                  + p_int%geofac_grdiv(je,5,jb)*z_graddiv_vn(jk,iqidx(je,jb,4),iqblk(je,jb,4))
-#else
 !$NEC outerloop_unroll(6)
             DO jk = 1, nlev
               DO je = i_startidx, i_endidx
@@ -1432,7 +1211,6 @@ MODULE mo_solve_nonhydro
                   + p_int%geofac_grdiv(je,3,jb)*z_graddiv_vn(iqidx(je,jb,2),jk,iqblk(je,jb,2)) &
                   + p_int%geofac_grdiv(je,4,jb)*z_graddiv_vn(iqidx(je,jb,3),jk,iqblk(je,jb,3)) &
                   + p_int%geofac_grdiv(je,5,jb)*z_graddiv_vn(iqidx(je,jb,4),jk,iqblk(je,jb,4))
-#endif
 
               ENDDO
             ENDDO
@@ -1446,15 +1224,10 @@ MODULE mo_solve_nonhydro
 !DIR$ IVDEP
               DO je = i_startidx, i_endidx
                 !
-#ifdef __LOOP_EXCHANGE
-                z_d_vn_dmp = scal_divdamp_o2*z_graddiv_vn(jk,je,jb)
-#else
                 z_d_vn_dmp = scal_divdamp_o2*z_graddiv_vn(je,jk,jb)
-#endif
                 !
                 p_nh%prog(nnew)%vn(je,jk,jb)      =  p_nh%prog(nnew)%vn(je,jk,jb)   + z_d_vn_dmp
                 !
-#ifdef __ENABLE_DDT_VN_XYZ__
                 IF (p_nh%diag%ddt_vn_dmp_is_associated) THEN
                   p_nh%diag%ddt_vn_dmp(je,jk,jb)  =  p_nh%diag%ddt_vn_dmp(je,jk,jb) + z_d_vn_dmp * r_dtimensubsteps
                 END IF
@@ -1462,7 +1235,6 @@ MODULE mo_solve_nonhydro
                 IF (p_nh%diag%ddt_vn_dyn_is_associated) THEN
                   p_nh%diag%ddt_vn_dyn(je,jk,jb)  =  p_nh%diag%ddt_vn_dyn(je,jk,jb) + z_d_vn_dmp * r_dtimensubsteps
                 END IF
-#endif
                 !
               ENDDO
             ENDDO
@@ -1484,7 +1256,6 @@ MODULE mo_solve_nonhydro
                   !
                   p_nh%prog(nnew)%vn(je,jk,jb)      =  p_nh%prog(nnew)%vn(je,jk,jb)   + z_d_vn_dmp
                   !
-#ifdef __ENABLE_DDT_VN_XYZ__
                   IF (p_nh%diag%ddt_vn_dmp_is_associated) THEN
                     p_nh%diag%ddt_vn_dmp(je,jk,jb)  =  p_nh%diag%ddt_vn_dmp(je,jk,jb) + z_d_vn_dmp * r_dtimensubsteps
                   END IF
@@ -1492,7 +1263,6 @@ MODULE mo_solve_nonhydro
                   IF (p_nh%diag%ddt_vn_dyn_is_associated) THEN
                     p_nh%diag%ddt_vn_dyn(je,jk,jb)  =  p_nh%diag%ddt_vn_dyn(je,jk,jb) + z_d_vn_dmp * r_dtimensubsteps
                   END IF
-#endif
                   !
                 ENDDO
               ENDDO
@@ -1507,7 +1277,6 @@ MODULE mo_solve_nonhydro
                   !
                   p_nh%prog(nnew)%vn(je,jk,jb)      =  p_nh%prog(nnew)%vn(je,jk,jb)   + z_d_vn_dmp
                   !
-#ifdef __ENABLE_DDT_VN_XYZ__
                   IF (p_nh%diag%ddt_vn_dmp_is_associated) THEN
                     p_nh%diag%ddt_vn_dmp(je,jk,jb)  =  p_nh%diag%ddt_vn_dmp(je,jk,jb) + z_d_vn_dmp * r_dtimensubsteps
                   END IF
@@ -1515,7 +1284,6 @@ MODULE mo_solve_nonhydro
                   IF (p_nh%diag%ddt_vn_dyn_is_associated) THEN
                     p_nh%diag%ddt_vn_dyn(je,jk,jb)  =  p_nh%diag%ddt_vn_dyn(je,jk,jb) + z_d_vn_dmp * r_dtimensubsteps
                   END IF
-#endif
                   !
                 ENDDO
               ENDDO
@@ -1534,7 +1302,6 @@ MODULE mo_solve_nonhydro
               !
               p_nh%prog(nnew)%vn(je,jk,jb)        =  p_nh%prog(nnew)%vn(je,jk,jb)   + z_d_vn_iau
               !
-#ifdef __ENABLE_DDT_VN_XYZ__
               IF (istep == 2) THEN
                 IF (p_nh%diag%ddt_vn_iau_is_associated) THEN
                   p_nh%diag%ddt_vn_iau(je,jk,jb)  =  p_nh%diag%ddt_vn_iau(je,jk,jb) + z_d_vn_iau * r_dtimensubsteps
@@ -1544,7 +1311,6 @@ MODULE mo_solve_nonhydro
                   p_nh%diag%ddt_vn_dyn(je,jk,jb)  =  p_nh%diag%ddt_vn_dyn(je,jk,jb) + z_d_vn_iau * r_dtimensubsteps
                 END IF
               END IF
-#endif
               !
             ENDDO
           ENDDO
@@ -1565,7 +1331,6 @@ MODULE mo_solve_nonhydro
               !
               p_nh%prog(nnew)%vn(je,jk,jb)        =  p_nh%prog(nnew)%vn(je,jk,jb)   + z_ddt_vn_ray * dtime
               !
-#ifdef __ENABLE_DDT_VN_XYZ__
               IF (istep == 2) THEN
                 IF (p_nh%diag%ddt_vn_ray_is_associated) THEN
                   p_nh%diag%ddt_vn_ray(je,jk,jb)  =  p_nh%diag%ddt_vn_ray(je,jk,jb) + z_ddt_vn_ray * r_nsubsteps
@@ -1575,7 +1340,6 @@ MODULE mo_solve_nonhydro
                   p_nh%diag%ddt_vn_dyn(je,jk,jb)  =  p_nh%diag%ddt_vn_dyn(je,jk,jb) + z_ddt_vn_ray * r_nsubsteps
                 END IF
               END IF
-#endif
               !
             ENDDO
           ENDDO
@@ -1606,7 +1370,6 @@ MODULE mo_solve_nonhydro
               !
               p_nh%prog(nnew)%vn(je,jk,jb)      =  p_nh%prog(nnow)%vn(je,jk,jb)   + p_nh%diag%grf_tend_vn(je,jk,jb) * dtime
               !
-#ifdef __ENABLE_DDT_VN_XYZ__
               IF (p_nh%diag%ddt_vn_grf_is_associated) THEN
                 p_nh%diag%ddt_vn_grf(je,jk,jb)  =  p_nh%diag%ddt_vn_grf(je,jk,jb) + p_nh%diag%grf_tend_vn(je,jk,jb) * r_nsubsteps
               END IF
@@ -1614,7 +1377,6 @@ MODULE mo_solve_nonhydro
               IF (p_nh%diag%ddt_vn_dyn_is_associated) THEN
                 p_nh%diag%ddt_vn_dyn(je,jk,jb)  =  p_nh%diag%ddt_vn_dyn(je,jk,jb) + p_nh%diag%grf_tend_vn(je,jk,jb) * r_nsubsteps
               END IF
-#endif
               !
             ENDDO
           ENDDO
@@ -1688,16 +1450,10 @@ MODULE mo_solve_nonhydro
         IF (istep == 1) THEN
 
           !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-          DO je = i_startidx, i_endidx
-!DIR$ IVDEP
-            DO jk = 1, nlev
-#else
 !$NEC outerloop_unroll(8)
           DO jk = 1, nlev
 !$NEC vovertake
             DO je = i_startidx, i_endidx
-#endif
               ! Average normal wind components in order to get nearly second-order accurate divergence
               z_vn_avg(je,jk) = p_int%e_flx_avg(je,1,jb)*p_nh%prog(nnew)%vn(je,jk,jb)           &
                 + p_int%e_flx_avg(je,2,jb)*p_nh%prog(nnew)%vn(iqidx(je,jb,1),jk,iqblk(je,jb,1)) &
@@ -1706,11 +1462,7 @@ MODULE mo_solve_nonhydro
                 + p_int%e_flx_avg(je,5,jb)*p_nh%prog(nnew)%vn(iqidx(je,jb,4),jk,iqblk(je,jb,4))
 
               ! Compute gradient of divergence of vn for divergence damping
-#ifdef __LOOP_EXCHANGE
-              z_graddiv_vn(jk,je,jb) = p_int%geofac_grdiv(je,1,jb)*p_nh%prog(nnew)%vn(je,jk,jb)    &
-#else
               z_graddiv_vn(je,jk,jb) = p_int%geofac_grdiv(je,1,jb)*p_nh%prog(nnew)%vn(je,jk,jb)    &
-#endif
               + p_int%geofac_grdiv(je,2,jb)*p_nh%prog(nnew)%vn(iqidx(je,jb,1),jk,iqblk(je,jb,1)) &
                 + p_int%geofac_grdiv(je,3,jb)*p_nh%prog(nnew)%vn(iqidx(je,jb,2),jk,iqblk(je,jb,2)) &
                 + p_int%geofac_grdiv(je,4,jb)*p_nh%prog(nnew)%vn(iqidx(je,jb,3),jk,iqblk(je,jb,3)) &
@@ -1730,14 +1482,8 @@ MODULE mo_solve_nonhydro
 
         ELSE IF (itime_scheme >= 5) THEN
           !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-          DO je = i_startidx, i_endidx
-!DIR$ IVDEP
-            DO jk = 1, nlev
-#else
           DO jk = 1, nlev
             DO je = i_startidx, i_endidx
-#endif
               ! Average normal wind components in order to get nearly second-order accurate divergence
               z_vn_avg(je,jk) = p_int%e_flx_avg(je,1,jb)*p_nh%prog(nnew)%vn(je,jk,jb)           &
                 + p_int%e_flx_avg(je,2,jb)*p_nh%prog(nnew)%vn(iqidx(je,jb,1),jk,iqblk(je,jb,1)) &
@@ -1761,16 +1507,10 @@ MODULE mo_solve_nonhydro
         ELSE
 
           !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-          DO je = i_startidx, i_endidx
-!DIR$ IVDEP
-            DO jk = 1, nlev
-#else
 !$NEC outerloop_unroll(8)
           DO jk = 1, nlev
 !$NEC vovertake
             DO je = i_startidx, i_endidx
-#endif
               ! Average normal wind components in order to get nearly second-order accurate divergence
               z_vn_avg(je,jk) = p_int%e_flx_avg(je,1,jb)*p_nh%prog(nnew)%vn(je,jk,jb)           &
                 + p_int%e_flx_avg(je,2,jb)*p_nh%prog(nnew)%vn(iqidx(je,jb,1),jk,iqblk(je,jb,1)) &
@@ -1807,7 +1547,6 @@ MODULE mo_solve_nonhydro
         ENDIF
 
         IF (lsave_mflx .AND. istep == 2) THEN ! store mass flux for nest boundary interpolation
-#ifndef _OPENACC
           DO je = i_startidx, i_endidx
             IF (p_patch%edges%refin_ctrl(je,jb) <= -4 .AND. p_patch%edges%refin_ctrl(je,jb) >= -6) THEN
 !DIR$ IVDEP
@@ -1816,16 +1555,6 @@ MODULE mo_solve_nonhydro
               ENDDO
             ENDIF
           ENDDO
-#else
-            !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4)
-            DO jk=1,nlev
-              DO je = i_startidx, i_endidx
-                IF (p_patch%edges%refin_ctrl(je,jb) <= -4 .AND. p_patch%edges%refin_ctrl(je,jb) >= -6) THEN
-                  p_nh%diag%mass_fl_e_sv(je,jk,jb) = p_nh%diag%mass_fl_e(je,jk,jb)
-                ENDIF
-              ENDDO
-            ENDDO
-#endif
         ENDIF
 
         IF (lprep_adv .AND. istep == 2) THEN ! Preprations for tracer advection
@@ -1999,67 +1728,6 @@ MODULE mo_solve_nonhydro
         i_startblk = p_patch%cells%start_block(rl_start)
         i_endblk   = p_patch%cells%end_block(rl_end)
 
-#ifdef _OPENACC
-!
-! This is one of the very few code divergences for OPENACC (see comment below)
-!
-        DO jb = i_startblk, i_endblk
-
-          CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
-            i_startidx, i_endidx, rl_start, rl_end)
-
-          ! ... and to interface levels
-          !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
-          !$ACC LOOP GANG VECTOR TILE(32, 4) PRIVATE(z_w_concorr_mc_m1, z_w_concorr_mc_m0)
-          DO jk = nflatlev(jg)+1, nlev
-!DIR$ IVDEP
-            DO jc = i_startidx, i_endidx
-              ! COMMENT: this optimization yields drastically better performance in an OpenACC context
-              ! Interpolate contravariant correction to cell centers...
-              z_w_concorr_mc_m1 =  &
-                p_int%e_bln_c_s(jc,1,jb)*z_w_concorr_me(ieidx(jc,jb,1),jk-1,ieblk(jc,jb,1)) + &
-                p_int%e_bln_c_s(jc,2,jb)*z_w_concorr_me(ieidx(jc,jb,2),jk-1,ieblk(jc,jb,2)) + &
-                p_int%e_bln_c_s(jc,3,jb)*z_w_concorr_me(ieidx(jc,jb,3),jk-1,ieblk(jc,jb,3))
-              z_w_concorr_mc_m0 =  &
-                p_int%e_bln_c_s(jc,1,jb)*z_w_concorr_me(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) + &
-                p_int%e_bln_c_s(jc,2,jb)*z_w_concorr_me(ieidx(jc,jb,2),jk,ieblk(jc,jb,2)) + &
-                p_int%e_bln_c_s(jc,3,jb)*z_w_concorr_me(ieidx(jc,jb,3),jk,ieblk(jc,jb,3))
-              p_nh%diag%w_concorr_c(jc,jk,jb) =                                &
-                p_nh%metrics%wgtfac_c(jc,jk,jb)*z_w_concorr_mc_m0 +        &
-                (1._vp - p_nh%metrics%wgtfac_c(jc,jk,jb))*z_w_concorr_mc_m1
-            ENDDO
-          ENDDO
-          !$ACC END PARALLEL
-
-          !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
-          !$ACC LOOP GANG VECTOR PRIVATE(z_w_concorr_mc_m2, z_w_concorr_mc_m1, z_w_concorr_mc_m0)
-!DIR$ IVDEP
-          DO jc = i_startidx, i_endidx
-            ! Interpolate contravariant correction to cell centers...
-            z_w_concorr_mc_m2 =  &
-              p_int%e_bln_c_s(jc,1,jb)*z_w_concorr_me(ieidx(jc,jb,1),nlev-2,ieblk(jc,jb,1)) + &
-              p_int%e_bln_c_s(jc,2,jb)*z_w_concorr_me(ieidx(jc,jb,2),nlev-2,ieblk(jc,jb,2)) + &
-              p_int%e_bln_c_s(jc,3,jb)*z_w_concorr_me(ieidx(jc,jb,3),nlev-2,ieblk(jc,jb,3))
-
-            z_w_concorr_mc_m1 =  &
-              p_int%e_bln_c_s(jc,1,jb)*z_w_concorr_me(ieidx(jc,jb,1),nlev-1,ieblk(jc,jb,1)) + &
-              p_int%e_bln_c_s(jc,2,jb)*z_w_concorr_me(ieidx(jc,jb,2),nlev-1,ieblk(jc,jb,2)) + &
-              p_int%e_bln_c_s(jc,3,jb)*z_w_concorr_me(ieidx(jc,jb,3),nlev-1,ieblk(jc,jb,3))
-
-            z_w_concorr_mc_m0   =  &
-              p_int%e_bln_c_s(jc,1,jb)*z_w_concorr_me(ieidx(jc,jb,1),nlev,ieblk(jc,jb,1)) + &
-              p_int%e_bln_c_s(jc,2,jb)*z_w_concorr_me(ieidx(jc,jb,2),nlev,ieblk(jc,jb,2)) + &
-              p_int%e_bln_c_s(jc,3,jb)*z_w_concorr_me(ieidx(jc,jb,3),nlev,ieblk(jc,jb,3))
-
-            p_nh%diag%w_concorr_c(jc,nlevp1,jb) =                         &
-              p_nh%metrics%wgtfacq_c(jc,1,jb)*z_w_concorr_mc_m0 +         &
-              p_nh%metrics%wgtfacq_c(jc,2,jb)*z_w_concorr_mc_m1 +       &
-              p_nh%metrics%wgtfacq_c(jc,3,jb)*z_w_concorr_mc_m2
-          ENDDO
-          !$ACC END PARALLEL
-
-        ENDDO
-#else
 !
 ! OMP-only code
 !
@@ -2070,14 +1738,8 @@ MODULE mo_solve_nonhydro
                            i_startidx, i_endidx, rl_start, rl_end)
 
         ! Interpolate contravariant correction to cell centers...
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-            DO jk = nflatlev(jg), nlev
-#else
           DO jk = nflatlev(jg), nlev
             DO jc = i_startidx, i_endidx
-#endif
 
               z_w_concorr_mc(jc,jk) =  &
                 p_int%e_bln_c_s(jc,1,jb)*z_w_concorr_me(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) + &
@@ -2106,7 +1768,6 @@ MODULE mo_solve_nonhydro
 
         ENDDO
 !$OMP END DO
-#endif
       ENDIF
 !$OMP END PARALLEL
 
@@ -2141,15 +1802,9 @@ MODULE mo_solve_nonhydro
 
         !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-!DIR$ IVDEP, PREFERVECTOR
-          DO jk = 1, nlev
-#else
 !$NEC outerloop_unroll(8)
         DO jk = 1, nlev
           DO jc = i_startidx, i_endidx
-#endif
             z_flxdiv_mass(jc,jk) =  p_nh%metrics%deepatmo_divh_mc(jk) * (                         &
               p_nh%diag%mass_fl_e(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%geofac_div(jc,1,jb) + &
               p_nh%diag%mass_fl_e(ieidx(jc,jb,2),jk,ieblk(jc,jb,2)) * p_int%geofac_div(jc,2,jb) + &
@@ -2166,14 +1821,9 @@ MODULE mo_solve_nonhydro
         IF (lapply_moist_thdyn) THEN
           !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
           !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-            DO jk = 1, nlev
-#else
 !$NEC outerloop_unroll(8)
           DO jk = 1, nlev
             DO jc = i_startidx, i_endidx
-#endif
               z_flxdiv_vol(jc,jk) = p_nh%metrics%deepatmo_divh_mc(jk) * (                  &
                 z_vol_fl_e(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%geofac_div(jc,1,jb) + &
                 z_vol_fl_e(ieidx(jc,jb,2),jk,ieblk(jc,jb,2)) * p_int%geofac_div(jc,2,jb) + &
@@ -2737,9 +2387,7 @@ MODULE mo_solve_nonhydro
             !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
             !$ACC LOOP GANG VECTOR COLLAPSE(2)
             DO jk = 1, nlev
-#if __INTEL_COMPILER != 1400 || __INTEL_COMPILER_UPDATE != 3
 !DIR$ IVDEP
-#endif
               DO jc = i_startidx, i_endidx
 
                 p_nh%prog(nnew)%rho(jc,jk,jb) = p_nh%prog(nnow)%rho(jc,jk,jb) + &
@@ -2776,9 +2424,7 @@ MODULE mo_solve_nonhydro
             !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
             !$ACC LOOP GANG VECTOR COLLAPSE(2)
             DO jk = 1, nlev
-#if __INTEL_COMPILER != 1400 || __INTEL_COMPILER_UPDATE != 3
 !DIR$ IVDEP
-#endif
               DO jc = i_startidx, i_endidx
 
                 p_nh%prog(nnew)%rho(jc,jk,jb) = p_nh%prog(nnow)%rho(jc,jk,jb) + &
@@ -2874,13 +2520,8 @@ MODULE mo_solve_nonhydro
       IF (istep == 1) THEN
         IF (divdamp_type >= 3) THEN
           ! Synchronize w and vertical contribution to divergence damping
-#ifdef __MIXED_PRECISION
-          CALL sync_patch_array_mult_mp(SYNC_C,p_patch,1,1,p_nh%prog(nnew)%w,f3din1_sp=z_dwdz_dd, &
-               &                        opt_varname="w_nnew and z_dwdz_dd")
-#else
           CALL sync_patch_array_mult(SYNC_C,p_patch,2,p_nh%prog(nnew)%w,z_dwdz_dd, &
                &                     opt_varname="w_nnew and z_dwdz_dd")
-#endif
         ELSE
           ! Only w needs to be synchronized
           CALL sync_patch_array(SYNC_C,p_patch,p_nh%prog(nnew)%w,opt_varname="w_nnew")
@@ -2902,9 +2543,7 @@ MODULE mo_solve_nonhydro
     IF ( .NOT. my_process_is_mpi_all_seq() ) THEN
 
 ! OpenMP directives are commented for the NEC because the overhead is too large
-#if !defined( __SX__ ) 
 !$OMP PARALLEL PRIVATE(rl_start,rl_end,i_startblk,i_endblk)
-#endif
       IF (l_limited_area .OR. jg > 1) THEN
 
         ! Index list over halo points lying in the boundary interpolation zone
@@ -2912,9 +2551,7 @@ MODULE mo_solve_nonhydro
 
         !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG
-#ifndef __SX__
 !$OMP DO PRIVATE(jb,ic,jk,jc) ICON_OMP_DEFAULT_SCHEDULE
-#endif
         DO ic = 1, p_nh%metrics%bdy_halo_c_dim
 
           jb = p_nh%metrics%bdy_halo_c_blk(ic)
@@ -2931,9 +2568,7 @@ MODULE mo_solve_nonhydro
           ENDDO
         ENDDO
         !$ACC END PARALLEL
-#ifndef __SX__
 !$OMP END DO
-#endif
 
         rl_start = 1
         rl_end   = grf_bdywidth_c
@@ -2941,9 +2576,7 @@ MODULE mo_solve_nonhydro
         i_startblk = p_patch%cells%start_block(rl_start)
         i_endblk   = p_patch%cells%end_block(rl_end)
 
-#ifndef __SX__
 !$OMP DO PRIVATE(jb,i_startidx,i_endidx,jk,jc) ICON_OMP_DEFAULT_SCHEDULE
-#endif
         DO jb = i_startblk, i_endblk
 
           CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
@@ -2965,9 +2598,7 @@ MODULE mo_solve_nonhydro
           ENDDO
           !$ACC END PARALLEL
         ENDDO
-#ifndef __SX__
 !$OMP END DO
-#endif
       ENDIF
 
       rl_start = min_rlcell_int - 1
@@ -2976,9 +2607,7 @@ MODULE mo_solve_nonhydro
       i_startblk = p_patch%cells%start_block(rl_start)
       i_endblk   = p_patch%cells%end_block(rl_end)
 
-#ifndef __SX__
 !$OMP DO PRIVATE(jb,i_startidx,i_endidx,jk,jc) ICON_OMP_DEFAULT_SCHEDULE
-#endif
       DO jb = i_startblk, i_endblk
 
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
@@ -2986,38 +2615,22 @@ MODULE mo_solve_nonhydro
 
         !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(PRESENT) ASYNC(1)
 
-#ifdef __LOOP_EXCHANGE
-        !$ACC LOOP GANG
-        DO jc = i_startidx, i_endidx
-          IF (p_nh%metrics%mask_prog_halo_c(jc,jb)) THEN
-!DIR$ IVDEP
-            !$ACC LOOP VECTOR
-            DO jk = 1, nlev
-#else
         !$ACC LOOP GANG VECTOR TILE(32, 4)
         DO jk = 1, nlev
           DO jc = i_startidx, i_endidx
             IF (p_nh%metrics%mask_prog_halo_c(jc,jb)) THEN
-#endif
               p_nh%prog(nnew)%theta_v(jc,jk,jb) = p_nh%prog(nnow)%rho(jc,jk,jb)*p_nh%prog(nnow)%theta_v(jc,jk,jb) &
                 *( (p_nh%prog(nnew)%exner(jc,jk,jb)/p_nh%prog(nnow)%exner(jc,jk,jb)-1.0_wp) * cvd_o_rd+1.0_wp   ) &
                 / p_nh%prog(nnew)%rho(jc,jk,jb)
 
-#ifdef __LOOP_EXCHANGE
-            ENDDO
-          ENDIF
-#else
             ENDIF
           ENDDO
-#endif
         ENDDO
         !$ACC END PARALLEL
 
       ENDDO
-#ifndef __SX__
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
-#endif
 
     ENDIF  ! .NOT. my_process_is_mpi_all_seq()
 
@@ -3028,248 +2641,5 @@ MODULE mo_solve_nonhydro
 
   END SUBROUTINE solve_nh
 
-#ifdef _OPENACC
-
-     SUBROUTINE h2d_solve_nonhydro( nnow, jstep, jg, grf_intmethod_e, lprep_adv, l_vert_nested, is_iau_active, &
-                                    p_nh, prep_adv )
-
-       INTEGER, INTENT(IN)       :: nnow, jstep, jg, grf_intmethod_e
-       LOGICAL, INTENT(IN)       :: l_vert_nested, lprep_adv, is_iau_active
-
-       TYPE(t_nh_state),            INTENT(INOUT) :: p_nh
-       TYPE(t_prepare_adv), TARGET, INTENT(INOUT) :: prep_adv
-
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: exner_tmp, rho_tmp, theta_v_tmp, vn_tmp, w_tmp                 ! p_prog  WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: vn_ie_ubc_tmp                                                 ! p_diag  WP 2D
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: w_ubc_tmp, mflx_ic_ubc_tmp, theta_v_ic_ubc_tmp, rho_ic_ubc_tmp ! p_diag  WP
-
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: theta_v_ic_tmp, rho_ic_tmp                                     ! p_diag  WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: mass_fl_e_tmp, exner_pr_tmp                                    ! p_diag  WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: grf_bdy_mflx_tmp                                               ! p_diag  WP
-
-       REAL(vp), DIMENSION(:,:,:),   POINTER  :: vt_tmp, vn_ie_tmp, w_concorr_c_tmp, ddt_exner_phy_tmp          ! p_diag  VP
-       REAL(vp), DIMENSION(:,:,:),   POINTER  :: exner_dyn_incr_tmp                                             ! p_diag  VP 
-       REAL(vp), DIMENSION(:,:,:),   POINTER  :: ddt_vn_phy_tmp                                                 ! p_diag  VP
-
-       REAL(vp), DIMENSION(:,:,:),   POINTER  :: rho_incr_tmp, exner_incr_tmp                                   ! p_diag  VP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: vn_traj_tmp, mass_flx_me_tmp, mass_flx_ic_tmp                  ! prep_adv WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: vn_ref_tmp, w_ref_tmp                                          ! p_ref   WP
-
-       REAL(vp), DIMENSION(:,:,:,:), POINTER  :: ddt_vn_apc_pc_tmp
-       REAL(vp), DIMENSION(:,:,:,:), POINTER  :: ddt_vn_cor_pc_tmp
-       REAL(vp), DIMENSION(:,:,:,:), POINTER  :: ddt_w_adv_pc_tmp
-
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: ddt_vn_dyn_tmp, ddt_vn_dmp_tmp, ddt_vn_adv_tmp, ddt_vn_cor_tmp ! p_diag  WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: ddt_vn_pgr_tmp, ddt_vn_phd_tmp, ddt_vn_iau_tmp, ddt_vn_ray_tmp ! p_diag  WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: ddt_vn_grf_tmp                                                 ! p_diag  WP
-
-! p_patch:
-!            p_patch%cells:   edge_idx/blk
-!            p_patch%edges:   cell_idx/blk, vertex_idx/blk, quad_idx/blk, 
-!                             primal/dual_normal_cell, inv_primal/dual_edge_length, tangent_orientation, refin_ctrl 
-
-!
-! p_nh%metrics:  vertidx_gradp, pg_vertidx, pg_edgeidx, pg_edgeblk,
-!                bdy_halo_c_blk, bdy_halo_c_idx, bdy_mflx_e_blk, bdy_mflx_e_idx,
-!                coeff_gradp, d_exner_dz_ref_ic, d2dexdz2_fac1_mc, 
-!                ddqz_z_half, ddxn_z_full, ddxt_z_full, ddqz_z_full_e,
-!                exner_exfac, exner_ref_mc, hmask_dd3d, inv_ddqz_z_full,
-!                mask_prog_halo_c, nudge_e_blk, nudge_e_idx, pg_exdist,
-!                rayleigh_vn, rayleigh_w, rho_ref_mc, rho_ref_me,
-!                scalfac_dd3d, theta_ref_ic, theta_ref_mc, theta_ref_me,
-!                vwind_expl_wgt, vwind_impl_wgt, 
-!                wgtfac_c, wgtfac_e, wgtfacq_c, wgtfacq1_c, zdiff_gradp
-
-
-! p_nh%prog(nnow)          All present (above)
-
-       exner_tmp           => p_nh%prog(nnow)%exner 
-       rho_tmp             => p_nh%prog(nnow)%rho
-       theta_v_tmp         => p_nh%prog(nnow)%theta_v 
-       vn_tmp              => p_nh%prog(nnow)%vn
-       w_tmp               => p_nh%prog(nnow)%w
-       !$ACC UPDATE DEVICE(exner_tmp, rho_tmp, theta_v_tmp, vn_tmp, w_tmp) ASYNC(1)
-
-! p_nh%diag:
-
-       rho_ic_tmp          => p_nh%diag%rho_ic
-       theta_v_ic_tmp      => p_nh%diag%theta_v_ic
-       !$ACC UPDATE DEVICE(rho_ic_tmp, theta_v_ic_tmp) ASYNC(1)
-
-       vt_tmp              => p_nh%diag%vt
-       vn_ie_tmp           => p_nh%diag%vn_ie
-       w_concorr_c_tmp     => p_nh%diag%w_concorr_c
-       !$ACC UPDATE DEVICE(vt_tmp, vn_ie_tmp, w_concorr_c_tmp) ASYNC(1)
-
-       mass_fl_e_tmp       => p_nh%diag%mass_fl_e
-       exner_pr_tmp        => p_nh%diag%exner_pr
-       exner_dyn_incr_tmp  => p_nh%diag%exner_dyn_incr
-       !$ACC UPDATE DEVICE(mass_fl_e_tmp, exner_pr_tmp, exner_dyn_incr_tmp) ASYNC(1)
-
-! WS: I do not think these are necessary, but adding for completeness
-       ddt_vn_apc_pc_tmp   => p_nh%diag%ddt_vn_apc_pc
-       ddt_w_adv_pc_tmp    => p_nh%diag%ddt_w_adv_pc
-       !$ACC UPDATE DEVICE(ddt_vn_apc_pc_tmp, ddt_w_adv_pc_tmp) ASYNC(1)
-       IF (p_nh%diag%ddt_vn_adv_is_associated .OR. p_nh%diag%ddt_vn_cor_is_associated) THEN
-          ddt_vn_cor_pc_tmp   => p_nh%diag%ddt_vn_cor_pc
-          !$ACC UPDATE DEVICE(ddt_vn_cor_pc_tmp) ASYNC(1)
-       END IF
-
-! MAG: For completeness
-       ddt_vn_dyn_tmp      => p_nh%diag%ddt_vn_dyn
-       !$ACC UPDATE DEVICE(ddt_vn_dyn_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_dyn_is_associated)
-       ddt_vn_dmp_tmp      => p_nh%diag%ddt_vn_dmp
-       !$ACC UPDATE DEVICE(ddt_vn_dmp_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_dmp_is_associated)
-       ddt_vn_adv_tmp      => p_nh%diag%ddt_vn_adv
-       !$ACC UPDATE DEVICE(ddt_vn_adv_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_adv_is_associated)
-       ddt_vn_cor_tmp      => p_nh%diag%ddt_vn_cor
-       !$ACC UPDATE DEVICE(ddt_vn_cor_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_cor_is_associated)
-       ddt_vn_pgr_tmp      => p_nh%diag%ddt_vn_pgr
-       !$ACC UPDATE DEVICE(ddt_vn_pgr_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_pgr_is_associated)
-       ddt_vn_phd_tmp      => p_nh%diag%ddt_vn_phd
-       !$ACC UPDATE DEVICE(ddt_vn_phd_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_phd_is_associated)
-       ddt_vn_iau_tmp      => p_nh%diag%ddt_vn_iau
-       !$ACC UPDATE DEVICE(ddt_vn_iau_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_iau_is_associated)
-       ddt_vn_ray_tmp      => p_nh%diag%ddt_vn_ray
-       !$ACC UPDATE DEVICE(ddt_vn_ray_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_ray_is_associated)
-       ddt_vn_grf_tmp      => p_nh%diag%ddt_vn_grf
-       !$ACC UPDATE DEVICE(ddt_vn_grf_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_grf_is_associated)
-
-       mflx_ic_ubc_tmp     => p_nh%diag%mflx_ic_ubc
-       vn_ie_ubc_tmp       => p_nh%diag%vn_ie_ubc
-       theta_v_ic_ubc_tmp  => p_nh%diag%theta_v_ic_ubc
-       rho_ic_ubc_tmp      => p_nh%diag%rho_ic_ubc
-       w_ubc_tmp           => p_nh%diag%w_ubc
-       !$ACC UPDATE &
-       !$ACC   DEVICE(mflx_ic_ubc_tmp, vn_ie_ubc_tmp) &
-       !$ACC   DEVICE(theta_v_ic_ubc_tmp, rho_ic_ubc_tmp, w_ubc_tmp) &
-       !$ACC   ASYNC(1) IF(l_vert_nested)
-
-       ddt_exner_phy_tmp   => p_nh%diag%ddt_exner_phy
-       ddt_vn_phy_tmp      => p_nh%diag%ddt_vn_phy
-       !$ACC UPDATE DEVICE(ddt_exner_phy_tmp, ddt_vn_phy_tmp) ASYNC(1)
-
-       rho_incr_tmp        => p_nh%diag%rho_incr
-       exner_incr_tmp      => p_nh%diag%exner_incr
-       !$ACC UPDATE DEVICE(rho_incr_tmp, exner_incr_tmp) ASYNC(1)
-
-       grf_bdy_mflx_tmp   => p_nh%diag%grf_bdy_mflx
-       !$ACC UPDATE DEVICE(grf_bdy_mflx_tmp) ASYNC(1) IF((jg > 1) .AND. (grf_intmethod_e == 6) .AND. (jstep == 0))
-
-! prep_adv:
-
-       vn_traj_tmp       => prep_adv%vn_traj
-       mass_flx_me_tmp   => prep_adv%mass_flx_me
-       mass_flx_ic_tmp   => prep_adv%mass_flx_ic
-       !$ACC UPDATE DEVICE(vn_traj_tmp, mass_flx_me_tmp, mass_flx_ic_tmp) ASYNC(1) IF(lprep_adv)
-
-! p_nh%ref:
-
-       vn_ref_tmp          => p_nh%ref%vn_ref
-       w_ref_tmp           => p_nh%ref%w_ref
-       !$ACC UPDATE DEVICE(vn_ref_tmp, w_ref_tmp) ASYNC(1)
-
-     END SUBROUTINE h2d_solve_nonhydro
-
-     SUBROUTINE d2h_solve_nonhydro( nnew, jstep, jg, idyn_timestep, grf_intmethod_e, lsave_mflx, l_child_vertnest, &
-          &                         lprep_adv, p_nh, prep_adv )
-
-       INTEGER, INTENT(IN)       :: nnew, jstep, jg, idyn_timestep, grf_intmethod_e
-       LOGICAL, INTENT(IN)       :: lsave_mflx, l_child_vertnest, lprep_adv
-
-       TYPE(t_nh_state),            INTENT(INOUT) :: p_nh
-       TYPE(t_prepare_adv), TARGET, INTENT(INOUT) :: prep_adv
-
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: exner_tmp, rho_tmp, theta_v_tmp, vn_tmp, w_tmp                 ! p_prog  WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: vn_ie_int_tmp                                                  ! p_diag  WP 2D
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: theta_v_ic_tmp, rho_ic_tmp, rho_ic_int_tmp, w_int_tmp          ! p_diag  WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: theta_v_ic_int_tmp, grf_bdy_mflx_tmp                           ! p_diag  WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: mass_fl_e_tmp,  mflx_ic_int_tmp, exner_pr_tmp                  ! p_diag  WP
-
-       REAL(vp), DIMENSION(:,:,:),   POINTER  :: vt_tmp, vn_ie_tmp, w_concorr_c_tmp                             ! p_diag  VP
-       REAL(vp), DIMENSION(:,:,:),   POINTER  :: mass_fl_e_sv_tmp                                               ! p_diag  VP
-       REAL(vp), DIMENSION(:,:,:),   POINTER  :: exner_dyn_incr_tmp                                             ! p_diag  VP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: vn_traj_tmp, mass_flx_me_tmp, mass_flx_ic_tmp                  ! prep_adv WP
-       REAL(vp), DIMENSION(:,:,:,:), POINTER  :: ddt_vn_apc_pc_tmp, ddt_vn_cor_pc_tmp, ddt_w_adv_pc_tmp
-
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: ddt_vn_dyn_tmp, ddt_vn_dmp_tmp, ddt_vn_adv_tmp, ddt_vn_cor_tmp ! p_diag  WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: ddt_vn_pgr_tmp, ddt_vn_phd_tmp, ddt_vn_iau_tmp, ddt_vn_ray_tmp ! p_diag  WP
-       REAL(wp), DIMENSION(:,:,:),   POINTER  :: ddt_vn_grf_tmp                                                 ! p_diag  WP
-
-! The following code is necessary if the Dycore is to be run in isolation on the GPU
-! Update all device output on host: the prognostic variables have shifted from nnow to nnew; diagnostics pointers set above
-
-       exner_tmp           => p_nh%prog(nnew)%exner
-       rho_tmp             => p_nh%prog(nnew)%rho
-       theta_v_tmp         => p_nh%prog(nnew)%theta_v
-       vn_tmp              => p_nh%prog(nnew)%vn
-       w_tmp               => p_nh%prog(nnew)%w
-       !$ACC UPDATE HOST(exner_tmp, rho_tmp, theta_v_tmp, vn_tmp, w_tmp) ASYNC(1)
-
-       vt_tmp              => p_nh%diag%vt
-       vn_ie_tmp           => p_nh%diag%vn_ie
-       rho_ic_tmp          => p_nh%diag%rho_ic
-       theta_v_ic_tmp      => p_nh%diag%theta_v_ic
-       exner_pr_tmp        => p_nh%diag%exner_pr
-       !$ACC UPDATE HOST(vt_tmp, vn_ie_tmp, rho_ic_tmp, theta_v_ic_tmp, exner_pr_tmp) ASYNC(1)
-
-       w_concorr_c_tmp     => p_nh%diag%w_concorr_c
-       mass_fl_e_tmp       => p_nh%diag%mass_fl_e
-       exner_dyn_incr_tmp  => p_nh%diag%exner_dyn_incr
-       !$ACC UPDATE HOST(w_concorr_c_tmp, mass_fl_e_tmp, exner_dyn_incr_tmp) ASYNC(1)
-
-       ddt_vn_apc_pc_tmp   => p_nh%diag%ddt_vn_apc_pc
-       ddt_w_adv_pc_tmp    => p_nh%diag%ddt_w_adv_pc
-       !$ACC UPDATE HOST(ddt_vn_apc_pc_tmp, ddt_w_adv_pc_tmp) ASYNC(1)
-       IF (p_nh%diag%ddt_vn_adv_is_associated .OR. p_nh%diag%ddt_vn_cor_is_associated) THEN
-          ddt_vn_cor_pc_tmp   => p_nh%diag%ddt_vn_cor_pc
-          !$ACC UPDATE HOST(ddt_vn_cor_pc_tmp) ASYNC(1)
-       END IF
-
-! MAG: For completeness
-       ddt_vn_dyn_tmp      => p_nh%diag%ddt_vn_dyn
-       !$ACC UPDATE HOST(ddt_vn_dyn_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_dyn_is_associated)
-       ddt_vn_dmp_tmp      => p_nh%diag%ddt_vn_dmp
-       !$ACC UPDATE HOST(ddt_vn_dmp_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_dmp_is_associated)
-       ddt_vn_adv_tmp      => p_nh%diag%ddt_vn_adv
-       !$ACC UPDATE HOST(ddt_vn_adv_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_adv_is_associated)
-       ddt_vn_cor_tmp      => p_nh%diag%ddt_vn_cor
-       !$ACC UPDATE HOST(ddt_vn_cor_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_cor_is_associated)
-       ddt_vn_pgr_tmp      => p_nh%diag%ddt_vn_pgr
-       !$ACC UPDATE HOST(ddt_vn_pgr_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_pgr_is_associated)
-       ddt_vn_phd_tmp      => p_nh%diag%ddt_vn_phd
-       !$ACC UPDATE HOST(ddt_vn_phd_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_phd_is_associated)
-       ddt_vn_iau_tmp      => p_nh%diag%ddt_vn_iau
-       !$ACC UPDATE HOST(ddt_vn_iau_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_iau_is_associated)
-       ddt_vn_ray_tmp      => p_nh%diag%ddt_vn_ray
-       !$ACC UPDATE HOST(ddt_vn_ray_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_ray_is_associated)
-       ddt_vn_grf_tmp      => p_nh%diag%ddt_vn_grf
-       !$ACC UPDATE HOST(ddt_vn_grf_tmp) ASYNC(1) IF(p_nh%diag%ddt_vn_grf_is_associated)
-
-       mass_fl_e_sv_tmp    => p_nh%diag%mass_fl_e_sv
-       !$ACC UPDATE HOST(mass_fl_e_sv_tmp) ASYNC(1) IF(lsave_mflx)
-
-       w_int_tmp           => p_nh%diag%w_int
-       mflx_ic_int_tmp     => p_nh%diag%mflx_ic_int
-       theta_v_ic_int_tmp  => p_nh%diag%theta_v_ic_int
-       rho_ic_int_tmp      => p_nh%diag%rho_ic_int
-       !$ACC UPDATE HOST(w_int_tmp, mflx_ic_int_tmp, theta_v_ic_int_tmp, rho_ic_int_tmp) ASYNC(1) IF(l_child_vertnest)
-
-      vn_ie_int_tmp      => p_nh%diag%vn_ie_int
-      !$ACC UPDATE HOST(vn_ie_int_tmp) ASYNC(1) IF(idyn_timestep == 1 .AND. l_child_vertnest)
-
-      grf_bdy_mflx_tmp    => p_nh%diag%grf_bdy_mflx
-      !$ACC UPDATE HOST(grf_bdy_mflx_tmp) ASYNC(1) IF((jg > 1) .AND. (grf_intmethod_e == 6) .AND. (jstep == 0))
-
-      vn_traj_tmp         => prep_adv%vn_traj
-      mass_flx_me_tmp     => prep_adv%mass_flx_me
-      mass_flx_ic_tmp     => prep_adv%mass_flx_ic
-      !$ACC UPDATE HOST(vn_traj_tmp, mass_flx_me_tmp, mass_flx_ic_tmp) ASYNC(1) IF(lprep_adv)
-
-      !$ACC WAIT(1)
-
-     END SUBROUTINE d2h_solve_nonhydro
-
-#endif
 
 END MODULE mo_solve_nonhydro

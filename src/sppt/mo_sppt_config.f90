@@ -29,9 +29,9 @@ MODULE mo_sppt_config
   USE mo_loopindices,             ONLY: get_indices_c
   USE mo_sync,                    ONLY: global_max, global_min
   USE mo_grid_config,             ONLY: n_dom, l_limited_area
-#ifndef __NO_ICON_LES__
+
   USE mo_ls_forcing_nml,          ONLY: is_ls_forcing
-#endif
+
 
   IMPLICIT NONE
 
@@ -337,12 +337,12 @@ MODULE mo_sppt_config
       CALL finish(routine, "Global SPPT runs are currently not supported.")
     ENDIF
 
-#ifndef __NO_ICON_LES__
+
     ! ... large scale forcing is switched on
     IF(is_ls_forcing) THEN
         CALL finish(routine, "SPPT and large scale forcing not supported.")
       ENDIF
-#endif
+
 
     !------------------------------
     ! Cross checks for all domains - exit if ...
@@ -362,9 +362,9 @@ MODULE mo_sppt_config
     ! Cross check for commercial license - if not exit
     !------------------------------
 
-#ifndef HAVE_ACM_LICENSE
+
      CALL finish(routine, "SPPT requires the ACM Software License Agreement when configuring ICON")
-#endif
+
 
 
 

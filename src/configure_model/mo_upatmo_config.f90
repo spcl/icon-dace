@@ -630,16 +630,16 @@ CONTAINS !......................................................................
 
           ! Upper-atmosphere extrapolation:
           IF (upatmo_config%exp%l_status(iUpatmoStat%required) .AND. PRESENT(vct_a)) THEN
-#define msg_prefix 'upatmo-expol(', jg, '): '
+
             WRITE (message_text, '(a,i0,2a,i0)') &
-              msg_prefix, 'nexpollev: ', upatmo_config%exp%nexpollev
+              'upatmo-expol(', jg, '): ', 'nexpollev: ', upatmo_config%exp%nexpollev
             CALL message(routine, message_text)
             WRITE (message_text, '(a,i0,2a,g32.5)') &
-              msg_prefix, 'interface height above which extrapolation &
+              'upatmo-expol(', jg, '): ', 'interface height above which extrapolation &
               &potentially takes place: ', &
               vct_a(upatmo_config%exp%nexpollev + nshift_total)
             CALL message(routine, message_text)
-#undef msg_prefix
+
           ENDIF
 
         ENDIF  !imsg_thr%high
@@ -792,9 +792,9 @@ CONTAINS !......................................................................
       ENDDO  !jg
 
       ! ... OpenACC-parallelization is not available in combination with upper-atmosphere physics in NWP mode
-#ifdef _OPENACC
-      CALL finish(routine, "Upper-atmosphere physics (NWP) are not available in combination with Open-ACC.")
-#endif
+
+
+
 
     ELSEIF (ANY(lupatmo_phy(2:max_dom))) THEN
 

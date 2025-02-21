@@ -14,8 +14,32 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
-#include "consistent_fma.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! For runs that check result consistency we fix the different
+! contractions that the Intel compiler performs on some loops (at
+! least in version 16.0) for the vectorized part and the
+! non-vectorized parts
 !----------------------------
 
 MODULE mo_nwp_diagnosis
@@ -173,7 +197,6 @@ CONTAINS
     ! Calculate vertical integrals of moisture quantities and cloud cover
     ! Anurag Dipankar, MPIM (2015-08-01): always call this routine
     ! for LES simulation
-#ifndef __NO_ICON_LES__
     IF (atm_phy_nwp_config(jg)%is_les_phy) THEN
       ! This call is required in LES to have prm_diag%clct up-to-date in
       ! calculate_turbulent_diagnostics.
@@ -184,7 +207,6 @@ CONTAINS
                               & pt_diag, prm_diag,          & !inout
                               & lzacc                        ) !in
     ENDIF
-#endif
 
     ! Calculation of average/accumulated values since model start
     !
@@ -925,7 +947,7 @@ CONTAINS
             prm_diag%clcl(jc,jb) = 0.0_wp 
          ENDDO
 
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
           !$ACC LOOP SEQ
           DO jk = kstart_moist+1, nlev
 !DIR$ IVDEP
@@ -1411,9 +1433,6 @@ CONTAINS
 
        IF (var_in_output(jg)%hpbl) THEN
 
-#ifdef _OPENACC
-         CALL finish(routine, 'PBL diagnosis not ported to GPU.')
-#endif
 
         DO jc = i_startidx, i_endidx
          ri_no(jc,nlev) = missing_value_hpbl
@@ -1887,9 +1906,6 @@ CONTAINS
       ! otherwise, diag%vor is only diagnosed every output time step
       IF ( (ANY(luh_max_out(jg,:)) .OR. var_in_output(jg)%vorw_ctmax) .AND. &
             l_celltracks_event_active .AND. .NOT. l_output(jg) ) THEN
-#ifdef _OPENACC
-        CALL warning('mo_nwp_diagnosis', 'Untested output on GPU: update vorticity for uh_max or vorw_ctmax ')
-#endif
         CALL rot_vertex (p_nh(jg)%prog(nnow(jg))%vn, p_patch(jg), p_int(jg), p_nh(jg)%diag%omega_z)
         ! Diagnose relative vorticity on cells
         CALL verts2cells_scalar(p_nh(jg)%diag%omega_z, p_patch(jg), &

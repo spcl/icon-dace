@@ -377,9 +377,9 @@ DO jl=kidia,kfdia
   kctop        (jl) = 0
 ENDDO
 
-#ifndef _OPENACC
+
 llo3=.FALSE.
-#endif
+
 
 !$ACC LOOP GANG(STATIC: 1) VECTOR
 DO jl=kidia,kfdia
@@ -578,17 +578,17 @@ DO jk=klev-1,ktdia+2,-1
   ENDDO
 ! End of code inlined from cubasmcn
 
-#ifndef _OPENACC
+
   is=0
-#endif
+
   !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zmfmax, zfac)
   DO jl=kidia,kfdia
     llflag(jl)=.FALSE.
     zprecip(jl)=0.0_JPRB
     llo1(jl)=.FALSE.
-#ifndef _OPENACC
+
     is=is+klab(jl,jk+1)
-#endif
+
     IF(klab(jl,jk+1) == 0) klab(jl,jk)=0
     IF((ldcum(jl).AND.klab(jl,jk+1) == 2).OR.&
        & (ktype(jl) == 3 .AND. klab(jl,jk+1) == 1)) THEN  
@@ -612,9 +612,9 @@ DO jk=klev-1,ktdia+2,-1
     ENDIF
   ENDDO
 
-#ifndef _OPENACC
+
   IF(is > 0) llo3=.TRUE.
-#endif
+
 
 ! To avoid the reduction of is on GPUs, the variable llo3 is not set on GPUs and the
 ! following computations are performed on GPUs. But most of these computations are 
@@ -638,9 +638,9 @@ DO jk=klev-1,ktdia+2,-1
   kk=jk
 
 ! Code inlined from cuentr for better efficiency
-#ifndef _OPENACC
+
   IF(llo3) THEN
-#endif
+
     !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(ik)
     DO jl=kidia,kfdia
       zdmfen(jl)=0.0_JPRB
@@ -668,17 +668,17 @@ DO jk=klev-1,ktdia+2,-1
       ENDIF
     ENDDO
 
-#ifndef _OPENACC
+
   ENDIF
-#endif
+
 ! End of code inlined from cuentr
 
 !                  DO ADIABATIC ASCENT FOR ENTRAINING/DETRAINING PLUME
 !                  ---------------------------------------------------
 
-#ifndef _OPENACC
+
   IF(llo3) THEN
-#endif
+
 
     !$ACC LOOP GANG(STATIC: 1) VECTOR
     DO jl=kidia,kfdia
@@ -1056,9 +1056,9 @@ DO jk=klev-1,ktdia+2,-1
       ENDIF
     ENDDO
 
-#ifndef _OPENACC
+
   ENDIF  ! llo3
-#endif
+
 ENDDO    ! jk=klev-1,ktdia+2,-1
 
 !----------------------------------------------------------------------

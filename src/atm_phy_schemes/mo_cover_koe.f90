@@ -20,7 +20,21 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "consistent_fma.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! For runs that check result consistency we fix the different
+! contractions that the Intel compiler performs on some loops (at
+! least in version 16.0) for the vectorized part and the
+! non-vectorized parts
 !----------------------------
 
 MODULE mo_cover_koe
@@ -624,7 +638,7 @@ END SELECT
 
 ! total water vapor by conservation of grid-scale total water
 
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
 !$ACC PARALLEL IF(lzacc) DEFAULT(PRESENT) ASYNC(1)
 !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(zf_ice)
 DO jk = kstart,klev

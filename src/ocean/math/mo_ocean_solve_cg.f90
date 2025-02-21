@@ -10,9 +10,9 @@
 ! ---------------------------------------------------------------
 
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#endif
+
+
+
 ! contains extension to solver backend type: CG
 
 MODULE mo_ocean_solve_cg
@@ -33,10 +33,10 @@ MODULE mo_ocean_solve_cg
 ! arrays only used by CG
     REAL(KIND=wp), ALLOCATABLE, DIMENSION(:,:) :: z_wp, d_wp, r_wp, rsq_wp
     REAL(KIND=sp), ALLOCATABLE, DIMENSION(:,:) :: z_sp, d_sp, r_sp, rsq_sp
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_wp, d_wp, r_wp, rsq_wp
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_sp, d_sp, r_sp, rsq_sp
-#endif
+
+
+
+
 ! interfaces
   CONTAINS
     PROCEDURE :: doit_wp => ocean_solve_cg_cal_wp ! override deferred

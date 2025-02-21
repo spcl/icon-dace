@@ -11,7 +11,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_ocean_boundcond
   !-------------------------------------------------------------------------
@@ -74,9 +84,6 @@ CONTAINS
     CALL set_acc_host_or_device(lzacc, lacc)
 
     IF (forcing_windstress_u_type > 100 .OR. forcing_windstress_u_type == 0) THEN
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(routine, 'OpenACC version not implemented')
-#endif
 
       ! analytic wind
       CALL top_bound_cond_horz_veloc_onEdges( patch_3D, ocean_state, p_op_coeff)

@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_icon_interpolation_scalar
@@ -31,9 +41,6 @@ MODULE mo_icon_interpolation_scalar
   USE mo_loopindices,         ONLY: get_indices_c, get_indices_e, get_indices_v
   USE mo_timer,               ONLY: timer_start, timer_stop, timer_intp
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device, assert_lacc_equals_i_am_accel_node
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
   IMPLICIT NONE
 
@@ -149,13 +156,8 @@ DO jb = i_startblk, i_endblk
 
   !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
   !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-  DO je = i_startidx, i_endidx
-    DO jk = slev, elev
-#else
   DO jk = slev, elev
     DO je = i_startidx, i_endidx
-#endif
 
       p_edge_out(je,jk,jb) =  &
         &   c_int(je,1,jb)*p_vertex_in(iidx(je,jb,1),jk,iblk(je,jb,1))  &
@@ -278,7 +280,6 @@ IF ( (l_limited_area .OR. ptr_patch%id > 1) .AND. lfill_latbc) THEN ! Fill outer
   i_endblk   = ptr_patch%edges%end_blk(1,1)
 
 ! DA: OpenACC needs to collapse loops
-#ifndef _OPENACC
 !$OMP DO PRIVATE(jb,i_startidx,i_endidx,je,jk) ICON_OMP_DEFAULT_SCHEDULE
   DO jb = i_startblk, i_endblk
     CALL get_indices_e(ptr_patch, jb, i_startblk, i_endblk, &
@@ -301,27 +302,6 @@ IF ( (l_limited_area .OR. ptr_patch%id > 1) .AND. lfill_latbc) THEN ! Fill outer
   END DO
 !$OMP END DO
 
-#else
-
-  DO jb = i_startblk, i_endblk
-    CALL get_indices_e(ptr_patch, jb, i_startblk, i_endblk, &
-                       i_startidx, i_endidx, 1, 1)
-
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    !$ACC LOOP GANG VECTOR TILE(32, 4)
-    DO jk = slev, elev
-      DO je = i_startidx, i_endidx
-        IF      (iidx(je,jb,1) >= 1 .AND. iblk(je,jb,1) >= 1) THEN
-          p_edge_out(je,jk,jb) =  p_cell_in(iidx(je,jb,1),jk,iblk(je,jb,1))
-        ELSE IF (iidx(je,jb,2) >= 1 .AND. iblk(je,jb,2) >= 1) THEN
-          p_edge_out(je,jk,jb) =  p_cell_in(iidx(je,jb,2),jk,iblk(je,jb,2))
-        END IF
-      END DO
-    END DO
-    !$ACC END PARALLEL
-  END DO
-
-#endif
 
 ENDIF
 
@@ -338,13 +318,8 @@ i_endblk   = ptr_patch%edges%end_blk(rl_end,i_nchdom)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO je = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
     DO jk = slev, elev
       DO je = i_startidx, i_endidx
-#endif
 
         p_edge_out(je,jk,jb) =  &
           &    c_int(je,1,jb) * p_cell_in(iidx(je,jb,1),jk,iblk(je,jb,1))  &
@@ -453,13 +428,8 @@ IF (timers_level > 10) CALL timer_start(timer_intp)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO jv = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
     DO jk = slev, elev
       DO jv = i_startidx, i_endidx
-#endif
 
         p_vert_out(jv,jk,jb) =  &
           v_int(jv,1,jb) * p_edge_in(iidx(jv,jb,1),jk,iblk(jv,jb,1)) + &
@@ -568,13 +538,8 @@ IF (timers_level > 10) CALL timer_start(timer_intp)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
-#endif
 
         p_cell_out(jc,jk,jb) =  &
           c_int(jc,1,jb) * p_edge_in(iidx(jc,jb,1),jk,iblk(jc,jb,1)) + &
@@ -681,13 +646,8 @@ IF (timers_level > 10) CALL timer_start(timer_intp)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
-#endif
 
         p_cell_out(jc,jk,jb) = REAL( &
           c_int(jc,1,jb) * REAL(p_edge_in(iidx(jc,jb,1),jk,iblk(jc,jb,1)), wp)+&
@@ -791,14 +751,9 @@ IF (timers_level > 10) CALL timer_start(timer_intp)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO jv = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
 !$NEC outerloop_unroll(4)
     DO jk = slev, elev
       DO jv = i_startidx, i_endidx
-#endif
 
          p_vert_out(jv,jk,jb) =                       &
            c_int(jv,1,jb) * p_cell_in(iidx(jv,jb,1),jk,iblk(jv,jb,1)) + &
@@ -915,14 +870,9 @@ IF (timers_level > 10) CALL timer_start(timer_intp)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO jv = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
 !CDIR UNROLL=6
     DO jk = slev, elev
       DO jv = i_startidx, i_endidx
-#endif
 
          p_vert_out(jv,jk,jb) =                       &
            c_int(jv,1,jb) * p_cell_in(iidx(jv,jb,1),jk,iblk(jv,jb,1)) + &
@@ -1037,14 +987,9 @@ END SUBROUTINE cells2verts_scalar_sp
 
       !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jv = i_startidx, i_endidx
-        DO jk = slev, elev
-#else
 !CDIR UNROLL=6
       DO jk = slev, elev
         DO jv = i_startidx, i_endidx
-#endif
 
           p_vert_out(jv,jk,jb) =                                                    &
             c_int(jv,1,jb) * REAL(p_cell_in(iidx(jv,jb,1),jk,iblk(jv,jb,1)), dp) + &
@@ -1159,16 +1104,10 @@ IF (timers_level > 10) CALL timer_start(timer_intp)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO jv = i_startidx, i_endidx
-      DO jk = slev, elev
-         p_vert_out(jk,jv,jb) =                                         &
-#else
 !$NEC outerloop_unroll(4)
     DO jk = slev, elev
       DO jv = i_startidx, i_endidx
          p_vert_out(jv,jk,jb) =                                         &
-#endif
            c_int(jv,1,jb) * p_cell_in(iidx(jv,jb,1),jk,iblk(jv,jb,1)) + &
            c_int(jv,2,jb) * p_cell_in(iidx(jv,jb,2),jk,iblk(jv,jb,2)) + &
            c_int(jv,3,jb) * p_cell_in(iidx(jv,jb,3),jk,iblk(jv,jb,3)) + &
@@ -1263,14 +1202,9 @@ IF (timers_level > 10) CALL timer_start(timer_intp)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO jc = 1, nlen
-      DO jk = slev, elev
-#else
 !$NEC outerloop_unroll(4)
     DO jk = slev, elev
       DO jc = 1, nlen
-#endif
 
         p_cell_out(jc,jk,jb) =                                        &
           c_int(jc,1,jb)* p_vert_in(iidx(jc,jb,1),jk,iblk(jc,jb,1)) + &
@@ -1403,13 +1337,8 @@ IF (timers_level > 10) CALL timer_start(timer_intp)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
-#endif
 
         !  calculate the weighted average
         !

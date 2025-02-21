@@ -38,7 +38,7 @@ MODULE comin_descrdata
   PUBLIC :: comin_current_set_datetime
   PUBLIC :: comin_descrdata_set_timesteplength, comin_descrdata_get_timesteplength
 
-#include "comin_global.inc"
+
 
 
 CONTAINS

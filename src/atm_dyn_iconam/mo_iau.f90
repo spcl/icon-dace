@@ -87,9 +87,9 @@ MODULE mo_iau
   USE mo_nh_diagnose_pres_temp,   ONLY: diag_pres, diag_temp
   USE mo_timer,                   ONLY: ltimer, timer_iau_save_restore, timer_start, timer_stop
 
-#ifdef _OPENACC
-  USE mo_mpi,                     ONLY: i_am_accel_node
-#endif
+
+
+
 
   IMPLICIT NONE
 
@@ -189,9 +189,9 @@ CONTAINS
     CHARACTER(len=*), PARAMETER ::  &
       &  routine = modname//':save_initial_state'
 
-#ifdef _OPENACC
-    if (i_am_accel_node) CALL finish(routine, 'This should be called in CPU mode only.')
-#endif
+
+
+
 
     IF (ltimer) CALL timer_start(timer_iau_save_restore)
 
@@ -235,10 +235,10 @@ CONTAINS
     CHARACTER(len=*), PARAMETER ::  &
       &  routine = modname//':restore_initial_state'
 
-#ifdef _OPENACC
-    ! make sure that accelerator is not used (this check is necessary as long as copy/init use i_am_accel_node)
-    CALL assert_acc_host_only(routine, i_am_accel_node)
-#endif
+
+
+
+
 
     IF (ltimer) CALL timer_start(timer_iau_save_restore)
 

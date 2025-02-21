@@ -30,9 +30,9 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! Code has been modified for the use in ICON (and formerly in ECHAM)
 
-#if defined __xlC__ && !defined NOXLFPROCESS
-@PROCESS HOT
-#endif
+
+
+
   MODULE mo_srtm_config
 
     USE mo_kind,         ONLY: wp

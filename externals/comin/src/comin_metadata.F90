@@ -34,7 +34,7 @@ MODULE comin_metadata
   PUBLIC
 
 
-#include "comin_global.inc"
+
 
   !> Sets metadata for a requested ComIn variable.
   !> **Note:Plugins use the alias `comin_metadata_set`.**
@@ -76,7 +76,7 @@ CONTAINS
     INTEGER,                      INTENT(OUT) :: ierr !< error code
     !
     TYPE(t_comin_var_item), POINTER :: var_item
-    CHARACTER(LEN=MAX_LEN_MESSAGE)  :: warning_message
+    CHARACTER(LEN=512)  :: warning_message
 
     ierr = COMIN_SUCCESS
     var_item => comin_var_get_from_exposed(descriptor)
@@ -101,7 +101,7 @@ CONTAINS
     INTEGER,                      INTENT(OUT) :: ierr !< error code
     !
     TYPE(t_comin_var_item), POINTER :: var_item
-    CHARACTER(LEN=MAX_LEN_MESSAGE)  :: warning_message
+    CHARACTER(LEN=512)  :: warning_message
 
     ierr = COMIN_SUCCESS
     var_item => comin_var_get_from_exposed(descriptor)
@@ -126,7 +126,7 @@ CONTAINS
     INTEGER,                      INTENT(OUT) :: ierr !< error code
     !
     TYPE(t_comin_var_item), POINTER :: var_item
-    CHARACTER(LEN=MAX_LEN_MESSAGE)  :: warning_message
+    CHARACTER(LEN=512)  :: warning_message
 
     ierr = COMIN_SUCCESS
     var_item => comin_var_get_from_exposed(descriptor)
@@ -151,7 +151,7 @@ CONTAINS
     INTEGER,                      INTENT(OUT) :: ierr !< error code
     !
     TYPE(t_comin_var_item), POINTER :: var_item
-    CHARACTER(LEN=MAX_LEN_MESSAGE)  :: warning_message
+    CHARACTER(LEN=512)  :: warning_message
 
     ierr = COMIN_SUCCESS
     var_item => comin_var_get_from_exposed(descriptor)
@@ -431,7 +431,7 @@ CONTAINS
     TYPE (t_comin_var_descriptor)            :: var_descriptor_domain
     TYPE(t_var_request_list_item),   POINTER :: p
     TYPE(t_comin_descrdata_global),  POINTER :: comin_global
-    CHARACTER(LEN=MAX_LEN_MESSAGE)           :: warning_message
+    CHARACTER(LEN=512)           :: warning_message
 
     ierr = COMIN_SUCCESS
     ! check if called in primary constructor
@@ -496,7 +496,7 @@ CONTAINS
     TYPE (t_comin_var_descriptor)            :: var_descriptor_domain
     TYPE(t_var_request_list_item),   POINTER :: p
     TYPE(t_comin_descrdata_global),  POINTER :: comin_global
-    CHARACTER(LEN=MAX_LEN_MESSAGE)           :: warning_message
+    CHARACTER(LEN=512)           :: warning_message
 
     ierr = COMIN_SUCCESS
     ! check if called in primary constructor
@@ -566,7 +566,7 @@ CONTAINS
     TYPE (t_comin_var_descriptor)            :: var_descriptor_domain
     TYPE(t_var_request_list_item),   POINTER :: p
     TYPE(t_comin_descrdata_global),  POINTER :: comin_global
-    CHARACTER(LEN=MAX_LEN_MESSAGE)           :: warning_message
+    CHARACTER(LEN=512)           :: warning_message
 
     ierr = COMIN_SUCCESS
     ! check if called in primary constructor
@@ -636,7 +636,7 @@ CONTAINS
     TYPE (t_comin_var_descriptor)            :: var_descriptor_domain
     TYPE(t_var_request_list_item),   POINTER :: p
     TYPE(t_comin_descrdata_global),  POINTER :: comin_global
-    CHARACTER(LEN=MAX_LEN_MESSAGE)           :: warning_message
+    CHARACTER(LEN=512)           :: warning_message
 
     ierr = COMIN_SUCCESS
     ! check if called in primary constructor
@@ -695,33 +695,33 @@ CONTAINS
   INTEGER FUNCTION comin_metadata_get_typeid(key)  RESULT(typeid)
     CHARACTER(LEN=*), INTENT(IN) :: key !< metadata key (name)
 
-    typeid = COMIN_TYPEID_UNDEFINED
+    typeid = -1
     IF (key == "restart") THEN
-      typeid = COMIN_TYPEID_LOGICAL
+      typeid = 2
     ELSE IF (key == "tracer") THEN
-      typeid = COMIN_TYPEID_LOGICAL
+      typeid = 2
     ELSE IF (key == "tracer_turb") THEN
-      typeid = COMIN_TYPEID_LOGICAL
+      typeid = 2
     ELSE IF (key == "tracer_conv") THEN
-      typeid = COMIN_TYPEID_LOGICAL
+      typeid = 2
     ELSE IF (key == "zaxis_id") THEN
-      typeid = COMIN_TYPEID_INTEGER
+      typeid = 1
     ELSE IF (key == "tracer_vlimit") THEN
-      typeid = COMIN_TYPEID_INTEGER
+      typeid = 1
     ELSE IF (key == "tracer_hlimit") THEN
-       typeid = COMIN_TYPEID_INTEGER
+       typeid = 1
     ELSE IF (key == "tracer_hadv") THEN
-       typeid = COMIN_TYPEID_INTEGER
+       typeid = 1
     ELSE IF (key == "tracer_vadv") THEN
-       typeid = COMIN_TYPEID_INTEGER
+       typeid = 1
     ELSE IF (key == "units") THEN
-       typeid = COMIN_TYPEID_CHARACTER
+       typeid = 4
     ELSE IF (key == "standard_name") THEN
-       typeid = COMIN_TYPEID_CHARACTER
+       typeid = 4
     ELSE IF (key == "long_name") THEN
-       typeid = COMIN_TYPEID_CHARACTER
+       typeid = 4
     ELSE IF (key == "short_name") THEN
-       typeid = COMIN_TYPEID_CHARACTER
+       typeid = 4
     END IF
   END FUNCTION comin_metadata_get_typeid
 

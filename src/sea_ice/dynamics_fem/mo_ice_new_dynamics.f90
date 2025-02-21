@@ -309,25 +309,16 @@ CONTAINS
     !calculating normal and tangent component of wind/ocean
     !**************************************************************
 
-#ifdef NAGFOR
-       tau_n = 0.0_wp
-       ocean_n=0.0_wp
-#endif
+
+
+
+
         CALL map_cell2edges_3D(p_patch_3D, p_tau_n_c, tau_n ,p_op_coeff, 1)
         CALL sync_patch_array(SYNC_E, patch_2D, tau_n)
   
         !**************************************************************                                                                                                               
         ! (3) Interpolate 3D wind stress from normal value to vertices 3D                                                                                                                       
         !**************************************************************                                                                                                               
-#ifdef NAGFOR
-    p_tau_n_dual(:,:)%x(1) = 0.0_wp
-    p_tau_n_dual(:,:)%x(2) = 0.0_wp
-    p_tau_n_dual(:,:)%x(3) = 0.0_wp
-
-    p_ocean_n_dual(:,:)%x(1) = 0.0_wp
-    p_ocean_n_dual(:,:)%x(2) = 0.0_wp
-    p_ocean_n_dual(:,:)%x(3) = 0.0_wp
-#endif
 
 
     DO edge_block_i = all_edges%start_block, all_edges%end_block

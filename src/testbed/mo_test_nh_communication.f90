@@ -109,15 +109,15 @@ CONTAINS
   
 
   !-------------------------------------------------------------------------
-#ifdef __NO_NESTING__
-   SUBROUTINE integrate_nh_test_comm (p_nh_state, p_patch, p_int_state,  &
-  &        p_grf_state, jg, nstep_global, dt_loc, dtadv_loc, sim_time,   &
-  &        num_steps, l_compute_diagnostic_quants)
-#else
+
+
+
+
+
   RECURSIVE SUBROUTINE integrate_nh_test_comm (p_nh_state, p_patch, p_int_state,  &
   &        p_grf_state, jg, nstep_global, dt_loc, dtadv_loc, sim_time, &
   &        num_steps, l_compute_diagnostic_quants)
-#endif
+
 
     CHARACTER(len=*), PARAMETER ::  &
       &  routine = 'mo_nh_stepping:integrate_nh'

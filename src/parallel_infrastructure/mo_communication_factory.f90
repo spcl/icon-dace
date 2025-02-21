@@ -9,17 +9,35 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
+
+
+
 MODULE mo_communication_factory
   USE mo_exception, ONLY: finish
   USE mo_communication_types, ONLY: t_comm_pattern, t_comm_pattern_collection, &
     & t_p_comm_pattern, xfer_list
   USE mo_communication_orig,   ONLY: t_comm_pattern_orig, &
     &                                t_comm_pattern_collection_orig
-#ifdef HAVE_YAXT
-  USE mo_communication_yaxt,   ONLY: t_comm_pattern_yaxt, &
-    &                                t_comm_pattern_collection_yaxt
-#endif
   USE mo_decomposition_tools,  ONLY: t_glb2loc_index_lookup
   USE mo_parallel_config, ONLY: comm_pattern_type_orig, &
     comm_pattern_type_yaxt, default_comm_pattern_type
@@ -101,12 +119,8 @@ CONTAINS
       CASE (comm_pattern_type_orig)
         ALLOCATE(t_comm_pattern_orig::p_pat)
       CASE (comm_pattern_type_yaxt)
-#ifdef HAVE_YAXT
-        ALLOCATE(t_comm_pattern_yaxt::p_pat)
-#else
       CALL finish(routine, &
         "comm_pattern_type_yaxt has been selected, but ICON was built without YAXT")
-#endif
       CASE DEFAULT
         CALL finish(routine, "Invalid comm_type!")
     END SELECT
@@ -146,12 +160,8 @@ CONTAINS
      CASE (comm_pattern_type_orig)
       ALLOCATE(t_comm_pattern_orig::p_pat)
      CASE (comm_pattern_type_yaxt)
-#ifdef HAVE_YAXT
-       ALLOCATE(t_comm_pattern_yaxt::p_pat)
-#else
        CALL finish(routine, &
          "comm_pattern_type_yaxt has been selected, but ICON was built without YAXT")
-#endif
      CASE DEFAULT
        CALL finish(routine, "Invalid comm_type!")
    END SELECT
@@ -185,10 +195,6 @@ CONTAINS
     SELECT TYPE(first_pattern)
       TYPE IS(t_comm_pattern_orig)
         ALLOCATE(t_comm_pattern_collection_orig::pattern_collection)
-#ifdef HAVE_YAXT
-      TYPE IS(t_comm_pattern_yaxt)
-        ALLOCATE(t_comm_pattern_collection_yaxt::pattern_collection)
-#endif
       CLASS DEFAULT
         CALL finish(routine, "unknown comm pattern class")
     END SELECT

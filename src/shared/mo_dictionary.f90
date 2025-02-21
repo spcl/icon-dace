@@ -136,11 +136,11 @@ CONTAINS
 ! Cray Fortran Compiler < 8.7.11 (tested with 8.7.7) does not interpret the strings put into the dictionary correctly.
 ! Hence, for older cray compiler versions, the following code circumvents this bug. 
 ! This can be removed when recent cray compiler versions are available at ECMWF's Cray
-#if (_CRAYFTN == 1) && ( _RELEASE_MAJOR <= 8)
-    CHARACTER(LEN=DICT_MAX_STRLEN) :: key, val
-#else
+
+
+
     CHARACTER(:), POINTER :: key, val
-#endif
+
     LOGICAL :: lread_inverse
 
     lread_inverse = .FALSE.
@@ -165,17 +165,6 @@ CONTAINS
 ! Cray Fortran Compiler < 8.7.11 (tested with 8.7.7) does not interpret the strings put into the dictionary correctly.
 ! Hence, for older cray compiler versions, the following code circumvents this bug.
 ! This can be removed when recent cray compiler versions are available at ECMWF's Cray
-#if (_CRAYFTN == 1) && ( _RELEASE_MAJOR <= 8)
-      key = line(1:klen-1)
-      val = line(klen+1:llen)
-      IF (.NOT. lread_inverse) THEN
-        CALL dict%dic%put(TRIM(key), TRIM(val))
-        CALL dict%idic%put(TRIM(val), TRIM(key))
-      ELSE
-        CALL dict%dic%put(TRIM(val), TRIM(key))
-        CALL dict%idic%put(TRIM(key), TRIM(val))
-      END IF
-#else
       key => line(1:klen-1)
       val => line(klen+1:llen)
       IF (.NOT. lread_inverse) THEN
@@ -185,7 +174,6 @@ CONTAINS
         CALL dict%dic%put(val, key)
         CALL dict%idic%put(key, val)
       END IF
-#endif
     ENDDO
     CLOSE(unit=iunit)
   END SUBROUTINE dict_loadfile

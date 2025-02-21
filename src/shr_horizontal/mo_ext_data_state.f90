@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_ext_data_state
@@ -56,7 +66,19 @@ MODULE mo_ext_data_state
   USE mo_zaxis_type,         ONLY: ZA_REFERENCE, ZA_LAKE_BOTTOM, ZA_SURFACE, &
     &                              ZA_HEIGHT_2M, ZA_PRESSURE
 
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
 
   IMPLICIT NONE
@@ -339,7 +361,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,             &
       &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,             &
       &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-    __acc_attach(p_ext_atm%topography_c)
+    
 
 
     ! gradient of topography height at cell center
@@ -352,7 +374,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,             &
       &           grib2_desc, ldims=(/2,nproma,nblks_c/), loutput=.FALSE.,  &
       &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-    __acc_attach(p_ext_atm%grad_topo)
+    
 
 
     IF (itype_vegetation_cycle > 1) THEN
@@ -393,7 +415,7 @@ CONTAINS
         CALL add_var( p_ext_atm_list, 'horizon', p_ext_atm%horizon,     &
           &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc,    &
           &           grib2_desc, ldims=shape3d_sfc_sec, loutput=.TRUE., lopenacc=.TRUE.)
-        __acc_attach(p_ext_atm%horizon)
+        
         CALL message(routine, 'adding skyview factor')
         ! geometric sky-view factor scaled with sinus(horizon)**2
         !
@@ -418,7 +440,7 @@ CONTAINS
       CALL add_var( p_ext_atm_list, 'o3', p_ext_atm%o3,                      &
         &           GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc,              &
         &           grib2_desc, ldims=shape3d_c, loutput=.TRUE., lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%o3)
+      
 
       IF (iprog_aero > 1) THEN
         ! BC emission (precursor for anthr. 2D-aerosol emission)
@@ -430,7 +452,7 @@ CONTAINS
         CALL add_var( p_ext_atm_list, 'emi_bc', p_ext_atm%emi_bc,                      &
           &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,                     &
           &           grib2_desc, ldims=shape2d_c, loutput=.TRUE., lopenacc=.TRUE. )
-        __acc_attach(p_ext_atm%emi_bc)
+        
 
         ! OC emission (precursor for anthr. 2D-aerosol emission)
         !
@@ -441,7 +463,7 @@ CONTAINS
         CALL add_var( p_ext_atm_list, 'emi_oc', p_ext_atm%emi_oc,                      &
           &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,                     &
           &           grib2_desc, ldims=shape2d_c, loutput=.TRUE., lopenacc=.TRUE. )
-        __acc_attach(p_ext_atm%emi_oc)
+        
 
         ! SO2 emission (precursor for anthr. 2D-aerosol emission)
         !
@@ -452,7 +474,7 @@ CONTAINS
         CALL add_var( p_ext_atm_list, 'emi_so2', p_ext_atm%emi_so2,                    &
           &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,                     &
           &           grib2_desc, ldims=shape2d_c, loutput=.TRUE., lopenacc=.TRUE. )
-        __acc_attach(p_ext_atm%emi_so2)
+        
 
         IF (iprog_aero > 2) THEN
           ! BC emission (precursor for wildfire 2D-aerosol emission)
@@ -464,7 +486,7 @@ CONTAINS
           CALL add_var( p_ext_atm_list, 'bcfire', p_ext_atm%bcfire,                      &
             &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,                     &
             &           grib2_desc, ldims=shape2d_c, loutput=.TRUE., lopenacc=.TRUE. )
-          __acc_attach(p_ext_atm%bcfire)
+          
 
           ! OC emission (precursor for wildfire 2D-aerosol emission)
           !
@@ -475,7 +497,7 @@ CONTAINS
           CALL add_var( p_ext_atm_list, 'ocfire', p_ext_atm%ocfire,                      &
             &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,                     &
             &           grib2_desc, ldims=shape2d_c, loutput=.TRUE., lopenacc=.TRUE. )
-          __acc_attach(p_ext_atm%ocfire)
+          
 
           ! SO2 emission (precursor for wildfire 2D-aerosol emission)
           !
@@ -486,7 +508,7 @@ CONTAINS
           CALL add_var( p_ext_atm_list, 'so2fire', p_ext_atm%so2fire,                    &
             &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,                     &
             &           grib2_desc, ldims=shape2d_c, loutput=.TRUE., lopenacc=.TRUE. )
-          __acc_attach(p_ext_atm%so2fire)
+          
         ENDIF
       ENDIF
 
@@ -505,7 +527,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,        &
         &           grib2_desc, ldims=shape2d_c, loutput=.FALSE.,       &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE.           )
-        __acc_attach(p_ext_atm%llsm_atm_c)
+        
 
       ! llake_c    p_ext_atm%llake_c(nproma,nblks_c)
       cf_desc    = t_cf_var('lake_mask_(cell)', '-', &
@@ -515,7 +537,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,        &
         &           grib2_desc, ldims=shape2d_c, loutput=.FALSE.,       &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE.           )
-        __acc_attach(p_ext_atm%llake_c)
+        
 
 
       ! land fraction
@@ -529,7 +551,7 @@ CONTAINS
         &           isteptype=TSTEP_CONSTANT,                       &
         &           in_group=groups("dwd_fg_sfc_vars","mode_iniana"),&
         &           lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%fr_land)
+      
 
       IF (icpl_da_seaice >= 2 .OR. icpl_da_snowalb >= 2) THEN
         ! smoothed land fraction for adaptive tuning of sea ice bottom heat flux and sea ice albedo
@@ -554,7 +576,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,          &
         &           grib2_desc, ldims=shape2d_c, loutput=.FALSE.,         &
         &           lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%fr_glac)
+      
 
       ! roughness length
       !
@@ -578,7 +600,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,   &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-        __acc_attach(p_ext_atm%fr_lake)
+        
 
 
       ! lake depth
@@ -591,7 +613,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_LAKE_BOTTOM, cf_desc,&
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%depth_lk)
+      
 
       IF (llake) THEN
 
@@ -602,7 +624,7 @@ CONTAINS
           &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
           &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
           &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-          __acc_attach(p_ext_atm%fetch_lk)
+          
 
 
         ! dp_bs_lk     p_ext_atm%dp_bs_lk(nproma,nblks_c)
@@ -613,7 +635,7 @@ CONTAINS
           &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
           &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
           &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-          __acc_attach(p_ext_atm%dp_bs_lk)
+          
 
 
         ! t_bs_lk     p_ext_atm%t_bs_lk(nproma,nblks_c)
@@ -625,7 +647,7 @@ CONTAINS
           &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
           &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
           &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-          __acc_attach(p_ext_atm%t_bs_lk)
+          
 
 
         ! gamso_lk     p_ext_atm%gamso_lk(nproma,nblks_c)
@@ -637,7 +659,7 @@ CONTAINS
           &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
           &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
           &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-          __acc_attach(p_ext_atm%gamso_lk)
+          
 
       ENDIF
 
@@ -658,7 +680,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
         &           isteptype=TSTEP_CONSTANT , lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%sso_stdh)
+      
 
       ! field derived from sso_stdh used for pat_len in turbulence scheme
       ! for the time being, it is the same as sso_stdh except for not being adjusted to orography smoothing
@@ -671,7 +693,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%sso_stdh_raw)
+      
 
       ! effective length scale of circulation patterns
       ! l_pat            p_ext_atm%l_pat(nproma,nblks_c)
@@ -682,7 +704,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%l_pat)
+      
 
       ! Anisotropy of sub-gridscale orography
       !
@@ -694,7 +716,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,      &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,      &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE.)
-        __acc_attach(p_ext_atm%sso_gamma)
+        
 
 
       ! Angle of sub-gridscale orography
@@ -707,7 +729,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,      &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,      &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-        __acc_attach(p_ext_atm%sso_theta)
+        
 
 
       ! Slope of sub-gridscale orography
@@ -720,7 +742,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,      &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,      &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-        __acc_attach(p_ext_atm%sso_sigma)
+        
 
 
 
@@ -746,7 +768,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_ntw, loutput=.FALSE.,         &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%urb_isa_t)
+      
 
 
       IF (lterra_urb) THEN
@@ -768,7 +790,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%fr_paved_t)
+      
 
 
       ! Surface area index of the urban canopy
@@ -788,7 +810,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%urb_ai_t)
+      
 
 
       ! Albedo reduction factor for the urban canopy
@@ -808,7 +830,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%urb_alb_red_t)
+      
 
 
       ! Building area fraction with respect to urban tile
@@ -828,7 +850,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%urb_fr_bld_t)
+      
 
 
       ! Street canyon H/W ratio
@@ -848,7 +870,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%urb_h2w_t)
+      
 
 
       ! Building height
@@ -868,7 +890,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%urb_h_bld_t)
+      
 
 
       ! Thermal albedo of urban material
@@ -888,7 +910,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%urb_alb_th_t)
+      
 
 
       ! Solar albedo of urban material
@@ -908,7 +930,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%urb_alb_so_t)
+      
 
 
       ! Volumetric heat capacity of urban material
@@ -928,7 +950,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%urb_hcap_t)
+      
 
 
       ! Thermal conductivity of urban material
@@ -948,7 +970,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%urb_hcon_t)
+      
 
 
       ! Anthropogenic heat flux
@@ -968,7 +990,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           initval=-1._wp, lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%ahf_t)
+      
 
       ENDIF
 
@@ -1002,7 +1024,7 @@ CONTAINS
         &           isteptype=TSTEP_INSTANT,                        &
         &           post_op=post_op(POST_OP_SCALE, arg1=100._wp,    &
         &                 new_cf=new_cf_desc), lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%plcov)
+      
 
 
       ! plcov_t     p_ext_atm%plcov_t(nproma,nblks_c,ntiles_total)
@@ -1013,7 +1035,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,     &
         &           grib2_desc, ldims=shape3d_nt, lcontainer=.TRUE., &
         &           loutput=.FALSE., lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%plcov_t)
+      
 
       ALLOCATE(p_ext_atm%plcov_t_ptr(ntiles_total))
       DO jsfc = 1,ntiles_total
@@ -1052,7 +1074,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
         &           isteptype=TSTEP_INSTANT, lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%lai)
+      
 
       ! Surface area index (aggregated)
       !
@@ -1063,7 +1085,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,     &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,     &
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%sai)
+      
 
       ! Surface area index
       !
@@ -1075,7 +1097,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,  &
         &           grib2_desc, ldims=shape3d_ntw, loutput=.FALSE., &
         &           lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%sai_t)
+      
 
       ! Transpiration area index (aggregated)
       !
@@ -1096,7 +1118,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,  &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,&
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%tai_t)
+      
 
       ! ratio between current LAI and laimax
       !
@@ -1108,7 +1130,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,  &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,&
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%laifac_t)
+      
 
       ! Evaporative area index (aggregated)
       !
@@ -1129,7 +1151,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,  &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,&
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%eai_t)
+      
 
 
       ! root depth of vegetation
@@ -1142,7 +1164,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
         &           isteptype=TSTEP_INSTANT, lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%rootdp)
+      
 
       ! rootdp_t      p_ext_atm%rootdp_t(nproma,nblks_c,ntiles_total)
       cf_desc    = t_cf_var('root_depth_of_vegetation', 'm',&
@@ -1152,7 +1174,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,  &
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%rootdp_t)
+      
 
 
       ! evergreen forest
@@ -1165,7 +1187,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, loutput=.FALSE.,  &
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%for_e)
+      
 
       ! deciduous forest
       !
@@ -1176,7 +1198,7 @@ CONTAINS
       CALL add_var( p_ext_atm_list, 'for_d', p_ext_atm%for_d,       &
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, lopenacc=.TRUE.    )
-      __acc_attach(p_ext_atm%for_d)
+      
 
 
       ! Skin conductivity
@@ -1196,7 +1218,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%skinc_t)
+      
 
 
       ! Minimum stomatal resistance
@@ -1216,7 +1238,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%rsmin2d_t)
+      
 
 
       ! Minimum bare soil evaporation resistance
@@ -1228,7 +1250,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
         &           initval=50._wp, isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%r_bsmin)
+      
 
 
       ! NDVI yearly maximum
@@ -1262,7 +1284,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,            &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,          &
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%idx_lst_lp_t)
+      
 
       ! grid point counts for index list idx_lst_lp_t
       ! lp_count_t        p_ext_atm%lp_count_t(nblks_c,ntiles_total)
@@ -1274,7 +1296,7 @@ CONTAINS
         &           grib2_desc, ldims=(/nblks_c,ntiles_total/),         &
         &           loutput=.FALSE.,                                    &
         &           lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%lp_count_t)
+      
 
 
       ! idx_lst_t        p_ext_atm%idx_lst_t(nproma,nblks_c,ntiles_total)
@@ -1286,7 +1308,7 @@ CONTAINS
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,    &
         &           in_group=groups("iau_restore_vars"),              &
         &           lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%idx_lst_t)
+      
 
 
       ! grid point counts for index list idx_lst_t
@@ -1300,7 +1322,7 @@ CONTAINS
         &           loutput=.FALSE.,                                    &
         &           in_group=groups("iau_restore_vars"),                &
         &           lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%gp_count_t)
+      
 
 
       ! snowtile_flag_t   p_ext_atm%snowtile_flag_t(nproma,nblks_c,ntiles_total)
@@ -1316,7 +1338,7 @@ CONTAINS
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,                &
         &           in_group=groups("iau_restore_vars"),                          &
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%snowtile_flag_t)
+      
 
 
       ! lc_class_t        p_ext_atm%lc_class_t(nproma,nblks_c,ntiles_total+ntiles_water)
@@ -1327,7 +1349,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,        &
         &           grib2_desc, ldims=shape3d_ntw,                      &
         &           loutput=.FALSE., lcontainer=.TRUE., lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%lc_class_t)
+      
 
       ! fill the separate variables belonging to the container lc_class_t
       ALLOCATE(p_ext_atm%lc_class_t_ptr(ntiles_total+ntiles_water))
@@ -1355,7 +1377,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,      &
         &           grib2_desc, ldims=shape3d_ntw, loutput=.FALSE.,   &
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%lc_frac_t)
+      
 
       ! frac_t        p_ext_atm%frac_t(nproma,nblks_c,ntiles_total+ntiles_water)
       cf_desc    = t_cf_var('frac_t', '-', &
@@ -1366,7 +1388,7 @@ CONTAINS
         &           grib2_desc, ldims=shape3d_ntw, loutput=.FALSE., lcontainer=.TRUE., &
         &           in_group=groups("iau_restore_vars"),          &
         &           lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%frac_t)
+      
 
       ! fill the separate variables belonging to the container frac_t
       ALLOCATE(p_ext_atm%frac_t_ptr(ntiles_total+ntiles_water))
@@ -1390,7 +1412,7 @@ CONTAINS
       CALL add_var( p_ext_atm_list, 'inv_frland_from_tiles', p_ext_atm%inv_frland_from_tiles,&
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,                          &
         &           grib2_desc, ldims=shape2d_c, loutput=.FALSE., lopenacc=.TRUE.)
-      __acc_attach(p_ext_atm%inv_frland_from_tiles)
+      
 
 
       ! Storage for table values - not sure if these dimensions are supported by add_var
@@ -1439,7 +1461,7 @@ CONTAINS
         &           hor_interp=create_hor_interp_metadata(          &
         &               hor_intp_type=HINTP_TYPE_LONLAT_NNB ),      &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE.       )
-        __acc_attach(p_ext_atm%soiltyp)
+        
 
       ! soiltyp_t      p_ext_atm%soiltyp_t(nproma,nblks_c,ntiles_total)
       cf_desc    = t_cf_var('soil_type', '-','soil type', datatype_flt)
@@ -1448,7 +1470,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,        &
         &           grib2_desc, ldims=shape3d_nt, loutput=.FALSE.,      &
         &           lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%soiltyp_t)
+      
 
 
       ! Climat. temperature
@@ -1464,7 +1486,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,      &
         &           isteptype=TSTEP_AVG, lopenacc=.TRUE. )
-        __acc_attach(p_ext_atm%t_cl)
+        
 
       IF (itype_vegetation_cycle > 1) THEN
         ! t2m_clim         p_ext_atm%t2m_clim(nproma,nblks_c)
@@ -1475,7 +1497,7 @@ CONTAINS
           &           GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M, cf_desc,    &
           &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,      &
           &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-        __acc_attach(p_ext_atm%t2m_clim)
+        
 
         ! t2m_clim_hc         p_ext_atm%t2m_clim_hc(nproma,nblks_c)
         cf_desc    = t_cf_var('Height-corrected 2m_temperature', 'K',                  &
@@ -1485,7 +1507,7 @@ CONTAINS
           &           GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M, cf_desc,    &
           &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,      &
           &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-        __acc_attach(p_ext_atm%t2m_clim_hc)
+        
 
         ! t2m_climgrad         p_ext_atm%t2m_climgrad(nproma,nblks_c)
         cf_desc    = t_cf_var('2m_temperature_gradient', 'K/month',      &
@@ -1495,7 +1517,7 @@ CONTAINS
           &           GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M, cf_desc,    &
           &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,      &
           &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-        __acc_attach(p_ext_atm%t2m_climgrad)
+        
 
       ENDIF
 
@@ -1508,7 +1530,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,    &
         &           grib2_desc, ldims=shape2d_c, loutput=.TRUE.,    &
         &           isteptype=TSTEP_CONSTANT, lopenacc=.TRUE. )
-      __acc_attach(p_ext_atm%emis_rad)
+      
 
 
       ! landuse class fraction
@@ -1535,7 +1557,7 @@ CONTAINS
         CALL add_var( p_ext_atm_list, 'alb_dif', p_ext_atm%alb_dif,               &
           &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,    &
           &           ldims=shape2d_c, loutput=.TRUE., lopenacc=.TRUE. )
-          __acc_attach(p_ext_atm%alb_dif)
+          
 
         ! UV visible broadband albedo for diffuse radiation (0.3 - 0.7 micron)
         !
@@ -1546,7 +1568,7 @@ CONTAINS
         CALL add_var( p_ext_atm_list, 'albuv_dif', p_ext_atm%albuv_dif,           &
           &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,    &
           &           ldims=shape2d_c, loutput=.TRUE., lopenacc=.TRUE.            )
-          __acc_attach(p_ext_atm%albuv_dif)
+          
 
         ! Near IR broadband albedo for diffuse radiation (0.7 - 5.0 micron)
         !
@@ -1557,7 +1579,7 @@ CONTAINS
         CALL add_var( p_ext_atm_list, 'albni_dif', p_ext_atm%albni_dif,           &
           &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,    &
           &           ldims=shape2d_c, loutput=.TRUE., lopenacc=.TRUE.            )
-          __acc_attach(p_ext_atm%albni_dif)
+          
 
       END IF  ! albedo_type
 
@@ -1571,7 +1593,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,             &
         &           grib2_desc, ldims=shape2d_c, loutput=.FALSE.,            &
         &           isteptype=TSTEP_CONSTANT)
-      __acc_attach(p_ext_atm%fr_land)
+      
 
     END IF ! iforcing
 
@@ -1739,7 +1761,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,      &
       &           grib2_desc, ldims=shape3d_c, loutput=.FALSE.,     &
       &           isteptype=TSTEP_AVG, lopenacc=.TRUE. )  ! Meta info constituentType missing
-    __acc_attach(p_ext_atm_td%aer_bc)
+    
 
 
     ! Dust aerosol
@@ -1753,7 +1775,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
       &           ldims=shape3d_c, loutput=.FALSE.,                        &
       &           isteptype=TSTEP_AVG, lopenacc=.TRUE. )  ! Meta info constituentType missing
-    __acc_attach(p_ext_atm_td%aer_dust)
+    
 
     ! Organic aerosol
     !
@@ -1766,7 +1788,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,&
       &           ldims=shape3d_c, loutput=.FALSE.,                       &
       &           isteptype=TSTEP_AVG, lopenacc=.TRUE. )  ! Meta info constituentType missing
-    __acc_attach(p_ext_atm_td%aer_org)
+    
 
 
     ! Sulfate aerosol
@@ -1780,7 +1802,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,&
       &           ldims=shape3d_c, loutput=.FALSE.,                       &
       &           isteptype=TSTEP_AVG, lopenacc=.TRUE. )  ! Meta info constituentType missing
-    __acc_attach(p_ext_atm_td%aer_so4)
+    
 
 
     ! Seasalt aerosol
@@ -1794,7 +1816,7 @@ CONTAINS
       &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,&
       &           ldims=shape3d_c, loutput=.FALSE.,                       &
       &           isteptype=TSTEP_AVG, lopenacc=.TRUE. )  ! Meta info constituentType missing
-    __acc_attach(p_ext_atm_td%aer_ss)
+    
 
 
 
@@ -1831,7 +1853,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,    &
         &           ldims=shape3d_c, loutput=.FALSE.,                           &
         &           isteptype=TSTEP_AVG, lopenacc=.TRUE.                        )
-        __acc_attach(p_ext_atm_td%alb_dif)
+        
 
       ! (monthly)  UV visible broadband albedo for diffuse radiation (0.3 - 0.7 micron)
       !
@@ -1843,7 +1865,7 @@ CONTAINS
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,    &
         &           ldims=shape3d_c, loutput=.FALSE.,                           &
         &           isteptype=TSTEP_AVG, lopenacc=.TRUE.                        )
-        __acc_attach(p_ext_atm_td%albuv_dif)
+        
 
       ! (monthly)  Near IR broadband albedo for diffuse radiation (0.7 - 5.0 micron)
       !

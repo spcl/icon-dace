@@ -24,12 +24,12 @@ MODULE mo_tmx_process_class
   USE mo_tmx_field_class, ONLY: t_tmx_field, t_tmx_field_list, t_domain !bind_tmx_field
   USE mo_tmx_time_integration_class, ONLY: t_time_scheme
 
-#ifdef _OPENACC
-  use openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)
-#else
-#define __acc_attach(ptr)
-#endif
+
+
+
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -111,7 +111,7 @@ CONTAINS
 
     IF (PRESENT(domain)) THEN
       this%domain => domain
-      __acc_attach(this%domain)
+      
     END IF
 
     this%states      = t_tmx_field_list('states')

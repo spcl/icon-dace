@@ -15,7 +15,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_ext_data_init
@@ -1697,13 +1707,8 @@ CONTAINS
 
        i_startblk = p_patch(jg)%cells%start_blk(rl_start,1)
        i_endblk   = p_patch(jg)%cells%end_blk(rl_end,i_nchdom)
-#ifdef __SX__
-! turn off OpenMP on the NEC until MAXLOC bug (not threadsafe) is fixed
-!$OMP SINGLE
-#else
 !$OMP DO PRIVATE(jb,jc,i_lu,i_startidx,i_endidx,i_count,i_count_sea,i_count_flk,tile_frac,lhave_urban,&
 !$OMP            tile_mask,lu_subs,sum_frac,scalfac,zfr_land,it_count,ic,jt,jt_in,t2mclim_hc,lat ) ICON_OMP_DEFAULT_SCHEDULE
-#endif
        DO jb=i_startblk, i_endblk
 
          CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, &
@@ -2315,11 +2320,9 @@ CONTAINS
          ! frac_t(jc,jb,isub_seaice) is set in init_sea_lists
 
        END DO !jb
-#ifndef __SX__
 !$OMP END DO
 
 !$OMP SINGLE
-#endif
        ! Some useful diagnostics
        npoints      = ext_data(jg)%atm%list_land %get_sum_global(i_startblk,i_endblk)
        npoints_sea  = ext_data(jg)%atm%list_sea  %get_sum_global(i_startblk,i_endblk)

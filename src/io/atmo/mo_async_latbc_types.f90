@@ -30,9 +30,9 @@ MODULE mo_async_latbc_types
   USE mo_reorder_info,             ONLY: t_reorder_info, release_reorder_info
   USE mo_mpi,                      ONLY: p_comm_work_pref, p_barrier
   USE mo_cdi,                      ONLY: cdi_undefid, streamclose
-#ifndef NOMPI
-  USE mpi
-#endif
+
+
+
   IMPLICIT NONE
 
   PRIVATE
@@ -55,19 +55,19 @@ MODULE mo_async_latbc_types
   !------------------------------------------------------------------------------------------------
 
 
-#ifdef NOMPI
+
   INTEGER, PARAMETER :: mpi_win_null = 0
-#endif
+
 
   !> Data structure containing variables for MPI memory window
   !
   TYPE t_mem_win
      ! Currently, we use only 1 MPI window for all input prefetching
      ! Used for async prefetch only
-#ifndef NOMPI
-     INTEGER                   :: mpi_win = mpi_win_null
-     INTEGER(mpi_address_kind) :: f_mem_ptr
-#endif
+
+
+
+
      REAL(sp), POINTER  :: mem_ptr_sp(:) => NULL() !< Pointer to memory window (REAL*4)
   END TYPE t_mem_win
 
@@ -255,37 +255,10 @@ CONTAINS
   SUBROUTINE t_patch_data_finalize(patch_data)
     CLASS(t_patch_data), INTENT(INOUT) :: patch_data
 
-#ifndef NOMPI
-    CHARACTER(len=*), PARAMETER :: routine = modname//'::t_patch_data_finalize'
-    LOGICAL, PARAMETER :: lprint_dbg = .FALSE.
-    INTEGER            :: ierror
-    TYPE(c_ptr)        :: c_mem_ptr
-    INTEGER, POINTER   :: baseptr
-
-    CALL message(routine, "")
-    IF (lprint_dbg) CALL p_barrier(comm=p_comm_work_pref) ! make sure all are here
-#endif
     CALL release_reorder_info(patch_data%cells)
     IF (ALLOCATED(patch_data%cell_mask)) DEALLOCATE(patch_data%cell_mask)
     CALL release_reorder_info(patch_data%edges)
     IF (ALLOCATED(patch_data%edge_mask)) DEALLOCATE(patch_data%edge_mask)
-#ifndef NOMPI
-    ! note: we do not touch the MPI window pointer here:
-    !
-    IF (lprint_dbg) CALL p_barrier(comm=p_comm_work_pref) ! make sure all are here
-    IF  ((msg_level >= 15) .OR. lprint_dbg)  CALL message(routine, "Free MPI window")
-    IF (patch_data%mem_win%mpi_win /= mpi_win_null) THEN
-      CALL mpi_win_free(patch_data%mem_win%mpi_win, ierror)
-      IF (ierror /= 0) CALL finish(routine, "mpi_win_free failed!")
-    END IF
-    IF (lprint_dbg) CALL p_barrier(comm=p_comm_work_pref) ! make sure all are here
-    IF  ((msg_level >= 15) .OR. lprint_dbg)  CALL message(routine, "Nullify MPI window pointer")
-    IF (ASSOCIATED(patch_data%mem_win%mem_ptr_sp)) THEN
-      NULLIFY(patch_data%mem_win%mem_ptr_sp)
-    END IF
-    IF (lprint_dbg) CALL p_barrier(comm=p_comm_work_pref) ! make sure all are here
-    IF  ((msg_level >= 15) .OR. lprint_dbg)  CALL message(routine, "done.")
-#endif
   END SUBROUTINE t_patch_data_finalize
 
 
@@ -386,55 +359,6 @@ CONTAINS
       CLASS(t_latbc_data), INTENT(INOUT)  :: latbc
       TYPE(datetime),      INTENT(IN)     :: datetime_current ! datetime for which interpolation 
                                                               ! weights shall be computed
-#ifndef NOMPI
-      TYPE(timedelta)         :: delta_tstep        ! time delta between current datetime and 
-                                                    ! validity time of current boundary forcing time slice.
-      INTEGER(i8)             :: delta_tstep_in_sec ! delta_tstep converted to seconds
-
-      REAL(wp)                :: dtime_latbc        ! time delta between two consecutive 
-                                                    ! boundary forcing time slices [s]
-      TYPE(timedelta)         :: td                 ! same in mtime format
-      LOGICAL                 :: failure
-      INTEGER                 :: prv_tlev, cur_tlev
-
-      CHARACTER(LEN=*), PARAMETER  :: routine = modname//"::t_latbc_data_update_intp_wgt"
-      CHARACTER(LEN=MAX_DATETIME_STR_LEN) :: vDateTime_str_cur, vDateTime_str_prv
-      CHARACTER(LEN=MAX_TIMEDELTA_STR_LEN):: delta_tstep_str
-
-
-      ! compute boundary update timedelta
-      cur_tlev = latbc%new_latbc_tlev
-      prv_tlev = latbc%prev_latbc_tlev()
-      td = latbc%latbc_data(cur_tlev)%vDateTime - latbc%latbc_data(prv_tlev)%vDateTime
-      dtime_latbc =  REAL(getTotalSecondsTimedelta(td, latbc%latbc_data(cur_tlev)%vDateTime))
-
-      delta_tstep = latbc%latbc_data(cur_tlev)%vDateTime - datetime_current
-
-      failure = delta_tstep%month /= 0
-      IF (msg_level >= 15 .OR. failure) THEN
-        CALL message(routine, "", all_print=failure)
-        CALL datetimeToString(latbc%latbc_data(prv_tlev)%vDateTime, vDateTime_str_prv)
-        CALL datetimeToString(latbc%latbc_data(cur_tlev)%vDateTime, vDateTime_str_cur)
-        CALL timedeltaToString(delta_tstep, delta_tstep_str)
-        WRITE (message_text, '(a,a)')  "lbc vdate current : ", vDateTime_str_cur
-        CALL message("", message_text, all_print=failure)
-        WRITE (message_text, '(a,a)')  "lbc vdate previous: ", vDateTime_str_prv
-        CALL message("", message_text, all_print=failure)
-        WRITE (message_text, '(a,a)')  "delta_tstep_str: ", delta_tstep_str
-        CALL message("", message_text, all_print=failure)
-        IF (failure) &
-          CALL finish(routine, "time difference for reading boundary&
-          & data must not be more than a month.")
-      ENDIF
-
-      ! compute the number of "dtime_latbc" intervals fitting into the time difference "delta_tstep":
-
-      CALL mtime_timedelta_to_seconds(delta_tstep, delta_tstep_in_sec)
-      !
-      latbc%lc1 = REAL(delta_tstep_in_sec,wp) / dtime_latbc
-      latbc%lc2 = 1._wp - latbc%lc1
-
-#endif
 
     END SUBROUTINE t_latbc_data_update_intp_wgt
 

@@ -13,7 +13,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_ice_fem_interpolation
@@ -493,15 +503,10 @@ IF (ptr_patch%geometry_info%cell_type == 6) THEN
                        i_startidx, i_endidx, rl_start, rl_end)
 
 
-#ifdef __LOOP_EXCHANGE
-    DO jv = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
 !CDIR UNROLL=6
     !$ACC PARALLEL LOOP GANG VECTOR COLLAPSE(2) DEFAULT(PRESENT) IF(lzacc)
     DO jk = slev, elev
       DO jv = i_startidx, i_endidx
-#endif
 
          p_vert_out(jv,jk,jb) =                       &
            c_int(jv,1,jb) * p_cell_in(iidx(jv,jb,1),jk,iblk(jv,jb,1)) + &
@@ -523,15 +528,10 @@ ELSE IF (ptr_patch%geometry_info%cell_type == 3) THEN
                        i_startidx, i_endidx, rl_start, rl_end)
 
 
-#ifdef __LOOP_EXCHANGE
-    DO jv = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
 !CDIR UNROLL=6
     !$ACC PARALLEL LOOP GANG VECTOR COLLAPSE(2) DEFAULT(PRESENT) PRIVATE(cell_index, cell_block) IF(lzacc)
     DO jk = slev, elev
       DO jv = i_startidx, i_endidx
-#endif
 
         p_vert_out(jv,jk,jb) = 0.0_wp
 

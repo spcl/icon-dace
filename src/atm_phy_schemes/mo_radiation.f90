@@ -80,9 +80,9 @@ MODULE mo_radiation
     &                                timer_radiation, timer_rrtm_prep,       &
     &                                timer_lrtm, timer_srtm, timer_rrtm_post
   USE mo_nh_testcases_nml,     ONLY: zenithang
-#ifdef __ICON_ART
-  USE mo_art_radiation_interface, ONLY: art_rad_aero_interface
-#endif
+
+
+
   USE mtime,                   ONLY: datetime, newDatetime, timedelta, newTimedelta, &
        &                             getPTStringFromMS, OPERATOR(+),                 &
        &                             NO_OF_MS_IN_A_MINUTE, NO_OF_MS_IN_A_HOUR,       &
@@ -164,9 +164,9 @@ CONTAINS
     TYPE(t_geographical_coordinates), POINTER             :: ptr_center(:,:)
 
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: zsinphi,zcosphi,zeitrad,z_cosmu0,n_cosmu0pos
-#endif
+
+
+
 
     ! In case of CMIP irradiation (isolrad==2) is used, tsi_rad changes during the day
     ! (ssi_time_interpolation), in which case it makes sense to redo the scaling
@@ -177,9 +177,9 @@ CONTAINS
 
     ! SCM: read lat/lon for horizontally uniform zenith angle
     IF ( l_scm_mode ) THEN
-#ifdef _OPENACC
-      if (lacc) CALL finish("Single column mode is untested with OpenACC")
-#endif
+
+
+
       ALLOCATE(scm_center(SIZE(pt_patch%cells%center,1),SIZE(pt_patch%cells%center,2)))
       !$ACC ENTER DATA CREATE(scm_center) IF(lacc)
       DO jb = 1,pt_patch%nblks_c
@@ -197,9 +197,9 @@ CONTAINS
     IF (izenith == 0) THEN
     ! local insolation = constant = global mean insolation (ca. 340 W/m2)
     ! zenith angle = 0,
-#ifdef _OPENACC
-      IF (lacc) CALL finish('pre_radiation_nwp','Only ported on gpu for izenith == 3 and 4')
-#endif
+
+
+
       DO jb = 1, pt_patch%nblks_c
         ie = MERGE(kbdim, pt_patch%npromz_c, jb /= pt_patch%nblks_c)
         zsmu0(1:ie,jb) = 1._wp ! sun in zenith everywhere
@@ -211,9 +211,9 @@ CONTAINS
     ! no diurnal cycle,
     ! local time always 12:00
     ! --> sin(time of day)=1 ) and zenith angle depends on latitude only
-#ifdef _OPENACC
-      IF (lacc) CALL finish('pre_radiation_nwp','Only ported on gpu for izenith == 3 and 4')
-#endif
+
+
+
       DO jb = 1, pt_patch%nblks_c
         ie = MERGE(kbdim, pt_patch%npromz_c, jb /= pt_patch%nblks_c)
         zsmu0(1:ie,jb) = COS( ptr_center(1:ie,jb)%lat )
@@ -226,9 +226,9 @@ CONTAINS
     ! no diurnal cycle,
     ! local time always  07:14:15 or 16:45:45
     ! --> sin(time of day)=1/pi and zenith angle depends on latitude only
-#ifdef _OPENACC
-      IF (lacc) CALL finish('pre_radiation_nwp','Only ported on gpu for izenith == 3 and 4')
-#endif
+
+
+
       DO jb = 1, pt_patch%nblks_c
         ie = MERGE(kbdim, pt_patch%npromz_c, jb /= pt_patch%nblks_c)
         zsmu0(1:ie,jb) = COS( ptr_center(1:ie,jb)%lat ) * rpi
@@ -429,9 +429,9 @@ CONTAINS
      ! no diurnal cycle,
      ! the product tsi*cos(zenith angle) should equal 340 W/m2
      ! see Popke et al. 2013 and Cronin 2013
-#ifdef _OPENACC
-      IF (lacc) CALL finish('pre_radiation_nwp','Only ported on gpu for izenith == 3 and 4')
-#endif
+
+
+
       DO jb = 1, pt_patch%nblks_c
         ie = MERGE(kbdim, pt_patch%npromz_c, jb /= pt_patch%nblks_c)
         zsmu0(1:ie,jb) = COS(zenithang*pi/180._wp)
@@ -440,9 +440,9 @@ CONTAINS
 
     ELSEIF (izenith == 6) THEN
      ! Prescribed cos(solar zenith angle), for single column model (SCM)
-#ifdef _OPENACC
-      IF (lacc) CALL finish('pre_radiation_nwp','Only ported on gpu for izenith == 3 and 4')
-#endif
+
+
+
       DO jb = 1, pt_patch%nblks_c
         ie = MERGE(kbdim, pt_patch%npromz_c, jb /= pt_patch%nblks_c)
         zsmu0(1:ie,jb) = cos_zenith_fixed
@@ -518,9 +518,9 @@ CONTAINS
 
     jg = pt_patch%id
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: zsinphi,zcosphi,zeitrad,czra,szra,csang,ssang,csazi,ssazi,zha_sun,zphi_sun,ztheta_sun,ztheta
-#endif
+
+
+
 
     ! In case of CMIP irradiation (isolrad==2) is used, tsi_rad changes during the day
     ! (ssi_time_interpolation), in which case it makes sense to redo the scaling
@@ -594,9 +594,9 @@ CONTAINS
 
     ELSEIF (izenith == 6) THEN
       ! Prescribed cos(solar zenith angle), for single column model
-#ifdef _OPENACC
-      IF (lacc) CALL finish('pre_radiation_nwp','Not ported on gpu for izenith == 6')
-#endif
+
+
+
       DO jb = 1, pt_patch%nblks_c
         ie = MERGE(kbdim, pt_patch%npromz_c, jb /= pt_patch%nblks_c)
         DO jc= 1, ie
@@ -988,15 +988,6 @@ CONTAINS
       &  flx_sw_dn_clr(:,:),        & !< Downward SW flux (clear sky) [Wm2]
       &  flx_lw_up_clr(:,:),        & !< Upward LW flux   (clear sky) [Wm2]
       &  flx_sw_up_clr(:,:)           !< Upward SW flux   (clear sky) [Wm2]
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: pp_sfc,tk_hl,xq_vap,xq_liq,xq_ice,cld_frc_sec
-!DIR$ ATTRIBUTES ALIGN : 64 :: xm_co2,xm_o2,xm_ch4,xm_cfc11,xm_cfc12
-!DIR$ ATTRIBUTES ALIGN : 64 :: xm_n2o
-!DIR$ ATTRIBUTES ALIGN : 64 :: flx_uplw_sfc_clr,flx_upsw_sfc_clr,flx_upsw_sfc
-!DIR$ ATTRIBUTES ALIGN : 64 :: flx_upsw_toa,flx_dnsw_diff_sfc,flx_par_sfc
-!DIR$ ATTRIBUTES ALIGN : 64 :: fr_vis_sfc
-!DIR$ ATTRIBUTES ALIGN : 64 :: flx_sw_net,flx_lw_net_clr,flx_sw_net_clr
-#endif
 
     IF (timers_level > 5) CALL timer_start(timer_radiation)
 
@@ -1077,21 +1068,12 @@ CONTAINS
       &                              xp = vpp_n2o                )
     xm_o2    (1:jce,:) = gas_profile(jce, klev, irad_o2,         &
       &                              mmr_gas = mmr_o2            )
-#ifdef __SX__
-    xm_cfc11 (1:jce,:) = gas_profile(jce, klev, irad_cfc11,        &
-      &                              mmr_gas = REAL(mmr_cfc11,wp), &
-      &                              gas_scenario = ghg_cfcmmr(1)  )
-    xm_cfc12 (1:jce,:) = gas_profile(jce, klev, irad_cfc12,        &
-      &                              mmr_gas = REAL(mmr_cfc12,wp), &
-      &                              gas_scenario = ghg_cfcmmr(2)  )
-#else
     xm_cfc11 (1:jce,:) = gas_profile(jce, klev, irad_cfc11,        &
       &                              mmr_gas = mmr_cfc11 ,         &
       &                              gas_scenario = ghg_cfcmmr(1)  ) 
     xm_cfc12 (1:jce,:) = gas_profile(jce, klev, irad_cfc12,        &
       &                              mmr_gas = mmr_cfc12,          &
       &                              gas_scenario = ghg_cfcmmr(2)  )
-#endif
     !
 
     ! 2.0 Call interface to radiation solver
@@ -1425,19 +1407,6 @@ CONTAINS
 
 
     LOGICAL:: l_coupled_reff          ! Use the effective radius from microphysics
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: icldlyr,zsemiss,pm_sfc
-!DIR$ ATTRIBUTES ALIGN : 64 :: col_dry_vr,pm_fl_vr,tk_fl_vr,tk_hl_vr
-!DIR$ ATTRIBUTES ALIGN : 64 :: cdnc_vr,cld_frc_vr,ziwgkg_vr,ziwc_vr,ziwp_vr
-!DIR$ ATTRIBUTES ALIGN : 64 :: reff_liq_vr,reff_frz_vr
-!DIR$ ATTRIBUTES ALIGN : 64 :: zlwgkg_vr,zlwp_vr,zlwc_vr,wkl_vr,wx_vr
-!DIR$ ATTRIBUTES ALIGN : 64 :: cld_tau_lw_vr,cld_tau_sw_vr,cld_cg_sw_vr,cld_piz_sw_vr
-!DIR$ ATTRIBUTES ALIGN : 64 :: aer_tau_lw_vr,aer_tau_sw_vr,aer_cg_sw_vr,aer_piz_sw_vr
-!DIR$ ATTRIBUTES ALIGN : 64 :: flx_uplw_vr,flx_uplw_clr_vr,flx_dnlw_vr
-!DIR$ ATTRIBUTES ALIGN : 64 :: flx_dnlw_clr_vr,flx_upsw,flx_upsw_clr,flx_dnsw
-!DIR$ ATTRIBUTES ALIGN : 64 :: flx_dnsw_clr
-!DIR$ ATTRIBUTES ALIGN : 64 :: tune_dust
-#endif
 
 
     ! Initialize output variables
@@ -1628,16 +1597,6 @@ CONTAINS
           ENDDO
         ENDDO
       ENDDO
-#ifdef __ICON_ART
-    CASE (iRadAeroART)
-      CALL art_rad_aero_interface(zaeq1,zaeq2,zaeq3,zaeq4,zaeq5, &
-        &                         zaea_rrtm,zaes_rrtm,zaeg_rrtm, &
-        &                         jg,jb,1,klev,1,jce,jpband,jpsw,&
-        &                         aer_tau_lw_vr,                 &
-        &                         aer_tau_sw_vr,                 &
-        &                         aer_piz_sw_vr,                 &
-        &                         aer_cg_sw_vr)
-#endif
     CASE (iRadAeroConstKinne,iRadAeroKinne)
        ! this is for rrtm radiation in the NWP part, we do not introduce
        ! the simple plumes here
@@ -1968,12 +1927,6 @@ CONTAINS
 
     LOGICAL  :: l_nh_corr, lcalc_trsolclr, lcalc_clrflx
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: zflxsw,zflxlw,zconv,tqv
-!DIR$ ATTRIBUTES ALIGN : 64 :: dlwem_o_dtg,lwfac1,lwfac2,intclw,intcli
-!DIR$ ATTRIBUTES ALIGN : 64 :: dlwflxall_o_dtg,dflxsw_o_dalb
-!DIR$ ATTRIBUTES ALIGN : 64 :: trsolclr,slope_corr
-#endif
     IF ( PRESENT(opt_nh_corr) ) THEN
       l_nh_corr = opt_nh_corr
       IF (l_nh_corr .AND. .NOT.(PRESENT(pqc).AND.PRESENT(pqi).AND.PRESENT(ppres_ifc))) THEN

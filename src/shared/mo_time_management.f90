@@ -69,11 +69,11 @@ MODULE mo_time_management
   USE mo_restart_nml_and_att,      ONLY: getAttributesForRestarting
   USE mo_key_value_store,          ONLY: t_key_value_store
 
-#ifndef __NO_ICON_ATMO__
+
   USE mo_nonhydrostatic_config,    ONLY: divdamp_order
   USE mo_atm_phy_nwp_config,       ONLY: atm_phy_nwp_config
   USE mo_initicon_config,          ONLY: timeshift 
-#endif
+
 
 
   IMPLICIT NONE
@@ -149,7 +149,7 @@ CONTAINS
       CALL timedeltaToString(dtime1, dtime_string)
       IF (dtime_real > 0._wp)  dtime_real = dtime_real * grid_rescale_factor
 
-#ifndef __NO_ICON_ATMO__
+
       IF (get_my_process_type() == atmo_process) THEN
         DO jg=1,max_dom
           atm_phy_nwp_config(jg)%dt_conv = &
@@ -162,7 +162,7 @@ CONTAINS
             atm_phy_nwp_config(jg)%dt_gwd  * grid_rescale_factor
         END DO
       END IF
-#endif
+
 
     ELSE
       CALL timedeltaToString(dtime1, dtime_string)
@@ -358,7 +358,7 @@ CONTAINS
     ! bit-identical in this case
     !
 
-#ifndef __NO_ICON_ATMO__
+
     mtime_0h => newTimedelta("PT0S")
     IF (mtime_dt_checkpoint /= mtime_0h) THEN
       mtime_2_5h => newTimedelta("PT02H30M")
@@ -372,7 +372,7 @@ CONTAINS
       CALL deallocateTimedelta(mtime_2_5h)
     ENDIF
     CALL deallocateTimedelta(mtime_0h)    
-#endif
+
 
     ! Writing a checkpoint file exactly at the start time of a nest is
     ! not allowed:
@@ -443,10 +443,10 @@ CONTAINS
     CHARACTER(len=MAX_CALENDAR_STR_LEN)   ::  calendar1, calendar2, calendar
     TYPE(t_key_value_store), POINTER ::  restartAttributes
     CHARACTER(LEN=:), ALLOCATABLE :: start_datetime_string !< run start date
-#ifndef __NO_ICON_ATMO__
+
     REAL(wp)                              :: zdt_shift            ! rounded dt_shift
     CHARACTER(LEN=MAX_TIMEDELTA_STR_LEN)  :: dt_shift_string
-#endif
+
 
     ! --------------------------------------------------------------
     ! PART I: Collect all the dates as ISO8601 strings
@@ -663,7 +663,7 @@ CONTAINS
 
 
     IF (model_string == 'atm') THEN
-#ifndef __NO_ICON_ATMO__
+
       !
       ! timeshift-operations for CURRENT DATE
       !
@@ -695,7 +695,7 @@ CONTAINS
       CALL getPTStringFromSeconds(ABS(timeshift%dt_shift), dt_shift_string)
       timeshift%mtime_absshift => newTimedelta(dt_shift_string)
       CALL message('',message_text)
-#endif
+
     ENDIF
 
 
@@ -881,14 +881,14 @@ CONTAINS
     CALL set_tc_current_date ( cur_datetime_string       )
 
     IF (model_string == 'atm') THEN
-#ifndef __NO_ICON_ATMO__
+
       ! add IAU time shift to current date
       IF (.NOT. isRestart()) THEN
         IF (timeshift%dt_shift < 0._wp) THEN
           time_config%tc_current_date = time_config%tc_current_date + timeshift%mtime_shift
         ENDIF
       ENDIF
-#endif
+
     ENDIF
 
 

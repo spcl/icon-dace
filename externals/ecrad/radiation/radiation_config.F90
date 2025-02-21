@@ -204,11 +204,11 @@ module radiation_config
     ! Use a more vectorizable McICA cloud generator, at the expense of
     ! more random numbers being generated?  This is the default on NEC
     ! SX.
-#ifdef __SX__
-    logical :: use_vectorizable_generator = .true.
-#else
+
+
+
     logical :: use_vectorizable_generator = .false.
-#endif
+
 
     ! Shape of sub-grid cloud water PDF
     integer :: i_cloud_pdf_shape = IPdfShapeGamma

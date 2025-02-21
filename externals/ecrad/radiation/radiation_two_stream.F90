@@ -21,9 +21,9 @@
 !   2017-10-23  R Hogan  Renamed single-character variables
 !   2021-02-19  R Hogan  Security for shortwave singularity
 !   2022-11-22  P Ukkonen/R Hogan  Single precision uses no double precision
-#if defined (__SX__) || defined (_OPENACC)
-#define __VECTOR_ACC
-#endif
+
+
+
 
 module radiation_two_stream
 
@@ -47,22 +47,6 @@ module radiation_two_stream
 
 contains
 
-#ifdef FAST_EXPONENTIAL
-  !---------------------------------------------------------------------
-  ! Fast exponential for negative arguments: a Pade approximant that
-  ! doesn't go negative for negative arguments, applied to arg/8, and
-  ! the result is then squared three times
-  elemental function exp_fast(arg) result(ex)
-    real(jprd) :: arg, ex
-    ex = 1.0_jprd / (1.0_jprd + arg*(-0.125_jprd &
-         + arg*(0.0078125_jprd - 0.000325520833333333_jprd * arg)))
-    ex = ex*ex
-    ex = ex*ex
-    ex = ex*ex
-  end function exp_fast
-#else
-#define exp_fast exp
-#endif
 
   !---------------------------------------------------------------------
   ! Calculate the two-stream coefficients gamma1 and gamma2 for the
@@ -70,9 +54,6 @@ contains
   subroutine calc_two_stream_gammas_lw(ng, ssa, g, &
        &                               gamma1, gamma2)
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    use ecradhook, only : lhook, dr_hook, jphook
-#endif
 
     integer, intent(in) :: ng
     ! Sngle scattering albedo and asymmetry factor:
@@ -85,11 +66,6 @@ contains
 
     !$ACC ROUTINE WORKER
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    real(jphook) :: hook_handle
-
-    if (lhook) call dr_hook('radiation_two_stream:calc_two_stream_gammas_lw',0,hook_handle)
-#endif
 
 !$ACC LOOP WORKER VECTOR 
 ! Added for DWD (2020)
@@ -106,9 +82,6 @@ contains
       gamma2(jg) = factor * (1.0_jprb - g(jg))
     end do
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    if (lhook) call dr_hook('radiation_two_stream:calc_two_stream_gammas_lw',1,hook_handle)
-#endif
 
   end subroutine calc_two_stream_gammas_lw
 
@@ -119,9 +92,6 @@ contains
   subroutine calc_two_stream_gammas_sw(ng, mu0, ssa, g, &
        &                               gamma1, gamma2, gamma3)
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    use ecradhook, only : lhook, dr_hook, jphook
-#endif
 
     integer, intent(in) :: ng
     ! Cosine of solar zenith angle, single scattering albedo and
@@ -134,11 +104,6 @@ contains
 
     integer    :: jg
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    real(jphook) :: hook_handle
-
-    if (lhook) call dr_hook('radiation_two_stream:calc_two_stream_gammas_sw',0,hook_handle)
-#endif
 
     !$ACC ROUTINE WORKER
 
@@ -158,9 +123,6 @@ contains
       gamma3(jg) = 0.5_jprb  - mu0*factor
     end do
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    if (lhook) call dr_hook('radiation_two_stream:calc_two_stream_gammas_sw',1,hook_handle)
-#endif
 
   end subroutine calc_two_stream_gammas_sw
 
@@ -175,9 +137,6 @@ contains
        &    od, gamma1, gamma2, planck_top, planck_bot, &
        &    reflectance, transmittance, source_up, source_dn)
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    use ecradhook, only : lhook, dr_hook, jphook
-#endif
 
     implicit none
     
@@ -212,11 +171,6 @@ contains
 
     integer :: jg
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    real(jphook) :: hook_handle
-
-    if (lhook) call dr_hook('radiation_two_stream:calc_reflectance_transmittance_lw',0,hook_handle)
-#endif
 
     !$ACC ROUTINE WORKER
 
@@ -228,7 +182,7 @@ contains
       if (od(jg) > 1.0e-3_jprd) then
         k_exponent = sqrt(max((gamma1(jg) - gamma2(jg)) * (gamma1(jg) + gamma2(jg)), &
              1.E-12_jprd)) ! Eq 18 of Meador & Weaver (1980)
-        exponential = exp_fast(-k_exponent*od(jg))
+        exponential = exp(-k_exponent*od(jg))
         exponential2 = exponential*exponential
         reftrans_factor = 1.0 / (k_exponent + gamma1(jg) + (k_exponent - gamma1(jg))*exponential2)
         ! Meador & Weaver (1980) Eq. 25
@@ -259,9 +213,6 @@ contains
       end if
     end do
     
-#ifdef DO_DR_HOOK_TWO_STREAM
-    if (lhook) call dr_hook('radiation_two_stream:calc_reflectance_transmittance_lw',1,hook_handle)
-#endif
   
   end subroutine calc_reflectance_transmittance_lw
   
@@ -277,9 +228,6 @@ contains
        &    od, ssa, asymmetry, planck_top, planck_bot, &
        &    reflectance, transmittance, source_up, source_dn)
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    use ecradhook, only : lhook, dr_hook, jphook
-#endif
 
     integer, intent(in) :: ng
 
@@ -314,11 +262,6 @@ contains
 
     integer :: jg
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    real(jphook) :: hook_handle
-
-    if (lhook) call dr_hook('radiation_two_stream:calc_ref_trans_lw',0,hook_handle)
-#endif
 
     !$ACC ROUTINE WORKER
 
@@ -332,7 +275,7 @@ contains
       k_exponent = sqrt(max((gamma1 - gamma2) * (gamma1 + gamma2), &
            1.E-12_jprb)) ! Eq 18 of Meador & Weaver (1980)
       if (od(jg) > 1.0e-3_jprb) then
-        exponential = exp_fast(-k_exponent*od(jg))
+        exponential = exp(-k_exponent*od(jg))
         exponential2 = exponential*exponential
         reftrans_factor = 1.0_jprb / (k_exponent + gamma1 + (k_exponent - gamma1)*exponential2)
         ! Meador & Weaver (1980) Eq. 25
@@ -361,9 +304,6 @@ contains
       end if
     end do
     
-#ifdef DO_DR_HOOK_TWO_STREAM
-    if (lhook) call dr_hook('radiation_two_stream:calc_ref_trans_lw',1,hook_handle)
-#endif
   
   end subroutine calc_ref_trans_lw
   
@@ -377,9 +317,6 @@ contains
   subroutine calc_no_scattering_transmittance_lw(ng, &
        &    od, planck_top, planck_bot, transmittance, source_up, source_dn)
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    use ecradhook, only : lhook, dr_hook, jphook
-#endif
 
     integer, intent(in) :: ng
 
@@ -405,15 +342,8 @@ contains
 
     !$ACC ROUTINE WORKER
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    real(jphook) :: hook_handle
 
-    if (lhook) call dr_hook('radiation_two_stream:calc_no_scattering_transmittance_lw',0,hook_handle)
-#endif
-
-#ifndef __VECTOR_ACC
-    transmittance = exp_fast(-LwDiffusivityWP*od)
-#endif
+    transmittance = exp(-LwDiffusivityWP*od)
 
 !$ACC LOOP WORKER VECTOR
     do jg = 1, ng
@@ -421,9 +351,6 @@ contains
       ! function to vary linearly with optical depth within the layer
       ! (e.g. Wiscombe , JQSRT 1976).
       coeff = LwDiffusivityWP*od(jg)
-#ifdef __VECTOR_ACC
-      transmittance(jg) = exp_fast(-coeff)
-#endif
       if (od(jg) > 1.0e-3_jprb) then
         ! Simplified from calc_reflectance_transmittance_lw above
         coeff = (planck_bot(jg)-planck_top(jg)) / coeff
@@ -440,9 +367,6 @@ contains
       end if
     end do
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    if (lhook) call dr_hook('radiation_two_stream:calc_no_scattering_transmittance_lw',1,hook_handle)
-#endif
 
   end subroutine calc_no_scattering_transmittance_lw
    
@@ -460,9 +384,6 @@ contains
        &      gamma1, gamma2, gamma3, ref_diff, trans_diff, &
        &      ref_dir, trans_dir_diff, trans_dir_dir)
     
-#ifdef DO_DR_HOOK_TWO_STREAM
-    use ecradhook, only : lhook, dr_hook, jphook
-#endif
 
     integer, intent(in) :: ng
 
@@ -503,11 +424,6 @@ contains
     ! precision (jprb) rather than fixing at double precision (jprd).
     real(jprb) :: mu0_local
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    real(jphook) :: hook_handle
-
-    if (lhook) call dr_hook('radiation_two_stream:calc_reflectance_transmittance_sw',0,hook_handle)
-#endif
 
     !$ACC ROUTINE WORKER
 
@@ -544,9 +460,9 @@ contains
         k_gamma3 = k_exponent*gamma3(jg)
         k_gamma4 = k_exponent*gamma4
         ! Check for mu0 <= 0!
-        exponential0 = exp_fast(-od_over_mu0)
+        exponential0 = exp(-od_over_mu0)
         trans_dir_dir(jg) = exponential0
-        exponential = exp_fast(-k_exponent*od(jg))
+        exponential = exp(-k_exponent*od(jg))
         
         exponential2 = exponential*exponential
         k_2_exponential = 2.0_jprd * k_exponent * exponential
@@ -586,9 +502,6 @@ contains
 
     end do
     
-#ifdef DO_DR_HOOK_TWO_STREAM
-    if (lhook) call dr_hook('radiation_two_stream:calc_reflectance_transmittance_sw',1,hook_handle)
-#endif
  
   end subroutine calc_reflectance_transmittance_sw
 
@@ -607,9 +520,6 @@ contains
        &      asymmetry, ref_diff, trans_diff, &
        &      ref_dir, trans_dir_diff, trans_dir_dir)
     
-#ifdef DO_DR_HOOK_TWO_STREAM
-    use ecradhook, only : lhook, dr_hook, jphook
-#endif
 
     implicit none
     
@@ -637,15 +547,9 @@ contains
 
     ! The three transfer coefficients from the two-stream
     ! differentiatial equations 
-#ifndef __VECTOR_ACC
     real(jprb), dimension(ng) :: gamma1, gamma2, gamma3, gamma4 
     real(jprb), dimension(ng) :: alpha1, alpha2, k_exponent
     real(jprb), dimension(ng) :: exponential ! = exp(-k_exponent*od)
-#else
-    real(jprb) :: gamma1, gamma2, gamma3, gamma4 
-    real(jprb) :: alpha1, alpha2, k_exponent
-    real(jprb) :: exponential ! = exp(-k_exponent*od)
-#endif
     
     real(jprb) :: reftrans_factor, factor
     real(jprb) :: exponential2 ! = exp(-2*k_exponent*od)
@@ -653,18 +557,12 @@ contains
     real(jprb) :: k_2_exponential, one_minus_kmu0_sqr
     integer    :: jg
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    real(jphook) :: hook_handle
 
-    if (lhook) call dr_hook('radiation_two_stream:calc_ref_trans_sw',0,hook_handle)
-#endif
-
-#ifndef __VECTOR_ACC
     ! GCC 9.3 strange error: intermediate values of ~ -8000 cause a
     ! FPE when vectorizing exp(), but not in non-vectorized loop, nor
     ! with larger negative values!
     trans_dir_dir = max(-max(od * (1.0_jprb/mu0), 0.0_jprb),-1000.0_jprb)
-    trans_dir_dir = exp_fast(trans_dir_dir)
+    trans_dir_dir = exp(trans_dir_dir)
 
     do jg = 1, ng
 
@@ -685,7 +583,7 @@ contains
            &       1.0e-12_jprb)) ! Eq 18
     end do
 
-    exponential = exp_fast(-k_exponent*od)
+    exponential = exp(-k_exponent*od)
 
     do jg = 1, ng
       k_mu0 = k_exponent(jg)*mu0
@@ -730,80 +628,7 @@ contains
 
     end do
 
-#else
-    ! GPU-capable and vector-optimized version for ICON
-    !$ACC ROUTINE WORKER
 
-    !$ACC LOOP WORKER VECTOR PRIVATE(gamma1, gamma2, gamma3, gamma4, &
-    !$ACC   alpha1, alpha2, k_exponent, &
-    !$ACC   reftrans_factor, exponential, k_mu0, &
-    !$ACC   k_gamma3, k_gamma4, k_2_exponential, one_minus_kmu0_sqr)
-    do jg = 1, ng
-
-      trans_dir_dir(jg) = max(-max(od(jg) * (1.0_jprb/mu0),0.0_jprb),-1000.0_jprb)
-      trans_dir_dir(jg) = exp_fast(trans_dir_dir(jg))
-
-      ! Zdunkowski "PIFM" (Zdunkowski et al., 1980; Contributions to
-      ! Atmospheric Physics 53, 147-66)
-      factor = 0.75_jprb*asymmetry(jg)
-
-      gamma1 = 2.0_jprb  - ssa(jg) * (1.25_jprb + factor)
-      gamma2 = ssa(jg) * (0.75_jprb - factor)
-      gamma3 = 0.5_jprb  - mu0*factor
-      gamma4 = 1.0_jprb - gamma3
-
-      alpha1 = gamma1*gamma4 + gamma2*gamma3 ! Eq. 16
-      alpha2 = gamma1*gamma3 + gamma2*gamma4 ! Eq. 17
-      k_exponent = sqrt(max((gamma1 - gamma2) * (gamma1 + gamma2), 1.0e-12_jprb)) ! Eq 18
-
-      exponential = exp_fast(-k_exponent*od(jg))
-
-      k_mu0 = k_exponent*mu0
-      one_minus_kmu0_sqr = 1.0_jprb - k_mu0*k_mu0
-      k_gamma3 = k_exponent*gamma3
-      k_gamma4 = k_exponent*gamma4
-      exponential2 = exponential*exponential
-      k_2_exponential = 2.0_jprb * k_exponent * exponential
-      reftrans_factor = 1.0_jprb / (k_exponent + gamma1 + (k_exponent - gamma1)*exponential2)
-        
-      ! Meador & Weaver (1980) Eq. 25
-      ref_diff(jg) = gamma2 * (1.0_jprb - exponential2) * reftrans_factor
-        
-      ! Meador & Weaver (1980) Eq. 26
-      trans_diff(jg) = k_2_exponential * reftrans_factor
-        
-      ! Here we need mu0 even though it wasn't in Meador and Weaver
-      ! because we are assuming the incoming direct flux is defined to
-      ! be the flux into a plane perpendicular to the direction of the
-      ! sun, not into a horizontal plane
-      reftrans_factor = mu0 * ssa(jg) * reftrans_factor &
-            &  / merge(one_minus_kmu0_sqr, epsilon(1.0_jprb), abs(one_minus_kmu0_sqr) > epsilon(1.0_jprb))
-      
-      ! Meador & Weaver (1980) Eq. 14, multiplying top & bottom by
-      ! exp(-k_exponent*od) in case of very high optical depths
-      ref_dir(jg) = reftrans_factor &
-           &  * ( (1.0_jprb - k_mu0) * (alpha2 + k_gamma3) &
-           &     -(1.0_jprb + k_mu0) * (alpha2 - k_gamma3)*exponential2 &
-           &     -k_2_exponential*(gamma3 - alpha2*mu0)*trans_dir_dir(jg) )
-        
-      ! Meador & Weaver (1980) Eq. 15, multiplying top & bottom by
-      ! exp(-k_exponent*od), minus the 1*exp(-od/mu0) term
-      ! representing direct unscattered transmittance.
-      trans_dir_diff(jg) = reftrans_factor * ( k_2_exponential*(gamma4 + alpha1*mu0) &
-           & - trans_dir_dir(jg) &
-           & * ( (1.0_jprb + k_mu0) * (alpha1 + k_gamma4) &
-           &    -(1.0_jprb - k_mu0) * (alpha1 - k_gamma4) * exponential2) )
-
-      ! Final check that ref_dir + trans_dir_diff <= 1
-      ref_dir(jg)        = max(0.0_jprb, min(ref_dir(jg), mu0*(1.0_jprb-trans_dir_dir(jg))))
-      trans_dir_diff(jg) = max(0.0_jprb, min(trans_dir_diff(jg), mu0*(1.0_jprb-trans_dir_dir(jg))-ref_dir(jg)))
-
-    end do
-#endif
-
-#ifdef DO_DR_HOOK_TWO_STREAM
-    if (lhook) call dr_hook('radiation_two_stream:calc_ref_trans_sw',1,hook_handle)
-#endif
  
   end subroutine calc_ref_trans_sw
 
@@ -815,9 +640,6 @@ contains
   subroutine calc_frac_scattered_diffuse_sw(ng, od, &
        &      gamma1, gamma2, frac_scat_diffuse)
     
-#ifdef DO_DR_HOOK_TWO_STREAM
-    use ecradhook, only : lhook, dr_hook, jphook
-#endif
 
     integer, intent(in) :: ng
 
@@ -838,11 +660,6 @@ contains
     real(jprd) :: k_2_exponential
     integer    :: jg
 
-#ifdef DO_DR_HOOK_TWO_STREAM
-    real(jphook) :: hook_handle
-
-    if (lhook) call dr_hook('radiation_two_stream:calc_frac_scattered_diffuse_sw',0,hook_handle)
-#endif
 
 ! Added for DWD (2020)
 !NEC$ shortloop
@@ -852,7 +669,7 @@ contains
       ! angle
       k_exponent = sqrt(max((gamma1(jg) - gamma2(jg)) * (gamma1(jg) + gamma2(jg)), &
            &       1.0e-12_jprd)) ! Eq 18
-      exponential = exp_fast(-k_exponent*od(jg))
+      exponential = exp(-k_exponent*od(jg))
       exponential2 = exponential*exponential
       k_2_exponential = 2.0_jprd * k_exponent * exponential
         
@@ -861,16 +678,13 @@ contains
       ! Meador & Weaver (1980) Eq. 26.
       ! Until 1.1.8, used LwDiffusivity instead of 2.0, although the
       ! effect is very small
-      !      frac_scat_diffuse(jg) = 1.0_jprb - min(1.0_jprb,exp_fast(-LwDiffusivity*od(jg)) &
+      !      frac_scat_diffuse(jg) = 1.0_jprb - min(1.0_jprb,exp(-LwDiffusivity*od(jg)) &
       !           &  / max(1.0e-8_jprb, k_2_exponential * reftrans_factor))
       frac_scat_diffuse(jg) = 1.0_jprb &
-           &  - min(1.0_jprb,exp_fast(-2.0_jprb*od(jg)) &
+           &  - min(1.0_jprb,exp(-2.0_jprb*od(jg)) &
            &  / max(1.0e-8_jprb, k_2_exponential * reftrans_factor))
     end do
     
-#ifdef DO_DR_HOOK_TWO_STREAM
-    if (lhook) call dr_hook('radiation_two_stream:calc_frac_scattered_diffuse_sw',1,hook_handle)
-#endif
  
   end subroutine calc_frac_scattered_diffuse_sw
 

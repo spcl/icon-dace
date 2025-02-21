@@ -12,9 +12,9 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#endif
+
+
+
 
 MODULE mo_ocean_solve_gmres
   USE mo_kind, ONLY: sp, wp
@@ -38,10 +38,10 @@ MODULE mo_ocean_solve_gmres
     REAL(KIND=wp), ALLOCATABLE, DIMENSION(:,:,:) :: v_wp
     REAL(KIND=wp), ALLOCATABLE, DIMENSION(:,:) :: w_wp, z_wp, h_wp
     REAL(KIND=wp), ALLOCATABLE, DIMENSION(:) :: s_wp, c_wp, res_t_wp
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: v_sp, w_sp, z_sp, h_sp, s_sp, c_sp, res_t_sp
-!DIR$ ATTRIBUTES ALIGN : 64 :: v_wp, w_wp, z_wp, h_wp, s_wp, c_wp, res_t_wp
-#endif
+
+
+
+
 ! interfaces
   CONTAINS
     PROCEDURE :: doit_wp => ocean_solve_gmres_cal_wp ! override deferred
@@ -92,9 +92,9 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(this_mod_name, 'OpenACC version currently not tested/validated')
-#endif
+
+
+
 
 ! set pointers to internal solver-arrays
     CALL this%recover_arrays(v, x, b, w, z, h, s, c, res)

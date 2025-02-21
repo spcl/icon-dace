@@ -46,7 +46,19 @@ USE mo_master_control,       ONLY: get_my_process_name
   USE mo_fortran_tools,      ONLY: set_acc_host_or_device
   USE mo_netcdf
 
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   
   IMPLICIT NONE
@@ -170,7 +182,7 @@ CONTAINS
      grib2_desc = grib2_var( 192, 140, 219, ibits, GRID_UNSTRUCTURED, GRID_CELL)
      CALL add_var( p_ext_bgc_list, 'DUSTin', p_ext_bgc%dust,      &
        &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, ldims=shape3d_c, lopenacc = .TRUE. )
-     __acc_attach(p_ext_bgc%dust)
+     
      CALL add_var( p_ext_bgc_list, 'DUSTY', p_ext_data_bgc%dusty,      &
        &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, ldims=shape2d_c )
      cf_desc    = t_cf_var('Nitrogen cell center', 'kg m-2 yr-1', &
@@ -178,7 +190,7 @@ CONTAINS
      grib2_desc = grib2_var( 192, 140, 239, ibits, GRID_UNSTRUCTURED, GRID_CELL)
      CALL add_var( p_ext_bgc_list, 'NDEP', p_ext_bgc%nitro,      &
        &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, ldims=shape3d_c, lopenacc = .TRUE. )
-     __acc_attach(p_ext_bgc%nitro)
+     
      CALL add_var( p_ext_bgc_list, 'NITRO', p_ext_data_bgc%nitro,      &
        &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, ldims=shape2d_c )
     ELSE

@@ -41,9 +41,9 @@ MODULE mo_run_nml
                          & config_profiling_output => profiling_output, &
                          & config_check_uuid_gracefully => check_uuid_gracefully, &
                          & cfg_modelTimeStep => modelTimeStep
-#ifdef HAVE_RADARFWO
-  USE radar_data_namelist, ONLY: radar_config_radarnmlfile => radarnmlfile
-#endif
+
+
+
   USE mo_kind,           ONLY: wp
   USE mo_exception,      ONLY: finish, set_msg_timestamp
   USE mo_impl_constants, ONLY: max_dom, max_ntracer, inoforcing, IHELDSUAREZ,     &
@@ -244,9 +244,9 @@ CONTAINS
     IF (.NOT. ltimer) timers_level = 0
 
     IF (lart) THEN
-#ifndef __ICON_ART
+
       CALL finish( TRIM(routine),'model set to run with ART but compiled with --disable-art')
-#endif
+
     END IF
 
     !----------------------------------------------------
@@ -264,9 +264,9 @@ CONTAINS
 
     config_luse_radarfwo(:) = luse_radarfwo(:)
     config_radarnmlfile    = radarnmlfile
-#ifdef HAVE_RADARFWO
-    IF(LEN_TRIM(config_radarnmlfile)>0) radar_config_radarnmlfile = config_radarnmlfile
-#endif
+
+
+
 
     config_lvert_nest      = lvert_nest
     config_nlev            = num_lev(1)

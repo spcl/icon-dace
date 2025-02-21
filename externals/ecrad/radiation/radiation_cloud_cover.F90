@@ -257,10 +257,10 @@ contains
            &  + (1.0_jprb - overlap_alpha) &
            &  * (frac(jlev)+frac(jlev+1)-frac(jlev)*frac(jlev+1))
 ! Added for DWD (2020)
-#ifdef __SX__
-    end do
-    do jlev = 1,nlev-1
-#endif
+
+
+
+
       if (frac(jlev) >= MaxCloudFrac) then
         ! Cloud cover has reached one
         cum_product = 0.0_jprb

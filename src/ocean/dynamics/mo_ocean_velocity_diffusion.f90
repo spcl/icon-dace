@@ -13,7 +13,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_ocean_velocity_diffusion
   
@@ -92,9 +102,6 @@ CONTAINS
       
       !divgrad laplacian is chosen
       IF(laplacian_form==2)THEN
-#ifdef _OPENACC
-        IF (lzacc) CALL finish(method_name, 'OpenACC version currently for laplacian_form not implemented')
-#endif
         CALL finish(method_name, "form of harmonic Laplacian not recommended")
         CALL veloc_diff_harmonic_div_grad( patch_3D,      &
           & physics_parameters%HarmonicViscosity_coeff,   &
@@ -119,9 +126,6 @@ CONTAINS
       ENDIF
       
     ELSEIF(VelocityDiffusion_order==2 .or. VelocityDiffusion_order==21)THEN
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(method_name, 'OpenACC version currently for VelocityDiffusion_order/=1 not implemented')
-#endif
       IF(laplacian_form==2)THEN
         !CALL finish("mo_ocean_velocity_diffusion:velocity_diffusion", "form of biharmonic Laplacian not recommended")
         CALL veloc_diff_biharmonic_div_grad( patch_3D,   &
@@ -334,11 +338,7 @@ CONTAINS
     start_level = 1
     end_level = n_zlev
     
-#ifdef NAGFOR
-     z_div_grad_u(:,:,:)%x(1) = 0.0_wp
-     z_div_grad_u(:,:,:)%x(2) = 0.0_wp
-     z_div_grad_u(:,:,:)%x(3) = 0.0_wp
-#endif
+
 !     laplacian_vn_out  (1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_e) = 0.0_wp
     
     ! loop over cells in local domain + halo
@@ -722,12 +722,12 @@ CONTAINS
     ! compute divergence of vector field
     ! z_div_c(:,:,patch_2D%alloc_cell_blocks) = 0.0_wp
     
-#ifdef NAGFOR
-    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    z_div_c(:,:,:) = 0.0_wp
-    !$ACC END KERNELS
-    !$ACC WAIT(1)
-#endif
+
+
+
+
+
+
 
     ! vn is synced on all edges
     CALL div_oce_3d( u_vec_e, patch_3D, div_coeff, z_div_c, subset_range=patch_2D%cells%all, lacc=lzacc)
@@ -846,14 +846,6 @@ CONTAINS
     ividx => patch_2D%edges%vertex_idx
     ivblk => patch_2D%edges%vertex_blk
     
-#ifdef NAGFOR
-    ! this is only for sync with nag
-    z_nabla2_e(:,:,:) = 0.0_wp
-    z_div_c(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%alloc_cell_blocks) =0.0_wp
-    p_nabla2_dual(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v)%x(1)=0.0_wp
-    p_nabla2_dual(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v)%x(2)=0.0_wp
-    p_nabla2_dual(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v)%x(3)=0.0_wp
-#endif
 !     z_rot_v(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v) =0.0_wp
 
 !     IF (VelocityDiffusion_order==21) THEN
@@ -1019,203 +1011,6 @@ CONTAINS
   !!
   !------------------------------------------------------------------------
 !<Optimize:inUse>
-#ifdef __LVECTOR__
-  SUBROUTINE velocity_diffusion_vertical_implicit_onBlock( &
-    & patch_3d,                            &
-    & velocity,                            &
-    & a_v,                                 &
-    & operators_coefficients,              &
-    & start_index, end_index, edge_block, lacc)
-
-    TYPE(t_patch_3d ),TARGET, INTENT(in) :: patch_3d
-    REAL(wp), INTENT(inout)              :: velocity(:,:)   ! on edges, (nproma, levels)
-    REAL(wp), INTENT(inout)              :: a_v(:,:)      ! on edges, (nproma, levels)
-    TYPE(t_operator_coeff),INTENT(IN) ,TARGET :: operators_coefficients
-    INTEGER , INTENT(in):: start_index, end_index, edge_block
-    LOGICAL, INTENT(in), OPTIONAL        :: lacc
-    !
-!     REAL(wp) :: dt_inv
-    REAL(wp) :: inv_prism_thickness(nproma,1:n_zlev), inv_prisms_center_distance(nproma,1:n_zlev)
-    REAL(wp) :: a(nproma,1:n_zlev), b(nproma,1:n_zlev), c(nproma,1:n_zlev)
-    REAL(wp) :: column_velocity(nproma,1:n_zlev)
-    REAL(wp) :: fact(1:n_zlev)
-
-    INTEGER :: bottom_level(nproma)
-    INTEGER :: edge_index, level, max_end_level
-    TYPE(t_patch), POINTER :: patch_2d
-    CHARACTER(LEN=*), PARAMETER :: routine ='velocity_diffusion_vertical_implicit_onBlock (lvector)'
-    LOGICAL :: lzacc
-
-    CALL set_acc_host_or_device(lzacc, lacc)
-
-    max_end_level = MAXVAL(patch_3d%p_patch_1d(1)%dolic_e(start_index:end_index,edge_block))
-
-    !$ACC DATA CREATE(inv_prism_thickness, inv_prisms_center_distance, a, b, c) &
-    !$ACC   CREATE(column_velocity, fact, bottom_level) IF(lzacc)
-
-    !-----------------------------------------------------------------------
-!     dt_inv = 1.0_wp/dtime
-    !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    DO edge_index = start_index, end_index
-      bottom_level(edge_index) = patch_3d%p_patch_1d(1)%dolic_e(edge_index,edge_block)
-    ENDDO
-    !$ACC END PARALLEL LOOP
-    !$ACC WAIT(1)
-    ! Note : the inv_prism_thick_e, inv_prism_center_dist_e should be updated in calculate_thickness
-    !$ACC PARALLEL LOOP GANG VECTOR COLLAPSE(2) DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    DO level=1, max_end_level
-      DO edge_index = start_index, end_index
-        IF (bottom_level(edge_index) < 2 .OR. level > bottom_level(edge_index)) CYCLE ! nothing to diffuse
-       
-        inv_prism_thickness(edge_index,level)        = patch_3d%p_patch_1d(1)%inv_prism_thick_e(edge_index,level,edge_block)
-        inv_prisms_center_distance(edge_index,level) = patch_3d%p_patch_1d(1)%inv_prism_center_dist_e(edge_index,level,edge_block)
-        
-        column_velocity(edge_index,level) = velocity(edge_index,level)
-               
-      END DO ! edge_index = start_index, end_index
-    END DO
-    !$ACC END PARALLEL LOOP
-    !$ACC WAIT(1)
-
-    !------------------------------------
-    ! Fill triangular matrix
-    ! b is diagonal, a is the upper diagonal, c is the lower
-    !   top level
-    !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    DO edge_index = start_index, end_index
-      a(edge_index,1) = 0.0_wp
-    END DO
-    !$ACC END PARALLEL LOOP
-    !$ACC WAIT(1)
-    
-    !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    DO edge_index = start_index, end_index
-      IF (bottom_level(edge_index) < 2) CYCLE ! nothing to diffuse
-            
-      c(edge_index,1) = -a_v(edge_index,2) * & 
-          & inv_prism_thickness(edge_index,1) * inv_prisms_center_distance(edge_index,2)*dtime
-      b(edge_index,1) = 1.0_wp - c(edge_index,1)
-    END DO
-    !$ACC END PARALLEL LOOP
-    !$ACC WAIT(1)
-    
-!     c(start_index:end_index,1) = -a_v(start_index:end_index,2) * & 
-!       & inv_prism_thickness(start_index:end_index,1) * inv_prisms_center_distance(start_index:end_index,2)*dtime
-!     b(start_index:end_index,1) = 1.0_wp - c(start_index:end_index,1)
-    !$ACC PARALLEL LOOP GANG VECTOR COLLAPSE(2) DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    DO level = 2, max_end_level-1
-      DO edge_index = start_index, end_index
-!         bottom_level = patch_3d%p_patch_1d(1)%dolic_e(edge_index,edge_block)
-        IF (bottom_level(edge_index) < 2 .OR. level > bottom_level(edge_index)-1) CYCLE ! nothing to diffuse
-        a(edge_index,level) = - a_v(edge_index,level)   * inv_prism_thickness(edge_index,level) * inv_prisms_center_distance(edge_index,level)*dtime
-        c(edge_index,level) = - a_v(edge_index,level+1) * inv_prism_thickness(edge_index,level) * inv_prisms_center_distance(edge_index,level+1)*dtime
-        b(edge_index,level) = 1.0_wp - a(edge_index,level) - c(edge_index,level)
-      END DO ! edge_index = start_index, end_index
-    END DO
-    !$ACC END PARALLEL LOOP
-    !$ACC WAIT(1)
-      ! bottom
-    !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-    DO edge_index = start_index, end_index
-!       bottom_level = patch_3d%p_patch_1d(1)%dolic_e(edge_index,edge_block)
-      IF (bottom_level(edge_index) < 2) CYCLE
-      a(edge_index,bottom_level(edge_index)) = -a_v(edge_index,bottom_level(edge_index)) *  &
-        & inv_prism_thickness(edge_index,bottom_level(edge_index)) * &
-        & inv_prisms_center_distance(edge_index,bottom_level(edge_index)) * dtime
-      b(edge_index,bottom_level(edge_index)) = 1.0_wp - a(edge_index,bottom_level(edge_index))
-      c(edge_index,bottom_level(edge_index)) = 0.0_wp
-    END DO
-    !$ACC END PARALLEL LOOP
-    !$ACC WAIT(1)
-
-    IF (eliminate_upper_diag) THEN
-        ! solve the tridiagonal matrix by eliminating c (the upper diagonal) 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP SEQ
-      DO level = max_end_level-1, 1, -1
-        !$ACC LOOP GANG VECTOR
-        DO edge_index = start_index, end_index
-!           bottom_level = patch_3d%p_patch_1d(1)%dolic_e(edge_index,edge_block)
-          IF (bottom_level(edge_index) < 2 .OR. level > bottom_level(edge_index)-1) CYCLE ! nothing to diffuse
-          fact(level)=c(edge_index,level)/b(edge_index,level+1)
-          b(edge_index,level)=b(edge_index,level)-a(edge_index,level+1)*fact(level)
-          c(edge_index,level) = 0.0_wp
-          column_velocity(edge_index,level) = column_velocity(edge_index,level) - fact(level)*column_velocity(edge_index,level+1)
-        END DO ! edge_index = start_index, end_index
-      END DO
-      !$ACC END PARALLEL
-      !$ACC WAIT(1)
-
-      !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      DO edge_index = start_index, end_index
-        IF (bottom_level(edge_index) < 2) CYCLE ! nothing to diffuse
-        velocity(edge_index,1) = column_velocity(edge_index,1)/b(edge_index,1)
-      END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC WAIT(1)
-
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP SEQ
-      DO level = 2, max_end_level
-        !$ACC LOOP GANG VECTOR
-        DO edge_index = start_index, end_index
-!           bottom_level = patch_3d%p_patch_1d(1)%dolic_e(edge_index,edge_block)
-          IF (bottom_level(edge_index) < 2 .OR. level > bottom_level(edge_index)) CYCLE ! nothing to diffuse
-          velocity(edge_index,level) = (column_velocity(edge_index,level) - &
-            a(edge_index,level)*  velocity(edge_index,level-1)) / b(edge_index,level)    
-        END DO ! edge_index = start_index, end_index
-      END DO
-      !$ACC END PARALLEL
-      !$ACC WAIT(1)
-
-    ELSE
-      ! solve the tridiagonal matrix by eliminating a (the lower diagonal)
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP SEQ
-      DO level=2, max_end_level
-        !$ACC LOOP GANG VECTOR
-        DO edge_index = start_index, end_index
-!           bottom_level = patch_3d%p_patch_1d(1)%dolic_e(edge_index,edge_block)
-          IF (bottom_level(edge_index) < 2 .OR. level > bottom_level(edge_index)) CYCLE ! nothing to diffuse
-          fact(level)=a(edge_index,level)/b(edge_index,level-1)
-          b(edge_index,level)=b(edge_index,level)-c(edge_index,level-1)*fact(level)
-          a(edge_index,level) = 0.0_wp
-          column_velocity(edge_index,level) = column_velocity(edge_index,level) - fact(level)*column_velocity(edge_index,level-1)
-        END DO ! edge_index = start_index, end_index
-      END DO
-      !$ACC END PARALLEL
-      !$ACC WAIT(1)
-      
-      !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      DO edge_index = start_index, end_index
-        IF (bottom_level(edge_index) < 2) CYCLE ! nothing to diffuse
-        velocity(edge_index,bottom_level(edge_index)) = column_velocity(edge_index,bottom_level(edge_index))/ &
-          & b(edge_index,bottom_level(edge_index))
-      END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC WAIT(1)
-
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP SEQ
-      DO level=max_end_level-1,1,-1
-        !$ACC LOOP GANG VECTOR
-        DO edge_index = start_index, end_index
-!           bottom_level = patch_3d%p_patch_1d(1)%dolic_e(edge_index,edge_block)
-          IF (bottom_level(edge_index) < 2 .OR. level > bottom_level(edge_index)-1) CYCLE ! nothing to diffuse
-          velocity(edge_index,level) = (column_velocity(edge_index,level) - &
-            c(edge_index,level) * velocity(edge_index,level+1)) / b(edge_index,level)
-            
-        END DO ! edge_index = start_index, end_index
-      END DO
-      !$ACC END PARALLEL
-      !$ACC WAIT(1)
-      
-    ENDIF
-
-    !$ACC END DATA
-
-  END SUBROUTINE velocity_diffusion_vertical_implicit_onBlock
-#else
   SUBROUTINE velocity_diffusion_vertical_implicit_onBlock( &
     & patch_3d,                            &
     & velocity,                            &
@@ -1315,6 +1110,5 @@ CONTAINS
     !$ACC WAIT(1)
 
   END SUBROUTINE velocity_diffusion_vertical_implicit_onBlock
-#endif
   
 END MODULE mo_ocean_velocity_diffusion

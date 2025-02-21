@@ -589,9 +589,9 @@ ELEMENTAL FUNCTION spec_humi(pvap,pres)
 END FUNCTION spec_humi
 
 ! Routine with ACC ROUTINE SEQ cannot be elemental
-#ifndef _OPENACC
+
 ELEMENTAL &
-#endif
+
 FUNCTION qsat_rho(temp, rhotot)
   !$ACC ROUTINE SEQ
 
@@ -612,9 +612,9 @@ FUNCTION qsat_rho(temp, rhotot)
 END FUNCTION qsat_rho
 
 ! Routine with ACC ROUTINE SEQ cannot be elemental
-#ifndef _OPENACC
+
 ELEMENTAL &
-#endif
+
 FUNCTION dqsatdT_rho(zqsat, temp, rho)
   !$ACC ROUTINE SEQ
 
@@ -691,9 +691,9 @@ ELEMENTAL  FUNCTION dqsatdT_ice (zqsat, temp)
 END FUNCTION dqsatdT_ice
 
 ! Routine with ACC ROUTINE SEQ cannot be elemental
-#ifndef _OPENACC
+
 ELEMENTAL &
-#endif
+
 FUNCTION latent_heat_vaporization(temp)
 
     !-------------------------------------------------------------------------------
@@ -713,9 +713,9 @@ FUNCTION latent_heat_vaporization(temp)
 END FUNCTION latent_heat_vaporization
 
 ! Routine with ACC ROUTINE SEQ cannot be elemental
-#ifndef _OPENACC
+
 ELEMENTAL &
-#endif
+
 FUNCTION latent_heat_sublimation(temp)
 
     !-------------------------------------------------------------------------------

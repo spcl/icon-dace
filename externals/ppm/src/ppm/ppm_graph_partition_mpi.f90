@@ -38,26 +38,75 @@
 !
 !> This is currently only a convenient wrapper of ParMeTis, other
 !! heuristics are to follow later.
-#include "fc_feature_defs.inc"
+
 MODULE ppm_graph_partition_mpi
   ! we need iso_c_binding without only because configure will
   ! substitute ppm_metis_int according to the actual library type
   USE iso_c_binding
   USE ppm_base, ONLY: abort_ppm
-#ifdef USE_MPI_MOD
-  USE mpi
-#endif
+
+
+
   IMPLICIT NONE
   PRIVATE
-#if defined USE_MPI && ! defined USE_MPI_MOD
-  INCLUDE 'mpif.h'
-#endif
-#include <ppm.inc>
-#ifdef HAVE_PARMETIS_V3
-  INTEGER, PARAMETER :: ppm_metis_int = c_int
-#else
+!$$$ppm.inc.in --- base definitions for PPM
+!$$$
+!$$$Copyright  (C)  2010  Thomas Jahns <jahns@dkrz.de>
+!$$$
+!$$$Version: 1.0
+!$$$Author: Thomas Jahns <jahns@dkrz.de>
+!$$$Maintainer: Thomas Jahns <jahns@dkrz.de>
+!$$$URL: https://www.dkrz.de/redmine/projects/scales-ppm
+!$$$
+!$$$Redistribution and use in source and binary forms, with or without
+!$$$modification, are  permitted provided that the following conditions are
+!$$$met:
+!$$$
+!$$$Redistributions of source code must retain the above copyright notice,
+!$$$this list of conditions and the following disclaimer.
+!$$$
+!$$$Redistributions in binary form must reproduce the above copyright
+!$$$notice, this list of conditions and the following disclaimer in the
+!$$$documentation and/or other materials provided with the distribution.
+!$$$
+!$$$Neither the name of the DKRZ GmbH nor the names of its contributors
+!$$$may be used to endorse or promote products derived from this software
+!$$$without specific prior written permission.
+!$$$
+!$$$THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+!$$$IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+!$$$TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+!$$$PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+!$$$OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+!$$$EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+!$$$PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+!$$$PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+!$$$LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+!$$$NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+!$$$SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!$$$
+!$$$Commentary: 
+!$$$
+!$$$
+!$$$
+!$$$Code:
+!$$$
+! -*- fortran -*-
+! Fortran interface for partitioning and parallelization module
+!
+
+      INTEGER PPM_METIS_IDX
+      PARAMETER (PPM_METIS_IDX=-1)
+      INTEGER PPM_METIS_REAL
+      PARAMETER (PPM_METIS_REAL=-1)
+      INTEGER PPM_MPI_FINT_FC_KIND
+      PARAMETER (PPM_MPI_FINT_FC_KIND=-1)
+! Local Variables:
+! mode: Fortran
+! license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+! license-default: "bsd"
+! End:
   INTEGER, PARAMETER :: ppm_metis_int = ppm_metis_idx
-#endif
   INTERFACE
     SUBROUTINE parmetis_v3_partkway(vtxdist, xadj, adjncy, vwgt, adjwgt, &
          wgtflag, numflag, ncon, nparts, tpwgts, ubvec, options, edgecut, &
@@ -113,9 +162,7 @@ CONTAINS
     CHARACTER(len=mpi_max_error_string) :: msg
     TYPE(c_ptr) :: vwgt, adjwgt
     TYPE(c_ptr) :: tpwgts
-#ifndef HAVE_PARMETIS_V3
     REAL(ppm_metis_real), ALLOCATABLE, TARGET :: tpwgts_balance(:, :)
-#endif
     INTEGER :: ppm_metis_idx_mpidt = mpi_datatype_null
 
     IF (PRESENT(comm)) THEN; part_comm = comm; ELSE; part_comm = mpi_comm_world
@@ -123,12 +170,12 @@ CONTAINS
     CALL mpi_comm_size(part_comm, comm_size, ierror)
     IF (ierror /= MPI_SUCCESS) THEN
       CALL mpi_error_string(ierror, msg, msg_len, ierror_)
-      CALL abort_ppm(msg(1:msg_len), filename, __LINE__, comm)
+      CALL abort_ppm(msg(1:msg_len), filename, 126, comm)
     END IF
     CALL mpi_comm_rank(part_comm, comm_rank, ierror)
     IF (ierror /= MPI_SUCCESS) THEN
       CALL mpi_error_string(ierror, msg, msg_len, ierror_)
-      CALL abort_ppm(msg(1:msg_len), filename, __LINE__, comm)
+      CALL abort_ppm(msg(1:msg_len), filename, 131, comm)
     END IF
 
     ! build table of node distribution
@@ -139,14 +186,14 @@ CONTAINS
            &                           ppm_metis_idx_mpidt, ierror)
       IF (ierror /= MPI_SUCCESS) THEN
         CALL mpi_error_string(ierror, msg, msg_len, ierror_)
-        CALL abort_ppm(msg(1:msg_len), filename, __LINE__, comm)
+        CALL abort_ppm(msg(1:msg_len), filename, 142, comm)
       END IF
     END IF
     CALL mpi_allgather(num_vertices, 1, ppm_metis_idx_mpidt, &
          vtxdist(1), 1, ppm_metis_idx_mpidt, part_comm, ierror)
     IF (ierror /= MPI_SUCCESS) then
       CALL mpi_error_string(ierror, msg, msg_len, ierror_)
-      CALL abort_ppm(msg(1:msg_len), filename, __LINE__, comm)
+      CALL abort_ppm(msg(1:msg_len), filename, 149, comm)
     END IF
 
     ! compute partial sums of vertices over ranks
@@ -184,13 +231,9 @@ CONTAINS
     IF (PRESENT(balance)) THEN
       tpwgts = c_LOC(balance(1,1))
     ELSE
-#ifdef HAVE_PARMETIS_V3
-      tpwgts = c_null_ptr
-#else
       ALLOCATE(tpwgts_balance(ncon, num_parts))
       tpwgts_balance = 1.0_ppm_metis_real / REAL(num_parts, ppm_metis_real)
       tpwgts = c_loc(tpwgts_balance(1, 1))
-#endif
     END IF
     CALL parmetis_v3_partkway(vtxdist, edge_list_lens, edge_lists, &
          vwgt, adjwgt, wgtflag, 1_ppm_metis_int, ncon, num_parts, tpwgts, &

@@ -16,7 +16,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nh_nest_utilities
@@ -47,9 +57,6 @@ MODULE mo_nh_nest_utilities
     &                               grf_bdywidth_e, grf_nudgintp_start_c, grf_nudgintp_start_e, &
     &                               grf_nudge_start_c
   USE mo_mpi,                 ONLY: my_process_is_mpi_parallel
-#ifdef _OPENACC  
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
   USE mo_communication,       ONLY: exchange_data, exchange_data_mult
   USE mo_sync,                ONLY: SYNC_C, SYNC_E, sync_patch_array, sync_patch_array_mult
   USE mo_physical_constants,  ONLY: rd, cvd_o_rd, p0ref, vtmpc1, rd_o_cpd
@@ -234,21 +241,14 @@ CONTAINS
       jshift = (ib-1)*nproma_bdyintp
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      !$ACC LOOP GANG VECTOR PRIVATE(jc, jb)
-      DO ic = jshift+1, jshift+nlen
-        jc = p_grf%idxlist_bdyintp_src_c(ic)
-        jb = p_grf%blklist_bdyintp_src_c(ic)
-!DIR$ IVDEP
-        DO jk = 1, nlev
-#else
+
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jc, jb)
       DO jk = 1, nlev
 !$NEC ivdep
         DO ic = jshift+1, jshift+nlen
           jc = p_grf%idxlist_bdyintp_src_c(ic)
           jb = p_grf%blklist_bdyintp_src_c(ic)
-#endif
+
 
           p_nh_save%w(jc,jk,jb)       = p_nh_prog%w(jc,jk,jb)
           p_nh_save%rho(jc,jk,jb)     = p_nh_prog%rho(jc,jk,jb)
@@ -292,20 +292,20 @@ CONTAINS
       jshift = (ib-1)*nproma_bdyintp
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      DO ie = jshift+1, jshift+nlen
-        je = p_grf%idxlist_bdyintp_src_e(ie)
-        jb = p_grf%blklist_bdyintp_src_e(ie)
-!DIR$ IVDEP
-        DO jk = 1, nlev
-#else
+
+
+
+
+
+
+
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(je, jb)
       DO jk = 1, nlev
 !$NEC ivdep
         DO ie = jshift+1, jshift+nlen
           je = p_grf%idxlist_bdyintp_src_e(ie)
           jb = p_grf%blklist_bdyintp_src_e(ie)
-#endif
+
 
           p_nh_save%vn(je,jk,jb) = p_nh_prog%vn(je,jk,jb)
 
@@ -530,20 +530,20 @@ CONTAINS
       jshift = (ib-1)*nproma_bdyintp
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      DO ic = jshift+1, jshift+nlen
-        jc = p_grf%idxlist_bdyintp_src_c(ic)
-        jb = p_grf%blklist_bdyintp_src_c(ic)
-!DIR$ IVDEP
-        DO jk = jk_start, nlev
-#else
+
+
+
+
+
+
+
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jc, jb)
       DO jk = jk_start, nlev
 !$NEC ivdep
         DO ic = jshift+1, jshift+nlen
           jc = p_grf%idxlist_bdyintp_src_c(ic)
           jb = p_grf%blklist_bdyintp_src_c(ic)
-#endif
+
 
           p_nh%diag%grf_tend_rho(jc,jk,jb) = &
             ( p_prog_new%rho(jc,jk,jb) - p_prog_now%rho(jc,jk,jb) )*rdt
@@ -578,14 +578,6 @@ CONTAINS
       IF (ltransport) THEN
 
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-        DO ic = jshift+1, jshift+nlen
-          jc = p_grf%idxlist_bdyintp_src_c(ic)
-          jb = p_grf%blklist_bdyintp_src_c(ic)
-          DO jt = 1,ntracer_bdyintp
-!DIR$ IVDEP
-            DO jk = jk_start, nlev
-#else
         !$ACC LOOP GANG VECTOR COLLAPSE(3) PRIVATE(jc, jb)
         DO jt = 1,ntracer_bdyintp
           DO jk = jk_start, nlev
@@ -593,7 +585,6 @@ CONTAINS
             DO ic = jshift+1, jshift+nlen
               jc = p_grf%idxlist_bdyintp_src_c(ic)
               jb = p_grf%blklist_bdyintp_src_c(ic)
-#endif
 
                 p_nh%diag%grf_tend_tracer(jc,jk,jb,jt) =                 &
                   &            ( p_prog_new_rcf%tracer(jc,jk,jb,jt)      &
@@ -629,20 +620,12 @@ CONTAINS
       jshift = (ib-1)*nproma_bdyintp
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      DO ie = jshift+1, jshift+nlen
-        je = p_grf%idxlist_bdyintp_src_e(ie)
-        jb = p_grf%blklist_bdyintp_src_e(ie)
-!DIR$ IVDEP
-        DO jk = jk_start, nlev
-#else
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(je, jb)
       DO jk = jk_start, nlev
 !$NEC ivdep
         DO ie = jshift+1, jshift+nlen
           je = p_grf%idxlist_bdyintp_src_e(ie)
           jb = p_grf%blklist_bdyintp_src_e(ie)
-#endif
           p_nh%diag%grf_tend_vn(je,jk,jb) = &
             ( p_prog_new%vn(je,jk,jb) - p_prog_now%vn(je,jk,jb) )*rdt
           p_nh%diag%grf_tend_mflx(je,jk,jb) = &
@@ -719,9 +702,6 @@ CONTAINS
 
     LOGICAL :: l_limit(2*ntracer)
 
-#ifdef _OPENMP
-    INTEGER :: num_threads_omp, omp_get_max_threads
-#endif
 
     !-----------------------------------------------------------------------
 
@@ -731,9 +711,6 @@ CONTAINS
       CALL message(routine, message_text)
     ENDIF
 
-#ifdef _OPENMP
-    num_threads_omp = omp_get_max_threads()
-#endif
 
     p_diagp       => p_nh_state(jg)%diag
     p_diagc       => p_nh_state(jgc)%diag
@@ -1224,13 +1201,8 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, nlev_c
-#else
       DO jk = 1, nlev_c
         DO jc = i_startidx, i_endidx
-#endif
 
           diff_thv(jc,jk,jb) = parent_thv(jc,jk+js,jb) - (                           &
             p_child_prog%theta_v(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &
@@ -1262,13 +1234,8 @@ CONTAINS
 
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-            DO jk = 1, nlev_c
-#else
           DO jk = 1, nlev_c
             DO jc = i_startidx, i_endidx
-#endif
 
               diff_tr(jc,jk,jb,jt) = parent_tr(jc,jk+js,jb,jt) - (                                &
                 p_child_prog_rcf%tracer(iidx(jc,jb,1),jk,iblk(jc,jb,1),jt)*p_fbkwgt_tr(jc,jb,1) + &
@@ -1299,13 +1266,8 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 1, nlev_c
-#else
       DO jk = 1, nlev_c
         DO je = i_startidx, i_endidx
-#endif
 
           diff_vn(je,jk,jb) = parent_vn(je,jk+js,jb) - (                            &
             p_child_prog%vn(ieidx(je,jb,1),jk,ieblk(je,jb,1))*p_fbkwgt_v(je,jb,1) + &
@@ -1483,13 +1445,8 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, nlev_c
-#else
       DO jk = 1, nlev_c
         DO jc = i_startidx, i_endidx
-#endif
 
           diff_rho(jc,jk,jb) = parent_rho(jc,jk+js,jb) - (                       &
             p_child_prog%rho(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &
@@ -1600,13 +1557,6 @@ CONTAINS
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jk,jc,jb,ic,rho_tend,thv_tend) ICON_OMP_DEFAULT_SCHEDULE
-#ifdef __LOOP_EXCHANGE
-      DO ic = 1, p_metrics%nudge_c_dim
-        jc = p_metrics%nudge_c_idx(ic)
-        jb = p_metrics%nudge_c_blk(ic)
-!DIR$ IVDEP
-        DO jk = 1, nlev
-#else
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jc, jb, thv_tend, rho_tend, zrho, ztheta_v, zexner)
       DO jk = 1, nlev
@@ -1614,25 +1564,12 @@ CONTAINS
         DO ic = 1, p_metrics%nudge_c_dim
           jc = p_metrics%nudge_c_idx(ic)
           jb = p_metrics%nudge_c_blk(ic)
-#endif
           thv_tend = p_latbc_const%theta_v(jc,jk,jb) - p_prog%theta_v(jc,jk,jb)
           rho_tend = p_latbc_const%rho    (jc,jk,jb) - p_prog%rho    (jc,jk,jb)
 
-#ifdef _OPENACC
-            ! local variables zrho, ztheta_v and zexner are used because of GPU pgi compiler bug
-            ! this section should be revisited once bug is resolved.
-            ! BUG-FIX for nvfort 21.3.0 (Daint) fond and solved by Xavier Lapillonne
-            zrho     = p_prog%rho(jc,jk,jb)     + p_int%nudgecoeff_c(jc,jb)*rho_tend
-            ztheta_v = p_prog%theta_v(jc,jk,jb) + p_int%nudgecoeff_c(jc,jb)*thv_tend
-            zexner   = EXP(rd_o_cvd*LOG(rd_o_p0ref*zrho*ztheta_v))
-            p_prog%rho(jc,jk,jb)     = zrho
-            p_prog%theta_v(jc,jk,jb) = ztheta_v
-            p_prog%exner(jc,jk,jb)   = zexner
-#else
             p_prog%rho(jc,jk,jb)     = p_prog%rho(jc,jk,jb)     + p_int%nudgecoeff_c(jc,jb)*rho_tend
             p_prog%theta_v(jc,jk,jb) = p_prog%theta_v(jc,jk,jb) + p_int%nudgecoeff_c(jc,jb)*thv_tend
             p_prog%exner(jc,jk,jb)   = EXP(rd_o_cvd*LOG(rd_o_p0ref*p_prog%rho(jc,jk,jb)*p_prog%theta_v(jc,jk,jb)))
-#endif
 
         ENDDO
       ENDDO
@@ -1640,13 +1577,6 @@ CONTAINS
 !$OMP END DO
 
 !$OMP DO PRIVATE(jk,je,jb,ic,vn_tend) ICON_OMP_DEFAULT_SCHEDULE
-#ifdef __LOOP_EXCHANGE
-      DO ic = 1, p_metrics%nudge_e_dim
-        je = p_metrics%nudge_e_idx(ic)
-        jb = p_metrics%nudge_e_blk(ic)
-!DIR$ IVDEP
-        DO jk = 1, nlev
-#else
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jc, jb, vn_tend)
       DO jk = 1, nlev
@@ -1654,7 +1584,6 @@ CONTAINS
         DO ic = 1, p_metrics%nudge_e_dim
           je = p_metrics%nudge_e_idx(ic)
           jb = p_metrics%nudge_e_blk(ic)
-#endif
           vn_tend = p_latbc_const%vn(je,jk,jb) - p_prog%vn(je,jk,jb)
 
           p_prog%vn(je,jk,jb) = p_prog%vn(je,jk,jb) + p_int%nudgecoeff_e(je,jb)*vn_tend
@@ -1695,13 +1624,6 @@ CONTAINS
 !$OMP PARALLEL
       IF (latbc_config%nudge_hydro_pres .AND. ltransport) THEN
 !$OMP DO PRIVATE(jk,jc,jb,ic,pres,temp,qv,tempv_inc,pres_inc,rho_tend,thv_tend) ICON_OMP_DEFAULT_SCHEDULE
-#ifdef __LOOP_EXCHANGE
-        DO ic = 1, p_metrics%nudge_c_dim
-          jc = p_metrics%nudge_c_idx(ic)
-          jb = p_metrics%nudge_c_blk(ic)
-!DIR$ IVDEP
-          DO jk = nshift+1, nlev
-#else
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2) &
         !$ACC   PRIVATE(jc, jb, pres, temp, qv, tempv_inc, pres_inc, thv_tend, rho_tend, zrho, ztheta_v, zexner)
@@ -1710,7 +1632,6 @@ CONTAINS
           DO ic = 1, p_metrics%nudge_c_dim
             jc = p_metrics%nudge_c_idx(ic)
             jb = p_metrics%nudge_c_blk(ic)
-#endif
             pres = wfac_old*p_latbc_old%pres(jc,jk,jb) + wfac_new*p_latbc_new%pres(jc,jk,jb)
             temp = wfac_old*p_latbc_old%temp(jc,jk,jb) + wfac_new*p_latbc_new%temp(jc,jk,jb)
             qv   = wfac_old*p_latbc_old%qv(jc,jk,jb)   + wfac_new*p_latbc_new%qv(jc,jk,jb)
@@ -1723,20 +1644,9 @@ CONTAINS
             rho_tend = ( pres_inc/p_diag%tempv(jc,jk,jb) - &
               tempv_inc*p_diag%pres(jc,jk,jb)/p_diag%tempv(jc,jk,jb)**2 )/rd
 
-#ifdef _OPENACC
-            ! local variables zrho, ztheta_v and zexner are used because of GPU pgi compiler bug
-            ! this section should be revisited once bug is resolved.
-            zrho     = p_prog%rho(jc,jk,jb)     + p_int%nudgecoeff_c(jc,jb)*rho_tend
-            ztheta_v = p_prog%theta_v(jc,jk,jb) + p_int%nudgecoeff_c(jc,jb)*thv_tend
-            zexner   = EXP(rd_o_cvd*LOG(rd_o_p0ref*zrho*ztheta_v))
-            p_prog%rho(jc,jk,jb)     = zrho
-            p_prog%theta_v(jc,jk,jb) = ztheta_v
-            p_prog%exner(jc,jk,jb)   = zexner
-#else
             p_prog%rho(jc,jk,jb)     = p_prog%rho(jc,jk,jb)     + p_int%nudgecoeff_c(jc,jb)*rho_tend
             p_prog%theta_v(jc,jk,jb) = p_prog%theta_v(jc,jk,jb) + p_int%nudgecoeff_c(jc,jb)*thv_tend
             p_prog%exner(jc,jk,jb)   = EXP(rd_o_cvd*LOG(rd_o_p0ref*p_prog%rho(jc,jk,jb)*p_prog%theta_v(jc,jk,jb)))
-#endif
           ENDDO
         ENDDO
         !$ACC END PARALLEL
@@ -1745,13 +1655,6 @@ CONTAINS
       ELSE
 
 !$OMP DO PRIVATE(jk,jc,jb,ic,rho_tend,thv_tend) ICON_OMP_DEFAULT_SCHEDULE
-#ifdef __LOOP_EXCHANGE
-        DO ic = 1, p_metrics%nudge_c_dim
-          jc = p_metrics%nudge_c_idx(ic)
-          jb = p_metrics%nudge_c_blk(ic)
-!DIR$ IVDEP
-          DO jk = nshift+1, nlev
-#else
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jc, jb, thv_tend, rho_tend)
         DO jk = nshift+1, nlev
@@ -1759,7 +1662,6 @@ CONTAINS
           DO ic = 1, p_metrics%nudge_c_dim
             jc = p_metrics%nudge_c_idx(ic)
             jb = p_metrics%nudge_c_blk(ic)
-#endif
             thv_tend = wfac_old*p_latbc_old%theta_v(jc,jk,jb) + wfac_new*p_latbc_new%theta_v(jc,jk,jb) - p_prog%theta_v(jc,jk,jb)
             rho_tend = wfac_old*p_latbc_old%rho(jc,jk,jb) + wfac_new*p_latbc_new%rho(jc,jk,jb)- p_prog%rho(jc,jk,jb)
 
@@ -1776,13 +1678,6 @@ CONTAINS
 
       IF (ltransport) THEN ! apply QV nudging in subsaturated regions
 !$OMP DO PRIVATE(jk,jc,jb,ic,qv_tend) ICON_OMP_DEFAULT_SCHEDULE
-#ifdef __LOOP_EXCHANGE
-        DO ic = 1, p_metrics%nudge_c_dim
-          jc = p_metrics%nudge_c_idx(ic)
-          jb = p_metrics%nudge_c_blk(ic)
-!DIR$ IVDEP
-          DO jk = 1, nlev
-#else
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jc, jb, qv_tend)
         DO jk = 1, nlev
@@ -1790,7 +1685,6 @@ CONTAINS
           DO ic = 1, p_metrics%nudge_c_dim
             jc = p_metrics%nudge_c_idx(ic)
             jb = p_metrics%nudge_c_blk(ic)
-#endif
             qv_tend = wfac_old*p_latbc_old%qv(jc,jk,jb) + wfac_new*p_latbc_new%qv(jc,jk,jb) - ptr_tracer(jc,jk,jb,iqv)
 
             ! Suppress positive nudging tendencies in saturated (=cloudy) regions in order to avoid runaway effects
@@ -1808,13 +1702,6 @@ CONTAINS
       ENDIF
 
 !$OMP DO PRIVATE(jk,je,jb,ic,vn_tend) ICON_OMP_DEFAULT_SCHEDULE
-#ifdef __LOOP_EXCHANGE
-        DO ic = 1, p_metrics%nudge_e_dim
-          je = p_metrics%nudge_e_idx(ic)
-          jb = p_metrics%nudge_e_blk(ic)
-!DIR$ IVDEP
-          DO jk = nshift+1, nlev
-#else
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(je, jb, vn_tend)
         DO jk = nshift+1, nlev
@@ -1822,7 +1709,6 @@ CONTAINS
           DO ic = 1, p_metrics%nudge_e_dim
             je = p_metrics%nudge_e_idx(ic)
             jb = p_metrics%nudge_e_blk(ic)
-#endif
             vn_tend = wfac_old*p_latbc_old%vn(je,jk,jb) + wfac_new*p_latbc_new%vn(je,jk,jb) - p_prog%vn(je,jk,jb)
 
             ! using a weaker nudging coefficient for vn than for thermodynamic variables turned out to have a
@@ -1902,9 +1788,6 @@ CONTAINS
     max_nudge_coeff_vn       = nudging_config(jg)%max_nudge_coeff_vn
     max_nudge_coeff_thermdyn = nudging_config(jg)%max_nudge_coeff_thermdyn
 
-#ifdef _OPENACC
-    CALL finish(TRIM(routine), 'UPPER boundary nudging for the limited-area mode is not tested on GPU')
-#endif
 
     IF (PRESENT(p_latbc_const) .AND. (PRESENT(p_latbc_old) .OR. PRESENT(p_latbc_new))) THEN
 
@@ -2209,20 +2092,12 @@ CONTAINS
 
 !$OMP DO PRIVATE(jk,jc,jb,ic,upper_lim,lower_lim) ICON_OMP_DEFAULT_SCHEDULE
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    DO ic = 1, p_nh%metrics%nudge_c_dim
-      jc = p_nh%metrics%nudge_c_idx(ic)
-      jb = p_nh%metrics%nudge_c_blk(ic)
-!DIR$ IVDEP
-      DO jk = 1, nlev
-#else
     !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(jc, jb, lower_lim, upper_lim)
     DO jk = 1, nlev
 !$NEC ivdep
       DO ic = 1, p_nh%metrics%nudge_c_dim
         jc = p_nh%metrics%nudge_c_idx(ic)
         jb = p_nh%metrics%nudge_c_blk(ic)
-#endif
         upper_lim = 1.0025_wp*p_nh%prog(nnew)%rho(jc,jk,jb)
         lower_lim = 0.9975_wp*p_nh%prog(nnew)%rho(jc,jk,jb)
         p_nh%prog(nnew)%rho(jc,jk,jb) =                               &
@@ -2251,20 +2126,12 @@ CONTAINS
 
 !$OMP DO PRIVATE(jb,jk,je,ic) ICON_OMP_DEFAULT_SCHEDULE
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    DO ic = 1, p_nh%metrics%nudge_e_dim
-      je = p_nh%metrics%nudge_e_idx(ic)
-      jb = p_nh%metrics%nudge_e_blk(ic)
-!DIR$ IVDEP
-      DO jk = 1, nlev
-#else
     !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(je, jb)
     DO jk = 1, nlev
 !$NEC ivdep
       DO ic = 1, p_nh%metrics%nudge_e_dim
         je = p_nh%metrics%nudge_e_idx(ic)
         jb = p_nh%metrics%nudge_e_blk(ic)
-#endif
         p_nh%prog(nnew)%vn(je,jk,jb) = p_nh%prog(nnew)%vn(je,jk,jb)        &
           + p_int%nudgecoeff_e(je,jb)*p_nh%diag%grf_tend_vn(je,jk,jb)
       ENDDO
@@ -2275,14 +2142,6 @@ CONTAINS
     IF (ltransport) THEN
 !$OMP DO PRIVATE(jk,jc,jb,jt,ic,upper_lim,lower_lim) ICON_OMP_DEFAULT_SCHEDULE
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      DO ic = 1, p_nh%metrics%nudge_c_dim
-        jc = p_nh%metrics%nudge_c_idx(ic)
-        jb = p_nh%metrics%nudge_c_blk(ic)
-        DO jt = 1, ntracer_nudge
-!DIR$ IVDEP
-          DO jk = 1, nlev
-#else
       !$ACC LOOP GANG VECTOR COLLAPSE(3) PRIVATE(jc, jb, lower_lim, upper_lim)
       DO jt = 1, ntracer_nudge
         DO jk = 1, nlev
@@ -2290,7 +2149,6 @@ CONTAINS
           DO ic = 1, p_nh%metrics%nudge_c_dim
             jc = p_nh%metrics%nudge_c_idx(ic)
             jb = p_nh%metrics%nudge_c_blk(ic)
-#endif
 
             upper_lim = 1.01_wp*p_nh%prog(nnew_rcf)%tracer(jc,jk,jb,jt)
             lower_lim = 0.99_wp*p_nh%prog(nnew_rcf)%tracer(jc,jk,jb,jt)
@@ -2347,13 +2205,6 @@ CONTAINS
 !$OMP PARALLEL
 
 !$OMP DO PRIVATE(jk,jc,jb,ic) ICON_OMP_DEFAULT_SCHEDULE
-#ifdef __LOOP_EXCHANGE
-    DO ic = 1, p_nh%metrics%nudge_c_dim
-      jc = p_nh%metrics%nudge_c_idx(ic)
-      jb = p_nh%metrics%nudge_c_blk(ic)
-!DIR$ IVDEP
-      DO jk = 1, nlev
-#else
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR PRIVATE(jc, jb) COLLAPSE(2)
     DO jk = 1, nlev
@@ -2361,7 +2212,6 @@ CONTAINS
       DO ic = 1, p_nh%metrics%nudge_c_dim
         jc = p_nh%metrics%nudge_c_idx(ic)
         jb = p_nh%metrics%nudge_c_blk(ic)
-#endif
         p_nh%prog(nnew)%rho(jc,jk,jb) = p_nh%prog(nnew)%rho(jc,jk,jb) +  &
           MIN(0.333_wp,3._wp*p_int%nudgecoeff_c(jc,jb))*                 &
           p_nh%diag%grf_tend_rho(jc,jk,jb)

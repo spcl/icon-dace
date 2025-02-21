@@ -20,7 +20,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 
 MODULE mo_load_multifile_restart
 
@@ -115,10 +125,6 @@ CONTAINS
         i = i + 1
       END DO
     END IF
-#ifdef DEBUG
-    WRITE(0, "(3(a,i4),a)") "restart: rank ", p_pe_work, " will start reading from file ", &
-      &                      myFF, ", ", myFCnt, " files in total"
-#endif
     ALLOCATE(files(myFCnt))
     tCnt(:) = 0
     DO i = 1, myFCnt
@@ -212,9 +218,6 @@ CONTAINS
     CALL setup_comm_pattern(SIZE(rIds), own_dst, rIds, lupTbl, locSize, &
       & own_src, pIds, pat, inplace=.FALSE., comm=p_comm_work)
     CALL deallocate_glb2loc_index_lookup(lupTbl)
-#ifdef DEBUG
-    CALL checkRedistributionPattern(pat, pGlbIds, rGlbIds)
-#endif
     IF(timers_level >= 7) CALL timer_stop(timer_load_restart_comm_setup)
   CONTAINS
 
@@ -223,13 +226,10 @@ CONTAINS
         & iPk_s, iPk_c, iPk_i, iPk_o, nI_s, nI_c, nI_i, nI_o, oPk_i, oPk_o, oPk_c
       INTEGER :: i, j
 
-#ifdef DEBUG 
-      ! consistency checks
-      IF(1 > MINVAL(pIds,1)) &
-        & CALL finish(routine, "global index out of RANGE (<1)")
-      IF(glbSize < MAXVAL(pIds,1)) &
-        &  CALL finish(routine, "global index out of range (>globalSize)")
-#endif
+
+
+
+
       ALLOCATE(bd(0:p_n_work), nI_i(p_n_work), nI_o(p_n_work))
       bd(:) = [(INT(REAL(i,dp)*(REAL(glbSize,dp)/REAL(p_n_work,dp))), i=0,p_n_work)]
       bd(p_n_work) = glbSize

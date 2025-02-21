@@ -29,7 +29,7 @@ MODULE comin_parallel
   PUBLIC :: comin_parallel_handle_mpi_errcode
 
 
-#include "comin_global.inc"
+
 
   ! max. character string length (e.g. MPI group name)
   INTEGER, PARAMETER :: MAX_GRPNAMELEN = 256

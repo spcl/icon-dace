@@ -14,7 +14,17 @@
 ! ---------------------------------------------------------------
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nh_diagnose_pres_temp
@@ -34,9 +44,6 @@ MODULE mo_nh_diagnose_pres_temp
   USE mo_dynamics_config,     ONLY: ldeepatmo
   USE mo_grid_config,         ONLY: grid_sphere_radius
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
   IMPLICIT NONE
 
@@ -316,11 +323,7 @@ MODULE mo_nh_diagnose_pres_temp
         & exner=pt_prog%exner(:,:,jb), tempv=pt_diag%tempv(:,:,jb), pres_sfc=pt_diag%pres_sfc(:,jb),       & 
         & pres_ifc=pt_diag%pres_ifc(:,:,jb), pres=pt_diag%pres(:,:,jb), dpres_mc=pt_diag%dpres_mc(:,:,jb), &
         & start_indices=[i_startidx,slev], end_indices=[i_endidx,nlev],                                    &
-#ifdef _OPENACC
-        & lacc=i_am_accel_node)
-#else
         & lacc=.FALSE.)
-#endif
 
     ENDIF ! IF (.NOT. ldeepatmo)
 
@@ -392,22 +395,8 @@ MODULE mo_nh_diagnose_pres_temp
     INTEGER,  INTENT(IN)    :: jb, i_startidx, i_endidx, slev, slev_moist, nlev
 
     INTEGER  :: jk,jc
-#ifdef __SX__
-    INTEGER  :: jl, jt
-#endif
 
 
-#ifdef __SX__
-    qsum(:,MIN(slev,slev_moist):nlev) = 0._wp
-    DO jl = 1, SIZE(condensate_list)
-      jt = condensate_list(jl)
-      DO jk = slev_moist, nlev
-        DO jc = i_startidx, i_endidx
-          qsum(jc,jk) = qsum(jc,jk) + tracer(jc,jk,jb,jt)
-        ENDDO
-      ENDDO
-    ENDDO
-#else
     !$ACC DATA NO_CREATE(qsum, tracer, condensate_list)
 
     IF (slev < slev_moist) THEN
@@ -433,7 +422,6 @@ MODULE mo_nh_diagnose_pres_temp
     !DA: wait here is due to mo_nh_interface_nwp
     !$ACC WAIT
     !$ACC END DATA
-#endif
 
 
   END SUBROUTINE calc_qsum

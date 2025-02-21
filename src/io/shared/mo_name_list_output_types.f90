@@ -374,11 +374,11 @@ MODULE mo_name_list_output_types
     !> MPI rank which were explicitly specified by the user:
     INTEGER                               :: pe_placement
 
-#ifndef NOMPI
-    ! Used for async IO only
-    !> data structure containing variables for MPI memory window
-    TYPE(t_mem_win)                       :: mem_win
-#endif
+
+
+
+
+
 
     ! Selection of vertical levels (not necessarily present)
     TYPE (t_level_selection), POINTER     :: level_selection => NULL()        !< selection of vertical levels
