@@ -190,9 +190,9 @@ contains
 
     !$ACC ROUTINE WORKER 
 
-#ifndef _OPENACC
+
     if (lhook) call dr_hook('radiation_adding_ica_lw:fast_adding_ica_lw',0,hook_handle)
-#endif
+
 
     ! Copy over downwelling fluxes above cloud from clear sky
     flux_dn(:,1:i_cloud_top) = flux_dn_clear(:,1:i_cloud_top)
@@ -271,9 +271,9 @@ contains
       end if
     end do
 
-#ifndef _OPENACC
+
     if (lhook) call dr_hook('radiation_adding_ica_lw:fast_adding_ica_lw',1,hook_handle)
-#endif
+
 
   end subroutine fast_adding_ica_lw
 
@@ -288,9 +288,9 @@ contains
        &  transmittance, source_up, source_dn, emission_surf, albedo_surf, flux_up, flux_dn)
 
     use parkind1, only           : jprb
-#ifndef _OPENACC
+
     use ecradhook,  only           : lhook, dr_hook, jphook
-#endif
+
 
     implicit none
 
@@ -314,15 +314,15 @@ contains
     ! Loop index for model level
     integer :: jlev, jcol
 
-#ifndef _OPENACC
+
     real(jphook) :: hook_handle
-#endif
+
 
     !$ACC ROUTINE WORKER
 
-#ifndef _OPENACC
+
     if (lhook) call dr_hook('radiation_adding_ica_lw:calc_fluxes_no_scattering_lw',0,hook_handle)
-#endif
+
 
     ! At top-of-atmosphere there is no diffuse downwelling radiation
     flux_dn(:,1) = 0.0_jprb
@@ -354,9 +354,9 @@ contains
       end do
     end do
     
-#ifndef _OPENACC
+
     if (lhook) call dr_hook('radiation_adding_ica_lw:calc_fluxes_no_scattering_lw',1,hook_handle)
-#endif
+
 
   end subroutine calc_fluxes_no_scattering_lw
 

@@ -391,14 +391,14 @@ CONTAINS
     END IF
 
     ! Check if target GPU configuration is supported
-#ifdef _OPENACC
-    IF(lmulti_snow) CALL finish(routine, "GPU version not available for lmulti_snow == .TRUE.")
-#endif
+
+
+
 
     ! deactivate cuda graph if no cpp key => make sure ACC WAIT is activated where needed
-#ifndef ICON_USE_CUDA_GRAPH
+
     lcuda_graph_lnd = .FALSE.
-#endif
+
 
     !----------------------------------------------------
     ! 5. Fill the configuration state

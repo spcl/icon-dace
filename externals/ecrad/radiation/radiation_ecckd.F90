@@ -14,7 +14,36 @@
 ! License: see the COPYING file for details
 !
 
-#include "ecrad_config.h"
+! ecrad_config.h - Preprocessor definitions to configure compilation ecRad -*- f90 -*-
+!
+! (C) Copyright 2023- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! This file should be included in Fortran source files that require
+! different optimizations or settings for different architectures and
+! platforms.  Feel free to maintain a site-specific version of it.
+
+! The following settings turn on optimizations specific to the
+! long-vector NEC SX (the short-vector x86-64 architecture is assumed
+! otherwise). 
+
+  
+  
+
+! In the IFS, an MPI version of easy_netcdf capability is used so that
+! only one MPI task reads the data files and shares with the other
+! tasks. The MPI version is not used for writing files.
+
+!#define EASY_NETCDF_READ_MPI 1
 
 module radiation_ecckd
 
@@ -106,11 +135,7 @@ module radiation_ecckd
     procedure :: read_spectral_solar_cycle
 ! Vectorized version of the optical depth look-up performs better on
 ! NEC, but slower on x86
-#ifdef DWD_VECTOR_OPTIMIZATIONS
-    procedure :: calc_optical_depth => calc_optical_depth_ckd_model_vec
-#else
     procedure :: calc_optical_depth => calc_optical_depth_ckd_model
-#endif
     procedure :: print => print_ckd_model
     procedure :: calc_planck_function
     procedure :: calc_incoming_sw
@@ -126,11 +151,7 @@ contains
   ! "filename"
   subroutine read_ckd_model(this, filename, iverbose)
 
-#ifdef EASY_NETCDF_READ_MPI
-    use easy_netcdf_read_mpi, only : netcdf_file
-#else
     use easy_netcdf,          only : netcdf_file
-#endif
     !use radiation_io, only : nulerr, radiation_abort
     use ecradhook,              only : lhook, dr_hook, jphook
 
@@ -294,11 +315,7 @@ contains
   ! solar cycle and map to g-points
   subroutine read_spectral_solar_cycle(this, filename, iverbose, use_updated_solar_spectrum)
 
-#ifdef EASY_NETCDF_READ_MPI
-    use easy_netcdf_read_mpi, only : netcdf_file
-#else
     use easy_netcdf,          only : netcdf_file
-#endif
     use radiation_io,         only : nulout, nulerr, radiation_abort
     use ecradhook,              only : lhook, dr_hook, jphook
 

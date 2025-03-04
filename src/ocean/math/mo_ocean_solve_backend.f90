@@ -13,7 +13,26 @@
 ! this is an abstract interposer layer,
 ! in order to use a single interface for all backend solvers
 
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
 
 MODULE mo_ocean_solve_backend
   !-------------------------------------------------------------------------
@@ -55,10 +74,6 @@ MODULE mo_ocean_solve_backend
 ! internal arrays (int)
     INTEGER, ALLOCATABLE, DIMENSION(:) :: niter
     INTEGER, ALLOCATABLE, DIMENSION(:) :: niter_cal
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: x_sp, b_sp
-!DIR$ ATTRIBUTES ALIGN : 64 :: x_wp, b_wp, res_wp, x_loc_wp, res_loc_wp, niter, niter_cal
-#endif
 ! interfaces
   CONTAINS
     PROCEDURE :: dump_matrix => ocean_solve_backend_dump_matrix
@@ -171,9 +186,6 @@ CONTAINS
     !$ACC DATA PRESENT(this%x_loc_wp, this%x_wp, this%b_wp, this%b_loc_wp, this%b_wp) IF(lzacc)
     this%niter_cal(2) = -2
     IF (this%par_sp%nidx .EQ. this%par%nidx .AND. this%trans%is_solver_pe) THEN
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(routine, "Single precision variant not ported to GPU")
-#endif
       IF (.NOT.ALLOCATED(this%x_sp)) & ! alloc sp-arrays, if not done, yet
         ALLOCATE(this%x_sp(this%trans%nidx, this%trans%nblk_a), &
           & this%b_sp(this%trans%nidx, this%trans%nblk_a))

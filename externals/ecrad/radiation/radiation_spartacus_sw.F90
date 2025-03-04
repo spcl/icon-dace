@@ -39,7 +39,79 @@ contains
 
   ! Small routine for scaling cloud optical depth in the cloudy
   ! regions
-#include "radiation_optical_depth_scaling.h"
+! radiation_optical_depth_scaling.h - Cloud optical-depth scaling for Tripleclouds 
+!
+! (C) Copyright 2016- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! Modifications
+!   2017-07-14  R. Hogan  Incorporate gamma distribution option
+!
+! This file is intended to be included inside a module to ensure that
+! this simple routine may be inlined
+
+!---------------------------------------------------------------------
+! Compute the optical depth scalings for the optically "thick" and
+! "thin" regions of a Tripleclouds representation of a sub-grid PDF of
+! cloud optical depth. Following Shonk and Hogan (2008), the 16th
+! percentile is used for the thin region, and the formulas estimate
+! this for both lognormal and gamma distributions.
+pure subroutine optical_depth_scaling(nreg, frac_std, do_gamma, od_scaling)
+
+  use parkind1, only : jprb
+
+  ! Number of regions
+  integer, intent(in)     :: nreg
+
+  ! Fractional standard deviation of in-cloud water content
+  real(jprb), intent(in)  :: frac_std
+
+  ! Do we do a lognormal or gamma distribution?
+  logical, intent(in) :: do_gamma
+
+  ! Optical depth scaling for the cloudy regions
+  real(jprb), intent(out) :: od_scaling(2:nreg)
+
+  if (nreg == 2) then
+    ! Only one clear-sky and one cloudy region: cloudy region is
+    ! homogeneous
+    od_scaling(2) = 1.0_jprb
+  else
+    ! Two cloudy regions with optical depth scaled by 1-x and
+    ! 1+x.
+    ! Simple version which fails when fractional_std >= 1:
+    !od_scaling(2) = 1.0_jprb-cloud%fractional_std(jcol,jlev)
+    ! According to Shonk and Hogan (2008), 1-x should correspond to
+    ! the 16th percentile. 
+    if (.not. do_gamma) then
+      ! If we treat the distribution as a lognormal such that the
+      ! equivalent Normal has a mean mu and standard deviation sigma,
+      ! then the 16th percentile of the lognormal is very close to
+      ! exp(mu-sigma).
+      od_scaling(2) &
+           &  = exp(-sqrt(log(frac_std**2+1))) / sqrt(frac_std**2+1)
+    else
+      ! If we treat the distribution as a gamma then the 16th
+      ! percentile is close to the following
+      od_scaling(2) = exp(-frac_std*(1.0_jprb + 0.5_jprb*frac_std &
+           &                                   *(1.0_jprb+0.5_jprb*frac_std)))
+    end if
+
+    ! Ensure mean optical depth is conserved
+    od_scaling(3) = 2.0_jprb-od_scaling(2)
+  end if
+
+end subroutine optical_depth_scaling
 
   ! This module contains just one exported subroutine, the shortwave
   ! solver using the Speedy Algorithm for Radiative Transfer through
@@ -119,9 +191,6 @@ contains
     integer :: nreg, ng
     integer :: nregactive ! =1 in clear layer, =nreg in a cloudy layer
     integer :: jcol, jlev, jg, jreg, iband, jreg2,jreg3
-#ifdef EXPLICIT_EDGE_ENTRAPMENT
-    integer :: jreg4
-#endif
     integer :: ng3D ! Number of g-points with small enough gas optical
                     ! depth that 3D effects need to be represented
 
@@ -931,14 +1000,9 @@ contains
         ! Section 4.2: Overlap and entrapment
         ! --------------------------------------------------------
 
-#ifndef PRINT_ENTRAPMENT_DATA
         if ((config%i_3d_sw_entrapment == IEntrapmentExplicitNonFractal &
              &  .or. config%i_3d_sw_entrapment == IEntrapmentExplicit) &
              &  .and. jlev >= i_cloud_top) then
-#else
-        if (config%i_3d_sw_entrapment == IEntrapmentExplicitNonFractal &
-             &  .or. config%i_3d_sw_entrapment == IEntrapmentExplicit) then
-#endif
           !  "Explicit entrapment": we have the horizontal migration
           !  distances just above the base of the layer, and need to
           !  step them to just below the top of the same layer
@@ -950,19 +1014,6 @@ contains
                &  total_albedo_direct(:,:,:,jlev+1), &
                &  x_diffuse, x_direct)
 
-#ifdef PRINT_ENTRAPMENT_DATA
-          ! Write out for later analysis: these are the entrapment
-          ! statistics at the top of layer "jlev"
-          ! Note that number of scattering events is now not computed,
-          ! so print "1.0"
-          if (nreg == 2) then
-            write(101,'(i4,i4,6e14.6)') jcol, jlev, &
-                 &  x_direct(1,:), x_diffuse(1,:), x_direct(1,:)*0.0_jprb+1.0_jprb
-          else
-            write(101,'(i4,i4,9e14.6)') jcol, jlev, &
-                 &  x_direct(1,1:3), x_diffuse(1,1:3), 1.0_jprb,1.0_jprb,1.0_jprb
-          end if
-#endif
 
         end if
 
@@ -1014,16 +1065,6 @@ contains
         else
           ! Controlled entrapment
 
-#ifdef EXPLICIT_EDGE_ENTRAPMENT
-          ! If "EXPLICIT_EDGE_ENTRAPMENT" is defined then we use the
-          ! explicit entrapment approach for both horizontal transport
-          ! within regions, and horizontal transport between regions
-          ! (otherwise, horizontal transport between regions is
-          ! automatically treated using maximum entrapment). This is
-          ! experimental, which is why it is not a run-time option.
-
-          if (config%i_3d_sw_entrapment == IEntrapmentEdgeOnly) then
-#endif
           ! Add the contribution from off-diagonal elements of the
           ! albedo matrix in the lower layer, i.e. radiation that
           ! flows between regions...
@@ -1047,9 +1088,6 @@ contains
                &  mat_x_singlemat(ng,ng,nreg,albedo_part,&
                &  v_matrix(:,:,jlev,jcol)))
 
-#ifdef EXPLICIT_EDGE_ENTRAPMENT
-end if
-#endif
           
           ! Now the contribution from the diagonals of the albedo
           ! matrix in the lower layer
@@ -1177,8 +1215,6 @@ end if
               ! Since the matrix to be exponentiated has a simple
               ! structure we may use a faster method described in the
               ! appendix of Hogan et al. (GMD 2018)
-#define USE_FAST_EXPM_EXCHANGE 1
-#ifdef USE_FAST_EXPM_EXCHANGE
               if (nreg == 2) then
                 call fast_expm_exchange(ng, ng, entrapment(:,2,1), entrapment(:,1,2), &
                      &                  albedo_part)
@@ -1187,14 +1223,7 @@ end if
                      &                          entrapment(:,3,2), entrapment(:,2,3), &
                      &                  albedo_part)
               end if
-#else
-              ! Use matrix exponential to compute rate of exchange
-              albedo_part = entrapment
-              call expm(ng, ng, nreg, albedo_part, IMatrixPatternDense)
-              n_calls_expm = n_calls_expm + ng
-#endif
 
-#ifndef EXPLICIT_EDGE_ENTRAPMENT
               ! Scale to get the contribution to the diffuse albedo
               do jreg3 = 1,nreg
                 do jreg = 1,nreg
@@ -1202,33 +1231,6 @@ end if
                        &  * v_matrix(jreg2,jreg,jlev,jcol) * total_albedo_below(:,jreg2,jreg2)
                 end do
               end do
-#else
-              ! The following is an experimental treatment that tries
-              ! to explicitly account for the horizontal distance
-              ! traveled by radiation that passes through cloud sides
-              entrapment = albedo_part
-              albedo_part = 0.0_jprb
-              ! Scale to get the contribution to the diffuse albedo
-              do jreg3 = 1,nreg     ! TO upper region
-                do jreg = 1,nreg    ! FROM upper region
-                  transfer_scaling = 1.0_jprb - (1.0_jprb - config%overhang_factor) & 
-                       &  * cloud%overlap_param(jcol,jlev-1) &
-                       &  * min(region_fracs(jreg,jlev,jcol), region_fracs(jreg,jlev,jcol)) &
-                       &  / max(config%cloud_fraction_threshold, region_fracs(jreg,jlev,jcol))
-                  do jreg4 = 1,nreg ! VIA first lower region (jreg2 is second lower region)
-                    if (.not. (jreg4 == jreg .and. jreg4 /= jreg2)) then
-                      albedo_part(:,jreg3,jreg) = albedo_part(:,jreg3,jreg) + entrapment(:,jreg3,jreg) &
-                           &  * v_matrix(jreg4,jreg,jlev,jcol) * total_albedo_below(:,jreg2,jreg4)
-                    else
-                      albedo_part(:,jreg3,jreg) = albedo_part(:,jreg3,jreg) &
-                           &  + v_matrix(jreg4,jreg,jlev,jcol) * total_albedo_below(:,jreg2,jreg4) &
-                           &  * (transfer_scaling * entrapment(:,jreg3,jreg) &
-                           &    +((1.0_jprb-transfer_scaling) * entrapment(:,jreg3,jreg2)))
-                    end if
-                  end do
-                end do
-              end do
-#endif
 
               ! Increment diffuse albedo
               total_albedo(:,:,:,jlev) = total_albedo(:,:,:,jlev) + albedo_part
@@ -1272,7 +1274,6 @@ end if
               end do
 
 
-#ifdef USE_FAST_EXPM_EXCHANGE
               if (nreg == 2) then
                 call fast_expm_exchange(ng, ng, entrapment(:,2,1), entrapment(:,1,2), &
                      &                  albedo_part)
@@ -1281,43 +1282,18 @@ end if
                      &                          entrapment(:,3,2), entrapment(:,2,3), &
                      &                  albedo_part)
               end if
-#else
-              albedo_part = entrapment
-              call expm(ng, ng, nreg, albedo_part, IMatrixPatternDense)
-              n_calls_expm = n_calls_expm + ng
-#endif
 
-#ifndef EXPLICIT_EDGE_ENTRAPMENT
+
+
+
+
+
               do jreg3 = 1,nreg
                 do jreg = 1,nreg
                   albedo_part(:,jreg3,jreg) = albedo_part(:,jreg3,jreg) &
                        &  * v_matrix(jreg2,jreg,jlev,jcol) * total_albedo_below_direct(:,jreg2,jreg2)
                 end do
               end do
-#else
-              entrapment = albedo_part
-              albedo_part = 0.0_jprb
-              do jreg3 = 1,nreg
-                do jreg = 1,nreg
-                  transfer_scaling = 1.0_jprb - (1.0_jprb - config%overhang_factor) & 
-                       &  * cloud%overlap_param(jcol,jlev-1) &
-                       &  * min(region_fracs(jreg,jlev,jcol), region_fracs(jreg,jlev-1,jcol)) &
-                       &  / max(config%cloud_fraction_threshold, region_fracs(jreg,jlev,jcol))
-                  do jreg4 = 1,nreg
-                    if (.not. (jreg4 == jreg .and. jreg4 /= jreg2)) then
-                     albedo_part(:,jreg3,jreg) = albedo_part(:,jreg3,jreg) + entrapment(:,jreg3,jreg) &
-                           &  * v_matrix(jreg4,jreg,jlev,jcol) * total_albedo_below_direct(:,jreg2,jreg4)
-                    else
-                      albedo_part(:,jreg3,jreg) = albedo_part(:,jreg3,jreg) &
-                           &  + v_matrix(jreg4,jreg,jlev,jcol) * total_albedo_below_direct(:,jreg2,jreg4) &
-                           &  * (transfer_scaling * entrapment(:,jreg3,jreg) &
-                           &    +((1.0_jprb-transfer_scaling) * entrapment(:,jreg3,jreg2)))
-                    end if
-                  end do
-                end do
-              end do
-
-#endif
               ! Increment direct albedo
               total_albedo_direct(:,:,:,jlev) = total_albedo_direct(:,:,:,jlev) + albedo_part
 
@@ -1422,18 +1398,6 @@ end if
       ! Final loop back down through the atmosphere to compute fluxes
       do jlev = 1,nlev
 
-#ifdef PRINT_ENTRAPMENT_DATA
-        if (config%i_3d_sw_entrapment == IEntrapmentExplicitNonFractal &
-             &  .or. config%i_3d_sw_entrapment == IEntrapmentExplicit) then
-          ! Save downwelling direct and diffuse fluxes at the top of
-          ! layer "jlev" in each of the regions of layer "jlev"
-          if (nreg == 2) then
-            write(102,'(i4,i4,4e14.6)') jcol, jlev, direct_dn_below(1,:), flux_dn_below(1,:)
-          else
-            write(102,'(i4,i4,6e14.6)') jcol, jlev, direct_dn_below(1,1:3), flux_dn_below(1,1:3)
-          end if
-        end if
-#endif
 
         ! Compute the solar downwelling "source" at the base of the
         ! layer due to scattering of the direct beam within it

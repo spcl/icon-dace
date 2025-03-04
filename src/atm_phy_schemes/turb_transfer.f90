@@ -78,9 +78,9 @@ MODULE turb_transfer
 
 ! Modules used:
 
-#ifdef _OPENMP
-  USE omp_lib,            ONLY: omp_get_thread_num
-#endif
+
+
+
 USE mo_exception,         ONLY: message_text, message
 !-------------------------------------------------------------------------------
 ! Parameter for precision
@@ -297,11 +297,11 @@ USE turb_utilities,          ONLY:   &
     alpha0_char
 
 !-------------------------------------------------------------------------------
-#ifdef SCLM
-USE data_1d_global, ONLY : &
-    lsclm, lsurflu, i_cal, i_upd, i_mod, imb, &
-    SHF, LHF
-#endif
+
+
+
+
+
 !SCLM---------------------------------------------------------------------------
 
 USE mo_fortran_tools, ONLY: set_acc_host_or_device
@@ -977,17 +977,17 @@ LOGICAL        ::   ldebug = .FALSE.
                    prss=prss(:,ke1), tmps=tmps(:,ke1), vaps=vaps(:,ke1), liqs=liqs(:,ke1), rcld=rcld, &
                    lacc=lzacc, opt_acc_async_queue=acc_async_queue)
 
-#ifdef ICON_USE_CUDA_GRAPH
-   IF (lzacc .AND. lini .AND. lcuda_graph_turb_tran ) THEN
-      CALL finish ('turbtran', 'initialization is not supported when capturing a graph with OpenACC')
-   END IF
-#endif
+
+
+
+
+
 !-------------------------------------------------------------------------------
 
   my_cart_id = get_my_global_mpi_id()
-#ifdef _OPENMP
-  my_thrd_id = omp_get_thread_num()
-#endif
+
+
+
 
 ! 2)  Initialisierung der z0-Werte ueber Meer
 !     und der laminaren Transferfaktoren:
@@ -1901,30 +1901,6 @@ LOGICAL        ::   ldebug = .FALSE.
       !$ACC END PARALLEL
 
 !SCLM --------------------------------------------------------------------------------
-#ifdef SCLM
-      IF (lsclm) THEN
-         IF (PRESENT(shfl_s)) THEN
-            IF (SHF%mod(0)%vst.GT.i_cal .AND. SHF%mod(0)%ist.EQ.i_mod) THEN
-               !measured SHF has to be used for forcing:
-               shfl_s(imb)=SHF%mod(0)%val
-            ELSEIF (lsurflu) THEN !SHF defined by explicit surface flux density
-               SHF%mod(0)%val=shfl_s(imb)
-               SHF%mod(0)%vst=MAX(i_upd, SHF%mod(0)%vst) !SHF is at least updated
-            END IF
-         END IF
-         IF (PRESENT(qvfl_s)) THEN
-            IF (LHF%mod(0)%vst.GT.i_cal .AND. LHF%mod(0)%ist.EQ.i_mod) THEN
-               !measured LHF has to be used for forcing:
-               qvfl_s(imb)=LHF%mod(0)%val / lh_v
-            ELSEIF (lsurflu) THEN !LHF defined by explicit surface flux density
-               LHF%mod(0)%val=qvfl_s(imb) * lh_v
-               LHF%mod(0)%vst=MAX(i_upd, LHF%mod(0)%vst) !LHF is at least updated
-            END IF
-            !Note: LHF always is the latent heat flux connected with evaporation by definition,
-            !      independent whether the surface is frozen or not!
-         END IF
-      END IF
-#endif
 !SCLM --------------------------------------------------------------------------------
 
 ! 5)  Diagnose der meteorologischen Groessen im 2m- und 10m-Niveau:
@@ -1969,13 +1945,8 @@ LOGICAL        ::   ldebug = .FALSE.
 !     Diagnose der 2m-Groessen:
 
       IF (ltst2ml) THEN !test required, whether 2m-level is above the lowest main-level
-#ifdef _OPENACC
-        CALL diag_level_gpu(ivstart, ivend, ke1, z2m_2d, hhl, k_2d, hk_2d, hk1_2d, &
-                            lacc=lzacc, opt_acc_async_queue=acc_async_queue)
-#else
         CALL diag_level(ivstart, ivend, ke1, z2m_2d, hhl, k_2d, hk_2d, hk1_2d, &
                         lacc=lzacc, opt_acc_async_queue=acc_async_queue)
-#endif
       END IF
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(acc_async_queue) IF(lzacc)
@@ -2268,13 +2239,8 @@ LOGICAL        ::   ldebug = .FALSE.
 
 !        Diagnose der 10m-Groessen:
 
-#ifdef _OPENACC
-         CALL diag_level_gpu(ivstart, ivend, ke1, z10m_2d, hhl, k_2d, hk_2d, hk1_2d, &
-                             lacc=lzacc, opt_acc_async_queue=acc_async_queue)
-#else
          CALL diag_level(ivstart, ivend, ke1, z10m_2d, hhl, k_2d, hk_2d, hk1_2d, &
                          lacc=lzacc, opt_acc_async_queue=acc_async_queue)
-#endif
 
 
          !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(vel2_2d) ASYNC(acc_async_queue) IF(lzacc)

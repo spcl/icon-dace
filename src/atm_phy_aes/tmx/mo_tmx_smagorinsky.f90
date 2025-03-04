@@ -14,7 +14,17 @@
 
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_tmx_smagorinsky
@@ -28,12 +38,6 @@ MODULE mo_tmx_smagorinsky
   USE mo_sync,                ONLY: SYNC_C, sync_patch_array
   USE mo_physical_constants,  ONLY: grav,rgrav
 
-#ifdef _OPENACC
-  use openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)
-#else
-#define __acc_attach(ptr)
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -75,11 +79,7 @@ MODULE mo_tmx_smagorinsky
       smag_constant     => config%list%Get_ptr_r0d('Smagorinsky constant')
       max_turb_scale    => config%list%Get_ptr_r0d('maximum turbulence length scale')
       
-#ifdef __MIXED_PRECISION
-      dzh               => inputs%list%get_ptr_s3d('layer thickness half') 
-#else
       dzh               => inputs%list%get_ptr_r3d('layer thickness half') 
-#endif
 
       gepot_agl_ic      => inputs%list%get_ptr_r3d('geopotential above groundlevel at interface and cell center')
 
@@ -93,7 +93,7 @@ MODULE mo_tmx_smagorinsky
         !compute_stability_term => compute_stability_term_louis
        
         scaling_factor_louis  => diagnostics%list%Get_ptr_r2d('scaling factor for Louis constant b')
-        __acc_attach(scaling_factor_louis)
+        
 
         ! compute scaling_factor_louis in init!
         CALL compute_scaling_factor_louis(domain,scaling_factor_louis)
@@ -288,13 +288,13 @@ MODULE mo_tmx_smagorinsky
                               i_startidx, i_endidx, rl_start, rl_end)
 
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = 2 , nlev
-#else
+
+
+
+
         DO jk = 2 , nlev
           DO jc = i_startidx, i_endidx
-#endif            
+
             stability_term = SQRT(MAX( 0._wp, 0.5_wp * mech_prod(jc,jk,jb) - rturb_prandtl * bruvais(jc,jk,jb) ))
 
             km_ic(jc,jk,jb) = rho_ic(jc,jk,jb)               &
@@ -384,13 +384,13 @@ MODULE mo_tmx_smagorinsky
                               i_startidx, i_endidx, rl_start, rl_end)
 
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = 2 , nlev
-#else
+
+
+
+
         DO jk = 2 , nlev
           DO jc = i_startidx, i_endidx
-#endif
+
             Ri  = 2._wp * bruvais(jc,jk,jb) / mech_prod(jc,jk,jb) 
 
             stability_function(jc,jk,jb) =  MAX(  1.0_wp - Ri*rturb_prandtl,                &

@@ -48,7 +48,7 @@
 !!
 !! @author Thomas Jahns <jahns@dkrz.de>
 !! @date 2009-04-09
-#include "fc_feature_defs.inc"
+
 MODULE ppm_f90_io_lun
   USE ppm_base, ONLY: abort_ppm
   IMPLICIT NONE
@@ -170,7 +170,7 @@ CONTAINS
          default_max_lun, found, next_free_unit)
     IF (.NOT. found) THEN
       CALL abort_ppm('No free logical unit available for open.', &
-           source=filename, line=__LINE__)
+           source=filename, line=173)
     END IF
   END FUNCTION next_free_unit
 
@@ -208,27 +208,6 @@ CONTAINS
 
 ! the next function is a port from ECHAM but needs the backtrace
 ! generating function 'finish' not currently implemented in MPIOM
-#if 0
-  !> find currently available unit number in given range
-  !> @param istart return unit number not less than istart
-  !> @param istop return unit number not greater than istop
-  !> @return next available unit
-  FUNCTION find_next_free_unit(istart,istop) RESULT(unit)
-    INTEGER :: istart, istop, unit
-    LOGICAL :: found
-    INTEGER :: i
-    CHARACTER(256) :: info
-
-    CALL next_free_unit_in_range(istart, istop, found, unit)
-
-    IF (.NOT. found) THEN
-       WRITE(info,'(a,i2.2,a,i2.2,a)') &
-         'No unit in range <',istart,':',istop,'> free.'
-       CALL finish('find_next_free_unit',info)
-    END IF
-
-  END FUNCTION find_next_free_unit
-#endif
 
 END MODULE ppm_f90_io_lun
 !

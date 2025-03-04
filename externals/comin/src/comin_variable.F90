@@ -55,7 +55,7 @@ MODULE comin_variable
   PUBLIC :: comin_var_get_from_exposed
   PUBLIC :: comin_var_set_sync_device_mem
 
-#include "comin_global.inc"
+
 
 CONTAINS
 

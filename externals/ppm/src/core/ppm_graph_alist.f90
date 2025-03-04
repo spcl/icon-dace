@@ -39,7 +39,7 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_graph_alist
   USE ppm_base, ONLY: assertion, abort_ppm
   IMPLICIT NONE
@@ -65,7 +65,7 @@ CONTAINS
     m = SIZE(adj, 1)
     ofs = 1
     IF (PRESENT(node_offset)) ofs = node_offset
-    CALL assertion(m == SIZE(adj, 2), filename, __LINE__, &
+    CALL assertion(m == SIZE(adj, 2), filename, 68, &
          'adjacency matrix must be rectangular')
 !$omp single
     IF (ALLOCATED(list%adj)) DEALLOCATE(list%adj)
@@ -97,7 +97,7 @@ CONTAINS
         DO i = j + 1, m
           IF (adj(i, j) .NEQV. adj(j, i)) THEN
             CALL abort_ppm('input matrix must be symmetric', filename, &
-                 __LINE__)
+                 100)
           END IF
         END DO
       END DO

@@ -52,9 +52,9 @@ CONTAINS
     CHARACTER(*), PARAMETER :: routine = "mo_wave:wave"
     CLASS(t_RestartDescriptor), POINTER  :: restartDescriptor
 
-#ifdef _OPENACC
-    CALL finish(routine, "wave_process not ported to GPU yet")
-#endif
+
+
+
     CALL construct_wave()
 
     restartDescriptor => createRestartDescriptor(TRIM(get_my_process_name()))

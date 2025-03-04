@@ -11,10 +11,10 @@
 
 ! Subroutine aes_phy_main calls all the parameterization schemes
 
-#if defined __xlC__ && !defined NOXLFPROCESS
-@PROCESS HOT
-@PROCESS SPILLSIZE(5000)
-#endif
+
+
+
+
 !OCL NOALIAS
 
 MODULE mo_aes_phy_main
@@ -37,10 +37,10 @@ MODULE mo_aes_phy_main
     &                               initialize
 
   USE mo_aes_diagnostics     ,ONLY: aes_global_diagnostics
-#if defined( _OPENACC )
-  USE mo_exception           ,ONLY: warning
-  USE mo_var_list_gpu        ,ONLY: gpu_update_var_list
-#endif
+
+
+
+
 
   USE mo_diagnose_cov        ,ONLY: diagnose_cov
 
@@ -63,15 +63,6 @@ MODULE mo_aes_phy_main
   USE mo_interface_cloud_mig ,ONLY: interface_cloud_mig
   !
   USE mo_interface_cloud_two ,ONLY: interface_cloud_two
-#ifndef __NO_ICON_COMIN__
-  USE comin_host_interface, ONLY: EP_ATM_MICROPHYSICS_BEFORE,      &
-    &                             EP_ATM_MICROPHYSICS_AFTER,       &
-    &                             EP_ATM_RADIATION_BEFORE,         &
-    &                             EP_ATM_RADIATION_AFTER,          &
-    &                             EP_ATM_RADHEAT_BEFORE,           &
-    &                             EP_ATM_RADHEAT_AFTER
-  USE mo_comin_adapter,     ONLY: icon_call_callback
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -116,9 +107,6 @@ CONTAINS
     END IF
 
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_MICROPHYSICS_BEFORE, jg, lacc=.TRUE.)
-#endif
     !-------------------------------------------------------------------
     ! single moment cloud microphysics "Graupel" (mig)
     !-------------------------------------------------------------------
@@ -142,11 +130,6 @@ CONTAINS
     !--------------------------------------------------------------------
     !
     IF ( aes_phy_tc(jg)%dt_two > dt_zero ) THEN
-#if defined( _OPENACC )
-       CALL warning('GPU:aes_art_main','GPU host synchronization should be removed when port is done!')
-       CALL gpu_update_var_list('prm_field_D', .false., jg, lacc=.TRUE.)
-       CALL gpu_update_var_list('prm_tend_D' , .false., jg, lacc=.TRUE.)
-#endif
        !
        aes_phy_tc(jg)%is_in_sd_ed_interval_two = (aes_phy_tc(jg)%sd_two <= datetime) .AND. (aes_phy_tc(jg)%ed_two > datetime)
        aes_phy_tc(jg)%is_active_two            = isCurrentEventActive(aes_phy_tc(jg)%ev_two, datetime)
@@ -157,11 +140,6 @@ CONTAINS
        !
        CALL omp_block_loop_cell(patch, interface_cloud_two)
        !
-#if defined( _OPENACC )
-       CALL warning('GPU:aes_art_main','GPU device synchronization should be removed when port is done!')
-       CALL gpu_update_var_list('prm_field_D', .true., jg, lacc=.TRUE.)
-       CALL gpu_update_var_list('prm_tend_D' , .true., jg, lacc=.TRUE.)
-#endif
     END IF
 
     ! energy diagnostics after cloud microphysics
@@ -173,9 +151,6 @@ CONTAINS
        CALL omp_block_loop_cell(patch, atm_energy_copy_2_1_3d_vi); CALL atm_energy_copy_2_1_hi_ti(jg)
     END IF
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_MICROPHYSICS_AFTER, jg, lacc=.TRUE.)
-#endif
 
     !-------------------------------------------------------------------
     ! Radiation (LW+SW)
@@ -193,16 +168,10 @@ CONTAINS
        ! cloud droplet number concentration
        CALL omp_block_loop_cell(patch, droplet_number)
 
-#ifndef __NO_ICON_COMIN__
-       CALL icon_call_callback(EP_ATM_RADIATION_BEFORE, jg, lacc=.TRUE.)
-#endif
        !
        ! radiative fluxes
        CALL omp_block_loop_cell(patch, interface_aes_rad)
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_RADIATION_AFTER, jg, lacc=.TRUE.)
-#endif
        !
        ! radiative heating is always active
        aes_phy_tc(jg)%is_active_rad = .TRUE.
@@ -211,17 +180,11 @@ CONTAINS
             &                      aes_phy_tc(jg)%is_in_sd_ed_interval_rad, &
             &                      aes_phy_tc(jg)%is_active_rad)
 
-#ifndef __NO_ICON_COMIN__
-       CALL icon_call_callback(EP_ATM_RADHEAT_BEFORE, jg, lacc=.TRUE.)
-#endif
        !
        ! radiative heating
        CALL omp_block_loop_cell(patch, interface_aes_rht)
        !
 
-#ifndef __NO_ICON_COMIN__
-       CALL icon_call_callback(EP_ATM_RADHEAT_AFTER, jg, lacc=.TRUE.)
-#endif
     END IF
 
     ! energy diagnostics after radiation
@@ -296,11 +259,6 @@ CONTAINS
     !-------------------------------------------------------------------
     !
     IF (aes_phy_tc(jg)%dt_art > dt_zero) THEN
-#if defined( _OPENACC )
-       CALL warning('GPU:aes_art_main','GPU host synchronization should be removed when port is done!')
-       CALL gpu_update_var_list('prm_field_D', .false., jg, lacc=.TRUE.)
-       CALL gpu_update_var_list('prm_tend_D' , .false., jg, lacc=.TRUE.)
-#endif
        !
        aes_phy_tc(jg)%is_in_sd_ed_interval_art = (aes_phy_tc(jg)%sd_art <= datetime) .AND. (aes_phy_tc(jg)%ed_art > datetime)
        aes_phy_tc(jg)%is_active_art            = isCurrentEventActive(aes_phy_tc(jg)%ev_art, datetime)
@@ -316,11 +274,6 @@ CONTAINS
        !
        CALL interface_aes_art(patch)
        !
-#if defined( _OPENACC )
-       CALL warning('GPU:aes_art_main','GPU device synchronization should be removed when port is done!')
-       CALL gpu_update_var_list('prm_field_D', .true., jg, lacc=.TRUE.)
-       CALL gpu_update_var_list('prm_tend_D' , .true., jg, lacc=.TRUE.)
-#endif
     END IF
 
     !-------------------------------------------------------------------

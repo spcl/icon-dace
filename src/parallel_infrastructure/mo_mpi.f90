@@ -211,11 +211,11 @@
 
 !This IS a small helper to avoid a full #ifdef ... #ELSE ... #endif sequence where we
 !can just replace the MPI symbol with something constant.
-#ifdef NOMPI
-#define MERGE_HAVE_MPI(mpiVariant, noMpiVariant) noMpiVariant
-#else
-#define MERGE_HAVE_MPI(mpiVariant, noMpiVariant) mpiVariant
-#endif
+
+
+
+
+
 
 MODULE mo_mpi
 
@@ -224,67 +224,44 @@ MODULE mo_mpi
 
   USE, INTRINSIC :: iso_c_binding, ONLY: c_char, c_signed_char, c_int
 
-#ifndef NOMPI
-  USE mpi
-#endif
 
-#ifdef _OPENMP
-  USE omp_lib, ONLY: omp_get_max_threads, omp_set_num_threads
-#endif
+
+
+
+
+
+
 
   USE mo_kind, ONLY: i4, i8, dp, sp, wp
   USE mo_io_units,       ONLY: nerr
   USE mo_impl_constants, ONLY: pio_type_async, pio_type_cdipio
   USE mtime,             ONLY: datetime, max_datetime_str_len, datetimeToString, &
     &                          newDatetime, deallocateDatetime
-#ifdef HAVE_CDI_PIO
-  USE mo_cdi_pio_interface, ONLY: nml_io_cdi_pio_conf_handle
-#endif
 
-#ifdef USE_NCCL
-  USE nccl
-  USE openacc
-#endif
 
-#ifdef __STANDALONE
-  INTERFACE
-    SUBROUTINE exit(iret) BIND(C,name='exit')
-      IMPORT :: c_int
-      INTEGER(c_int), VALUE :: iret
-    END SUBROUTINE exit
-  END INTERFACE
-#else
+
+
+
+
+
+
+
   USE mo_util_system, ONLY: util_exit
-#endif
 
   USE mo_master_control, ONLY: get_my_process_type, hamocc_process, ocean_process, process_exists, &
        &                       my_process_is_hamocc, my_process_is_ocean
 
-#ifdef HAVE_YAXT
-  USE yaxt,                   ONLY: xt_initialize, xt_initialized
-#endif
   USE mo_exception,           ONLY: init_logger
 
-#ifndef __NO_ICON_COMIN__
-  USE comin_host_interface,   ONLY: comin_callback_context_call,  &
-    &                               EP_FINISH, COMIN_DOMAIN_OUTSIDE_LOOP
-#endif
 
   IMPLICIT NONE
 
   PRIVATE                          ! all declarations are private
 
-#ifdef HAVE_CDI_PIO
-  INCLUDE 'cdipio.inc'
-#endif
 
   ! start/stop methods
   PUBLIC :: start_mpi, stop_mpi, abort_mpi
 
-#ifndef NOMPI
-  ! print mpi error
-  PUBLIC :: handle_mpi_error
-#endif
 
   ! split the global communicator to _process_mpi_communicator
   PUBLIC :: split_global_mpi_communicator
@@ -337,12 +314,6 @@ MODULE mo_mpi
   PUBLIC :: p_comm_work_2_restart, p_comm_work_restart
   PUBLIC :: p_communicator_a, p_communicator_b, p_communicator_d
 
-#ifndef __NO_ICON_COMIN__
-  PUBLIC :: p_comm_comin
-#endif
-#ifdef YAC_coupling
-  PUBLIC :: p_comm_yac
-#endif
 
   PUBLIC :: process_mpi_io_size, process_mpi_restart_size, process_mpi_pref_size
 
@@ -404,13 +375,6 @@ MODULE mo_mpi
   PUBLIC :: p_pe_work_only
   !--------------------------------------------------------------------
 
-#ifndef NOMPI
-  PUBLIC :: MPI_INTEGER, MPI_STATUS_SIZE, MPI_SUCCESS, &
-            MPI_INFO_NULL, MPI_ADDRESS_KIND, &
-            MPI_UNDEFINED, MPI_IN_PLACE, MPI_OP_NULL, &
-            MPI_DATATYPE_NULL
-  PUBLIC :: MPI_2INTEGER
-#endif
   PUBLIC :: MPI_ANY_SOURCE, MPI_COMM_NULL, MPI_COMM_SELF
   PUBLIC :: MPI_REQUEST_NULL
 
@@ -428,10 +392,8 @@ MODULE mo_mpi
   ! mpi reduction operators
   PUBLIC :: mpi_lor, mpi_land, mpi_sum, mpi_min, mpi_max, &
        mpi_minloc, mpi_maxloc
-#ifdef NOMPI
   INTEGER, PARAMETER :: mpi_lor = 1, mpi_land = 2, mpi_sum = 3, &
        mpi_min = 4, mpi_max = 5, mpi_minloc = 6, mpi_maxloc = 7
-#endif
 
   ! NCCL-related routines. Typically no-op when NCCL is not active.
   PUBLIC :: push_gpu_comm_queue, pop_gpu_comm_queue, get_comm_acc_queue, &
@@ -448,19 +410,6 @@ MODULE mo_mpi
 
   ! general run time information
 
-#ifndef NOMPI
- ! MPI call inherent variables
-  INTEGER :: p_error                     ! MPI error number
-  INTEGER :: p_status(MPI_STATUS_SIZE)   ! standard information of MPI_RECV
-
-  INTEGER, ALLOCATABLE, SAVE :: p_request(:) ! request values for non blocking calls
-  INTEGER :: p_irequest ! the first p_irequest values of p_request are in use
-  INTEGER :: p_mrequest ! actual size of p_request
-  INTEGER, PARAMETER :: p_request_alloc_size = 4096
-  INTEGER, PARAMETER :: p_address_kind = MPI_ADDRESS_KIND
-  ! this is the global communicator
-  INTEGER :: global_mpi_communicator = mpi_comm_world ! replaces MPI_COMM_WORLD
-#else
   INTEGER, PARAMETER :: p_address_kind = i8    ! should not get touched at all
   INTEGER, PARAMETER :: MPI_COMM_NULL  = 0
   INTEGER, PARAMETER :: MPI_COMM_SELF  = 1
@@ -469,7 +418,6 @@ MODULE mo_mpi
   INTEGER, PARAMETER :: mpi_request_null = 0
   ! this is the global communicator
   INTEGER, PARAMETER :: global_mpi_communicator = 0  ! replaces MPI_COMM_WORLD
-#endif
 
   INTEGER :: hamocc_ocean_mpi_communicator
 
@@ -575,24 +523,15 @@ MODULE mo_mpi
   INTEGER :: p_pe     = 0     ! this is the PE number of this task
   INTEGER :: p_io     = 0     ! PE number of PE handling IO
 
-#ifndef __NO_ICON_COMIN__
-  INTEGER :: p_comm_comin
-#endif
-#ifdef YAC_coupling
-  INTEGER :: p_comm_yac
-#endif
 
 ! non blocking calls
 
   ! module intrinsic names
 
-!!#ifndef NOMPI
+!!#ifndef 1
 !!LK  INTEGER :: iope                  ! PE able to do IO
 !!#endif
 
-#ifdef DEBUG
-  INTEGER :: nbcast                ! counter for broadcasts for debugging
-#endif
 
   ! MPI native transfer types
 
@@ -628,17 +567,7 @@ MODULE mo_mpi
   LOGICAL, PUBLIC :: proc_split = .FALSE.
   LOGICAL, PUBLIC :: i_am_accel_node = .FALSE.
 
-#ifdef USE_NCCL
-  INTEGER, PARAMETER :: gpu_comm_queue_depth = 32
-  INTEGER :: gpu_comm_queue(gpu_comm_queue_depth)
-  INTEGER :: gpu_comm_queue_id = 0
-  LOGICAL :: nccl_active = .FALSE. 
-  TYPE(ncclComm) :: nccl_comm
-  TYPE(ncclUniqueId) :: nccl_id
-  PUBLIC :: push_gpu_comm_queue, pop_gpu_comm_queue
-#else
   LOGICAL, PARAMETER :: nccl_active = .FALSE.
-#endif
 
 
   ! communicator stack for global sums
@@ -952,84 +881,11 @@ MODULE mo_mpi
 
 CONTAINS
 
-#ifndef NOMPI
-  SUBROUTINE handle_mpi_error(ierror, routine, line, mpi_routine)
-    INTEGER, INTENT(in) :: ierror, line
-    CHARACTER(*), INTENT(in) :: routine, mpi_routine
-
-    INTEGER :: msg_len, ierror_
-    CHARACTER(len=mpi_max_error_string) :: msg
-
-    CALL mpi_error_string(ierror, msg, msg_len, ierror_)
-    WRITE (nerr, '(3a,i0,a,i0,4a)') 'In routine ', routine, ' at line ', line, &
-         ' error ', ierror, ' occurred when calling ', mpi_routine, &
-         ': ', msg(1:msg_len)
-    CALL abort_mpi
-  END SUBROUTINE handle_mpi_error
-#endif
 
   !------------------------------------------------------------------------------
   ! NCCL routines
   !------------------------------------------------------------------------------
 
-#ifdef USE_NCCL
-
-  SUBROUTINE push_gpu_comm_queue(queue)
-    INTEGER, INTENT(IN) :: queue
-    CHARACTER(len=*), PARAMETER :: routine = modname//'::push_gpu_comm_queue'
-
-    gpu_comm_queue_id = gpu_comm_queue_id+1
-    IF (gpu_comm_queue_id > gpu_comm_queue_depth) THEN
-      CALL finish(routine, 'GPU stream queue for the communications is too deep')
-    END IF
-
-    gpu_comm_queue(gpu_comm_queue_id) = queue
-  END SUBROUTINE
-
-  SUBROUTINE pop_gpu_comm_queue()
-    CHARACTER(len=*), PARAMETER :: routine = modname//'::pop_gpu_comm_queue'
-
-    gpu_comm_queue_id = gpu_comm_queue_id-1
-    IF (gpu_comm_queue_id <= 0) THEN
-      CALL finish(routine, 'Trying to pop from the empty GPU stream queue')
-    END IF
-  END SUBROUTINE
-
-  SUBROUTINE NCCL_CHECK(result)
-    TYPE(ncclResult), INTENT(IN) :: result
-    CHARACTER(len=*), PARAMETER :: routine = modname//'::NCCL_CHECK'
-
-    IF (result /= ncclSuccess) THEN
-      CALL finish(routine, ncclGetErrorString(result))
-    END IF
-  END SUBROUTINE
-
-  FUNCTION get_comm_stream()
-    INTEGER(cuda_stream_kind) :: get_comm_stream
-    get_comm_stream = acc_get_cuda_stream(get_comm_acc_queue())
-  END FUNCTION
-
-  FUNCTION get_comm_acc_queue()
-    INTEGER :: get_comm_acc_queue
-    get_comm_acc_queue = gpu_comm_queue(gpu_comm_queue_id)
-  END FUNCTION
-
-  SUBROUTINE acc_wait_comms(queue)
-    INTEGER, INTENT(IN) :: queue
-    ! no-op
-  END SUBROUTINE
-
-  SUBROUTINE comm_group_start()
-    nccl_active = .TRUE.
-    CALL NCCL_CHECK(ncclGroupStart())
-  END SUBROUTINE
-
-  SUBROUTINE comm_group_end()
-    CALL NCCL_CHECK(ncclGroupEnd())
-    nccl_active = .FALSE.
-  END SUBROUTINE
-
-#else
 
   SUBROUTINE push_gpu_comm_queue(queue)
     INTEGER, INTENT(IN) :: queue
@@ -1058,18 +914,17 @@ CONTAINS
     ! no-op
   END SUBROUTINE
 
-#endif
 
   !------------------------------------------------------------------------------
   REAL(dp) FUNCTION get_mpi_time()
-    get_mpi_time = MERGE_HAVE_MPI(MPI_Wtime(), 0.0_dp)
+    get_mpi_time =  0.0_dp
   END FUNCTION get_mpi_time
   !------------------------------------------------------------------------------
 
   !------------------------------------------------------------------------------
   REAL(dp) FUNCTION ellapsed_mpi_time(start_time)
     REAL(dp), INTENT(in) :: start_time
-    ellapsed_mpi_time = MERGE_HAVE_MPI(MPI_Wtime() - start_time, 0.0_dp)
+    ellapsed_mpi_time =  0.0_dp
   END FUNCTION ellapsed_mpi_time
   !------------------------------------------------------------------------------
 
@@ -1159,7 +1014,7 @@ CONTAINS
 
   !------------------------------------------------------------------------------
   LOGICAL FUNCTION my_process_is_stdio()
-    my_process_is_stdio = MERGE_HAVE_MPI(process_is_stdio, .TRUE.)
+    my_process_is_stdio =  .TRUE.
   END FUNCTION my_process_is_stdio
   !------------------------------------------------------------------------------
 
@@ -1402,9 +1257,6 @@ CONTAINS
     LOGICAL :: lhave_radar
 
 
-#ifdef HAVE_CDI_PIO
-    INTEGER :: my_cdi_pio_role, grib_mode_for_cdi_pio
-#endif
     INTEGER :: p_restart_pe0 ! Number of Restart Output PE 0 within all PEs
                              ! (process_mpi_all_size if no restart PEs)
     INTEGER :: num_component, i
@@ -1446,7 +1298,6 @@ CONTAINS
     END IF
 
 ! check l_test_openmp
-#ifndef _OPENMP
     IF (l_test_openmp) THEN
       CALL print_info_stderr(method_name, &
         & 'l_test_openmp has no effect if the model is compiled without OpenMP support')
@@ -1454,10 +1305,8 @@ CONTAINS
         & '--> l_test_openmp set to .FALSE.')
       l_test_openmp = .FALSE.
     END IF
-#endif
 
     ! check p_test_run, num_io_procs and num_restart_procs
-#ifdef NOMPI
     ! Unconditionally set p_test_run to .FALSE. and num_io_procs to 0,
     ! all other variables are already set correctly
     IF (p_test_run) THEN
@@ -1511,450 +1360,6 @@ CONTAINS
     num_radario_procs = 0
     p_radario_pe0 = 0
 
-#else
-
-    ! A run on 1 PE is never a verification run,
-    ! correct this if the user should set it differently
-    IF (process_mpi_all_size < 2) THEN
-      IF (p_test_run) THEN
-        CALL print_info_stderr(method_name, &
-            & 'p_test_run has no effect in seq run')
-        CALL print_info_stderr(method_name, &
-            & '--> p_test_run set to .FALSE.')
-        p_test_run = .FALSE.
-      ENDIF
-      IF (num_io_procs > 0) THEN
-        CALL print_info_stderr(method_name, &
-            & 'num_io_procs cannot be > 0 in seq run')
-        CALL print_info_stderr(method_name, &
-            & '--> num_io_procs set to 0')
-        num_io_procs = 0
-      ENDIF
-      IF (lhave_radar) THEN
-        IF (num_io_procs_radar > 0) THEN
-          CALL print_info_stderr(method_name, &
-               & 'num_io_procs_radar cannot be > 0 in seq run')
-          CALL print_info_stderr(method_name, &
-               & '--> num_io_procs_radar set to 0')
-          num_io_procs_radar = 0
-        ENDIF
-      ENDIF
-      IF (num_restart_procs > 0) THEN
-        CALL print_info_stderr(method_name, &
-            & 'num_restart_procs cannot be > 0 in seq run')
-        CALL print_info_stderr(method_name, &
-            & '--> num_restart_procs set to 0')
-        num_restart_procs = 0
-      ENDIF
-      IF (sizeof_prefetch_processes > 0) THEN
-        CALL print_info_stderr(method_name, &
-            & 'sizeof_prefetch_processes cannot be > 0 in seq run')
-        CALL print_info_stderr(method_name, &
-            & '--> sizeof_prefetch_processes set to 0')
-        sizeof_prefetch_processes = 0
-      ENDIF
-    ENDIF
-    IF(num_io_procs < 0) num_io_procs = 0              ! for safety only
-    IF (lhave_radar) THEN
-      IF (num_io_procs_radar < 0) num_io_procs_radar = 0  ! for safety only
-    ENDIF
-    IF(num_restart_procs < 0) num_restart_procs = 0    ! for safety only
-    IF(sizeof_prefetch_processes < 0) sizeof_prefetch_processes = 0 ! for safety only
-    ! -----------------------------------------
-    ! Set if test
-    IF(p_test_run) THEN
-      IF (PRESENT(num_test_pe)) THEN
-        num_test_procs = MERGE(num_test_pe, 1, num_test_pe > 1)
-      ELSE
-        num_test_procs = 1
-      END IF
-    ELSE
-      num_test_procs = 0
-    ENDIF
-    IF (lhave_radar) THEN
-      num_radario_procs = num_io_procs_radar
-    ELSE
-      num_radario_procs = 0
-    END IF
-
-    ! -----------------------------------------
-    ! how many work processors?
-    num_work_procs = process_mpi_all_size - num_test_procs - num_io_procs - num_restart_procs - sizeof_prefetch_processes &
-                        - num_radario_procs
-
-    ! Check if there are sufficient PEs at all
-    IF(num_work_procs < 1) THEN
-      WRITE (message_text, &
-             '(a,7("  |  ",a,i0))' &
-             ) 'ERROR in processor config: ', &
-             & 'total number of procs: ', process_mpi_all_size, &
-             & 'num_test_procs: ', num_test_procs, &
-             & 'num_work_procs: ',num_work_procs, &
-             & 'num_io_procs: ',num_io_procs, &
-             & 'num_io_procs_radar: ',num_radario_procs, &
-             & 'num_restart_procs: ',num_restart_procs, &
-             & 'sizeof_prefetch_process: ',sizeof_prefetch_processes
-      CALL print_info_stderr(method_name, TRIM(message_text))
-      CALL finish(method_name, &
-      & 'not enough processors for given values of p_test_run/num_io_procs/num_restart_procs/'// &
-      &    'sizeof_prefetch_processes/num_radario_procs')
-    ELSE IF (p_test_run .AND. num_work_procs == 1) THEN
-#ifdef _OPENACC
-      PRINT *, "Testing 1 CPU against 1 GPU"
-#else
-      CALL finish(method_name, &
-      & 'running p_test_run with only 1 work processor does not make sense')
-#endif
-    ENDIF
-
-    WRITE(message_text,'(5(a,i0))') 'Number of procs for test: ',num_test_procs, &
-      & ', work: ',num_work_procs, &
-      & ', I/O: ',num_io_procs, &
-      & ', Restart: ',num_restart_procs, &
-      & ', Prefetching: ',sizeof_prefetch_processes
-    CALL print_info_stderr(method_name, message_text)
-
-    ! Everything seems ok. Proceed to setup the communicators and ids
-    ! Set up p_work_pe0, p_io_pe0, p_restart_pe0, p_pref_pe0
-    ! which are identical on all PEs
-    p_work_pe0    = num_test_procs
-    p_io_pe0      = num_test_procs + num_work_procs
-    p_restart_pe0 = num_test_procs + num_work_procs + num_io_procs
-    p_pref_pe0    = num_test_procs + num_work_procs + num_io_procs + num_restart_procs
-    ! preliminary, will be re-computed below to match the requirements from EMVORADO:
-    p_radario_pe0 = num_test_procs + num_work_procs + num_io_procs + num_restart_procs + sizeof_prefetch_processes
-
-    ! Print the process layout
-    WRITE (message_text, *) "0 <= ", num_test_procs, " test procs < "                          , &
-                          & p_work_pe0,    " <= ", num_work_procs, " work procs < "            , &
-                          & p_io_pe0,      " <= ", num_io_procs, " io procs < "                , &
-                          & p_restart_pe0, " <= ", num_restart_procs, " restart procs < "      , &
-                          & p_pref_pe0,    " <= ", sizeof_prefetch_processes, " pref procs < " , &
-                          & p_radario_pe0, " <= ", num_radario_procs, " radario procs < "     , &
-                          & process_mpi_all_size
-    CALL print_info_stderr(method_name, message_text)
-
-    ! Set up p_n_work and p_pe_work which are NOT identical on all PEs
-    IF(p_pe < p_work_pe0) THEN
-      ! Test PE (if present)
-      p_n_work  = num_test_procs ! PE in verification work group
-      p_pe_work = p_pe           ! PE number within work group
-    ELSE IF(p_pe < p_io_pe0) THEN
-      ! Work PE
-      p_n_work  = num_work_procs
-      p_pe_work = p_pe - num_test_procs
-    ELSE IF(p_pe < p_restart_pe0) THEN
-      ! I/O PE (if present)
-      p_n_work  = num_io_procs
-      p_pe_work = p_pe - num_test_procs - num_work_procs
-    ELSE IF(p_pe < p_pref_pe0) THEN
-      ! Restart PE (if present)
-      p_n_work  = num_restart_procs
-      p_pe_work = p_pe - num_test_procs - num_work_procs - num_io_procs
-    ELSE IF (p_pe < p_radario_pe0) THEN
-      p_n_work  = sizeof_prefetch_processes
-      p_pe_work = p_pe - num_test_procs - num_work_procs - num_io_procs - num_restart_procs
-    ELSE
-      p_n_work  = num_radario_procs
-      p_pe_work = p_pe - num_test_procs - num_work_procs - num_io_procs - num_restart_procs - sizeof_prefetch_processes
-    ENDIF
-
-    ! Set communicators
-    ! =================
-
-    ! Split communicator process_mpi_all_comm between test/work/io/restart/prefetching
-    ! to get  which is the communicator for
-    ! usage WITHIN every group of the 5 different types
-    IF(p_pe < p_work_pe0) THEN
-      my_mpi_function = test_mpi_process
-    ELSE IF(p_pe < p_io_pe0) THEN
-      my_mpi_function = work_mpi_process
-    ELSE IF(p_pe < p_restart_pe0) THEN
-      my_mpi_function = io_mpi_process
-    ELSE IF(p_pe < p_pref_pe0) THEN
-      my_mpi_function = restart_mpi_process
-    ELSE IF (p_pe < p_radario_pe0) THEN
-      my_mpi_function = pref_mpi_process
-    ELSE
-      my_mpi_function = radario_mpi_process
-    ENDIF
-
-    ! create intra-communicators for
-    ! * test ranks and work ranks (later
-    !   split into p_comm_work for the respective groups)
-    ! * io ranks
-    ! * restart ranks and
-    ! * prefetch ranks
-    my_color = MERGE(work_mpi_process, my_mpi_function, &
-      &                   my_mpi_function == test_mpi_process &
-      &              .OR. my_mpi_function == work_mpi_process)
-    CALL mpi_comm_split(process_mpi_all_comm, my_color, p_pe, &
-         my_function_comm, p_error)
-
-    IF (p_test_run .AND. my_color == work_mpi_process) THEN
-      p_comm_work_test = my_function_comm
-      my_color = MERGE(1, 2, my_mpi_function == test_mpi_process)
-      CALL mpi_comm_split(p_comm_work_test, my_color, p_pe, &
-           p_comm_work, p_error)
-      my_function_comm = p_comm_work
-    ELSE
-      p_comm_work = my_function_comm
-      ! If not a test run, p_comm_work_test must not be used at all
-      p_comm_work_test = MPI_COMM_NULL
-    ENDIF
-
-    ! Apply communicator splitting in case of NEC hybrid mode
-    p_comm_work_only = p_comm_work
-    p_workonly_pe0   = p_work_pe0
-    p_pe_work_only   = p_pe_work
-
-    IF (PRESENT(num_dio_procs)) THEN
-       IF (my_mpi_function == work_mpi_process .AND. num_dio_procs > 0) THEN
-          ! set first process of p_comm_work_only
-          p_workonly_pe0 = p_work_pe0 + num_dio_procs
-          IF (p_pe > p_work_pe0 + num_dio_procs - 1) THEN
-             ! give color to real work processes
-             my_color = 1
-          ELSE
-             ! give color to detached stdio-PEs
-             my_color = 2
-          END IF
-          CALL MPI_COMM_SPLIT(p_comm_work, my_color, p_pe, p_comm_work_only, p_error)
-          CALL MPI_COMM_RANK (p_comm_work_only, p_pe_work_only, p_error)
-       ENDIF
-    ENDIF
-
-#if defined(__NEC__) || defined(__NEC_VH__)
-# ifdef __NEC__
-    my_arch = IBSET(0, 1) ! NEC-SX
-# else
-    my_arch = IBSET(0, 0)
-# endif
-
-    ! Each present different arch sets a bit in the result. If more than one bit
-    ! is set, workers run on different architectures.
-    IF (my_mpi_function == work_mpi_process) THEN
-      p = p_reduce(my_arch, MPI_BOR, 0, p_comm_work_only)
-      IF (p_pe_work_only == 0 .AND. POPCNT(p) > 1) THEN
-        CALL finish(routine, "All worker PEs must run on same architecture!")
-      END IF
-    END IF
-#endif
-
-    ! Create p_comm_work_io, the communicator spanning work group and I/O PEs
-    IF (num_io_procs > 0) THEN
-      my_color = MERGE(2, &
-        &              MERGE(1, mpi_undefined, &
-        &                    my_mpi_function == test_mpi_process), &
-        &       my_mpi_function == work_mpi_process &
-           .OR. my_mpi_function == io_mpi_process)
-      CALL mpi_comm_split(process_mpi_all_comm, my_color, p_pe, &
-           p_comm_work_io, p_error)
-
-#if defined(__NEC__) || defined(__NEC_VH__)
-      ! Check whether all detached std I/O PEs and I/O PEs run on same architecture
-      IF (p_comm_work_io /= MPI_COMM_NULL .AND. PRESENT(num_dio_procs)) THEN
-        ! gather all architectures on PE0
-        ALLOCATE(glb_arch(num_work_procs + num_io_procs))
-        CALL p_gather(my_arch, glb_arch, 0, p_comm_work_io)
-
-        ! compare process architectures with PE0 architecture
-        IF (p_pe == p_work_pe0) THEN
-
-          arch_mismatch = .FALSE.
-          ! check all detached std I/O PEs
-          IF (PRESENT(num_dio_procs)) THEN
-            DO p = 1, num_dio_procs
-              IF (my_arch /= glb_arch(p)) arch_mismatch = .TRUE.
-            END DO
-          END IF
-          ! check all I/O PEs
-          DO p = num_work_procs + 1, num_work_procs + num_io_procs
-            IF (my_arch /= glb_arch(p)) arch_mismatch = .TRUE.
-          END DO
-          DEALLOCATE(glb_arch)
-
-          ! if mismatch found, abort
-          IF (arch_mismatch) THEN
-            CALL finish(routine, "All detached std I/O PEs and I/O PEs must run on same architecture!")
-          END IF
-        END IF
-      END IF
-#endif
-
-      IF (pio_type_ == pio_type_async &
-        & .AND. (     my_mpi_function == work_mpi_process &
-        &        .OR. my_mpi_function == io_mpi_process)) THEN
-        my_color = MERGE(1, mpi_undefined, my_mpi_function == io_mpi_process)
-        CALL mpi_comm_split(p_comm_work_io, my_color, p_pe, p_comm_io, p_error)
-      ELSE
-        p_comm_io = mpi_comm_null
-      END IF
-      IF (pio_type_ == pio_type_cdipio &
-        & .AND. (     my_mpi_function == work_mpi_process &
-        &        .OR. my_mpi_function == io_mpi_process)) THEN
-#ifdef HAVE_CDI_PIO
-        grib_mode_for_cdi_pio = pio_mpi_fw_at_all
-        nml_io_cdi_pio_conf_handle = cdiPioConfCreate()
-        ! todo: cdiPioCSRLastN needs to match assignment of mpi function
-        my_cdi_pio_role = cdiPioCSRLastN(p_comm_work_io, &
-          &                              grib_mode_for_cdi_pio, &
-          &                              num_io_procs)
-        CALL cdiPioConfSetIOMode(nml_io_cdi_pio_conf_handle, &
-          &                      grib_mode_for_cdi_pio)
-        CALL cdiPioConfSetCSRole(nml_io_cdi_pio_conf_handle, my_cdi_pio_role)
-        CALL cdiPioConfSetBatchedRMA(nml_io_cdi_pio_conf_handle, .FALSE.)
-#else
-        CALL finish(routine, "ICON was compiled without CDI-PIO")
-#endif
-      END IF
-    ELSE IF (     my_mpi_function == work_mpi_process &
-      &      .OR. my_mpi_function == test_mpi_process) THEN
-      p_comm_work_io = my_function_comm
-      p_comm_io = MERGE(mpi_comm_self, mpi_comm_null, p_pe_work == 0)
-    ELSE
-      p_comm_io = mpi_comm_null
-      p_comm_work_io = mpi_comm_null
-    END IF
-
-    ! translate the rank "p_io_pe0" to the communicator "p_comm_work_io":
-    IF (p_comm_work_io /= mpi_comm_null) THEN
-      CALL MPI_Comm_group(process_mpi_all_comm, grp_process_mpi_all_comm, p_error)
-      CALL MPI_Comm_group(p_comm_work_io,       grp_comm_work_io,         p_error)
-      IF (num_io_procs > 0) THEN
-        input_ranks(1) = p_io_pe0
-      ELSE IF (p_test_run .AND. my_mpi_function == test_mpi_process) THEN
-        input_ranks(1) = 0
-      ELSE
-        input_ranks(1) = p_work_pe0
-      END IF
-      CALL MPI_group_translate_ranks(grp_process_mpi_all_comm, 1, input_ranks, &
-        &                            grp_comm_work_io, translated_ranks, p_error)
-      process_work_io0 = translated_ranks(1)
-      CALL MPI_group_free(grp_process_mpi_all_comm, p_error)
-      CALL MPI_group_free(grp_comm_work_io, p_error)
-    ELSE
-      process_work_io0 = -1
-    END IF
-
-    ! Set p_comm_work_restart, the communicator spanning work group and Restart Ouput PEs
-    my_color = MERGE(1, MPI_UNDEFINED, &
-      &                   my_mpi_function == work_mpi_process &
-      &              .OR. my_mpi_function == restart_mpi_process)
-    CALL mpi_comm_split(process_mpi_all_comm, my_color, p_pe, &
-      p_comm_work_restart, p_error)
-
-    ! Set p_comm_work_pref, the communicator spanning work group and prefetching PEs
-    IF (sizeof_prefetch_processes > 0) THEN
-      my_color = MERGE(1, MPI_UNDEFINED, &
-        &                   my_mpi_function == work_mpi_process &
-        &              .OR. my_mpi_function == pref_mpi_process)
-      CALL mpi_comm_split(process_mpi_all_comm, my_color, p_pe, &
-           p_comm_work_pref, p_error)
-    ELSE
-      ! If no prefetching PEs are present, p_comm_inp_pref must not be used at all
-      p_comm_work_pref = mpi_comm_null
-    ENDIF
-
-    ! translate the rank "p_pref_pe0" to the communicator "p_comm_work_pref":
-    IF (p_comm_work_pref /= MPI_COMM_NULL) THEN
-      CALL MPI_Comm_group(process_mpi_all_comm, grp_process_mpi_all_comm, p_error)
-      CALL MPI_Comm_group(p_comm_work_pref,     grp_comm_work_pref,       p_error)
-      IF (sizeof_prefetch_processes > 0) THEN
-        input_ranks(1) = p_pref_pe0
-      ELSE IF (p_test_run .AND. (p_pe < p_work_pe0)) THEN
-        input_ranks(1) = 0
-      ELSE
-        input_ranks(1) = p_work_pe0
-      END IF
-      CALL MPI_group_translate_ranks(grp_process_mpi_all_comm, 1, input_ranks, &
-        &                            grp_comm_work_pref, translated_ranks, p_error)
-      process_work_pref0 = translated_ranks(1)
-      CALL MPI_group_free(grp_process_mpi_all_comm, p_error)
-      CALL MPI_group_free(grp_comm_work_pref, p_error)
-    END IF
-
-    ! Create Intercommunicator work PEs - I/O PEs
-
-    ! From MPI-Report:
-    ! Advice to users: We recommend using a dedicated peer communicator, such as a
-    ! duplicate of MPI_COMM_WORLD, to avoid trouble with peer communicators.
-
-    ! No idea what these troubles may be in reality, but let us follow the advice
-
-    CALL MPI_Comm_dup(process_mpi_all_comm, peer_comm, p_error)
-
-    IF (num_io_procs > 0 .AND. (     my_mpi_function == work_mpi_process &
-      &                         .OR. my_mpi_function == io_mpi_process) &
-      &                  .AND. pio_type_ ==  pio_type_async) THEN
-      remote_leader &
-        = MERGE(p_io_pe0, p_work_pe0, my_mpi_function == work_mpi_process)
-      CALL mpi_intercomm_create(my_function_comm, 0, peer_comm, remote_leader, &
-        & 1, p_comm_work_2_io, p_error)
-    ELSE
-      ! No Intercommunicator for test PE or for all, when no IO PEs are defined
-      p_comm_work_2_io = MPI_COMM_NULL
-    ENDIF
-
-    IF (num_test_procs > 0 .AND. (     my_mpi_function == work_mpi_process &
-      &                           .OR. my_mpi_function == test_mpi_process)) THEN
-      remote_leader &
-        = MERGE(0, p_work_pe0, my_mpi_function == work_mpi_process)
-      CALL mpi_intercomm_create(my_function_comm, 0, peer_comm, remote_leader, &
-        & 1, p_comm_work_2_test, p_error)
-    ELSE
-      ! No Intercommunicator when no test PEs are requested or the process is
-      ! of neither work nor test function
-      p_comm_work_2_test = MPI_COMM_NULL
-    ENDIF
-
-    ! Perform the same as above, but create the inter-communicators between
-    ! the worker PEs and the restart PEs.
-    IF (num_restart_procs > 0 &
-      & .AND. (     my_mpi_function == work_mpi_process &
-      &        .OR. my_mpi_function == restart_mpi_process)) THEN
-      remote_leader &
-        = MERGE(p_restart_pe0, p_work_pe0, my_mpi_function == work_mpi_process)
-      CALL mpi_intercomm_create(my_function_comm, 0, peer_comm, remote_leader, &
-        & 2, p_comm_work_2_restart, p_error)
-    ELSE
-      ! No Intercommunicator for Test PE or for all, when no restart PEs
-      p_comm_work_2_restart = MPI_COMM_NULL
-    ENDIF
-
-    ! Perform the same as above, but create the inter-communicator between
-    ! the worker PEs and the prefetching PEs.
-    IF (sizeof_prefetch_processes > 0 &
-      & .AND. (     my_mpi_function == work_mpi_process &
-      &        .OR. my_mpi_function == pref_mpi_process)) THEN
-      remote_leader &
-           = MERGE(p_pref_pe0, p_work_pe0, my_mpi_function == work_mpi_process)
-      CALL mpi_intercomm_create(my_function_comm, 0, peer_comm, remote_leader, &
-           & 3, p_comm_work_2_pref, p_error)
-    ELSE
-      ! No Intercommunicator for Test PE or for all, when no prefetch PEs
-      p_comm_work_2_pref = MPI_COMM_NULL
-    ENDIF
-
-    CALL mpi_comm_free(peer_comm, p_error)
-    ! if OpenMP is used, the test PE uses only 1 thread in order to check
-    ! the correctness of the OpenMP implementation
-    ! Currently the I/O PEs are also single threaded!
-#ifdef _OPENMP
-    IF (l_test_openmp .AND. my_mpi_function == test_mpi_process) &
-         CALL OMP_SET_NUM_THREADS(1)
-    IF (p_pe >= p_io_pe0 .AND. p_pe < p_radario_pe0) CALL OMP_SET_NUM_THREADS(1)
-#endif
-
-    IF (lhave_radar) THEN
-      IF (num_radario_procs > 0) THEN
-        p_radario_pe0 = num_test_procs + num_work_procs + num_io_procs + num_restart_procs + sizeof_prefetch_processes
-      ELSE
-        p_radario_pe0 = p_work_pe0
-      END IF
-    END IF
-
-#endif
 
     ! fill some derived variables
     process_mpi_all_workroot_id     = p_work_pe0
@@ -1972,199 +1377,19 @@ CONTAINS
     process_is_stdio = (my_process_mpi_all_id == process_mpi_stdio_id)
     process_is_mpi_parallel = p_n_work > 1
 
-#ifdef NOMPI
     p_work_root_processes(1)%comp_id = comp_id
     p_work_root_processes(1)%global_mpi_id = my_global_mpi_id
-#else
-    ! gather information of work root processes from all components
-    CALL MPI_Comm_dup(global_mpi_communicator, global_dup_comm, p_error)
-
-    num_component = SIZE(p_work_root_processes)
-    ALLOCATE(root_buffer(2 * num_component))
-    IF (my_global_mpi_id == 0) THEN
-
-      IF (my_process_mpi_all_id == 0) THEN
-        root_buffer(1) = comp_id
-        root_buffer(2) = my_global_mpi_id
-      END IF
-
-      DO i = MERGE(1, 0, my_process_mpi_all_id == 0), num_component - 1
-
-        CALL MPI_RECV(root_buffer(2*i+1:2*i+2), 2, p_int, MPI_ANY_SOURCE, 0, &
-                      global_dup_comm, p_status, p_error)
-      END DO
-
-    ELSE IF (my_process_mpi_all_id == 0) THEN
-
-      root_buffer(1) = comp_id
-      root_buffer(2) = my_global_mpi_id
-      CALL MPI_SEND(root_buffer, 2, p_int, 0, 0, global_dup_comm, p_error)
-
-    END IF
-
-    CALL MPI_BCAST(root_buffer, 2 * num_component, p_int, 0, global_dup_comm, &
-                   p_error)
-    CALL MPI_COMM_FREE(global_dup_comm, p_error)
-
-    DO i = 1, num_component
-      p_work_root_processes(i)%comp_id = root_buffer(2*i-1)
-      p_work_root_processes(i)%global_mpi_id = root_buffer(2*i)
-    END DO
-
-    DEALLOCATE(root_buffer)
-#endif
 
 ! if there is a hamocc proccess, create hamocc-ocean communicator
-#ifndef NOMPI
-      IF (process_exists(hamocc_process)) THEN
-        ALLOCATE(root_buffer(2))
-
-        IF ((get_my_process_type() == hamocc_process .or. get_my_process_type() == ocean_process) &
-            .AND. my_mpi_function == work_mpi_process) THEN
-          my_color = 1 
-        ELSE
-          my_color = 0
-        ENDIF
-        ! create a intracommunicator between hamocc and ocean
-        CALL mpi_comm_split(global_mpi_communicator, my_color, my_global_mpi_id, &
-          tmp_common_intracom, p_error)
-          
-        IF (my_color == 0)  THEN
-          ! we will not use this communicator if not hamocc and ocean
-          CALL MPI_COMM_FREE(tmp_common_intracom, p_error)
-          hamocc_ocean_mpi_communicator = MPI_COMM_NULL 
-        ELSE
-          !------------------------------------------------
-          ! we neet to create an intercommunicator 
-          !   split again to the compoment communicators
-          CALL MPI_COMM_RANK (tmp_common_intracom, my_common_intracom_mpi_id, p_error)
-          my_color = get_my_process_type()
-          CALL mpi_comm_split(tmp_common_intracom, my_color, my_common_intracom_mpi_id, &
-            tmp_work_intracom, p_error)
-          CALL MPI_COMM_RANK (tmp_work_intracom, my_work_intracom_mpi_id, p_error)        
-        
-          ! get the my_common_intracom_mpi_id of the roots to proc 0
-          !   first get the hamocc root_buffer
-          I_am_sender = .false.
-          I_am_receiver = .false.
-          IF (my_process_is_hamocc() .AND. my_work_intracom_mpi_id == 0) THEN
-            root_buffer(1) = my_common_intracom_mpi_id
-            hamocc_root = my_common_intracom_mpi_id
-            I_am_sender = .true.
-          ENDIF
-          IF (my_common_intracom_mpi_id == 0) I_am_receiver = .true.
-          IF (I_am_receiver .and. I_am_sender) THEN
-            ! do nothing 
-            I_am_receiver = .false.
-            I_am_sender   = .false.
-          ENDIF
-          !  sent the hamocc root_buffer
-          IF (I_am_sender) THEN
-            CALL MPI_SEND(root_buffer, 1, p_int, 0, 0, tmp_common_intracom, p_error)
-          ENDIF
-          IF (I_am_receiver) THEN
-            root_buffer(1) = -1        
-            CALL MPI_RECV(root_buffer, 1, p_int, MPI_ANY_SOURCE, 0, &
-              & tmp_common_intracom, p_status, p_error)
-            hamocc_root = root_buffer(1)          
-          ENDIF        
-          
-          ! now get the ocean root_buffer
-          I_am_sender = .false.
-          I_am_receiver = .false.
-          IF (my_process_is_ocean() .AND. my_work_intracom_mpi_id == 0) THEN
-            root_buffer(1) = my_common_intracom_mpi_id
-            ocean_root = my_common_intracom_mpi_id
-            I_am_sender = .true.
-          ENDIF
-          IF (my_common_intracom_mpi_id == 0) I_am_receiver = .true.
-          IF (I_am_receiver .and. I_am_sender) THEN
-            ! do nothing 
-            I_am_receiver = .false.
-            I_am_sender   = .false.
-          ENDIF
-          ! sent the hamocc root_buffer
-          IF (I_am_sender) THEN
-            CALL MPI_SEND(root_buffer, 1, p_int, 0, 0, tmp_common_intracom, p_error)
-          ENDIF
-          IF (I_am_receiver) THEN
-            root_buffer(1) = -1        
-            CALL MPI_RECV(root_buffer, 1, p_int, MPI_ANY_SOURCE, 0, &
-              & tmp_common_intracom, p_status, p_error)
-            ocean_root = root_buffer(1)          
-          ENDIF        
-        
-          ! ok, now broadcast the ocean and hamocc roots
-          IF (my_common_intracom_mpi_id == 0) THEN
-            root_buffer(1) = ocean_root
-            root_buffer(2) = hamocc_root          
-            CALL MPI_BCAST(root_buffer, 2, p_int, 0, tmp_common_intracom, p_error)
-          ELSE
-            CALL MPI_BCAST(root_buffer, 2, p_int, 0, tmp_common_intracom, p_error)
-            ocean_root = root_buffer(1)
-            hamocc_root = root_buffer(2)
-          ENDIF
-          
-          ! now we are ready to create the intercommunicator between haomcc and ocean
-          IF (my_process_is_ocean()) THEN
-            CALL MPI_Intercomm_create(tmp_work_intracom, 0, tmp_common_intracom, &
-              & hamocc_root, 0, hamocc_ocean_mpi_communicator, p_error)
-          ELSE
-              ! this is a hamocc process
-            CALL MPI_Intercomm_create(tmp_work_intracom, 0, tmp_common_intracom, &
-                & ocean_root, 0, hamocc_ocean_mpi_communicator, p_error)
-                                    
-          ENDIF
-          
-          CALL MPI_COMM_FREE(tmp_work_intracom, p_error)
-          CALL MPI_COMM_FREE(tmp_common_intracom, p_error)
-
-          ! -- done -- 
-        ENDIF
-        
-        DEALLOCATE(root_buffer)
-       
-      ENDIF ! hamocc process exists 
-#endif
     
-#ifdef HAVE_YAXT
-!   initialize here yaxt for all the processors
-      IF (.NOT. xt_initialized()) CALL xt_initialize(global_mpi_communicator)
-#endif
 
     ! still to be filled
 !     process_mpi_local_comm  = process_mpi_all_comm
 !     process_mpi_local_size  = process_mpi_all_size
 !     my_process_mpi_local_id = my_process_mpi_all_id
 
-#ifdef USE_NCCL
-      IF (my_process_is_work()) THEN
-        IF (my_process_is_mpi_workroot()) THEN
-          CALL NCCL_CHECK(ncclGetUniqueId(nccl_id))
-        END IF
-
-        CALL MPI_BCAST(nccl_id, int(sizeof(ncclUniqueId), 4), MPI_BYTE, &
-          process_mpi_root_id, get_my_mpi_work_communicator(), p_error)
-
-        CALL NCCL_CHECK(ncclCommInitRank(nccl_comm, get_my_mpi_work_comm_size(), &
-          nccl_id, get_my_mpi_work_id()))
-
-        CALL push_gpu_comm_queue(1)
-      END IF
-#endif
    
 
-#ifdef DEBUG
-      WRITE (nerr,'(a,a,i5)') method_name, ' p_pe=',            p_pe
-      WRITE (nerr,'(a,a,i5)') method_name, ' p_work_pe0=',      p_work_pe0
-      WRITE (nerr,'(a,a,i5)') method_name, ' p_io_pe0=',        p_io_pe0
-      WRITE (nerr,'(a,a,i5)') method_name, ' p_restart_pe0=',   p_restart_pe0
-      WRITE (nerr,'(a,a,i5)') method_name, ' p_radario_pe0=',   p_radario_pe0
-      WRITE (nerr,'(a,a,i5)') method_name, ' p_comm_work=',     p_comm_work
-      WRITE (nerr,'(a,a,i5)') method_name, ' p_comm_work_2_restart=', &
-        & p_comm_work_2_restart
-      WRITE (nerr,'(a,a,i5)') method_name, ' my_mpi_function=', my_mpi_function
-#endif
 
   END SUBROUTINE set_mpi_work_communicators
   !-------------------------------------------------------------------------
@@ -2179,37 +1404,7 @@ CONTAINS
     INTEGER :: peer_comm, num_component, other_comp_root_global_mpi_id, i, &
                intercomm
 
-#ifdef NOMPI
     get_mpi_work_intercomm = -1
-#else
-
-    IF (my_mpi_function /= work_mpi_process) THEN
-      CALL finish(method_name, ' Process type is not work_mpi_process.')
-    END IF
-    num_component = SIZE(p_work_root_processes)
-    other_comp_root_global_mpi_id = -1
-
-    DO i = 1, num_component
-  !    write(0,*) "get_mpi_work_intercomm:", i, p_work_root_processes(i)%comp_id
-      IF (p_work_root_processes(i)%comp_id == other_comp_id) THEN
-        other_comp_root_global_mpi_id = p_work_root_processes(i)%global_mpi_id
-      END IF
-    END DO
-
-    IF (other_comp_root_global_mpi_id == -1) THEN
-      CALL finish(method_name, ' Other component not found.')
-    END IF
-
-    ! Perform the same as above, but create the intra-communicators between
-    ! the worker PEs and the prefetching PEs.
-    CALL MPI_COMM_DUP(global_mpi_communicator, peer_comm, p_error)
-    CALL MPI_Intercomm_create(p_comm_work, 0, peer_comm, &
-                              other_comp_root_global_mpi_id, 0, intercomm, &
-                              p_error)
-    CALL MPI_COMM_FREE(peer_comm, p_error)
-
-    get_mpi_work_intercomm = intercomm
-#endif
 
   END FUNCTION get_mpi_work_intercomm
   !-------------------------------------------------------------------------
@@ -2281,34 +1476,8 @@ CONTAINS
     LOGICAL             :: l_mpi_is_initialised
     CHARACTER(len=*), PARAMETER :: &
          routine = modname//'::split_process_mpi_communicator'
-#ifdef NOMPI
     ALLOCATE(p_work_root_processes(1))
     RETURN
-#else
-    !--------------------------------------------
-    ! check if mpi is initialized
-    CALL MPI_INITIALIZED(l_mpi_is_initialised, p_error)
-    IF (p_error /= MPI_SUCCESS) THEN
-      ! assume MPI is not running
-      WRITE (nerr,'(a,a)') routine, ' MPI_INITITIALIZED failed.'
-      WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-#ifdef __STANDALONE
-      CALL exit(p_error)
-#else
-      CALL util_exit(p_error)
-#endif
-    END IF
-    !--------------------------------------------
-    ! split global_mpi_communicator
-    CALL MPI_Comm_split(global_mpi_communicator, component_no, my_global_mpi_id, &
-      & new_communicator, p_error)
-    IF (p_error /= MPI_SUCCESS) THEN
-      WRITE (message_text,'(a,i4)') ' MPI_Comm_split failed: error =  ', p_error
-      CALL finish(routine, message_text)
-    END IF
-    CALL set_process_mpi_communicator(new_communicator)
-    ALLOCATE(p_work_root_processes(num_components))
-#endif
 
   END SUBROUTINE split_global_mpi_communicator
   !------------------------------------------------------------------------------
@@ -2325,97 +1494,10 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: &
          routine = modname//'::set_process_mpi_communicator'
 
-#ifdef NOMPI
     process_mpi_all_comm    = new_communicator
     process_mpi_all_size    = 1
     my_process_mpi_all_id   = 0
 
-#else
-    ! since here we define the process all communicator
-    ! the work communicator is identical to the all communicator
-    ! and the no test or i/o processes are present
-    CALL MPI_INITIALIZED(l_mpi_is_initialised, p_error)
-
-    IF (p_error /= MPI_SUCCESS) THEN
-      WRITE (nerr,'(a,a)') routine, ' MPI_INITITIALIZED failed.'
-      WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-#ifdef __STANDALONE
-      CALL exit(p_error)
-#else
-      CALL util_exit(p_error)
-#endif
-    END IF
-
-    IF ( .NOT. l_mpi_is_initialised ) THEN
-       WRITE (nerr,'(a,a)') routine, &
-         & ' MPI_Init or start_mpi needs to be called first.'
-#ifdef __STANDALONE
-      CALL exit(p_error)
-#else
-      CALL util_exit(p_error)
-#endif
-    ENDIF
-
-    IF ( process_mpi_all_comm /= MPI_COMM_NULL) THEN
-      ! free original communicator
-      CALL MPI_COMM_FREE(process_mpi_all_comm, p_error)
-      IF (p_error /= MPI_SUCCESS) THEN
-        WRITE (nerr,'(a,a)') routine, &
-          & ' MPI_COMM_FREE failed. start_mpi needs to be called before.'
-        WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-        CALL abort_mpi
-      END IF
-    ENDIF
-    ! assign MPI communicator generated elsewhere to process_mpi_all_comm
-
-    CALL MPI_COMM_DUP(new_communicator, process_mpi_all_comm, p_error)
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,a)') routine,&
-         & ' MPI_COMM_DUP failed for process_mpi_all_comm.'
-       WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-       CALL abort_mpi
-    END IF
-
-    ! get local PE identification
-    CALL MPI_COMM_RANK (process_mpi_all_comm, my_process_mpi_all_id, p_error)
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,a)') routine, ' MPI_COMM_RANK failed.'
-       WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-       CALL abort_mpi
-    ELSE
-#ifdef DEBUG
-       WRITE (nerr,'(a,a,i4,a)') routine, ' my_process_mpi_all_id ', &
-         & my_process_mpi_all_id, ' started.'
-#endif
-    END IF
-
-
-    CALL MPI_COMM_SIZE (process_mpi_all_comm, process_mpi_all_size, p_error)
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,a,i4,a)') routine, ' PE: ',&
-         & my_process_mpi_all_id, ' MPI_COMM_SIZE failed.'
-       WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-       CALL abort_mpi
-    END IF
-
-
-!     CALL MPI_COMM_DUP(process_mpi_all_comm,p_comm_work,p_error)
-!     IF (p_error /= MPI_SUCCESS) THEN
-!        WRITE (nerr,'(a,a)') routine, ' MPI_COMM_DUP failed for p_comm_work.'
-!        WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-!        CALL abort_mpi
-!     END IF
-!
-!     CALL MPI_COMM_DUP(process_mpi_all_comm,p_comm_work_test,p_error)
-!     IF (p_error /= MPI_SUCCESS) THEN
-!        WRITE (nerr,'(a,a)') routine, ' MPI_COMM_DUP failed for p_comm_work_test.'
-!        WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-!        CALL abort_mpi
-!     END IF
-
-#endif
 
     CALL set_default_mpi_work_variables()
 
@@ -2445,18 +1527,6 @@ CONTAINS
 
     ! variables used for determing the OpenMP threads
     ! suitable as well for coupled models
-#if (defined _OPENMP)
-!    CHARACTER(len=32) :: env_name
-!    CHARACTER(len=32) :: thread_num
-!    INTEGER :: threads
-    INTEGER :: global_no_of_threads
-#ifndef NOMPI
-    INTEGER :: provided
-#endif
-#ifdef __SX__
-    EXTERNAL :: getenv
-#endif
-#endif
 
     CHARACTER(len=*), PARAMETER :: routine = modname//'::start_mpi'
 
@@ -2467,178 +1537,6 @@ CONTAINS
 
 
     ! start MPI
-#ifndef NOMPI
-#ifdef _OPENMP
-#ifdef __MULTIPLE_MPI_THREADS
-    CALL MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,provided,p_error)
-#else
-    CALL MPI_INIT_THREAD(MPI_THREAD_FUNNELED,provided,p_error)
-#endif
-#else
-    CALL MPI_INIT (p_error)
-#endif
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,a)') routine, ' MPI_INIT failed.'
-       WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-#ifdef __STANDALONE
-      CALL exit(p_error)
-#else
-      CALL util_exit(p_error)
-#endif
-    END IF
-
-#ifdef _OPENMP
-    ! Check if MPI_INIT_THREAD returned at least MPI_THREAD_FUNNELED in "provided"
-#ifdef __MULTIPLE_MPI_THREADS
-    IF (provided < MPI_THREAD_MULTIPLE) THEN
-       WRITE (nerr,'(a,a)') routine, &
-         & ' MPI_INIT_THREAD did not return desired level of thread support'
-       WRITE (nerr,'(a,i0)') " provided: ", provided
-       WRITE (nerr,'(a,i0)') " required: ", MPI_THREAD_MULTIPLE
-       CALL MPI_Finalize(p_error)
-#ifdef __STANDALONE
-      CALL exit(iexit)
-#else
-      CALL util_exit(iexit)
-#endif
-    END IF
-#else
-    IF (provided < MPI_THREAD_FUNNELED) THEN
-       WRITE (nerr,'(a,a)') routine, &
-         & ' MPI_INIT_THREAD did not return desired level of thread support'
-       WRITE (nerr,'(a,i0)') " provided: ", provided
-       WRITE (nerr,'(a,i0)') " required: ", MPI_THREAD_FUNNELED
-     END IF
-#endif
-#endif
-
-    CALL MPI_BUFFER_ATTACH(mpi_buffer, SIZE(mpi_buffer), p_error)
-    IF (p_error /= 0) THEN
-       WRITE (0,*) "Error in MPI_BUFFER_ATTACH."
-#ifdef __STANDALONE
-      CALL exit(p_error)
-#else
-      CALL util_exit(p_error)
-#endif
-    END IF
-
-    ! generate icon, comin, and yac communicator (if appropriate)
-#if !defined __NO_ICON_COMIN__ && defined YAC_coupling
-    CALL set_mpi_global_communicators( &
-      global_mpi_communicator, opt_comin_comm = p_comm_comin, &
-      opt_yac_comm = p_comm_yac)
-#elif !defined __NO_ICON_COMIN__
-    CALL set_mpi_global_communicators( &
-      global_mpi_communicator, opt_comin_comm = p_comm_comin)
-#elif defined YAC_coupling
-    CALL set_mpi_global_communicators( &
-      global_mpi_communicator, opt_yac_comm = p_comm_yac)
-#endif
-
-    process_mpi_all_comm = MPI_COMM_NULL
-    IF (PRESENT(global_name)) THEN
-      yname = global_name
-    ELSE
-      yname = '(unnamed)'
-    END IF
-    global_mpi_name = yname
-
-
-    ! get local PE identification
-    CALL MPI_COMM_RANK (global_mpi_communicator, my_global_mpi_id, p_error)
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,a)') routine, ' MPI_COMM_RANK failed.'
-       WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-       CALL abort_mpi
-    END IF
-
-    ! Information ...
-    IF (my_global_mpi_id == 0) THEN
-       WRITE (nerr,'(/,a,a,a)') ' ', &
-            TRIM(yname), ' MPI interface runtime information:'
-    END IF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,a,i4,a)') routine, ' PE ', my_global_mpi_id, ' started.'
-#endif
-
-    ! get number of available PEs
-    CALL MPI_COMM_SIZE (global_mpi_communicator, global_mpi_size, p_error)
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,a,i4,a)') routine ,' PE: ', my_global_mpi_id, &
-       &  ' MPI_COMM_SIZE failed.'
-       WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-       CALL abort_mpi
-    END IF
-
-    ! for non blocking calls
-    p_mrequest = p_request_alloc_size
-    ALLOCATE(p_request(p_mrequest))
-    p_irequest = 0
-
-    ! lets check the available MPI version
-    CALL MPI_GET_VERSION (version, subversion, p_error)
-
-    IF (p_error /= MPI_SUCCESS) THEN
-      WRITE (nerr,'(a,a)') routine , ' MPI_GET_VERSION failed.'
-      WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-      CALL abort_mpi
-    END IF
-
-    IF (my_global_mpi_id == 0) THEN
-      WRITE (nerr,'(a,a,a,i0,a1,i0)') " ", routine, &
-           ' Used MPI version: ', version, '.', subversion
-    END IF
-
-    IF (my_global_mpi_id == 0) THEN
-      WRITE (nerr,'(a,a,a,a,a,i0,a)') " ", routine, " ", &
-        & TRIM(yname), ': Globally run on ',&
-        & global_mpi_size, ' mpi processes.'
-    END IF
-
-   ! due to a possible circular dependency with mo_machine and other
-    ! modules, we determine here locally the I/O size of the different
-    ! kind types (assume 8 bit/byte. This is than used for determing
-    ! the right MPI send/receive type parameters.
-    CALL MPI_SIZEOF(iig, p_int_byte, p_error)
-    CALL MPI_SIZEOF(ii4, p_int_i4_byte, p_error)
-    CALL MPI_SIZEOF(ii8, p_int_i8_byte, p_error)
-    CALL MPI_SIZEOF(rrg, p_real_byte, p_error)
-    CALL MPI_SIZEOF(rsp, p_real_sp_byte, p_error)
-    CALL MPI_SIZEOF(rdp, p_real_dp_byte, p_error)
-
-    p_int     = MPI_INTEGER
-    p_bool    = MPI_LOGICAL
-    p_char    = MPI_CHARACTER
-
-    CALL MPI_TYPE_MATCH_SIZE(MPI_TYPECLASS_REAL, p_real_sp_byte, p_real_sp, p_error)
-    CALL MPI_TYPE_MATCH_SIZE(MPI_TYPECLASS_REAL, p_real_dp_byte, p_real_dp, p_error)
-    CALL MPI_TYPE_MATCH_SIZE(MPI_TYPECLASS_INTEGER, p_int_i4_byte, p_int_i4, p_error)
-    CALL MPI_TYPE_MATCH_SIZE(MPI_TYPECLASS_INTEGER, p_int_i8_byte, p_int_i8, p_error)
-    IF (wp == dp) THEN
-      p_real = p_real_dp
-    ELSE IF (wp == sp) THEN
-      p_real = p_real_sp
-    ELSE
-      p_real = mpi_datatype_null
-    END IF
-
-    p_mpi_comm_null = MPI_COMM_NULL
-
-#ifdef DEBUG
-    WRITE (nerr,'(/,a)')    ' MPI transfer sizes [bytes]:'
-    WRITE (nerr,'(a,i4)') '  INTEGER generic:', p_int_byte
-    WRITE (nerr,'(a,i4)') '  INTEGER 4 byte :', p_int_i4_byte
-    WRITE (nerr,'(a,i4)') '  INTEGER 8 byte :', p_int_i8_byte
-    WRITE (nerr,'(a,i4)') '  REAL generic   :', p_real_byte
-    WRITE (nerr,'(a,i4)') '  REAL single    :', p_real_sp_byte
-    WRITE (nerr,'(a,i4)') '  REAL double    :', p_real_dp_byte
-#endif
-
-! MPI ends here
-#else
 
     WRITE (nerr,'(a,a)')  routine, ' No MPI: Single processor run.'
     ! set defaults for sequential run
@@ -2649,33 +1547,10 @@ CONTAINS
     process_mpi_all_comm = MPI_COMM_NULL
     p_mpi_comm_null = MPI_COMM_NULL
 
-#endif
 
 
     is_global_mpi_parallel = global_mpi_size > 1
 
-#ifdef _OPENMP
-    ! The number of threads, if varying, will be defined via
-    ! namelists
-    global_no_of_threads = omp_get_max_threads()
-#ifndef NOMPI
-    ! Make number of threads from environment available to all model PEs
-!     CALL MPI_BCAST (global_no_of_threads, 1, MPI_INTEGER, 0, global_mpi_communicator, p_error)
-#endif
-
-    IF (my_global_mpi_id == 0) THEN
-
-      IF (is_global_mpi_parallel) THEN
-        WRITE (nerr,'(a,a,a)') " ", routine, &
-          & ': Running globally hybrid OpenMP-MPI mode.'
-      ELSE
-        WRITE (nerr,'(a,a,a)') " ", routine,': Running globally OpenMP mode.'
-      ENDIF
-      WRITE (nerr,'(a,a, a, i0)') " ", routine, &
-        & ' global_no_of_threads is ', global_no_of_threads
-    ENDIF
-
-#endif
 
 
     ! The number of threads, if varying, will be defined via
@@ -2713,7 +1588,7 @@ CONTAINS
 !        ENDIF
 !     ENDIF ! (my_global_mpi_id == 0)
 !
-! #ifndef NOMPI
+! #ifndef 1
 !     ! Make number of threads from environment available to all model PEs
 !     CALL MPI_BCAST (global_no_of_threads, 1, MPI_INTEGER, 0, global_mpi_communicator, p_error)
 ! #endif
@@ -2744,55 +1619,11 @@ CONTAINS
     SUBROUTINE set_mpi_global_communicators(&
       global_comm, opt_comin_comm, opt_yac_comm)
 
-#if !defined __NO_ICON_COMIN__
-      USE comin_host_interface, handshake => mpi_handshake
-      INTEGER, PARAMETER :: GROUP_NAME_LENGTH = 256
-#elif defined YAC_coupling
-      USE yac, handshake => yac_fmpi_handshake
-      USE yac, ONLY: YAC_MAX_CHARLEN
-      INTEGER, PARAMETER :: GROUP_NAME_LENGTH = YAC_MAX_CHARLEN
-#endif
 
       INTEGER, INTENT(inout) :: global_comm
       INTEGER, OPTIONAL, INTENT(out) :: opt_comin_comm
       INTEGER, OPTIONAL, INTENT(out) :: opt_yac_comm
 
-#if !defined __NO_ICON_COMIN__ || defined YAC_coupling
-
-      CHARACTER(len=GROUP_NAME_LENGTH) :: group_names(3)
-      INTEGER :: group_comms(3)
-      INTEGER :: num_groups
-
-      group_names(1) = "icon"
-      num_groups = 1
-
-      IF (PRESENT(opt_comin_comm)) THEN
-        num_groups = num_groups + 1
-        group_names(num_groups) = "comin"
-      END IF
-
-      IF (PRESENT(opt_yac_comm)) THEN
-        num_groups = num_groups + 1
-        group_names(num_groups) = "yac"
-      END IF
-
-      CALL handshake( &
-        global_comm, group_names(1:num_groups), group_comms(1:num_groups))
-
-      num_groups = 1
-      global_comm = group_comms(1)
-
-      IF (PRESENT(opt_comin_comm)) THEN
-        num_groups = num_groups + 1
-        opt_comin_comm = group_comms(num_groups)
-      END IF
-
-      IF (PRESENT(opt_yac_comm)) THEN
-        num_groups = num_groups + 1
-        opt_yac_comm = group_comms(num_groups)
-      END IF
-
-#endif
 
     END SUBROUTINE set_mpi_global_communicators
 
@@ -2805,26 +1636,7 @@ CONTAINS
     INTEGER :: iexit = 0    
     ! finish MPI and clean up all PEs
 
-#ifndef NOMPI
-    ! to prevent abort due to unfinished communication
-    CALL p_barrier(process_mpi_all_comm)
-
-    CALL MPI_FINALIZE (p_error)
-
-    IF (p_error /= MPI_SUCCESS) THEN
-      iexit = 1
-      WRITE (nerr,'(a)') ' MPI_FINALIZE failed.'
-      WRITE (nerr,'(a,i4)') ' Error = ', p_error
-      CALL abort_mpi
-    END IF
-    process_is_mpi_parallel = .FALSE.
-    DEALLOCATE(p_request)
-#endif
-#ifdef __STANDALONE
-    CALL exit(iexit)
-#else
     CALL util_exit(iexit)
-#endif
   END SUBROUTINE stop_mpi
   !------------------------------------------------------------------------------
 
@@ -2835,24 +1647,8 @@ CONTAINS
     ! STOP or any other exit call in all routines for proper clean up
     ! of all PEs
 
-#ifndef __NO_ICON_COMIN__
-    ! we dont use timers here due to cycic dependencies...
-    CALL comin_callback_context_call(EP_FINISH, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
-#endif
 
-#ifndef NOMPI
-    CALL MPI_ABORT (MPI_COMM_WORLD, 1, p_error)
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a)') ' MPI_ABORT failed.'
-       WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-     END IF
-#endif
-#ifndef __STANDALONE
      CALL util_exit(1)
-#else
-     CALL exit(1)
-#endif
 
   END SUBROUTINE abort_mpi
   !------------------------------------------------------------------------------
@@ -2864,158 +1660,6 @@ CONTAINS
     INTEGER, INTENT(in) :: mapmesh(0:,0:)
     INTEGER, INTENT(in) :: debug_parallel
 
-#ifndef NOMPI
-    INTEGER :: all_debug_pes(SIZE(mapmesh))
-
-    INTEGER :: group_world, group_a, group_b, group_d
-    INTEGER :: p_communicator_tmp
-
-    INTEGER :: n, members
-
-    INTEGER :: ranks(1) = 0
-
-    ! first set global group
-
-    CALL MPI_COMM_GROUP (process_mpi_all_comm, group_world, p_error)
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' PE: ', my_process_mpi_all_id, &
-         & ' MPI_COMM_GROUP failed.'
-       WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-       CALL abort_mpi
-    END IF
-
-    ! communicator is process_mpi_all_comm
-
-    IF (debug_parallel >= 0 ) THEN
-
-       CALL MPI_GROUP_INCL (group_world, 1, ranks, group_d, p_error)
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' PE: ', my_process_mpi_all_id, &
-            &' MPI_GROUP_INCL failed.'
-          WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-          CALL abort_mpi
-       END IF
-
-       CALL MPI_COMM_CREATE (process_mpi_all_comm, group_d, p_communicator_tmp, &
-            p_error)
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' PE: ', my_process_mpi_all_id, &
-            &' MPI_COMM_CREATE failed.'
-          WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-          CALL abort_mpi
-       END IF
-
-       IF (my_process_mpi_all_id == 0) p_communicator_d = p_communicator_tmp
-
-       DO n = 1, SIZE(mapmesh)
-          all_debug_pes(n) = n
-       END DO
-
-       CALL MPI_GROUP_INCL (group_world, SIZE(mapmesh), all_debug_pes, &
-            group_d, p_error)
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' PE: ', my_process_mpi_all_id, &
-            & ' MPI_GROUP_INCL failed.'
-          WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-          CALL abort_mpi
-       END IF
-
-       CALL MPI_COMM_CREATE (process_mpi_all_comm, group_d, p_communicator_tmp, &
-            p_error)
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' PE: ', my_process_mpi_all_id, &
-            & ' MPI_COMM_CREATE failed.'
-          WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-          CALL abort_mpi
-       END IF
-
-       IF (my_process_mpi_all_id /= 0) p_communicator_d = p_communicator_tmp
-
-    ELSE
-       p_communicator_d = process_mpi_all_comm
-    END IF
-
-    DO n = 0, nproca-1
-       members = nprocb
-       CALL MPI_GROUP_INCL (group_world, members, mapmesh(:,n), group_a, &
-            p_error)
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' PE: ', my_process_mpi_all_id, &
-            & ' MPI_GROUP_INCL failed.'
-          WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-          CALL abort_mpi
-       END IF
-
-       CALL MPI_COMM_CREATE (process_mpi_all_comm, group_a, p_communicator_tmp, &
-            p_error)
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' PE: ', my_process_mpi_all_id, &
-            & ' MPI_COMM_CREATE failed.'
-          WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-          CALL abort_mpi
-       END IF
-       IF(p_communicator_tmp/=MPI_COMM_NULL) &
-         p_communicator_a = p_communicator_tmp
-
-    END DO
-
-    ! create groups for set Bs
-
-    DO n = 0, nprocb-1
-       members = nproca
-       CALL MPI_GROUP_INCL (group_world, members, mapmesh(n,:), group_b, &
-            p_error)
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' PE: ', my_process_mpi_all_id, &
-            & ' MPI_GROUP_INCL failed.'
-          WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-          CALL abort_mpi
-       END IF
-
-       CALL MPI_COMM_CREATE (process_mpi_all_comm, group_b, p_communicator_tmp, &
-            p_error)
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' PE: ', my_process_mpi_all_id, &
-            & ' MPI_COMM_CREATE failed.'
-          WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-          CALL abort_mpi
-       END IF
-       IF(p_communicator_tmp/=MPI_COMM_NULL) &
-         p_communicator_b = p_communicator_tmp
-
-    END DO
-
-    CALL MPI_BARRIER (process_mpi_all_comm, p_error)
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' PE: ', my_process_mpi_all_id, '&
-         & MPI_BARRIER failed.'
-       WRITE (nerr,'(a,i4)') ' Error =  ', p_error
-       CALL abort_mpi
-    END IF
-
-    IF (debug_parallel >= 0 .AND. my_process_mpi_all_id == 0) THEN
-      p_communicator_a = p_communicator_d
-      p_communicator_b = p_communicator_d
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,3i8)') &
-         'p_set_communicator on PE ', my_process_mpi_all_id, ': ', &
-         p_communicator_d, &
-         p_communicator_a, &
-         p_communicator_b
-#endif
-#endif
   END SUBROUTINE p_set_communicator
 
 !=========================================================================
@@ -3030,12 +1674,7 @@ CONTAINS
     CHARACTER(LEN=*), PARAMETER :: routine = modname//'::p_comm_size'
     INTEGER :: ierr
 
-#ifndef NOMPI
-    CALL MPI_Comm_size(communicator, p_comm_size, ierr)
-    IF(ierr /= MPI_SUCCESS) CALL finish(routine, 'Error in MPI_COMM_SIZE operation!')
-#else
     p_comm_size = 1
-#endif
   END FUNCTION p_comm_size
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -3048,12 +1687,7 @@ CONTAINS
     CHARACTER(LEN=*), PARAMETER :: routine = modname//'::p_comm_rank'
     INTEGER :: ierr
 
-#ifndef NOMPI
-    CALL MPI_COMM_RANK(communicator, p_comm_rank, ierr)
-    IF(ierr /= MPI_SUCCESS) CALL finish(routine, 'Error in MPI_COMM_RANK operation!')
-#else
     p_comm_rank = 0
-#endif
   END FUNCTION p_comm_rank
 
 
@@ -3067,52 +1701,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_send(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-           &        p_comm, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_send(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-           &        p_comm, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_send(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-         &        p_comm, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_real
 
@@ -3126,52 +1714,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_send(t_buffer, icount, p_real_sp, p_destination, p_tag, &
-           &        p_comm, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_send(t_buffer, icount, p_real_sp, p_destination, p_tag, &
-           &        p_comm, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_send(t_buffer, icount, p_real_sp, p_destination, p_tag, &
-         &        p_comm, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_sreal
 
@@ -3181,35 +1723,6 @@ CONTAINS
     REAL (dp), INTENT(in) :: t_buffer(:)
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-
-
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-    CALL mpi_send(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-         &        p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_real_1d
 
@@ -3218,34 +1731,6 @@ CONTAINS
     REAL (sp), INTENT(in) :: t_buffer(:)
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_real_sp, p_destination, p_tag, &
-         &        p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_sreal_1d
 
@@ -3254,34 +1739,6 @@ CONTAINS
     REAL (dp), INTENT(in) :: t_buffer(:,:)
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_real_2d
 
@@ -3290,34 +1747,6 @@ CONTAINS
     REAL (dp), INTENT(in) :: t_buffer(:,:,:)
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_real_3d
 
@@ -3326,34 +1755,6 @@ CONTAINS
     REAL (dp), INTENT(in) :: t_buffer(:,:,:,:)
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_real_4d
 
@@ -3362,34 +1763,6 @@ CONTAINS
     REAL (dp), INTENT(in) :: t_buffer(:,:,:,:,:)
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_real_5d
 
@@ -3400,53 +1773,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_send(t_buffer, icount, p_int, p_destination, p_tag, &
-           &        p_comm, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_send(t_buffer, icount, p_int, p_destination, p_tag, &
-           &        p_comm, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_send(t_buffer, icount, p_int, p_destination, p_tag, &
-         &        p_comm, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_int
 
@@ -3455,34 +1781,6 @@ CONTAINS
     INTEGER, INTENT(in) :: t_buffer(:)
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_int, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_int_1d
 
@@ -3491,34 +1789,6 @@ CONTAINS
     INTEGER, INTENT(in) :: t_buffer(:,:)
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_int, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_int_2d
 
@@ -3527,34 +1797,6 @@ CONTAINS
     INTEGER, INTENT(in) :: t_buffer(:,:,:)
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_int, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_int_3d
 
@@ -3563,34 +1805,6 @@ CONTAINS
     INTEGER, INTENT(in) :: t_buffer(:,:,:,:)
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_int, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_int_4d
 
@@ -3602,52 +1816,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_send(t_buffer, icount, p_bool, p_destination, p_tag, &
-           &        p_comm, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_send(t_buffer, icount, p_bool, p_destination, p_tag, &
-           &        p_comm, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_send(t_buffer, icount, p_bool, p_destination, p_tag, &
-         p_comm, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_bool
 
@@ -3656,34 +1824,6 @@ CONTAINS
     LOGICAL, INTENT(in) :: t_buffer(:)
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_bool, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_bool_1d
 
@@ -3693,36 +1833,6 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(in) :: t_buffer(:)
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-    icount = icount * LEN(t_buffer(1))
-
-
-
-    CALL mpi_send(t_buffer, icount, p_char, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_char_1d
 
@@ -3732,34 +1842,6 @@ CONTAINS
     LOGICAL, INTENT(in) :: t_buffer(:,:)
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_bool, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_bool_2d
 
@@ -3768,34 +1850,6 @@ CONTAINS
     LOGICAL, INTENT(in) :: t_buffer(:,:,:)
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_bool, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_bool_3d
 
@@ -3804,34 +1858,6 @@ CONTAINS
     LOGICAL, INTENT(in) :: t_buffer(:,:,:,:)
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_send(t_buffer, icount, p_bool, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_bool_4d
 
@@ -3840,35 +1866,6 @@ CONTAINS
     CHARACTER(len=*),  INTENT(in) :: t_buffer
     INTEGER,           INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = LEN(t_buffer)
-    END IF
-
-
-
-    CALL mpi_send(t_buffer, icount, p_char, p_destination, p_tag, &
-         p_comm, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_char
 
@@ -3877,33 +1874,9 @@ CONTAINS
   SUBROUTINE p_inc_request
     INTEGER, ALLOCATABLE :: tmp(:)
 
-#ifndef NOMPI
-    p_irequest = p_irequest + 1
-    IF (p_irequest > p_mrequest) THEN
-      ALLOCATE(tmp(p_mrequest))
-      tmp(:) = p_request(:)
-      DEALLOCATE(p_request)
-      ALLOCATE(p_request(p_mrequest+p_request_alloc_size))
-      p_request(1:p_mrequest) = tmp(:)
-      p_mrequest = p_mrequest+p_request_alloc_size
-      DEALLOCATE(tmp)
-    ENDIF
-#endif
 
   END SUBROUTINE p_inc_request
 
-#ifdef USE_NCCL
-  SUBROUTINE p_isend_nccl_real (t_buffer, p_destination, p_count)
-    REAL (dp), INTENT(inout) :: t_buffer
-    INTEGER,   INTENT(in) :: p_destination
-    INTEGER,   INTENT(in) :: p_count
-
-    !print *, "Send from ", my_global_mpi_id, " to ", p_destination, " size ", p_count
-
-    CALL NCCL_CHECK(ncclSend( acc_deviceptr(t_buffer), int(p_count, cuda_count_kind), ncclFloat64, &
-                              p_destination, nccl_comm, int(get_comm_stream(), cuda_stream_kind) ))
-  END SUBROUTINE
-#endif
 
   SUBROUTINE p_isend_real (t_buffer, p_destination, p_tag, p_count, comm, request, use_g2g)
 
@@ -3913,65 +1886,6 @@ CONTAINS
     INTEGER,   INTENT(INOUT), OPTIONAL :: request
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount, out_request
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-    IF (nccl_active .and. my_process_is_work() .and. comm == p_comm_work .and. loc_use_g2g) THEN
-#ifdef USE_NCCL
-      CALL p_isend_nccl_real(t_buffer, p_destination, p_count)
-#endif
-    ELSE
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-      IF (loc_use_g2g) THEN
-        !$ACC HOST_DATA USE_DEVICE(t_buffer)
-        CALL mpi_isend(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-             &         p_comm, out_request, p_error)
-        !$ACC END HOST_DATA
-      ELSE
-        CALL mpi_isend(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-             &         p_comm, out_request, p_error)
-      END IF
-#else
-      !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-      CALL mpi_isend(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-           &         p_comm, out_request, p_error)
-      !$ACC END HOST_DATA
-#endif
-                
-      IF (PRESENT(request)) THEN
-        request               = out_request
-      ELSE
-        CALL p_inc_request
-        p_request(p_irequest) = out_request
-      END IF
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_real
 
@@ -3984,59 +1898,6 @@ CONTAINS
     INTEGER,   INTENT(INOUT), OPTIONAL :: request
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, out_request, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_isend(t_buffer, icount, p_real_sp, p_destination, p_tag, &
-           &         p_comm, out_request, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_isend(t_buffer, icount, p_real_sp, p_destination, p_tag, &
-           &         p_comm, out_request, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_isend(t_buffer, icount, p_real_sp, p_destination, p_tag, &
-         &         p_comm, out_request, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-    IF (PRESENT(request)) THEN
-      request               = out_request
-    ELSE
-      CALL p_inc_request
-      p_request(p_irequest) = out_request
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_sreal
 
@@ -4047,41 +1908,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     INTEGER,   INTENT(INOUT), OPTIONAL :: request
-#ifndef NOMPI
-    INTEGER :: p_comm, icount, out_request
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_isend(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-         &         p_comm, out_request, p_error)
-
-
-    IF (PRESENT(request)) THEN
-      request               = out_request
-    ELSE
-      CALL p_inc_request
-      p_request(p_irequest) = out_request
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_real_1d
 
@@ -4092,41 +1918,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     INTEGER,   INTENT(INOUT), OPTIONAL :: request
-#ifndef NOMPI
-    INTEGER :: p_comm, icount, out_request
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_isend(t_buffer, icount, p_real_sp, p_destination, p_tag, &
-      &            p_comm, out_request, p_error)
-
-
-    IF (PRESENT(request)) THEN
-      request               = out_request
-    ELSE
-      CALL p_inc_request
-      p_request(p_irequest) = out_request
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_sreal_1d
 
@@ -4137,35 +1928,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-            p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_real_2d
 
@@ -4176,35 +1938,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_real_sp, p_destination, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_sreal_2d
 
@@ -4215,35 +1948,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_real_3d
 
@@ -4253,35 +1957,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_real_4d
 
@@ -4291,35 +1966,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_real_dp, p_destination, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_real_5d
 
@@ -4332,59 +1978,6 @@ CONTAINS
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
 
-#ifndef NOMPI
-    INTEGER :: p_comm, out_request, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_isend(t_buffer, icount, p_int, p_destination, p_tag, &
-           &         p_comm, out_request, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_isend(t_buffer, icount, p_int, p_destination, p_tag, &
-           &         p_comm, out_request, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_isend(t_buffer, icount, p_int, p_destination, p_tag, &
-         &         p_comm, out_request, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-    IF (PRESENT(request)) THEN
-      request               = out_request
-    ELSE
-      CALL p_inc_request
-      p_request(p_irequest) = out_request
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_int
 
@@ -4395,41 +1988,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     INTEGER,   INTENT(INOUT), OPTIONAL :: request
 
-#ifndef NOMPI
-    INTEGER :: p_comm, out_request, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_isend(t_buffer, icount, p_int, p_destination, p_tag, &
-         &         p_comm, out_request, p_error)
-
-
-    IF (PRESENT(request)) THEN
-      request               = out_request
-    ELSE
-      CALL p_inc_request
-      p_request(p_irequest) = out_request
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_int_1d
 
@@ -4439,35 +1997,6 @@ CONTAINS
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_int, p_destination, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_int_2d
 
@@ -4476,35 +2005,6 @@ CONTAINS
     INTEGER, INTENT(inout) :: t_buffer(:,:,:)
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_int, p_destination, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_int_3d
 
@@ -4514,35 +2014,6 @@ CONTAINS
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_int, p_destination, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_int_4d
 
@@ -4555,53 +2026,6 @@ CONTAINS
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_isend(t_buffer, icount, p_bool, p_destination, p_tag, &
-           &         p_comm, p_request(p_irequest), p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_isend(t_buffer, icount, p_bool, p_destination, p_tag, &
-           &         p_comm, p_request(p_irequest), p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_bool, p_destination, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_bool
 
@@ -4611,35 +2035,6 @@ CONTAINS
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_bool, p_destination, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_bool_1d
 
@@ -4649,35 +2044,6 @@ CONTAINS
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_bool, p_destination, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_bool_2d
 
@@ -4687,35 +2053,6 @@ CONTAINS
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_bool, p_destination, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_bool_3d
 
@@ -4725,35 +2062,6 @@ CONTAINS
     INTEGER, INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_bool, p_destination, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_bool_4d
 
@@ -4763,35 +2071,6 @@ CONTAINS
     INTEGER,           INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = LEN(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_char, p_destination, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_isend_char
 
@@ -4804,52 +2083,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_recv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-           &        p_comm, p_status, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_recv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-           &        p_comm, p_status, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_recv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-         &        p_comm, p_status, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_real
 
@@ -4862,52 +2095,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_recv(t_buffer, icount, p_real_sp, p_source, p_tag, &
-           &        p_comm, p_status, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_recv(t_buffer, icount, p_real_sp, p_source, p_tag, &
-           &        p_comm, p_status, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_recv(t_buffer, icount, p_real_sp, p_source, p_tag, &
-         &        p_comm, p_status, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_sreal
 
@@ -4916,34 +2103,6 @@ CONTAINS
     INTEGER,           INTENT(in) :: p_destination, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-    IF (icount > 0) icount = icount * LEN(t_buffer(1))
-
-    CALL p_inc_request
-    CALL mpi_isend(t_buffer, icount, p_char, p_destination, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
   END SUBROUTINE p_isend_char_1d
 
   SUBROUTINE p_recv_real_1d (t_buffer, p_source, p_tag, p_count, comm, displs)
@@ -4951,35 +2110,6 @@ CONTAINS
     REAL (dp), INTENT(out) :: t_buffer(:)
     INTEGER,   INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm, displs
-#ifndef NOMPI
-    INTEGER :: p_comm, icount, idispls
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    icount = SIZE(t_buffer)
-    IF (PRESENT(p_count))  icount = p_count
-
-    idispls = 1
-    IF (PRESENT(displs)) idispls = displs
-
-
-    CALL mpi_recv(t_buffer(idispls), icount, p_real_dp, p_source, p_tag, &
-      &           p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_real_1d
 
@@ -4988,39 +2118,6 @@ CONTAINS
     REAL (sp), INTENT(out) :: t_buffer(:)
     INTEGER,   INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm, displs
-#ifndef NOMPI
-    INTEGER :: p_comm, icount, idispls
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-    IF (PRESENT(displs)) THEN
-      idispls = displs
-    ELSE
-      idispls = 1
-    END IF
-
-
-    CALL mpi_recv(t_buffer(idispls), icount, p_real_sp, p_source, p_tag, &
-         &        p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_sreal_1d
 
@@ -5029,34 +2126,6 @@ CONTAINS
     REAL (dp), INTENT(out) :: t_buffer(:,:)
     INTEGER,   INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-      &           p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_real_2d
 
@@ -5065,34 +2134,6 @@ CONTAINS
     REAL (dp), INTENT(out) :: t_buffer(:,:,:)
     INTEGER,   INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-      &           p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_real_3d
 
@@ -5101,34 +2142,6 @@ CONTAINS
     REAL (dp), INTENT(out) :: t_buffer(:,:,:,:)
     INTEGER,   INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-      &           p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_real_4d
 
@@ -5137,34 +2150,6 @@ CONTAINS
     REAL (dp), INTENT(out) :: t_buffer(:,:,:,:,:)
     INTEGER,   INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-      &           p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_real_5d
 
@@ -5175,52 +2160,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_recv(t_buffer, icount, p_int, p_source, p_tag, &
-           &        p_comm, p_status, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_recv(t_buffer, icount, p_int, p_source, p_tag, &
-           &        p_comm, p_status, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_recv(t_buffer, icount, p_int, p_source, p_tag, &
-         &        p_comm, p_status, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_int
 
@@ -5229,34 +2168,6 @@ CONTAINS
     INTEGER, INTENT(out) :: t_buffer(:)
     INTEGER, INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_int, p_source, p_tag, &
-      &           p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_int_1d
 
@@ -5265,34 +2176,6 @@ CONTAINS
     INTEGER, INTENT(out) :: t_buffer(:,:)
     INTEGER, INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_int, p_source, p_tag, &
-      &           p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_int_2d
 
@@ -5301,34 +2184,6 @@ CONTAINS
     INTEGER, INTENT(out) :: t_buffer(:,:,:)
     INTEGER, INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_int, p_source, p_tag, &
-      &           p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_int_3d
 
@@ -5337,34 +2192,6 @@ CONTAINS
     INTEGER, INTENT(out) :: t_buffer(:,:,:,:)
     INTEGER, INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_int, p_source, p_tag, &
-      &           p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_int_4d
 
@@ -5376,52 +2203,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_recv(t_buffer, icount, p_bool, p_source, p_tag, &
-           &        p_comm, p_status, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_recv(t_buffer, icount, p_bool, p_source, p_tag, &
-           &        p_comm, p_status, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_recv(t_buffer, icount, p_bool, p_source, p_tag, &
-         &        p_comm, p_status, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_bool
 
@@ -5430,34 +2211,6 @@ CONTAINS
     LOGICAL, INTENT(out) :: t_buffer(:)
     INTEGER, INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_bool, p_source, p_tag, &
-         p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_bool_1d
 
@@ -5467,35 +2220,6 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(out) :: t_buffer(:)
     INTEGER, INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-    icount = icount * LEN(t_buffer(1))
-
-
-    CALL mpi_recv(t_buffer, icount, p_char, p_source, p_tag, &
-         p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_char_1d
 
@@ -5505,34 +2229,6 @@ CONTAINS
     LOGICAL, INTENT(out) :: t_buffer(:,:)
     INTEGER, INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_bool, p_source, p_tag, &
-         p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_bool_2d
 
@@ -5541,34 +2237,6 @@ CONTAINS
     LOGICAL, INTENT(out) :: t_buffer(:,:,:)
     INTEGER, INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_bool, p_source, p_tag, &
-      &           p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_bool_3d
 
@@ -5577,34 +2245,6 @@ CONTAINS
     LOGICAL, INTENT(out) :: t_buffer(:,:,:,:)
     INTEGER, INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL mpi_recv(t_buffer, icount, p_bool, p_source, p_tag, &
-         p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_bool_4d
 
@@ -5613,33 +2253,6 @@ CONTAINS
     CHARACTER(len=*),  INTENT(out) :: t_buffer
     INTEGER,           INTENT(in)  :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-#ifdef DEBUG
-    CHARACTER(LEN=*), PARAMETER :: routine = modname//'::p_recv_char'
-#endif
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = LEN(t_buffer)
-    END IF
-
-
-
-    CALL mpi_recv(t_buffer, icount, p_char, p_source, p_tag, &
-         p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish (routine, 'MPI function call failed')
-#endif
-#endif
 
   END SUBROUTINE p_recv_char
 
@@ -5653,35 +2266,6 @@ CONTAINS
     CHARACTER(len=*), INTENT(inout) :: t_buffer
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = LEN(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_char, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_char
 
@@ -5690,59 +2274,11 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     INTEGER, OPTIONAL, INTENT(out) :: request
-#ifndef NOMPI
-    INTEGER :: p_comm, icount, out_request
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-    IF (icount > 0) icount = icount * LEN(t_buffer(1))
-
-    CALL mpi_irecv(t_buffer, icount, p_char, p_source, p_tag, &
-         p_comm, out_request, p_error)
-
-    IF (PRESENT(request)) THEN
-      request               = out_request
-    ELSE
-      CALL p_inc_request
-      p_request(p_irequest) = out_request
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
   END SUBROUTINE p_irecv_char_1d
 
   !================================================================================================
   ! REAL SECTION ----------------------------------------------------------------------------------
   !
-#ifdef USE_NCCL
-  SUBROUTINE p_irecv_nccl_real (t_buffer, p_source, p_count)
-    REAL (dp), INTENT(inout) :: t_buffer
-    INTEGER,   INTENT(in) :: p_source
-    INTEGER,   INTENT(in) :: p_count
-
-    !print *, "Recv on ", my_global_mpi_id, " from ", p_source, " size ", p_count
-
-    CALL NCCL_CHECK(ncclRecv( acc_deviceptr(t_buffer), int(p_count, cuda_count_kind), ncclFloat64, &
-                              p_source, nccl_comm, int(get_comm_stream(), cuda_stream_kind) ))
-
-  END SUBROUTINE p_irecv_nccl_real
-#endif
 
   SUBROUTINE p_irecv_real (t_buffer, p_source, p_tag, p_count, comm, use_g2g)
 
@@ -5751,59 +2287,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-    IF (nccl_active .and. my_process_is_work() .and. comm == p_comm_work .and. loc_use_g2g) THEN
-#ifdef USE_NCCL
-      CALL p_irecv_nccl_real(t_buffer, p_source, p_count)
-#endif
-    ELSE
-      CALL p_inc_request
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-      IF (loc_use_g2g) THEN
-        !$ACC HOST_DATA USE_DEVICE(t_buffer)
-        CALL mpi_irecv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-             &         p_comm, p_request(p_irequest), p_error)
-        !$ACC END HOST_DATA
-      ELSE
-        CALL mpi_irecv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-             &         p_comm, p_request(p_irequest), p_error)
-      END IF
-#else
-      !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-      CALL mpi_irecv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-           &         p_comm, p_request(p_irequest), p_error)
-      !$ACC END HOST_DATA
-#endif
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_real
 
@@ -5815,53 +2298,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-    CALL p_inc_request
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_irecv(t_buffer, icount, p_real_sp, p_source, p_tag, &
-           &         p_comm, p_request(p_irequest), p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_irecv(t_buffer, icount, p_real_sp, p_source, p_tag, &
-           &         p_comm, p_request(p_irequest), p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_irecv(t_buffer, icount, p_real_sp, p_source, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_sreal
 
@@ -5870,35 +2306,6 @@ CONTAINS
     REAL(dp),  INTENT(inout) :: t_buffer(:)
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_real_1d
 
@@ -5908,35 +2315,6 @@ CONTAINS
     REAL(sp),  INTENT(inout) :: t_buffer(:)
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_real_sp, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_sreal_1d
 
@@ -5947,35 +2325,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_real_2d
 
@@ -5986,35 +2335,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_real_sp, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_sreal_2d
 
@@ -6025,35 +2345,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_real_3d
 
@@ -6063,35 +2354,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_real_dp, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_real_4d
   !================================================================================================
@@ -6105,59 +2367,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(INOUT) :: request
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount, out_request
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_irecv(t_buffer, icount, p_int, p_source, p_tag, &
-           &         p_comm, out_request, p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_irecv(t_buffer, icount, p_int, p_source, p_tag, &
-           &         p_comm, out_request, p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_irecv(t_buffer, icount, p_int, p_source, p_tag, &
-         &         p_comm, out_request, p_error)
-    !$ACC END HOST_DATA
-#endif
-
-    IF (PRESENT(request)) THEN
-      request               = out_request
-    ELSE
-      CALL p_inc_request
-      p_request(p_irequest) = out_request
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_int
 
@@ -6168,40 +2377,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     INTEGER, OPTIONAL, INTENT(out) :: request
-#ifndef NOMPI
-    INTEGER :: p_comm, icount, out_request
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    ENDIF
-
-
-    CALL mpi_irecv(t_buffer, icount, p_int, p_source, p_tag, &
-         p_comm, out_request, p_error)
-
-    IF (PRESENT(request)) THEN
-      request               = out_request
-    ELSE
-      CALL p_inc_request
-      p_request(p_irequest) = out_request
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_int_1d
 
@@ -6211,35 +2386,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    ENDIF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_int, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_int_2d
 
@@ -6249,35 +2395,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_int, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_int_3d
 
@@ -6287,35 +2404,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_int, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_int_4d
 
@@ -6329,53 +2417,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = 1
-    END IF
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .false.
-    END IF
-
-    CALL p_inc_request
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    IF (loc_use_g2g) THEN
-      !$ACC HOST_DATA USE_DEVICE(t_buffer)
-      CALL mpi_irecv(t_buffer, icount, p_bool, p_source, p_tag, &
-           &         p_comm, p_request(p_irequest), p_error)
-      !$ACC END HOST_DATA
-    ELSE
-      CALL mpi_irecv(t_buffer, icount, p_bool, p_source, p_tag, &
-           &         p_comm, p_request(p_irequest), p_error)
-    END IF
-#else
-    !$ACC HOST_DATA USE_DEVICE(t_buffer) IF(loc_use_g2g)
-    CALL mpi_irecv(t_buffer, icount, p_bool, p_source, p_tag, &
-         &         p_comm, p_request(p_irequest), p_error)
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_bool
 
@@ -6384,35 +2425,6 @@ CONTAINS
     LOGICAL, INTENT(inout) :: t_buffer(:)
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_bool, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_bool_1d
 
@@ -6422,35 +2434,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_bool, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_bool_2d
 
@@ -6460,35 +2443,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_bool, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_bool_3d
 
@@ -6498,35 +2452,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_source, p_tag
     INTEGER, OPTIONAL, INTENT(in) :: p_count, comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, icount
-
-    IF (PRESENT(comm)) THEN
-      p_comm = comm
-    ELSE
-      p_comm = process_mpi_all_comm
-    ENDIF
-    IF (PRESENT(p_count)) THEN
-      icount = p_count
-    ELSE
-      icount = SIZE(t_buffer)
-    END IF
-
-
-    CALL p_inc_request
-    CALL mpi_irecv(t_buffer, icount, p_bool, p_source, p_tag, &
-         p_comm, p_request(p_irequest), p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_bool_4d
 
@@ -6536,20 +2461,6 @@ CONTAINS
     CHARACTER, INTENT(INOUT) :: t_buffer(:)
     INTEGER,   INTENT(INOUT) :: p_pos
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_PACK(t_var, 1, p_int, t_buffer, SIZE(t_buffer), p_pos, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_pack_int", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_pack_int
 
   SUBROUTINE p_pack_bool (t_var, t_buffer, p_pos, comm)
@@ -6558,20 +2469,6 @@ CONTAINS
     CHARACTER, INTENT(INOUT) :: t_buffer(:)
     INTEGER,   INTENT(INOUT) :: p_pos
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_PACK(t_var, 1, p_bool, t_buffer, SIZE(t_buffer), p_pos, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_pack_bool", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_pack_bool
 
   SUBROUTINE p_pack_real (t_var, t_buffer, p_pos, comm)
@@ -6580,20 +2477,6 @@ CONTAINS
     CHARACTER, INTENT(INOUT) :: t_buffer(:)
     INTEGER,   INTENT(INOUT) :: p_pos
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_PACK(t_var, 1, p_real_dp, t_buffer, SIZE(t_buffer), p_pos, p_comm, p_error)
-#ifdef DEBUG
-   IF (p_error /= MPI_SUCCESS) CALL finish ("p_pack_real", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_pack_real
 
   SUBROUTINE p_pack_int_1d (t_var, p_count, t_buffer, p_pos, comm)
@@ -6603,20 +2486,6 @@ CONTAINS
     CHARACTER, INTENT(INOUT) :: t_buffer(:)
     INTEGER,   INTENT(INOUT) :: p_pos
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_PACK(t_var, p_count, p_int, t_buffer, SIZE(t_buffer), p_pos, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_pack_int_1d", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_pack_int_1d
 
   SUBROUTINE p_pack_real_1d (t_var, p_count, t_buffer, p_pos, comm)
@@ -6626,20 +2495,6 @@ CONTAINS
     CHARACTER, INTENT(INOUT) :: t_buffer(:)
     INTEGER,   INTENT(INOUT) :: p_pos
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_PACK(t_var, p_count, p_real_dp, t_buffer, SIZE(t_buffer), p_pos, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_pack_real_1d", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_pack_real_1d
 
 
@@ -6649,26 +2504,6 @@ CONTAINS
     CHARACTER, INTENT(INOUT) :: t_buffer(:)
     INTEGER,   INTENT(INOUT) :: p_pos
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm, ilength
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    ilength = LEN_TRIM(t_var)
-    ! first pack string length, then the character sequence
-    CALL MPI_PACK(ilength,       1,  p_int, t_buffer, SIZE(t_buffer), p_pos, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_pack_char_1d", 'MPI call failed')
-#endif
-    CALL MPI_PACK(t_var(1:ilength), ilength, p_char, t_buffer, SIZE(t_buffer), p_pos, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_pack_char_1d", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_pack_string
 
   SUBROUTINE p_pack_real_2d (t_var, p_count, t_buffer, p_pos, comm)
@@ -6678,79 +2513,34 @@ CONTAINS
     CHARACTER, INTENT(INOUT) :: t_buffer(:)
     INTEGER,   INTENT(INOUT) :: p_pos
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_PACK(t_var, p_count, p_real_dp, t_buffer, SIZE(t_buffer), p_pos, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_pack_real_2d", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_pack_real_2d
 
   FUNCTION p_pack_size_int(p_count, comm) RESULT(pack_size)
     INTEGER, INTENT(in) :: p_count, comm
     INTEGER :: pack_size
-#ifndef NOMPI
-    CALL mpi_pack_size(p_count, p_int, comm, pack_size, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish("p_pack_size_int", 'MPI call failed')
-#endif
-#else
     ! packing is only supported when mpi is available
     pack_size = -1
-#endif
   END FUNCTION p_pack_size_int
 
   FUNCTION p_pack_size_bool(p_count, comm) result(pack_size)
     INTEGER, INTENT(in) :: p_count, comm
     INTEGER :: pack_size
-#ifndef NOMPI
-    CALL mpi_pack_size(p_count, p_bool, comm, pack_size, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish("p_pack_size_bool", 'MPI call failed')
-#endif
-#else
     ! packing is only supported when mpi is available
     pack_size = -1
-#endif
   END FUNCTION p_pack_size_bool
 
   FUNCTION p_pack_size_real_dp(p_count, comm) RESULT(pack_size)
     INTEGER, INTENT(in) :: p_count, comm
     INTEGER :: pack_size
-#ifndef NOMPI
-    CALL mpi_pack_size(p_count, p_real_dp, comm, pack_size, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish("p_pack_size_int", 'MPI call failed')
-#endif
-#else
     ! packing is only supported when mpi is available
     pack_size = -1
-#endif
   END FUNCTION p_pack_size_real_dp
 
   FUNCTION p_pack_size_string(maxlen, comm) RESULT(pack_size)
     INTEGER, INTENT(in) :: maxlen, comm
     INTEGER :: pack_size, pack_size_int
-#ifndef NOMPI
-    CALL mpi_pack_size(1, p_int, comm, pack_size_int, p_error)
-    IF (p_error == MPI_SUCCESS) &
-         CALL mpi_pack_size(maxlen, p_char, comm, pack_size, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish("p_pack_size_string", 'MPI call failed')
-#endif
-    pack_size = pack_size + pack_size_int
-#else
     ! packing is only supported when mpi is available
     pack_size = -1
-#endif
   END FUNCTION p_pack_size_string
 
   SUBROUTINE p_unpack_int (t_buffer, p_pos, t_var, comm)
@@ -6759,20 +2549,6 @@ CONTAINS
     INTEGER,   INTENT(INOUT) :: p_pos
     INTEGER,   INTENT(OUT)   :: t_var
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_UNPACK(t_buffer, SIZE(t_buffer), p_pos, t_var, 1, p_int, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_unpack_int", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_unpack_int
 
   SUBROUTINE p_unpack_bool (t_buffer, p_pos, t_var, comm)
@@ -6781,20 +2557,6 @@ CONTAINS
     INTEGER,   INTENT(INOUT) :: p_pos
     LOGICAL,   INTENT(OUT)   :: t_var
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_UNPACK(t_buffer, SIZE(t_buffer), p_pos, t_var, 1, p_bool, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_unpack_int", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_unpack_bool
 
   SUBROUTINE p_unpack_real (t_buffer, p_pos, t_var, comm)
@@ -6803,20 +2565,6 @@ CONTAINS
     INTEGER,   INTENT(INOUT) :: p_pos
     REAL(wp),  INTENT(OUT)   :: t_var
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_UNPACK(t_buffer, SIZE(t_buffer), p_pos, t_var, 1, p_real_dp, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_unpack_real", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_unpack_real
 
   SUBROUTINE p_unpack_int_1d (t_buffer, p_pos, t_var, p_count, comm)
@@ -6826,20 +2574,6 @@ CONTAINS
     INTEGER,   INTENT(INOUT) :: t_var(:)
     INTEGER,   INTENT(IN)    :: p_count
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_UNPACK(t_buffer, SIZE(t_buffer), p_pos, t_var, p_count, p_int, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_unpack_int_1d", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_unpack_int_1d
 
   SUBROUTINE p_unpack_real_1d (t_buffer, p_pos, t_var, p_count, comm)
@@ -6849,20 +2583,6 @@ CONTAINS
     REAL(wp),  INTENT(INOUT) :: t_var(:)
     INTEGER,   INTENT(IN)    :: p_count
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_UNPACK(t_buffer, SIZE(t_buffer), p_pos, t_var, p_count, p_real_dp, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_unpack_real_1d", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_unpack_real_1d
 
 
@@ -6872,25 +2592,6 @@ CONTAINS
     INTEGER,   INTENT(INOUT) :: p_pos
     CHARACTER(LEN=*), INTENT(INOUT) :: t_var
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm, ilength
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    ! first unpack string length, then the character sequence
-    CALL MPI_UNPACK(t_buffer, SIZE(t_buffer), p_pos, ilength,       1,  p_int, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_unpack_char_1d", 'MPI call failed')
-#endif
-    t_var = " "
-    CALL MPI_UNPACK(t_buffer, SIZE(t_buffer), p_pos,   t_var, ilength, p_char, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_unpack_char_1d", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_unpack_string
 
 
@@ -6901,20 +2602,6 @@ CONTAINS
     REAL(wp),  INTENT(INOUT) :: t_var(:,:)
     INTEGER,   INTENT(IN)    :: p_count
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_UNPACK(t_buffer, SIZE(t_buffer), p_pos, t_var, p_count, p_real_dp, p_comm, p_error)
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) CALL finish ("p_unpack_real_2d", 'MPI call failed')
-#endif
-#endif
   END SUBROUTINE p_unpack_real_2d
 
   SUBROUTINE p_recv_packed (t_buffer, p_source, p_tag, p_count, comm)
@@ -6923,27 +2610,6 @@ CONTAINS
     INTEGER,   INTENT(IN)    :: p_source, p_tag
     INTEGER,   INTENT(IN)    :: p_count
     INTEGER, OPTIONAL, INTENT(IN) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_RECV (t_buffer, p_count, MPI_PACKED, p_source, p_tag, &
-      p_comm, p_status, p_error)
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_RECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL p_abort
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_recv_packed
 
@@ -6955,34 +2621,6 @@ CONTAINS
     INTEGER,   INTENT(IN)    :: p_count
     INTEGER, OPTIONAL, INTENT(IN) :: comm
     INTEGER, OPTIONAL, INTENT(out) :: request
-#ifndef NOMPI
-    INTEGER :: p_comm, out_request
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_IRECV (t_buffer, p_count, MPI_PACKED, p_source, p_tag, &
-      p_comm, out_request, p_error)
-
-    IF (PRESENT(request)) THEN
-      request               = out_request
-    ELSE
-      CALL p_inc_request
-      p_request(p_irequest) = out_request
-    END IF
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', my_process_mpi_all_id, &
-            ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_irecv_packed
 
@@ -6992,26 +2630,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER,   INTENT(in) :: p_count
     INTEGER, OPTIONAL, INTENT(in) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    CALL MPI_SEND (t_buffer, p_count, MPI_PACKED, p_destination, p_tag, &
-      p_comm, p_error)
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_packed
 
@@ -7021,26 +2639,6 @@ CONTAINS
     INTEGER,   INTENT(in) :: p_destination, p_tag
     INTEGER,   INTENT(in) :: p_count
     INTEGER, OPTIONAL, INTENT(in) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-    CALL MPI_SEND (t_buffer, p_count, MPI_PACKED, p_destination, p_tag, &
-      p_comm, p_error)
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_SEND from ', my_process_mpi_all_id, &
-            ' to ', p_destination, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_send_packed_2d
 
@@ -7051,31 +2649,6 @@ CONTAINS
     INTEGER,   INTENT(in)    :: p_source
     INTEGER,   INTENT(in)    :: p_count
     INTEGER, OPTIONAL, INTENT(in) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_BCAST (t_buffer, p_count, MPI_PACKED, p_source, &
-            p_comm, p_error)
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast successful.'
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL p_abort
-    END IF
-#endif
-
-#endif
   END SUBROUTINE p_bcast_packed
 
   !
@@ -7093,30 +2666,6 @@ CONTAINS
     INTEGER,  INTENT(in)           :: p_tag
     INTEGER,  INTENT(in) ,OPTIONAL :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-
-    CALL MPI_SENDRECV (sendbuf, SIZE(sendbuf), p_real_dp, p_dest,   p_tag, &
-                        recvbuf, SIZE(recvbuf), p_real_dp, p_source, p_tag, &
-                        p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i4,a,i6,a)') ' MPI_SENDRECV by ', my_process_mpi_all_id, &
-            ' to ', p_dest, ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_sendrecv_real_1d
 
@@ -7130,30 +2679,6 @@ CONTAINS
     INTEGER,  INTENT(in)           :: p_tag
     INTEGER,  INTENT(in) ,OPTIONAL :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-
-    CALL MPI_SENDRECV (sendbuf, SIZE(sendbuf), p_real_dp, p_dest,   p_tag, &
-                        recvbuf, SIZE(recvbuf), p_real_dp, p_source, p_tag, &
-                        p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i4,a,i6,a)') ' MPI_SENDRECV by ', my_process_mpi_all_id, &
-            ' to ', p_dest, ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_sendrecv_real_2d
 
@@ -7167,30 +2692,6 @@ CONTAINS
     INTEGER,  INTENT(in)           :: p_tag
     INTEGER,  INTENT(in) ,OPTIONAL :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-
-    CALL MPI_SENDRECV (sendbuf, SIZE(sendbuf), p_real_dp, p_dest,   p_tag, &
-                        recvbuf, SIZE(recvbuf), p_real_dp, p_source, p_tag, &
-                        p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i4,a,i6,a)') ' MPI_SENDRECV by ', my_process_mpi_all_id, &
-            ' to ', p_dest, ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_sendrecv_real_3d
 
@@ -7204,30 +2705,6 @@ CONTAINS
     INTEGER,  INTENT(in)           :: p_tag
     INTEGER,  INTENT(in) ,OPTIONAL :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-
-    CALL MPI_SENDRECV (sendbuf, SIZE(sendbuf), p_real_dp, p_dest,   p_tag, &
-                        recvbuf, SIZE(recvbuf), p_real_dp, p_source, p_tag, &
-                        p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i4,a,i6,a)') ' MPI_SENDRECV by ', my_process_mpi_all_id, &
-            ' to ', p_dest, ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_sendrecv_real_4d
 
@@ -7237,30 +2714,6 @@ CONTAINS
     INTEGER, VALUE :: p_dest, p_source, p_tag
     INTEGER, INTENT(in), OPTIONAL :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-
-    CALL MPI_Sendrecv(sendbuf(1), SIZE(sendbuf, 1), MPI_CHARACTER, p_dest,   p_tag, &
-    &                 recvbuf(1), SIZE(recvbuf, 1), MPI_CHARACTER, p_source, p_tag, &
-    &                 p_comm, p_status, p_error)
-
-
-#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a,i4,a,i4,a,i6,a)') ' MPI_SENDRECV by ', my_process_mpi_all_id, &
-            ' to ', p_dest, ' from ', p_source, ' for tag ', p_tag, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_sendrecv_char_array
 
@@ -7272,42 +2725,6 @@ CONTAINS
     REAL(dp) :: t_buffer
     INTEGER,   INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, 1, p_real_dp, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_real
 
@@ -7320,42 +2737,6 @@ CONTAINS
     REAL(sp) :: t_buffer
     INTEGER,   INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, 1, p_real_sp, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_real_single
 
@@ -7365,42 +2746,6 @@ CONTAINS
     REAL(dp) :: t_buffer(:)
     INTEGER,   INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_real_dp, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_real_1d
 
@@ -7413,42 +2758,6 @@ CONTAINS
     REAL(sp) :: t_buffer(:)
     INTEGER,   INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_real_sp, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_real_1d_single
 
@@ -7459,42 +2768,6 @@ CONTAINS
     INTEGER,   INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_real_dp, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_real_2d
 
@@ -7506,42 +2779,6 @@ CONTAINS
     INTEGER,   INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_real_sp, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_real_2d_single
 
@@ -7553,42 +2790,6 @@ CONTAINS
     INTEGER,   INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_real_dp, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_real_3d
 
@@ -7599,42 +2800,6 @@ CONTAINS
     INTEGER,   INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_real_dp, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_real_4d
 
@@ -7645,42 +2810,6 @@ CONTAINS
     INTEGER,   INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_real_dp, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_real_5d
 
@@ -7691,42 +2820,6 @@ CONTAINS
     INTEGER,   INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_real_dp, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_real_7d
 
@@ -7737,42 +2830,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, 1, p_int_i4, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_int_i4
 
@@ -7783,42 +2840,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, 1, p_int_i8, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_int_i8
 
@@ -7829,42 +2850,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_int, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_int_1d
 
@@ -7875,42 +2860,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_int_i8, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_int_i8_1d
 
@@ -7921,42 +2870,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_int, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_int_2d
 
@@ -7967,42 +2880,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_int, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_int_3d
 
@@ -8013,42 +2890,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_int, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_int_4d
 
@@ -8059,42 +2900,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_int, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_int_7d
 
@@ -8105,42 +2910,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, 1, p_bool, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_bool
 
@@ -8151,42 +2920,6 @@ CONTAINS
     INTEGER, INTENT(in) :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_bool, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_bool_1d
 
@@ -8197,42 +2930,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_bool, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_bool_2d
 
@@ -8243,42 +2940,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_bool, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_bool_3d
 
@@ -8289,42 +2950,6 @@ CONTAINS
     INTEGER, INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, SIZE(t_buffer), p_bool, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_bool_4d
 
@@ -8335,42 +2960,6 @@ CONTAINS
     INTEGER,           INTENT(in)    :: p_source
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, LEN(t_buffer), p_char, p_source, &
-            p_comm, p_error)
-
-
-    ENDIF
-
-#ifdef DEBUG
-    WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-#endif
-#endif
 
   END SUBROUTINE p_bcast_char
 
@@ -8382,43 +2971,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     INTEGER                      :: lexlength, flength
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-       lexlength=LEN(t_buffer(1))
-       flength=SIZE(t_buffer)
-       lexlength=lexlength*flength
-
-
-       CALL MPI_BCAST (t_buffer, lexlength, p_char, p_source, p_comm, p_error)
-
-
-#ifdef DEBUG
-       WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-               ' failed.'
-          WRITE (nerr,'(a,i4)') ' Error = ', p_error
-          CALL abort_mpi
-       END IF
-#endif
-    ENDIF
-#endif
 
   END SUBROUTINE p_bcast_char_1d
 
@@ -8428,39 +2980,6 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     INTEGER :: lexlength, flength
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-       lexlength=LEN(t_buffer(1,1))
-       flength=SIZE(t_buffer)
-       lexlength=lexlength*flength
-       CALL mpi_bcast(t_buffer, lexlength, p_char, p_source, p_comm, p_error)
-#ifdef DEBUG
-       WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-               ' failed.'
-          WRITE (nerr,'(a,i4)') ' Error = ', p_error
-          CALL abort_mpi
-       END IF
-#endif
-    ENDIF
-#endif
   END SUBROUTINE p_bcast_char_2d
 
 
@@ -8474,33 +2993,6 @@ CONTAINS
     INTEGER,           INTENT(IN)    :: p_source
     INTEGER,           INTENT(IN)    :: p_comm
 
-#ifndef NOMPI
-
-#ifdef DEBUG
-    nbcast = nbcast+1
-#endif
-
-    IF (process_mpi_all_size == 1) THEN
-       RETURN
-    ELSE
-
-
-       CALL MPI_BCAST (t_buffer, buflen, p_char, p_source, p_comm, p_error)
-
-
-#ifdef DEBUG
-       WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_BCAST from ', p_source, &
-            ' with broadcast number ', nbcast, ' successful.'
-
-       IF (p_error /= MPI_SUCCESS) THEN
-          WRITE (nerr,'(a,i4,a)') ' MPI_BCAST from ', p_source, &
-               ' failed.'
-          WRITE (nerr,'(a,i4)') ' Error = ', p_error
-          CALL abort_mpi
-       END IF
-#endif
-    ENDIF
-#endif
 
   END SUBROUTINE p_bcast_cchar
 
@@ -8515,7 +3007,7 @@ CONTAINS
 !    INTEGER :: length, error
 !    CHARACTER(*), PARAMETER :: routine = modname//":p_bcast_achar"
 !
-!#ifndef NOMPI
+!#ifndef 1
 !    ! inform the receivers about the length of the string
 !    length = 0
 !    IF(ALLOCATED(string)) length = LEN(string)
@@ -8549,18 +3041,6 @@ CONTAINS
     TYPE(datetime), POINTER             :: datetime_loc
     INTEGER                             :: errno
  
-#ifndef NOMPI
-    mtime_datetime_ptr => mtime_datetime
-    CALL datetimeToString(mtime_datetime_ptr, mtime_datetime_str, errno)
-
-    CALL p_bcast_char (mtime_datetime_str, p_source, comm)
-
-    datetime_loc => newDatetime(mtime_datetime_str, errno)
-
-    mtime_datetime = datetime_loc
-
-    CALL deallocateDatetime(datetime_loc)
-#endif
 
   END SUBROUTINE p_bcast_datetime
 
@@ -8571,24 +3051,8 @@ CONTAINS
   SUBROUTINE p_get_bcast_role(root, comm, isSender, isReceiver)
     INTEGER, INTENT(IN) :: root, comm
     LOGICAL, INTENT(OUT) :: isSender, isReceiver
-#ifndef NOMPI
-    INTEGER :: ierr
-    LOGICAL :: isInterComm
-    CHARACTER(*), PARAMETER :: routine = modname//"::p_get_bcast_role"
-
-    CALL MPI_Comm_test_inter(comm, isInterComm, ierr)
-    IF(ierr /= MPI_SUCCESS) CALL finish(routine, "MPI_Comm_test_inter() returned an error")
-    IF(isInterComm) THEN
-        isSender = root == MPI_ROOT
-        isReceiver = root /= MPI_ROOT .AND. root /= MPI_PROC_NULL
-    ELSE
-        isSender = root == p_comm_rank(comm)
-        isReceiver = .NOT.isSender
-    END IF
-#else
     isSender = .TRUE.
     isReceiver = .FALSE.
-#endif
   END SUBROUTINE p_get_bcast_role
 
   ! probe implementation
@@ -8600,102 +3064,31 @@ CONTAINS
     INTEGER,   INTENT(out) :: p_source, p_tag, p_count
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm, i
-    LOGICAL :: flag
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    p_tag = -1
-    DO WHILE (p_tag == -1)
-       DO i = 1, p_tagcount
-          CALL MPI_IPROBE (MPI_ANY_SOURCE, p_tagtable(i), p_comm, &
-               flag, p_status, p_error)
-#ifdef DEBUG
-          IF (p_error /= MPI_SUCCESS) THEN
-             WRITE (nerr,'(a,i4,a,i4,a)') ' MPI_IPROBE on ', my_process_mpi_all_id, &
-                  ' for tag ', p_tagtable(i), ' failed.'
-             WRITE (nerr,'(a,i4)') ' Error = ', p_error
-             CALL abort_mpi
-          END IF
-#endif
-          IF (flag) THEN
-             p_source = p_status(MPI_SOURCE)
-             p_tag = p_status(MPI_TAG)
-             CALL MPI_GET_COUNT(p_status, p_real_dp, p_count, p_error)
-#ifdef DEBUG
-             IF (p_error /= MPI_SUCCESS) THEN
-                WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_GET_COUNT on ', &
-                  & my_process_mpi_all_id, &
-                     ' for tag ', p_tag, ' from ' , p_source, ' failed.'
-                WRITE (nerr,'(a,i4)') ' Error = ', p_error
-                CALL abort_mpi
-             END IF
-#endif
-          ELSE
-             p_tag = -1
-          END IF
-       END DO
-    END DO
-
-#endif
 
   END SUBROUTINE p_probe
   !------------------------------------------------------
 
   !------------------------------------------------------
   SUBROUTINE p_wait
-#ifndef NOMPI
-    IF (p_irequest > 0) CALL mpi_waitall(p_irequest, p_request, mpi_statuses_ignore, p_error)
-    p_irequest = 0
-#endif
   END SUBROUTINE p_wait
 
   SUBROUTINE p_wait_1(request)
     INTEGER, INTENT(INOUT) :: request
-#ifndef NOMPI
-    CALL mpi_wait(request, mpi_status_ignore, p_error)
-    CALL p_clear_request(request)
-#endif
   END SUBROUTINE p_wait_1
 
   SUBROUTINE p_wait_n(requests)
     INTEGER, INTENT(INOUT) :: requests(:)
-#ifndef NOMPI
-    CALL mpi_waitall(SIZE(requests), requests, mpi_statuses_ignore, p_error)
-    CALL p_clear_request(requests)
-#endif
   END SUBROUTINE p_wait_n
 
   SUBROUTINE p_wait_n_stati(requests, stati)
     INTEGER, INTENT(INOUT) :: requests(:)
     INTEGER, INTENT(out) :: stati(:,:)
-#ifndef NOMPI
-    CALL mpi_waitall(SIZE(requests), requests, stati, p_error)
-    CALL p_clear_request(requests)
-#endif
   END SUBROUTINE p_wait_n_stati
 
   SUBROUTINE p_wait_any(return_pe)
 
     INTEGER, INTENT(out) :: return_pe
-#ifndef NOMPI
-    INTEGER :: i
-
-    CALL MPI_WAITANY(p_irequest, p_request, i, p_status, p_error)
-    IF (i == MPI_UNDEFINED) THEN
-      p_irequest = 0
-      return_pe = -1
-    ELSE
-      return_pe = p_status(MPI_SOURCE)
-    ENDIF
-#else
     return_pe = 0
-#endif
   END SUBROUTINE p_wait_any
   !------------------------------------------------------
 
@@ -8703,64 +3096,25 @@ CONTAINS
   !------------------------------------------------------
   FUNCTION p_test() RESULT(ret)
     LOGICAL :: ret
-#ifndef NOMPI
-    CALL MPI_TESTALL(p_irequest, p_request, ret, mpi_statuses_ignore, p_error)
-#else
     ret = .TRUE.
-#endif
   END FUNCTION p_test
 
 
   !------------------------------------------------------
   SUBROUTINE p_barrier (comm)
   INTEGER ,INTENT(IN) ,OPTIONAL :: comm
-#ifndef NOMPI
-    INTEGER :: com
-    com = MPI_COMM_WORLD; IF(PRESENT(comm)) com = comm
-    CALL MPI_BARRIER (com, p_error)
-
-!#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' MPI_BARRIER on ', my_process_mpi_all_id, ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-!#endif
-#endif
 
   END SUBROUTINE p_barrier
   !------------------------------------------------------
 
   !------------------------------------------------------
   SUBROUTINE global_mpi_barrier
-#ifndef NOMPI
-    CALL MPI_BARRIER (global_mpi_communicator, p_error)
-
-!#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' global_mpi_barrier on ', get_my_global_mpi_id(), ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-!#endif
-#endif
 
   END SUBROUTINE global_mpi_barrier
   !------------------------------------------------------
 
   !------------------------------------------------------
   SUBROUTINE work_mpi_barrier
-#ifndef NOMPI
-    CALL MPI_BARRIER (p_comm_work, p_error)
-
-!#ifdef DEBUG
-    IF (p_error /= MPI_SUCCESS) THEN
-       WRITE (nerr,'(a,i4,a)') ' global_mpi_barrier on ', get_my_global_mpi_id(), ' failed.'
-       WRITE (nerr,'(a,i4)') ' Error = ', p_error
-       CALL abort_mpi
-    END IF
-!#endif
-#endif
 
   END SUBROUTINE work_mpi_barrier
   !------------------------------------------------------
@@ -8774,20 +3128,7 @@ CONTAINS
     REAL(sp)                        :: p_sum
     REAL(sp),  INTENT(in)           :: zfield
     INTEGER,   INTENT(in)           :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    p_comm = comm
-
-    IF (my_process_is_mpi_parallel()) THEN
-        CALL MPI_ALLREDUCE (zfield, p_sum, 1, p_real_sp, &
-          mpi_sum, p_comm, p_error)
-    ELSE
-       p_sum = zfield
-    END IF
-#else
     p_sum = zfield
-#endif
   END FUNCTION p_sum_sp_0d
   !------------------------------------------------------
 
@@ -8802,29 +3143,7 @@ CONTAINS
     REAL(dp),  INTENT(in)           :: zfield
     INTEGER,   INTENT(in)           :: comm
     INTEGER,   INTENT(in), OPTIONAL :: root
-#ifndef NOMPI
-    INTEGER :: p_comm, my_rank
-
-    p_comm = comm
-
-    IF (my_process_is_mpi_parallel()) THEN
-      IF (PRESENT(root)) THEN
-        CALL MPI_REDUCE (zfield, p_sum, 1, p_real_dp, &
-          mpi_sum, root, p_comm, p_error)
-        ! get local PE identification
-        CALL MPI_COMM_RANK (p_comm, my_rank, p_error)
-        ! do not use the result on all the other ranks:
-        IF (root /= my_rank)  p_sum = zfield
-      ELSE
-        CALL MPI_ALLREDUCE (zfield, p_sum, 1, p_real_dp, &
-          mpi_sum, p_comm, p_error)
-      END IF
-    ELSE
-       p_sum = zfield
-    END IF
-#else
     p_sum = zfield
-#endif
   END FUNCTION p_sum_dp_0d
   !------------------------------------------------------
 
@@ -8835,33 +3154,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm, root
     REAL(sp)                      :: p_sum (SIZE(zfield))
 
-#ifndef NOMPI
-    INTEGER :: p_comm, my_rank
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-      IF (PRESENT(root)) THEN
-        CALL mpi_reduce(zfield, p_sum, SIZE(zfield), p_real_sp, &
-             mpi_sum, root, p_comm, p_error)
-        ! get local PE identification
-        CALL mpi_comm_rank(p_comm, my_rank, p_error)
-        ! do not use the result on all the other ranks:
-        IF (root /= my_rank) p_sum = zfield
-      ELSE
-        CALL mpi_allreduce (zfield, p_sum, SIZE(zfield), p_real_sp, &
-             mpi_sum, p_comm, p_error)
-      END IF
-    ELSE
-       p_sum = zfield
-    END IF
-#else
     p_sum = zfield
-#endif
 
   END FUNCTION p_sum_sp_1d
 
@@ -8874,56 +3167,7 @@ CONTAINS
     LOGICAL, OPTIONAL, INTENT(in) :: use_g2g
     LOGICAL :: loc_use_g2g
 
-#ifndef NOMPI
-    INTEGER :: p_comm, my_rank
-
-    IF (PRESENT(use_g2g)) THEN
-      loc_use_g2g = use_g2g
-    ELSE
-      loc_use_g2g = .FALSE.
-    END IF
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-      IF (PRESENT(root)) THEN
-        CALL mpi_reduce(zfield, p_sum, SIZE(zfield), p_real_dp, &
-             mpi_sum, root, p_comm, p_error)
-        ! get local PE identification
-        CALL mpi_comm_rank(p_comm, my_rank, p_error)
-        ! do not use the result on all the other ranks:
-        IF (root /= my_rank) p_sum = zfield
-      ELSE
-
-! ACCWA (Cray Fortran <= 16.0.1.1) : ACC IF generate wrong assembly which segfaults CAST-32453
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-        IF (loc_use_g2g) THEN
-          !$ACC HOST_DATA USE_DEVICE(zfield)
-          CALL mpi_allreduce (zfield, p_sum, SIZE(zfield), p_real_dp, &
-                mpi_sum, p_comm, p_error)
-          !$ACC END HOST_DATA
-        ELSE
-           CALL mpi_allreduce (zfield, p_sum, SIZE(zfield), p_real_dp, &
-                mpi_sum, p_comm, p_error)
-        END IF
-#else
-        !$ACC HOST_DATA USE_DEVICE(zfield) IF(loc_use_g2g)
-        CALL mpi_allreduce (zfield, p_sum, SIZE(zfield), p_real_dp, &
-             mpi_sum, p_comm, p_error)
-        !$ACC END HOST_DATA
-#endif
-
-      END IF
-    ELSE
-       p_sum = zfield
-    END IF
-#else
     p_sum = zfield
-#endif
 
   END FUNCTION p_sum_dp_1d
 
@@ -8934,33 +3178,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm, root
     REAL(dp)                      :: p_sum (SIZE(zfield,1),SIZE(zfield,2))
 
-#ifndef NOMPI
-    INTEGER :: p_comm, my_rank
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-      IF (PRESENT(root)) THEN
-        CALL mpi_reduce(zfield, p_sum, SIZE(zfield), p_real_dp, &
-             mpi_sum, root, p_comm, p_error)
-        ! get local PE identification
-        CALL mpi_comm_rank(p_comm, my_rank, p_error)
-        ! do not use the result on all the other ranks:
-        IF (root /= my_rank) p_sum = zfield
-      ELSE
-        CALL mpi_allreduce (zfield, p_sum, SIZE(zfield), p_real_dp, &
-             mpi_sum, p_comm, p_error)
-      END IF
-    ELSE
-       p_sum = zfield
-    END IF
-#else
     p_sum = zfield
-#endif
 
   END FUNCTION p_sum_dp_2d
 
@@ -8971,33 +3189,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm, root
     REAL(dp)                      :: p_sum (SIZE(zfield,1),SIZE(zfield,2),SIZE(zfield,3))
 
-#ifndef NOMPI
-    INTEGER :: p_comm, my_rank
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-      IF (PRESENT(root)) THEN
-        CALL mpi_reduce(zfield, p_sum, SIZE(zfield), p_real_dp, &
-             mpi_sum, root, p_comm, p_error)
-        ! get local PE identification
-        CALL mpi_comm_rank(p_comm, my_rank, p_error)
-        ! do not use the result on all the other ranks:
-        IF (root /= my_rank) p_sum = zfield
-      ELSE
-        CALL mpi_allreduce (zfield, p_sum, SIZE(zfield), p_real_dp, &
-             mpi_sum, p_comm, p_error)
-      END IF
-    ELSE
-       p_sum = zfield
-    END IF
-#else
     p_sum = zfield
-#endif
 
   END FUNCTION p_sum_dp_3d
 
@@ -9007,24 +3199,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     INTEGER(i8)                   :: p_sum (SIZE(kfield))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (kfield, p_sum, SIZE(kfield), p_int_i8, &
-            mpi_sum, p_comm, p_error)
-    ELSE
-       p_sum = kfield
-    END IF
-#else
     p_sum = kfield
-#endif
 
   END FUNCTION p_sum_i8_1d
 
@@ -9034,33 +3209,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm, root
     INTEGER                   :: p_sum (SIZE(kfield))
 
-#ifndef NOMPI
-    INTEGER :: p_comm, my_rank
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-      IF (PRESENT(root)) THEN
-        CALL MPI_REDUCE(kfield, p_sum, SIZE(kfield), p_int, &
-             mpi_sum, root, p_comm, p_error)
-        ! get local PE identification
-        CALL mpi_comm_rank(p_comm, my_rank, p_error)
-        ! do not use the result on all the other ranks:
-        IF (root /= my_rank) p_sum = kfield
-      ELSE
-        CALL MPI_ALLREDUCE (kfield, p_sum, SIZE(kfield), p_int, &
-            mpi_sum, p_comm, p_error)
-      END IF
-    ELSE
-       p_sum = kfield
-    END IF
-#else
     p_sum = kfield
-#endif
 
   END FUNCTION p_sum_i_1d
 
@@ -9071,24 +3220,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     INTEGER                   :: p_sum
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (kfield, p_sum, 1, p_int, &
-            mpi_sum, p_comm, p_error)
-    ELSE
-       p_sum = kfield
-    END IF
-#else
     p_sum = kfield
-#endif
 
   END FUNCTION p_sum_i_0d
 
@@ -9099,25 +3231,7 @@ CONTAINS
     REAL(dp)                      :: p_sum
     REAL(dp)                      :: pe_sums(SIZE(zfield))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_REDUCE (zfield, pe_sums, SIZE(zfield), p_real_dp, &
-            mpi_sum, process_mpi_root_id, p_comm, p_error)
-       p_sum = SUM(pe_sums)
-    ELSE
-       p_sum = SUM(zfield)
-    END IF
-#else
     p_sum = SUM(zfield)
-#endif
 
   END FUNCTION p_global_sum_1d
 
@@ -9127,25 +3241,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     REAL(dp)                      :: p_sum (SIZE(zfield))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_REDUCE (zfield, p_sum, SIZE(zfield), p_real_dp, &
-            mpi_sum, process_mpi_root_id, p_comm, p_error)
-       IF (.NOT. my_process_is_stdio()) p_sum = 0.0_dp
-    ELSE
-       p_sum = zfield
-    END IF
-#else
     p_sum = zfield
-#endif
 
   END FUNCTION p_field_sum_1d
 
@@ -9155,25 +3251,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     REAL(dp)                      :: p_sum (SIZE(zfield,1),SIZE(zfield,2))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_REDUCE (zfield, p_sum, SIZE(zfield), p_real_dp, &
-            mpi_sum, process_mpi_root_id, p_comm, p_error)
-       IF (.NOT. my_process_is_stdio()) p_sum = 0.0_dp
-    ELSE
-       p_sum = zfield
-    END IF
-#else
     p_sum = zfield
-#endif
 
   END FUNCTION p_field_sum_2d
 
@@ -9189,98 +3267,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in)    :: root
     INTEGER, OPTIONAL, INTENT(in)    :: comm
 
-#ifndef NOMPI
-    INTEGER  :: p_comm, rank, comm_size
-    LOGICAL :: compute_ikey
-    INTEGER, ALLOCATABLE  :: meta_info(:), ikey(:)
-#ifndef SLOW_MPI_MAXMINLOC
-    DOUBLE PRECISION, ALLOCATABLE :: val_loc(:,:,:)
-#endif
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-       comm_size = p_comm_size(comm)
-    ELSE
-       p_comm = process_mpi_all_comm
-       comm_size = process_mpi_all_size
-    ENDIF
-
-    IF (comm_size > 1) THEN
-
-      IF (PRESENT(proc_id) .OR. PRESENT(keyval)) THEN
-        ! encode meta information
-        ALLOCATE(meta_info(n), ikey(n))
-        meta_info = 0
-        IF (PRESENT(keyval))  meta_info = meta_info + keyval*comm_size
-        IF (PRESENT(proc_id)) meta_info = meta_info + proc_id
-        ! use mpi_minloc to transfer additional data
-#ifndef SLOW_MPI_MAXMINLOC
-        ALLOCATE(val_loc(2, n, 2))
-#endif
-        IF (PRESENT(root)) THEN
-          CALL MPI_COMM_RANK(p_comm, rank, p_error)
-#ifdef SLOW_MPI_MAXMINLOC
-          ! on BG/Q, {max|min}loc is slow
-          CALL mpi_allreduce(in_field, out_field, n, mpi_double_precision, &
-               op, p_comm, p_error)
-          ikey = MERGE(meta_info, HUGE(1), in_field == out_field)
-          CALL mpi_reduce(ikey, meta_info, n, mpi_integer, &
-               mpi_min, root, p_comm, p_error)
-#else
-          val_loc(1, :, 1) = DBLE(in_field)
-          val_loc(2, :, 1) = DBLE(meta_info)
-          CALL mpi_reduce(val_loc(:, :, 1), val_loc(:, :, 2), &
-               n, mpi_2double_precision, loc_op, root, p_comm, p_error)
-          IF (rank == root) THEN
-             out_field = val_loc(1, :, 2)
-          ELSE
-             out_field = 0.
-          END IF
-#endif
-          compute_ikey = rank == root
-        ELSE
-#ifdef SLOW_MPI_MAXMINLOC
-          CALL mpi_allreduce(in_field, out_field, n, mpi_double_precision, &
-               op, p_comm, p_error)
-          ikey = MERGE(meta_info, HUGE(1), in_field == out_field)
-          CALL mpi_allreduce(ikey, meta_info, n, mpi_integer, &
-               mpi_min, p_comm, p_error)
-#else
-          val_loc(1, :, 1) = DBLE(in_field)
-          val_loc(2, :, 1) = DBLE(meta_info)
-          CALL mpi_allreduce(val_loc(:, :, 1), val_loc(:, :, 2), &
-               n, mpi_2double_precision, loc_op, p_comm, p_error)
-          out_field = val_loc(1, :, 2)
-#endif
-          compute_ikey = .TRUE.
-        END IF
-        ! decode meta info:
-        IF (compute_ikey) THEN
-#ifdef SLOW_MPI_MAXMINLOC
-          ikey = meta_info / comm_size
-          IF (PRESENT(proc_id)) proc_id = mod(meta_info,comm_size)
-#else
-          ikey = NINT(val_loc(2, :, 2)) / comm_size
-          IF (PRESENT(proc_id)) proc_id = mod(nint(val_loc(2, :, 2)),comm_size)
-#endif
-          IF (PRESENT(keyval)) keyval = ikey
-        END IF
-      ELSE
-        ! compute simple (standard) minimum
-        IF (PRESENT(root)) THEN
-          CALL mpi_reduce(in_field, out_field, n, p_real_dp, &
-               op, root, p_comm, p_error)
-        ELSE
-          CALL mpi_allreduce(in_field, out_field, n, p_real_dp, &
-               op, p_comm, p_error)
-        END IF
-     END IF
-    ELSE
-      out_field = in_field
-    END IF
-#else
     out_field = in_field
-#endif
   END SUBROUTINE p_minmax_common
 
   SUBROUTINE p_minmax_common_sp(in_field, out_field, n, op, loc_op, &
@@ -9294,98 +3281,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in)    :: root
     INTEGER, OPTIONAL, INTENT(in)    :: comm
 
-#ifndef NOMPI
-    INTEGER  :: p_comm, rank, comm_size
-    LOGICAL :: compute_ikey
-    INTEGER, ALLOCATABLE  :: meta_info(:), ikey(:)
-#ifndef SLOW_MPI_MAXMINLOC
-    DOUBLE PRECISION, ALLOCATABLE :: val_loc(:,:,:)
-#endif
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-       comm_size = p_comm_size(comm)
-    ELSE
-       p_comm = process_mpi_all_comm
-       comm_size = process_mpi_all_size
-    ENDIF
-
-    IF (comm_size > 1) THEN
-
-      IF (PRESENT(proc_id) .OR. PRESENT(keyval)) THEN
-        ! encode meta information
-        ALLOCATE(meta_info(n), ikey(n))
-        meta_info = 0
-        IF (PRESENT(keyval))  meta_info = meta_info + keyval*comm_size
-        IF (PRESENT(proc_id)) meta_info = meta_info + proc_id
-        ! use mpi_minloc to transfer additional data
-#ifndef SLOW_MPI_MAXMINLOC
-        ALLOCATE(val_loc(2, n, 2))
-#endif
-        IF (PRESENT(root)) THEN
-          CALL MPI_COMM_RANK(p_comm, rank, p_error)
-#ifdef SLOW_MPI_MAXMINLOC
-          ! on BG/Q, {max|min}loc is slow
-          CALL mpi_allreduce(in_field, out_field, n, mpi_double_precision, &
-               op, p_comm, p_error)
-          ikey = MERGE(meta_info, HUGE(1), in_field == out_field)
-          CALL mpi_reduce(ikey, meta_info, n, mpi_integer, &
-               p_min_op(), root, p_comm, p_error)
-#else
-          val_loc(1, :, 1) = DBLE(in_field)
-          val_loc(2, :, 1) = DBLE(meta_info)
-          CALL mpi_reduce(val_loc(:, :, 1), val_loc(:, :, 2), &
-               n, mpi_2double_precision, loc_op, root, p_comm, p_error)
-          IF (rank == root) THEN
-             out_field = val_loc(1, :, 2)
-          ELSE
-             out_field = 0.
-          END IF
-#endif
-          compute_ikey = rank == root
-        ELSE
-#ifdef SLOW_MPI_MAXMINLOC
-          CALL mpi_allreduce(in_field, out_field, n, mpi_double_precision, &
-               op, p_comm, p_error)
-          ikey = MERGE(meta_info, HUGE(1), in_field == out_field)
-          CALL mpi_allreduce(ikey, meta_info, n, mpi_integer, &
-               p_min_op(), p_comm, p_error)
-#else
-          val_loc(1, :, 1) = DBLE(in_field)
-          val_loc(2, :, 1) = DBLE(meta_info)
-          CALL mpi_allreduce(val_loc(:, :, 1), val_loc(:, :, 2), &
-               n, mpi_2double_precision, loc_op, p_comm, p_error)
-          out_field = val_loc(1, :, 2)
-#endif
-          compute_ikey = .TRUE.
-        END IF
-        ! decode meta info:
-        IF (compute_ikey) THEN
-#ifdef SLOW_MPI_MAXMINLOC
-          ikey = meta_info / comm_size
-          IF (PRESENT(proc_id)) proc_id = mod(meta_info,comm_size)
-#else
-          ikey = NINT(val_loc(2, :, 2)) / comm_size
-          IF (PRESENT(proc_id)) proc_id = mod(nint(val_loc(2, :, 2)),comm_size)
-#endif
-          IF (PRESENT(keyval)) keyval = ikey
-        END IF
-      ELSE
-        ! compute simple (standard) minimum
-        IF (PRESENT(root)) THEN
-          CALL mpi_reduce(in_field, out_field, n, p_real_dp, &
-               op, root, p_comm, p_error)
-        ELSE
-          CALL mpi_allreduce(in_field, out_field, n, p_real_dp, &
-               op, p_comm, p_error)
-        END IF
-     END IF
-    ELSE
-      out_field = in_field
-    END IF
-#else
     out_field = in_field
-#endif
   END SUBROUTINE p_minmax_common_sp
 
 
@@ -9477,24 +3373,7 @@ CONTAINS
     INTEGER                          :: p_max
     INTEGER,           INTENT(in)    :: zfield
     INTEGER, OPTIONAL, INTENT(in)    :: comm
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (zfield, p_max, 1, p_int, &
-            mpi_max, p_comm, p_error)
-    ELSE
-       p_max = zfield
-    END IF
-#else
     p_max = zfield
-#endif
 
   END FUNCTION p_max_int_0d
 
@@ -9548,29 +3427,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: root
     INTEGER                       :: p_max (SIZE(zfield))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-      IF (PRESENT(root)) THEN
-        CALL MPI_REDUCE (zfield, p_max, SIZE(zfield), p_int, &
-          mpi_max, root, p_comm, p_error)
-      ELSE
-        CALL MPI_ALLREDUCE (zfield, p_max, SIZE(zfield), p_int, &
-          mpi_max, p_comm, p_error)
-      END IF ! if present(root)
-    ELSE
-       p_max = zfield
-    END IF
-#else
     p_max = zfield
-#endif
 
   END FUNCTION p_max_int_1d
 
@@ -9580,24 +3437,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     REAL(dp)                      :: p_max (SIZE(zfield,1),SIZE(zfield,2))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (zfield, p_max, SIZE(zfield), p_real_dp, &
-            mpi_max, p_comm, p_error)
-    ELSE
-       p_max = zfield
-    END IF
-#else
     p_max = zfield
-#endif
 
   END FUNCTION p_max_2d
 
@@ -9607,24 +3447,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     REAL(sp)                      :: p_max (SIZE(zfield,1),SIZE(zfield,2))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (zfield, p_max, SIZE(zfield), p_real_dp, &
-            mpi_max, p_comm, p_error)
-    ELSE
-       p_max = zfield
-    END IF
-#else
     p_max = zfield
-#endif
 
   END FUNCTION p_max_2d_sp
 
@@ -9635,24 +3458,7 @@ CONTAINS
     REAL(dp)                      :: p_max (SIZE(zfield,1),SIZE(zfield,2)&
                                            ,SIZE(zfield,3))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (zfield, p_max, SIZE(zfield), p_real_dp, &
-            mpi_max, p_comm, p_error)
-    ELSE
-       p_max = zfield
-    END IF
-#else
     p_max = zfield
-#endif
 
   END FUNCTION p_max_3d
 
@@ -9663,24 +3469,7 @@ CONTAINS
     REAL(sp)                      :: p_max (SIZE(zfield,1),SIZE(zfield,2)&
                                            ,SIZE(zfield,3))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (zfield, p_max, SIZE(zfield), p_real_dp, &
-            mpi_max, p_comm, p_error)
-    ELSE
-       p_max = zfield
-    END IF
-#else
     p_max = zfield
-#endif
 
   END FUNCTION p_max_3d_sp
 
@@ -9737,24 +3526,7 @@ CONTAINS
     INTEGER,           INTENT(in) :: zfield
     INTEGER, OPTIONAL, INTENT(in) :: comm
     INTEGER                       :: p_min
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (zfield, p_min, 1, p_int, &
-            mpi_min, p_comm, p_error)
-    ELSE
-       p_min = zfield
-    END IF
-#else
     p_min = zfield
-#endif
 
   END FUNCTION p_min_int_0d
 
@@ -9778,24 +3550,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     INTEGER                       :: p_min (SIZE(zfield))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (zfield, p_min, SIZE(zfield), p_int, &
-            mpi_min, p_comm, p_error)
-    ELSE
-       p_min = zfield
-    END IF
-#else
     p_min = zfield
-#endif
 
   END FUNCTION p_min_int_1d
 
@@ -9805,24 +3560,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     REAL(dp)                      :: p_min (SIZE(zfield,1),SIZE(zfield,2))
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (zfield, p_min, SIZE(zfield), p_real_dp, &
-            mpi_min, p_comm, p_error)
-    ELSE
-       p_min = zfield
-    END IF
-#else
     p_min = zfield
-#endif
 
   END FUNCTION p_min_2d
 
@@ -9832,24 +3570,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: comm
     REAL(dp)                      :: p_min (SIZE(zfield,1),SIZE(zfield,2)&
                                            ,SIZE(zfield,3))
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    IF (my_process_is_mpi_all_parallel()) THEN
-       CALL MPI_ALLREDUCE (zfield, p_min, SIZE(zfield), p_real_dp, &
-            mpi_min, p_comm, p_error)
-    ELSE
-       p_min = zfield
-    END IF
-#else
     p_min = zfield
-#endif
 
   END FUNCTION p_min_3d
 
@@ -9857,21 +3578,7 @@ CONTAINS
     LOGICAL :: res
     LOGICAL, INTENT(in) :: zfield
     INTEGER, OPTIONAL, INTENT(in) :: comm
-#ifndef NOMPI
-    INTEGER :: pcomm
-    IF (PRESENT(comm)) THEN
-       pcomm = comm
-    ELSE
-       pcomm = process_mpi_all_comm
-    ENDIF
-    IF (my_process_is_mpi_all_parallel()) THEN
-      CALL mpi_allreduce(zfield, res, 1, p_bool, mpi_lor, pcomm, p_error)
-    ELSE
-      res = zfield
-    END IF
-#else
     res = zfield
-#endif
   END FUNCTION p_lor_0d
 
   ! Computes maximum of a 1D field of integers.
@@ -9883,18 +3590,6 @@ CONTAINS
     INTEGER, INTENT(in) :: comm
     INTEGER, INTENT(in), OPTIONAL :: root
 
-#if !defined(NOMPI)
-    INTEGER :: p_comm, p_error
-
-    p_comm = comm
-    IF (PRESENT(root)) THEN
-      CALL MPI_REDUCE (MPI_IN_PLACE, zfield, SIZE(zfield), p_int, &
-        mpi_max, root, p_comm, p_error)
-    ELSE
-      CALL MPI_ALLREDUCE (MPI_IN_PLACE, zfield, SIZE(zfield), p_int, &
-        mpi_max, p_comm, p_error)
-    END IF ! if present(root)
-#endif
   END SUBROUTINE p_allreduce_max_int_1d
 
   FUNCTION p_reduce_i8_0d(send, op, root, comm) RESULT(recv)
@@ -9902,15 +3597,7 @@ CONTAINS
     INTEGER(i8), INTENT(IN) :: send
     INTEGER, INTENT(in) :: op, root, comm
 
-#ifndef NOMPI
-    INTEGER :: ierror
-    CHARACTER(*), PARAMETER :: routine = modname//":p_reduce_i8_0d"
-
-    CALL MPI_Reduce(send, recv, 1, p_int_i8, op, root, comm, ierror)
-    IF (ierror /= MPI_SUCCESS) CALL finish(routine, "error in MPI call.")
-#else
     recv = send
-#endif
   END FUNCTION p_reduce_i8_0d
 
   FUNCTION p_reduce_i4_0d(send, op, root, comm) &
@@ -9919,30 +3606,14 @@ CONTAINS
     INTEGER(i4), INTENT(IN) :: send
     INTEGER, INTENT(in) :: op, root, comm
 
-#ifndef NOMPI
-    INTEGER :: ierror
-    CHARACTER(*), PARAMETER :: routine = modname//":p_reduce_i4_0d"
-
-    CALL MPI_Reduce(send, recv, 1, p_int_i4, op, root, comm, ierror)
-    IF (ierror /= MPI_SUCCESS) CALL finish(routine, "error in MPI call.")
-#else
     recv = send
-#endif
   END FUNCTION p_reduce_i4_0d
 
   INTEGER(i4) FUNCTION p_allreduce_int4_0d(input, reductionOp, comm) RESULT(resultVar)
     INTEGER(i4), INTENT(IN) :: input
     INTEGER, INTENT(in) :: reductionOp, comm
 
-#ifndef NOMPI
-    INTEGER :: error
-    CHARACTER(*), PARAMETER :: routine = modname//":p_allreduce_int4_0d"
-
-    CALL MPI_Allreduce(input, resultVar, 1, p_int_i4, reductionOp, comm, error)
-    IF(error /= MPI_SUCCESS) CALL finish(routine, "error in MPI call.")
-#else
     resultVar = input
-#endif
   END FUNCTION p_allreduce_int4_0d
 
   FUNCTION p_allreduce_bool_0d(input, reductionOp, comm) &
@@ -9951,30 +3622,14 @@ CONTAINS
     LOGICAL, INTENT(IN) :: input
     INTEGER, INTENT(in) :: reductionOp, comm
 
-#ifndef NOMPI
-    INTEGER :: ierror
-    CHARACTER(*), PARAMETER :: routine = modname//":p_allreduce_bool_0d"
-
-    CALL mpi_allreduce(input, res, 1, mpi_logical, reductionOp, comm, ierror)
-    IF (ierror /= MPI_SUCCESS) CALL finish(routine, "error in mpi_allreduce.")
-#else
     res = input
-#endif
   END FUNCTION p_allreduce_bool_0d
 
   INTEGER(i8) FUNCTION p_allreduce_int8_0d(input, reductionOp, comm) RESULT(resultVar)
     INTEGER(i8), INTENT(IN) :: input
     INTEGER, INTENT(in) :: reductionOp, comm
 
-#ifndef NOMPI
-    INTEGER :: error
-    CHARACTER(*), PARAMETER :: routine = modname//":p_allreduce_int8_0d"
-
-    CALL MPI_Allreduce(input, resultVar, 1, p_int_i8, reductionOp, comm, error)
-    IF(error /= MPI_SUCCESS) CALL finish(routine, "error in MPI call.)")
-#else
     resultVar = input
-#endif
   END FUNCTION p_allreduce_int8_0d
 
 
@@ -9986,23 +3641,7 @@ CONTAINS
     INTEGER,           INTENT(in) :: p_src
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    CHARACTER(*), PARAMETER :: routine = modname//"::p_scatter_real_1d1d"
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_Scatter(sendbuf, SIZE(recvbuf), p_real_dp, &
-    &                recvbuf, SIZE(recvbuf), p_real_dp, &
-    &                p_src, p_comm, p_error)
-    IF(p_error /= MPI_SUCCESS) CALL finish(routine, 'Error in MPI_Scatter operation!')
-#else
      recvbuf = sendbuf
-#endif
    END SUBROUTINE p_scatter_real_1d1d
 
 
@@ -10011,23 +3650,7 @@ CONTAINS
     INTEGER,           INTENT(in) :: p_src
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    CHARACTER(*), PARAMETER :: routine = modname//"::p_scatter_real_1d1d"
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_Scatter(sendbuf, SIZE(recvbuf), p_real_dp, &
-    &                recvbuf, SIZE(recvbuf), p_real_dp, &
-    &                p_src, p_comm, p_error)
-    IF(p_error /= MPI_SUCCESS) CALL finish(routine, 'Error in MPI_Scatter operation!')
-#else
     recvbuf = sendbuf(:,1)
-#endif
   END SUBROUTINE p_scatter_real_2d1d
 
   SUBROUTINE p_scatter_sp_1d1d(sendbuf, recvbuf, p_src, comm)
@@ -10035,23 +3658,7 @@ CONTAINS
     INTEGER,           INTENT(in) :: p_src
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    CHARACTER(*), PARAMETER :: routine = modname//"::p_scatter_single_1d1d"
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_Scatter(sendbuf, SIZE(recvbuf), p_real_sp, &
-    &                recvbuf, SIZE(recvbuf), p_real_sp, &
-    &                p_src, p_comm, p_error)
-    IF(p_error /= MPI_SUCCESS) CALL finish(routine, 'Error in MPI_Scatter operation!')
-#else
      recvbuf = sendbuf
-#endif
    END SUBROUTINE p_scatter_sp_1d1d
 
   SUBROUTINE p_scatter_sp_2d1d(sendbuf, recvbuf, p_src, comm)
@@ -10059,23 +3666,7 @@ CONTAINS
     INTEGER,           INTENT(in) :: p_src
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    CHARACTER(*), PARAMETER :: routine = modname//"::p_scatter_real_1d1d"
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_Scatter(sendbuf, SIZE(recvbuf), p_real_sp, &
-    &                recvbuf, SIZE(recvbuf), p_real_sp, &
-    &                p_src, p_comm, p_error)
-    IF(p_error /= MPI_SUCCESS) CALL finish(routine, 'Error in MPI_Scatter operation!')
-#else
     recvbuf = sendbuf(:,1)
-#endif
   END SUBROUTINE p_scatter_sp_2d1d
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -10086,23 +3677,7 @@ CONTAINS
     INTEGER,           INTENT(in) :: p_src
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    CHARACTER(*), PARAMETER :: routine = modname//"::p_scatter_int_1d1d"
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_Scatter(sendbuf, SIZE(recvbuf), p_int, &
-    &                recvbuf, SIZE(recvbuf), p_int, &
-    &                p_src, p_comm, p_error)
-    IF(p_error /= MPI_SUCCESS) CALL finish(routine, 'Error in MPI_Scatter operation!')
-#else
      recvbuf = sendbuf
-#endif
   END SUBROUTINE p_scatter_int_1d1d
 
   SUBROUTINE p_scatter_int_2d1d(sendbuf, recvbuf, p_src, comm)
@@ -10110,23 +3685,7 @@ CONTAINS
     INTEGER,           INTENT(in) :: p_src
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    CHARACTER(*), PARAMETER :: routine = modname//"::p_scatter_int_2d1d"
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL MPI_Scatter(sendbuf, SIZE(recvbuf), p_int, &
-    &                recvbuf, SIZE(recvbuf), p_int, &
-    &                p_src, p_comm, p_error)
-    IF(p_error /= MPI_SUCCESS) CALL finish(routine, 'Error in MPI_Scatter operation!')
-#else
      recvbuf = sendbuf(:,1)
-#endif
   END SUBROUTINE p_scatter_int_2d1d
 
   SUBROUTINE p_gather_real_0d1d (sendbuf, recvbuf, p_dest, comm)
@@ -10135,21 +3694,7 @@ CONTAINS
     INTEGER,           INTENT(in   ) :: p_dest
     INTEGER, OPTIONAL, INTENT(in   ) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-     CALL MPI_GATHER(sendbuf, 1, p_real_dp, &
-                     recvbuf, 1, p_real_dp, &
-                     p_dest, p_comm, p_error)
-#else
      recvbuf(:) = sendbuf
-#endif
   END SUBROUTINE p_gather_real_0d1d
 
   SUBROUTINE p_gather_real_1d2d (sendbuf, recvbuf, p_dest, comm)
@@ -10158,21 +3703,7 @@ CONTAINS
     INTEGER,           INTENT(in   ) :: p_dest
     INTEGER, OPTIONAL, INTENT(in   ) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-     CALL MPI_GATHER(sendbuf, SIZE(sendbuf), p_real_dp, &
-                     recvbuf, SIZE(sendbuf), p_real_dp, &
-                     p_dest, p_comm, p_error)
-#else
      recvbuf(:,1) = sendbuf(:)
-#endif
   END SUBROUTINE p_gather_real_1d2d
 
   SUBROUTINE p_gather_real_2d3d(sendbuf, recvbuf, p_dest, comm)
@@ -10181,21 +3712,7 @@ CONTAINS
     INTEGER,           INTENT(in   ) :: p_dest
     INTEGER, OPTIONAL, INTENT(in   ) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL mpi_gather(sendbuf, SIZE(sendbuf), p_real_dp, &
-                    recvbuf, SIZE(sendbuf), p_real_dp, &
-                    p_dest, p_comm, p_error)
-#else
     recvbuf(:,:,1) = sendbuf(:,:)
-#endif
   END SUBROUTINE p_gather_real_2d3d
 
    SUBROUTINE p_gather_real_5d6d (sendbuf, recvbuf, p_dest, comm)
@@ -10204,26 +3721,7 @@ CONTAINS
      INTEGER,           INTENT(in   ) :: p_dest
      INTEGER, OPTIONAL, INTENT(in   ) :: comm
 
-#ifndef NOMPI
-     INTEGER :: p_comm
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-
-     CALL MPI_GATHER(sendbuf, SIZE(sendbuf), p_real_dp, &
-                     recvbuf, SIZE(sendbuf), p_real_dp, &
-                     p_dest, p_comm, p_error)
-
-     IF (p_error /= MPI_SUCCESS) THEN
-       CALL finish('p_gather_real_5d6d', message_text)
-     END IF
-
-#else
      recvbuf(:,:,:,:,:,LBOUND(recvbuf,6)) = sendbuf(:,:,:,:,:)
-#endif
    END SUBROUTINE p_gather_real_5d6d
 
 
@@ -10233,21 +3731,7 @@ CONTAINS
     INTEGER,           INTENT(in   ) :: p_dest
     INTEGER, OPTIONAL, INTENT(in   ) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-     CALL MPI_GATHER(sendbuf, SIZE(sendbuf), p_real_dp, &
-                     recvbuf, SIZE(sendbuf), p_real_dp, &
-                     p_dest, p_comm, p_error)
-#else
      recvbuf(:) = sendbuf(:)
-#endif
    END SUBROUTINE p_gather_real_1d1d
 
 
@@ -10260,23 +3744,7 @@ CONTAINS
      INTEGER,           INTENT(in   ) :: p_dest
      INTEGER, OPTIONAL, INTENT(in   ) :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_gather_int_0d1d"
-     INTEGER :: p_comm
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-
-     CALL MPI_GATHER(sendbuf, 1, MPI_INTEGER, &
-       &             recvbuf, 1, MPI_INTEGER, &
-       &             p_dest, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_GATHER operation!')
-#else
      recvbuf = sendbuf
-#endif
    END SUBROUTINE p_gather_int_0d1d
 
 
@@ -10289,23 +3757,7 @@ CONTAINS
      INTEGER,           INTENT(in   ) :: p_dest
      INTEGER, OPTIONAL, INTENT(in   ) :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_gather_int_1d1d"
-     INTEGER :: p_comm
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-
-     CALL MPI_GATHER(sendbuf, SIZE(sendbuf), MPI_INTEGER, &
-       &             recvbuf, SIZE(sendbuf), MPI_INTEGER, &
-       &             p_dest, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_GATHER operation!')
-#else
      recvbuf = sendbuf
-#endif
   END SUBROUTINE p_gather_int_1d1d
 
   SUBROUTINE p_gather_int_1d2d(sendbuf, recvbuf, p_dest, comm)
@@ -10313,21 +3765,7 @@ CONTAINS
     INTEGER,           INTENT(in) :: p_dest, sendbuf(:)
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL mpi_gather(sendbuf, SIZE(sendbuf), mpi_integer, &
-      &             recvbuf, SIZE(sendbuf), mpi_integer, &
-      &             p_dest, p_comm, p_error)
-#else
      recvbuf(:,1) = sendbuf(:)
-#endif
    END SUBROUTINE p_gather_int_1d2d
 
   SUBROUTINE p_gather_int_2d3d(sendbuf, recvbuf, p_dest, comm)
@@ -10336,21 +3774,7 @@ CONTAINS
     INTEGER,           INTENT(in) :: p_dest
     INTEGER, OPTIONAL, INTENT(in) :: comm
 
-#ifndef NOMPI
-    INTEGER :: p_comm
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    CALL mpi_gather(sendbuf, SIZE(sendbuf), mpi_integer, &
-      &             recvbuf, SIZE(sendbuf), mpi_integer, &
-      &             p_dest, p_comm, p_error)
-#else
      recvbuf(:,:,1) = sendbuf(:,:)
-#endif
    END SUBROUTINE p_gather_int_2d3d
 
   !---------------------------------------------------------------------------------------------------------------------------------
@@ -10363,32 +3787,10 @@ CONTAINS
      INTEGER, OPTIONAL, INTENT(in) :: comm
      CHARACTER(*), PARAMETER :: routine = modname//"::p_gather_char_0d1d"
 
-#ifndef NOMPI
-     INTEGER :: p_comm
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-
-     ! recvbuf argument is only significant on root
-     IF (p_comm_rank(p_comm) == p_dest) THEN
-       IF (LEN(sbuf) /= LEN(recvbuf(1))) THEN
-         CALL finish (routine, 'Internal error: String lengths do not match!')
-       END IF
-     END IF
-
-     CALL MPI_GATHER(sbuf, LEN(sbuf), p_char,    &
-       &             recvbuf, LEN(sbuf), p_char, &
-       &             p_dest, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_GATHER operation!')
-#else
      IF (LEN(sbuf) /= LEN(recvbuf(1))) THEN
        CALL finish (routine, 'Internal error: String lengths do not match!')
      END IF
      recvbuf = sbuf
-#endif
    END SUBROUTINE p_gather_char_0d1d
 
 
@@ -10401,34 +3803,7 @@ CONTAINS
      INTEGER,           INTENT(in   ) :: p_dest
      INTEGER, OPTIONAL, INTENT(in   ) :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = "mo_mpi:p_gather_bool_0d1d"
-     INTEGER :: p_comm, comm_size, this_rank
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-
-     CALL MPI_COMM_SIZE (comm, comm_size, p_error)
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_COMM_SIZE operation!')
-     CALL MPI_COMM_RANK (comm, this_rank, p_error)
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_COMM_RANK operation!')
-
-     IF ((this_rank == p_dest) .AND. (comm_size /= SIZE(recvbuf))) THEN
-       WRITE (0,*) "comm_size     = ", comm_size
-       WRITE (0,*) "SIZE(recvbuf) = ", SIZE(recvbuf)
-       CALL finish(routine, "Receive buffer too small!")
-     END IF
-
-     CALL MPI_GATHER(sendbuf, 1, p_bool, &
-       &             recvbuf, 1, p_bool, &
-       &             p_dest, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_GATHER operation!')
-#else
      recvbuf = sendbuf
-#endif
    END SUBROUTINE p_gather_bool_0d1d
 
 
@@ -10439,23 +3814,7 @@ CONTAINS
      INTEGER,           INTENT(in)    :: p_dest
      INTEGER, OPTIONAL, INTENT(in)    :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_gatherv_int"
-     INTEGER :: p_comm
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-
-     CALL MPI_GATHERV(sendbuf, sendcount,  MPI_INTEGER, &
-       &              recvbuf, recvcounts, displs, MPI_INTEGER, &
-       &              p_dest, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_GATHERV operation!')
-#else
      recvbuf((displs(1)+1):(displs(1)+sendcount)) = sendbuf(1:sendcount)
-#endif
    END SUBROUTINE p_gatherv_int
 
 
@@ -10469,21 +3828,7 @@ CONTAINS
      INTEGER, INTENT(IN)  :: p_dest
      INTEGER, INTENT(IN)  :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_gatherv_real2D2D"
-
-     INTEGER :: dim1_size
-
-     dim1_size = SIZE(sendbuf, 1)
-
-     CALL MPI_GATHERV(sendbuf, sendcount*dim1_size,  p_real_dp, &
-       &              recvbuf, recvcounts(:)*dim1_size, displs*dim1_size, &
-       &              p_real_dp, p_dest, comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in MPI_GATHERV operation!')
-#else
      recvbuf(:, (displs(1)+1):(displs(1)+sendcount)) = sendbuf(:, 1:sendcount)
-#endif
    END SUBROUTINE p_gatherv_real2D2D
 
 
@@ -10497,21 +3842,7 @@ CONTAINS
      INTEGER, INTENT(IN)  :: p_dest
      INTEGER, INTENT(IN)  :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_gatherv_sreal2D2D"
-
-     INTEGER :: dim1_size
-
-     dim1_size = SIZE(sendbuf, 1)
-
-     CALL MPI_GATHERV(sendbuf, sendcount*dim1_size,  p_real_sp, &
-       &              recvbuf, recvcounts(:)*dim1_size, displs*dim1_size, &
-       &              p_real_sp, p_dest, comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in MPI_GATHERV operation!')
-#else
      recvbuf(:, (displs(1)+1):(displs(1)+sendcount)) = sendbuf(:, 1:sendcount)
-#endif
    END SUBROUTINE p_gatherv_sreal2D2D
 
 
@@ -10525,21 +3856,7 @@ CONTAINS
      INTEGER, INTENT(IN)  :: p_dest
      INTEGER, INTENT(IN)  :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_gatherv_int2D2D"
-
-     INTEGER :: dim1_size
-
-     dim1_size = SIZE(sendbuf, 1)
-
-     CALL MPI_GATHERV(sendbuf, sendcount*dim1_size,  p_int, &
-       &              recvbuf, recvcounts(:)*dim1_size, displs*dim1_size, &
-       &              p_int, p_dest, comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in MPI_GATHERV operation!')
-#else
      recvbuf(:, (displs(1)+1):(displs(1)+sendcount)) = sendbuf(:, 1:sendcount)
-#endif
    END SUBROUTINE p_gatherv_int2D2D
 
 
@@ -10551,17 +3868,7 @@ CONTAINS
      INTEGER,           INTENT(in)    :: p_dest
      INTEGER,           INTENT(in)    :: comm
 
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_gatherv_real2D1D"
-     INTEGER :: p_error
-
-     CALL MPI_GATHERV(sendbuf, sendcount, p_real_dp,   &    ! sendbuf, sendcount, sendtype
-       &              recvbuf, recvcounts, displs,     &    ! recvbuf, recvcounts, displs
-       &              p_real_dp, p_dest, comm, p_error)     ! recvtype, root, comm, error
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_GATHERV operation!')
-#else
      recvbuf(:) = RESHAPE(sendbuf, (/ SIZE(recvbuf) /) )
-#endif
    END SUBROUTINE p_gatherv_real2D1D
 
 
@@ -10573,17 +3880,7 @@ CONTAINS
     INTEGER,           INTENT(in)    :: p_dest
     INTEGER,           INTENT(in)    :: comm
 
-#if !defined(NOMPI)
-    CHARACTER(*), PARAMETER :: routine = modname//"::p_gatherv_int2D1D"
-    INTEGER :: p_error
-
-    CALL MPI_GATHERV(sendbuf, sendcount, p_int,       &    ! sendbuf, sendcount, sendtype
-      &              recvbuf, recvcounts, displs,     &    ! recvbuf, recvcounts, displs
-      &              p_int, p_dest, comm, p_error)         ! recvtype, root, comm, error
-    IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_GATHERV operation!')
-#else
     recvbuf(:) = RESHAPE(sendbuf, (/ SIZE(recvbuf) /) )
-#endif
   END SUBROUTINE p_gatherv_int2D1D
 
 
@@ -10595,17 +3892,7 @@ CONTAINS
      INTEGER,           INTENT(in)    :: p_dest
      INTEGER,           INTENT(in)    :: comm
 
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_gatherv_real2D1D"
-     INTEGER :: p_error
-
-     CALL MPI_GATHERV(sendbuf, sendcount, p_real_dp,   &    ! sendbuf, sendcount, sendtype
-       &              recvbuf, recvcounts, displs,     &    ! recvbuf, recvcounts, displs
-       &              p_real_dp, p_dest, comm, p_error)     ! recvtype, root, comm, error
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_GATHERV operation!')
-#else
      recvbuf(:) = RESHAPE(sendbuf, (/ SIZE(recvbuf) /) )
-#endif
    END SUBROUTINE p_gatherv_real3D1D
 
 
@@ -10617,17 +3904,7 @@ CONTAINS
      INTEGER,           INTENT(in)    :: p_dest
      INTEGER,           INTENT(in)    :: comm
 
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_scatterv_real1D2D"
-     INTEGER :: p_error
-
-     CALL MPI_SCATTERV(sendbuf, sendcounts, displs,   &    ! sendbuf, sendcount, displs
-       &               p_real_dp, recvbuf, recvcount, &    ! sendtype, recvbuf, recvcounts,
-       &               p_real_dp, p_dest, comm, p_error)   ! recvtype, root, comm, error
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_SCATTERV operation!')
-#else
      recvbuf(:,:) = RESHAPE(sendbuf, (/ SIZE(recvbuf,1), SIZE(recvbuf,2) /))
-#endif
    END SUBROUTINE p_scatterv_real1D2D
 
 
@@ -10644,17 +3921,7 @@ CONTAINS
         INTEGER, INTENT(IN)  :: p_src
         INTEGER, INTENT(IN)  :: comm
 
-#ifndef NOMPI
-        CHARACTER(*), PARAMETER :: routine = modname//"::p_scatterv_real1D1D"
-        INTEGER :: ierr
-
-        CALL MPI_Scatterv(sendbuf, sendcounts, displs, p_real_dp, &
-        &                 recvbuf, recvcount, p_real_dp, &
-        &                 p_src, comm, ierr)
-        IF (ierr /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_Scatterv operation!')
-#else
         recvbuf(1:recvcount) = sendbuf((displs(1)+1):(displs(1)+recvcount))
-#endif
    END SUBROUTINE p_scatterv_real1D1D
 
    SUBROUTINE p_scatterv_int_1d1d(sendbuf, sendcounts, displs, recvbuf, &
@@ -10668,16 +3935,7 @@ CONTAINS
      INTEGER, INTENT(IN)  :: p_src
      INTEGER, INTENT(IN)  :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_scatterv_real1D1D"
-     INTEGER :: ierr
-
-     CALL MPI_Scatterv(sendbuf, sendcounts, displs, p_int, &
-       &               recvbuf, recvcount, p_int, p_src, comm, ierr)
-     IF (ierr /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_Scatterv operation!')
-#else
      recvbuf(1:recvcount) = sendbuf((displs(1)+1):(displs(1)+recvcount))
-#endif
    END SUBROUTINE p_scatterv_int_1d1d
 
 
@@ -10694,17 +3952,7 @@ CONTAINS
         INTEGER, INTENT(IN)  :: p_src
         INTEGER, INTENT(IN)  :: comm
 
-#ifndef NOMPI
-        CHARACTER(*), PARAMETER :: routine = modname//"::p_scatterv_single1D1D"
-        INTEGER :: ierr
-
-        CALL MPI_Scatterv(sendbuf, sendcounts, displs, p_real_sp, &
-        &                 recvbuf, recvcount, p_real_sp, &
-        &                 p_src, comm, ierr)
-        IF (ierr /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_Scatterv operation!')
-#else
         recvbuf(1:recvcount) = sendbuf((displs(1)+1):(displs(1)+recvcount))
-#endif
    END SUBROUTINE p_scatterv_single1D1D
 
    SUBROUTINE p_allgather_int_0d1d(sendbuf, recvbuf, sendcount, recvcount, comm)
@@ -10712,33 +3960,7 @@ CONTAINS
      INTEGER,           INTENT(in) :: sendbuf
      INTEGER, OPTIONAL, INTENT(in) :: sendcount, recvcount, comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_allgather_int_0d1d"
-     INTEGER :: p_comm, nsend, nrecv
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-     IF (PRESENT(sendcount)) THEN
-       nsend = sendcount
-     ELSE
-       nsend = 1
-     END IF
-     IF (PRESENT(recvcount)) THEN
-       nrecv = recvcount
-     ELSE
-       nrecv = 1
-     END IF
-
-     CALL mpi_allgather(sendbuf, nsend, mpi_integer, &
-          &             recvbuf, nrecv, mpi_integer, &
-          &             p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in mpi_allgather operation!')
-#else
      recvbuf = sendbuf
-#endif
    END SUBROUTINE p_allgather_int_0d1d
 
    SUBROUTINE p_allgather_int_1d2d(sendbuf, recvbuf, sendcount, recvcount, comm)
@@ -10746,32 +3968,7 @@ CONTAINS
      INTEGER,           INTENT(in) :: sendbuf(:)
      INTEGER, OPTIONAL, INTENT(in) :: sendcount, recvcount, comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_allgather_int_1d2d"
-     INTEGER :: p_comm, nrecv, nsend
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-     IF (PRESENT(sendcount)) THEN
-       nsend = sendcount
-     ELSE
-       nsend = SIZE(sendbuf)
-     END IF
-     IF (PRESENT(recvcount)) THEN
-       nrecv = recvcount
-     ELSE
-       nrecv = SIZE(recvbuf, 1)
-     END IF
-     CALL mpi_allgather(sendbuf, nsend, mpi_integer, &
-          &             recvbuf, nrecv, mpi_integer, &
-          &             p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in mpi_allgather operation!')
-#else
      recvbuf(:, 1) = sendbuf
-#endif
    END SUBROUTINE p_allgather_int_1d2d
 
    SUBROUTINE p_allgatherv_real_1d(sendbuf, recvbuf, recvcounts, comm)
@@ -10780,44 +3977,7 @@ CONTAINS
      INTEGER,           INTENT(in)    :: recvcounts(:)
      INTEGER, OPTIONAL, INTENT(in)    :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_allgatherv_real_1d"
-     INTEGER :: p_comm, sendcount, comm_size, i
-     INTEGER, ALLOCATABLE :: displs(:)
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-
-     IF (p_comm_is_intercomm(p_comm)) THEN
-      comm_size = p_comm_remote_size(p_comm)
-     ELSE
-      comm_size = p_comm_size(p_comm)
-     END IF
-
-     IF ((comm_size > SIZE(recvcounts, 1)) .OR. &
-      &  (SUM(recvcounts) > SIZE(recvbuf, 1))) &
-       CALL finish(routine, "invalid recvcounts")
-
-     ALLOCATE(displs(comm_size))
-     displs(1) = 0
-     DO i = 2, comm_size
-       displs(i) = displs(i-1) + recvcounts(i-1)
-     END DO
-
-     sendcount = SIZE(sendbuf)
-     CALL mpi_allgatherv(sendbuf, sendcount, p_real_dp, &
-          &              recvbuf, recvcounts, displs, p_real_dp, &
-          &              p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in mpi_allgatherv operation!')
-
-     DEALLOCATE(displs)
-#else
      recvbuf = sendbuf
-#endif
    END SUBROUTINE p_allgatherv_real_1d
 
    SUBROUTINE p_allgatherv_int_1d(sendbuf, recvbuf, recvcounts, displs, &
@@ -10827,33 +3987,7 @@ CONTAINS
      INTEGER,           INTENT(in)    :: recvcounts(:), displs(:)
      INTEGER, OPTIONAL, INTENT(in)    :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_allgatherv_int_1d"
-     INTEGER :: p_comm, sendcount, comm_size
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-     IF (p_comm_is_intercomm(p_comm)) THEN
-      comm_size = p_comm_remote_size(p_comm)
-     ELSE
-      comm_size = p_comm_size(p_comm)
-     END IF
-
-     IF (comm_size > SIZE(displs)) CALL finish(routine, "invalid recvdispls")
-
-     sendcount = SIZE(sendbuf)
-     CALL mpi_allgatherv(sendbuf, sendcount, mpi_integer, &
-          &              recvbuf, recvcounts, displs, mpi_integer, &
-          &              p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in mpi_allgatherv operation!')
-
-#else
      recvbuf = sendbuf
-#endif
    END SUBROUTINE p_allgatherv_int_1d
 
    SUBROUTINE p_allgatherv_int_1d_contiguous(sendbuf, recvbuf, recvcounts, &
@@ -10863,37 +3997,7 @@ CONTAINS
      INTEGER,           INTENT(in)    :: recvcounts(:)
      INTEGER, OPTIONAL, INTENT(in)    :: comm
 
-#ifndef NOMPI
-     CHARACTER(*), PARAMETER :: &
-          routine = modname//"::p_allgatherv_int_1d_contiguous"
-     INTEGER :: p_comm, comm_size, i, n
-     INTEGER, ALLOCATABLE :: displs(:)
-
-     IF (PRESENT(comm)) THEN
-       p_comm = comm
-     ELSE
-       p_comm = process_mpi_all_comm
-     ENDIF
-     IF (p_comm_is_intercomm(p_comm)) THEN
-      comm_size = p_comm_remote_size(p_comm)
-     ELSE
-      comm_size = p_comm_size(p_comm)
-     END IF
-
-     ALLOCATE(displs(comm_size))
-     n = 0
-     DO i = 1, comm_size
-       displs(i) = n
-       n = n + recvcounts(i)
-     END DO
-
-     CALL p_allgatherv(sendbuf, recvbuf, recvcounts, displs, p_comm)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in mpi_allgatherv operation!')
-
-#else
      recvbuf = sendbuf
-#endif
    END SUBROUTINE p_allgatherv_int_1d_contiguous
 
 
@@ -10902,33 +4006,14 @@ CONTAINS
    FUNCTION p_commit_type_struct(oldtypes, blockcounts) RESULT(newtype)
      INTEGER :: newtype
      INTEGER, INTENT(IN) :: oldtypes(2), blockcounts(2)
-#if !defined(NOMPI)
-     INTEGER :: ierr
-     INTEGER(MPI_ADDRESS_KIND) :: typeLB, extent, offsets(2)
-     ! define structured type and commit it
-     CALL MPI_TYPE_GET_EXTENT(oldtypes(1), typeLB, extent, ierr)
-     offsets(:) = (/ 0_MPI_ADDRESS_KIND, extent /)
-     CALL MPI_TYPE_CREATE_STRUCT(2, blockcounts, offsets, oldtypes, newtype, ierr)
-     CALL MPI_TYPE_COMMIT(newtype, ierr)
-#else
      newtype = 0
-#endif
    END FUNCTION p_commit_type_struct
 
 
    SUBROUTINE p_alltoall_int (sendbuf, recvbuf, comm)
      INTEGER,           INTENT(inout) :: sendbuf(:), recvbuf(:)
      INTEGER,           INTENT(in) :: comm
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_alltoall_int"
-     INTEGER :: p_comm, p_error
-
-     p_comm = comm
-     CALL MPI_ALLTOALL(sendbuf, 1, p_int, recvbuf, 1, p_int, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) CALL finish (routine, 'Error in MPI_ALLTOALL operation!')
-#else
      recvbuf(:) = sendbuf(:)
-#endif
    END SUBROUTINE p_alltoall_int
 
 
@@ -10939,30 +4024,9 @@ CONTAINS
      REAL(dp),          INTENT(inout) :: recvbuf(:,:)
      INTEGER,           INTENT(in) :: recvcounts(:), rdispls(:)
      INTEGER,           INTENT(in) :: comm
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_alltoallv_real_2d"
-     INTEGER :: p_comm, p_error, dim1_size
-     REAL(dp), POINTER :: p_sendbuf(:,:)
-     REAL(dp), TARGET :: dummy(1,1)
-
-     p_comm = comm
-     dim1_size = SIZE(sendbuf, 1)
-     IF (SIZE(sendbuf) > 0) THEN
-       p_sendbuf => sendbuf
-     ELSE
-       p_sendbuf => dummy
-     END IF
-     CALL MPI_ALLTOALLV(p_sendbuf, sendcounts(:)*dim1_size, &
-       &                sdispls(:)*dim1_size, p_real_dp, recvbuf, &
-       &                recvcounts(:)*dim1_size, rdispls(:)*dim1_size, &
-       &                p_real_dp, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in MPI_ALLTOALLV operation!')
-#else
      ! displs are zero based -> have to add 1
      recvbuf(:,rdispls(1)+1:rdispls(1)+recvcounts(1)) = &
        sendbuf(:,sdispls(1)+1:sdispls(1)+sendcounts(1))
-#endif
    END SUBROUTINE p_alltoallv_real_2d
 
 
@@ -10973,30 +4037,9 @@ CONTAINS
      REAL(sp),          INTENT(inout) :: recvbuf(:,:)
      INTEGER,           INTENT(in) :: recvcounts(:), rdispls(:)
      INTEGER,           INTENT(in) :: comm
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_alltoallv_sreal_2d"
-     INTEGER :: p_comm, p_error, dim1_size
-     REAL(sp), POINTER :: p_sendbuf(:,:)
-     REAL(sp), TARGET :: dummy(1,1)
-
-     p_comm = comm
-     dim1_size = SIZE(sendbuf, 1)
-     IF (SIZE(sendbuf) > 0) THEN
-       p_sendbuf => sendbuf
-     ELSE
-       p_sendbuf => dummy
-     END IF
-     CALL MPI_ALLTOALLV(p_sendbuf, sendcounts(:)*dim1_size, &
-       &                sdispls(:)*dim1_size, p_real_sp, recvbuf, &
-       &                recvcounts(:)*dim1_size, rdispls(:)*dim1_size, &
-       &                p_real_sp, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in MPI_ALLTOALLV operation!')
-#else
      ! displs are zero based -> have to add 1
      recvbuf(:,rdispls(1)+1:rdispls(1)+recvcounts(1)) = &
        sendbuf(:,sdispls(1)+1:sdispls(1)+sendcounts(1))
-#endif
    END SUBROUTINE p_alltoallv_sreal_2d
 
 
@@ -11007,30 +4050,9 @@ CONTAINS
      INTEGER,           INTENT(inout) :: recvbuf(:,:)
      INTEGER,           INTENT(in) :: recvcounts(:), rdispls(:)
      INTEGER,           INTENT(in) :: comm
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_alltoallv_int_2d"
-     INTEGER :: p_comm, p_error, dim1_size
-     INTEGER, POINTER :: p_sendbuf(:,:)
-     INTEGER, TARGET :: dummy(1,1)
-
-     p_comm = comm
-     dim1_size = SIZE(sendbuf, 1)
-     IF (SIZE(sendbuf) > 0) THEN
-       p_sendbuf => sendbuf
-     ELSE
-       p_sendbuf => dummy
-     END IF
-     CALL MPI_ALLTOALLV(p_sendbuf, sendcounts(:)*dim1_size, &
-       &                sdispls(:)*dim1_size, p_int, recvbuf, &
-       &                recvcounts(:)*dim1_size, rdispls(:)*dim1_size, &
-       &                p_int, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in MPI_ALLTOALLV operation!')
-#else
      ! displs are zero based -> have to add 1
      recvbuf(:,rdispls(1)+1:rdispls(1)+recvcounts(1)) = &
        sendbuf(:,sdispls(1)+1:sdispls(1)+sendcounts(1))
-#endif
    END SUBROUTINE p_alltoallv_int_2d
 
 
@@ -11040,20 +4062,9 @@ CONTAINS
      INTEGER,           INTENT(inout) :: recvbuf(:)
      INTEGER,           INTENT(in) :: recvcounts(:), rdispls(:)
      INTEGER,           INTENT(in) :: comm
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_alltoallv_int"
-     INTEGER :: p_comm, p_error
-
-     p_comm = comm
-     CALL MPI_ALLTOALLV(sendbuf, sendcounts, sdispls, p_int, &
-       &                recvbuf, recvcounts, rdispls, p_int, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in MPI_ALLTOALLV operation!')
-#else
      ! displs are zero based -> have to add 1
      recvbuf(rdispls(1)+1:rdispls(1)+recvcounts(1)) = &
        sendbuf(sdispls(1)+1:sdispls(1)+sendcounts(1))
-#endif
    END SUBROUTINE p_alltoallv_int
 
    SUBROUTINE p_alltoallv_int_i8_1d(sendbuf, sendcounts, sdispls, &
@@ -11063,84 +4074,11 @@ CONTAINS
      INTEGER,           INTENT(in) :: sendcounts(:), sdispls(:), &
        &                              recvcounts(:), rdispls(:)
      INTEGER,           INTENT(in) :: comm
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_alltoallv_int_i8_1d"
-     INTEGER :: p_comm, p_error
-
-     p_comm = comm
-     CALL mpi_alltoallv(sendbuf, sendcounts, sdispls, p_int_i8, &
-       &                recvbuf, recvcounts, rdispls, p_int_i8, p_comm, p_error)
-     IF (p_error /=  MPI_SUCCESS) &
-       CALL finish (routine, 'Error in MPI_ALLTOALLV operation!')
-#else
      ! displs are zero based -> have to add 1
      recvbuf(rdispls(1)+1:rdispls(1)+recvcounts(1)) = &
        sendbuf(sdispls(1)+1:sdispls(1)+sendcounts(1))
-#endif
    END SUBROUTINE p_alltoallv_int_i8_1d
 
-#if !defined(NOMPI)
-   SUBROUTINE p_alltoallv_p2p_real_2d_core(dim1_size, sendbuf, sendcounts, sdispls, &
-        &                             recvbuf, recvcounts, rdispls, comm)
-     INTEGER, INTENT(in) :: dim1_size
-     REAL(wp),          INTENT(in) :: sendbuf(dim1_size,*)
-     INTEGER,           INTENT(in) :: sendcounts(:), sdispls(:)
-     REAL(wp),          INTENT(inout) :: recvbuf(dim1_size,*)
-     INTEGER,           INTENT(in) :: recvcounts(:), rdispls(:)
-     INTEGER,           INTENT(in) :: comm
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_alltoallv_p2p_real_2d"
-     INTEGER :: i, comm_size, tag, ofs, datatype
-
-     CALL p_wait
-
-     comm_size = p_comm_size(comm)
-     tag = 1
-     SELECT CASE (wp)
-       CASE(sp)
-         datatype = p_real_sp
-       CASE(dp)
-         datatype = p_real_dp
-       CASE DEFAULT
-         datatype = -1
-         CALL finish (routine, 'invalid read type')
-     END SELECT
-     DO i = 1, comm_size
-       IF (recvcounts(i) > 0) THEN
-         ofs = 1 + rdispls(i)
-         CALL p_inc_request
-         CALL mpi_irecv(recvbuf(:, ofs:ofs+recvcounts(i)-1), &
-              &         recvcounts(i) * dim1_size, datatype, i - 1, tag, &
-              &         comm, p_request(p_irequest), p_error)
-#ifdef DEBUG
-         IF (p_error /= MPI_SUCCESS) THEN
-           WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', &
-                my_process_mpi_all_id, &
-                ' from ', i - 1, ' for tag ', tag, ' failed.'
-           WRITE (nerr,'(a,i4)') ' Error = ', p_error
-           CALL abort_mpi
-         END IF
-#endif
-       END IF
-       IF (sendcounts(i) > 0) THEN
-         ofs = 1 + sdispls(i)
-         CALL p_inc_request
-         CALL mpi_isend(sendbuf(:, ofs:ofs+sendcounts(i)-1), &
-              &         sendcounts(i) * dim1_size, datatype, i - 1, tag, &
-              &         comm, p_request(p_irequest), p_error)
-#ifdef DEBUG
-         IF (p_error /= MPI_SUCCESS) THEN
-           WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND on ', &
-                my_process_mpi_all_id, &
-                ' from ', i - 1, ' for tag ', tag, ' failed.'
-           WRITE (nerr,'(a,i4)') ' Error = ', p_error
-           CALL abort_mpi
-         END IF
-#endif
-       END IF
-     END DO
-     CALL p_wait
-   END SUBROUTINE p_alltoallv_p2p_real_2d_core
-#endif
 
    SUBROUTINE p_alltoallv_p2p_real_2d (sendbuf, sendcounts, sdispls, &
      &                             recvbuf, recvcounts, rdispls, comm)
@@ -11149,74 +4087,11 @@ CONTAINS
      REAL(wp),          INTENT(inout) :: recvbuf(:,:)
      INTEGER,           INTENT(in) :: recvcounts(:), rdispls(:)
      INTEGER,           INTENT(in) :: comm
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_alltoallv_p2p_real_2d"
-     INTEGER :: dim1_size
-
-     dim1_size = SIZE(sendbuf, 1)
-     CALL p_alltoallv_p2p_real_2d_core(dim1_size, &
-          &                            sendbuf, sendcounts, sdispls, &
-          &                            recvbuf, recvcounts, rdispls, comm)
-#else
      ! displs are zero based -> have to add 1
      recvbuf(:,rdispls(1)+1:rdispls(1)+recvcounts(1)) = &
        sendbuf(:,sdispls(1)+1:sdispls(1)+sendcounts(1))
-#endif
    END SUBROUTINE p_alltoallv_p2p_real_2d
 
-#if !defined(NOMPI)
-   SUBROUTINE p_alltoallv_p2p_int_2d_core(dim1_size, sendbuf, sendcounts, sdispls, &
-        &                                 recvbuf, recvcounts, rdispls, comm)
-     INTEGER, INTENT(in) :: dim1_size
-     INTEGER,           INTENT(in) :: sendbuf(dim1_size,*)
-     INTEGER,           INTENT(in) :: sendcounts(:), sdispls(:)
-     INTEGER,           INTENT(inout) :: recvbuf(dim1_size,*)
-     INTEGER,           INTENT(in) :: recvcounts(:), rdispls(:)
-     INTEGER,           INTENT(in) :: comm
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_alltoallv_p2p_int_2d"
-     INTEGER :: i, comm_size, tag, ofs
-
-     CALL p_wait
-
-     comm_size = p_comm_size(comm)
-     tag = 1
-     DO i = 1, comm_size
-       IF (recvcounts(i) > 0) THEN
-         ofs = 1 + rdispls(i)
-         CALL p_inc_request
-         CALL mpi_irecv(recvbuf(:, ofs:ofs+recvcounts(i)-1), &
-              &         recvcounts(i) * dim1_size, p_int, i - 1, tag, &
-              &         comm, p_request(p_irequest), p_error)
-#ifdef DEBUG
-         IF (p_error /= MPI_SUCCESS) THEN
-           WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_IRECV on ', &
-                my_process_mpi_all_id, &
-                ' from ', i - 1, ' for tag ', tag, ' failed.'
-           WRITE (nerr,'(a,i4)') ' Error = ', p_error
-           CALL abort_mpi
-         END IF
-#endif
-       END IF
-       IF (sendcounts(i) > 0) THEN
-         ofs = 1 + sdispls(i)
-         CALL p_inc_request
-         CALL mpi_isend(sendbuf(:, ofs:ofs+sendcounts(i)-1), &
-              &         sendcounts(i) * dim1_size, p_int, i - 1, tag, &
-              &         comm, p_request(p_irequest), p_error)
-#ifdef DEBUG
-         IF (p_error /= MPI_SUCCESS) THEN
-           WRITE (nerr,'(a,i4,a,i4,a,i6,a)') ' MPI_ISEND on ', &
-                my_process_mpi_all_id, &
-                ' from ', i - 1, ' for tag ', tag, ' failed.'
-           WRITE (nerr,'(a,i4)') ' Error = ', p_error
-           CALL abort_mpi
-         END IF
-#endif
-       END IF
-     END DO
-     CALL p_wait
-   END SUBROUTINE p_alltoallv_p2p_int_2d_core
-#endif
 
    SUBROUTINE p_alltoallv_p2p_int_2d (sendbuf, sendcounts, sdispls, &
      &                                recvbuf, recvcounts, rdispls, comm)
@@ -11225,19 +4100,9 @@ CONTAINS
      INTEGER,           INTENT(inout) :: recvbuf(:,:)
      INTEGER,           INTENT(in) :: recvcounts(:), rdispls(:)
      INTEGER,           INTENT(in) :: comm
-#if !defined(NOMPI)
-     CHARACTER(*), PARAMETER :: routine = modname//"::p_alltoallv_p2p_int_2d"
-     INTEGER :: dim1_size
-
-     dim1_size = SIZE(sendbuf, 1)
-     CALL p_alltoallv_p2p_int_2d_core(dim1_size, &
-          &                           sendbuf, sendcounts, sdispls, &
-          &                           recvbuf, recvcounts, rdispls, comm)
-#else
      ! displs are zero based -> have to add 1
      recvbuf(:,rdispls(1)+1:rdispls(1)+recvcounts(1)) = &
        sendbuf(:,sdispls(1)+1:sdispls(1)+sendcounts(1))
-#endif
    END SUBROUTINE p_alltoallv_p2p_int_2d
 
   SUBROUTINE p_clear_request(request)
@@ -11252,7 +4117,7 @@ CONTAINS
 
   FUNCTION p_mpi_wtime()
     REAL(dp) :: p_mpi_wtime
-    p_mpi_wtime = MERGE_HAVE_MPI(MPI_Wtime(), 0d0)
+    p_mpi_wtime =  0d0
   END FUNCTION p_mpi_wtime
 
 
@@ -11270,36 +4135,9 @@ CONTAINS
     INTEGER              :: p_error, grp_comm, grp_comm_world, i
     INTEGER, ALLOCATABLE :: comm_ranks(:)
 
-#if !defined(NOMPI)
-    nranks = 0
-    IF (comm /= MPI_COMM_NULL) THEN
-      nranks = p_comm_size(comm)    ! inquire communicator size
-
-      ALLOCATE(comm_ranks(nranks), global_ranks(nranks))
-      comm_ranks(1:nranks) = (/ (i, i=0,(nranks-1)) /)
-
-      CALL MPI_COMM_GROUP(comm, grp_comm, p_error)
-      IF (p_error /= MPI_SUCCESS)  CALL finish (routine, 'Error in MPI_COMM_GROUP operation!')
-      CALL MPI_COMM_GROUP(MPI_COMM_WORLD, grp_comm_world,  p_error)
-      IF (p_error /= MPI_SUCCESS)  CALL finish (routine, 'Error in MPI_COMM_GROUP operation!')
-
-      global_ranks(:) = 0
-      CALL MPI_GROUP_TRANSLATE_RANKS(grp_comm, nranks, comm_ranks, &
-        &                            grp_comm_world, global_ranks, p_error)
-      IF (p_error /= MPI_SUCCESS)  CALL finish (routine, 'Error in MPI_GROUP_TRANSLATE_RANKS operation!')
-
-      CALL MPI_GROUP_FREE(grp_comm,       p_error)
-      IF (p_error /= MPI_SUCCESS)  CALL finish (routine, 'Error in MPI_GROUP_FREE operation!')
-      CALL MPI_GROUP_FREE(grp_comm_world, p_error)
-      IF (p_error /= MPI_SUCCESS)  CALL finish (routine, 'Error in MPI_GROUP_FREE operation!')
-
-      DEALLOCATE(comm_ranks)
-    END IF
-#else
     nranks = 1
     ALLOCATE(global_ranks(1))
     global_ranks(1) = 0
-#endif
   END SUBROUTINE get_mpi_comm_world_ranks
 
   !--------------------------------------------------------------------
@@ -11310,16 +4148,7 @@ CONTAINS
     LOGICAL :: flag
     INTEGER :: p_error
 
-#ifndef NOMPI
-    CALL MPI_COMM_TEST_INTER(intercomm, flag, p_error)
-    IF (p_error /= MPI_SUCCESS) &
-      CALL finish ("p_comm_is_intercomm", &
-        &          'Error in MPI_Comm_test_inter operation!')
-
-    p_comm_is_intercomm = flag
-#else
     p_comm_is_intercomm = .FALSE.
-#endif
   END FUNCTION p_comm_is_intercomm
 
   !--------------------------------------------------------------------
@@ -11329,16 +4158,7 @@ CONTAINS
     INTEGER, INTENT(IN) :: intercomm
     INTEGER :: remote_size, p_error
 
-#ifndef NOMPI
-    CALL MPI_COMM_REMOTE_SIZE(intercomm, remote_size, p_error)
-    IF (p_error /= MPI_SUCCESS) &
-      CALL finish ("p_comm_remote_size", &
-        &          'Error in MPI_Comm_remote_size operation!')
-
-    p_comm_remote_size = remote_size
-#else
     p_comm_remote_size = 0
-#endif
 
   END FUNCTION p_comm_remote_size
 
@@ -11347,61 +4167,14 @@ CONTAINS
     INTEGER, INTENT(IN) :: val
     INTEGER, OPTIONAL, INTENT(IN) :: comm
 
-#ifndef NOMPI
-    CHARACTER(*), PARAMETER :: routine = modname//":p_isEqual_int"
-    INTEGER :: sendBuffer(2), minmax(2)
-
-    !Compute the MIN AND MAX of the values using the fact that MAX_i(x_i) = -min_i(-x_i)
-    !i. e. we compute both with a single MPI MIN reduction.
-    sendBuffer(1) = val
-    sendBuffer(2) = -val
-    minmax = p_min(sendBuffer, comm = comm)
-    resultVar = minmax(1) == -minmax(2)
-#else
     resultVar = .TRUE.
-#endif
   END FUNCTION p_isEqual_int
 
   LOGICAL FUNCTION p_isEqual_charArray(charArray, comm) RESULT(resultVar)
     CHARACTER(KIND = C_CHAR), INTENT(IN) :: charArray(:)
     INTEGER, OPTIONAL, INTENT(IN) :: comm
 
-#ifndef NOMPI
-    INTEGER :: myProc, nextProc, prevProc, p_comm, commSize, i, error
-    CHARACTER(KIND = C_CHAR) :: prevArray(SIZE(charArray, 1))
-    LOGICAL :: stringsEqual
-
-    IF (PRESENT(comm)) THEN
-       p_comm = comm
-    ELSE
-       p_comm = process_mpi_all_comm
-    ENDIF
-
-    !Check whether all processes have the same string SIZE.
-    resultVar = p_isEqual(SIZE(charArray, 1), comm = p_comm)
-    IF(.NOT. resultVar) RETURN
-
-    !Get the neighbor ranks for a cyclic DATA exchange.
-    myProc = p_comm_rank(p_comm)
-    commSize = p_comm_size(p_comm)
-    nextProc = myProc + 1
-    IF(nextProc == commSize) nextProc = 0
-    prevProc = myProc - 1
-    IF(prevProc == -1) prevProc = commSize - 1
-
-    !Do a cyclic exchange of the strings, compare the local string to
-    !the one passed IN from the prevProc, AND reduce whether all
-    !strings compared equal.
-    CALL p_sendrecv_char_array(charArray, nextProc, prevArray, prevProc, 0, comm = p_comm)
-    stringsEqual = .TRUE.
-    DO i = 1, SIZE(charArray, 1)
-        IF(charArray(i) /= prevArray(i)) stringsEqual = .FALSE.
-    END DO
-
-    CALL MPI_Allreduce(stringsEqual, resultVar, 1, MPI_LOGICAL, MPI_LAND, p_comm, error)
-#else
     resultVar = .TRUE.
-#endif
   END FUNCTION p_isEqual_charArray
 
 END MODULE mo_mpi

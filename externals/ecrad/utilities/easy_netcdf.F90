@@ -107,9 +107,9 @@ module easy_netcdf
     procedure :: get_outer_dimension
     procedure :: attribute_exists
     procedure :: global_attribute_exists
-#ifdef NC_NETCDF4
-    procedure :: copy_dimensions
-#endif
+
+
+
     procedure :: copy_variable_definition
     procedure :: copy_variable
     procedure, private :: get_array_dimensions
@@ -172,14 +172,14 @@ contains
       ! Check if HDF5 file is to be written (which can be larger)
       if (present(is_hdf5_file)) then
         if (is_hdf5_file) then
-#ifdef NC_NETCDF4
-          i_write_mode = ior(i_write_mode, NF90_HDF5)
-#else
+
+
+
           if (this%iverbose >= 1) then
             write(nulout,'(a,a)') 'Warning: cannot use HDF5 format for writing ', file_name, &
                  &                ' unless compiled with NC_NETCDF4 defined'
           end if
-#endif
+
         end if
       end if
 
@@ -223,14 +223,14 @@ contains
     ! Check if HDF5 file is to be written (which can be large)
     if (present(is_hdf5_file)) then
       if (is_hdf5_file) then
-#ifdef NC_NETCDF4
-        i_write_mode = ior(i_write_mode, NF90_HDF5)
-#else
+
+
+
         if (this%iverbose >= 1) then
           write(nulout,'(a,a)') 'Warning: cannot use HDF5 format for writing ', file_name, &
                &                ' unless compiled with NC_NETCDF4 defined'
         end if
-#endif
+
       end if
     end if
 
@@ -2060,12 +2060,12 @@ contains
     end if
 
     ! Define variable
-#ifdef NC_NETCDF4
-    istatus = nf90_def_var(this%ncid, var_name, data_type, idimids(1:ndims_local), &
-         & ivarid, deflate_level=deflate_level, shuffle=shuffle, chunksizes=chunksizes)
-#else
+
+
+
+
     istatus = nf90_def_var(this%ncid, var_name, data_type, idimids(1:ndims_local), ivarid)
-#endif
+
     if (istatus /= NF90_NOERR) then
       write(nulerr,'(a,a,a,a)') '*** Error defining variable ', var_name, &
            &                    ': ', trim(nf90_strerror(istatus))
@@ -2108,19 +2108,6 @@ contains
     end if
 
     if (present(fill_value)) then
-#ifdef NC_NETCDF4
-      if (data_type == NF90_DOUBLE) then
-        istatus = nf90_def_var_fill(this%ncid, ivarid, 0, real(fill_value,jprd))
-      else if (data_type == NF90_FLOAT) then
-        istatus = nf90_def_var_fill(this%ncid, ivarid, 0, real(fill_value,jprm))
-      else if (data_type == NF90_INT) then
-        istatus = nf90_def_var_fill(this%ncid, ivarid, 0, int(fill_value,4))
-      else if (data_type == NF90_SHORT) then
-        istatus = nf90_def_var_fill(this%ncid, ivarid, 0, int(fill_value,2))
-      else if (data_type == NF90_BYTE) then
-        istatus = nf90_def_var_fill(this%ncid, ivarid, 0, int(fill_value,1))
-      end if
-#else
       if (data_type == NF90_DOUBLE) then
         istatus = nf90_put_att(this%ncid, ivarid, "_FillValue", real(fill_value,jprd))
       else if (data_type == NF90_FLOAT) then
@@ -2132,7 +2119,6 @@ contains
       else if (data_type == NF90_BYTE) then
         istatus = nf90_put_att(this%ncid, ivarid, "_FillValue", int(fill_value,1))
       end if
-#endif
     end if
 
   end subroutine define_variable
@@ -2680,43 +2666,6 @@ contains
   end subroutine put_real_array3
 
 
-#ifdef NC_NETCDF4
-  !---------------------------------------------------------------------
-  ! Copy dimensions from "infile" to "this"
-  subroutine copy_dimensions(this, infile)
-    class(netcdf_file)            :: this
-    type(netcdf_file), intent(in) :: infile
-
-    integer :: jdim
-    integer :: ndims
-    integer :: idimids(1024)
-    integer :: dimlen
-    character(len=512) :: dimname
-    integer :: istatus
-    integer :: include_parents
-    
-    include_parents = 0
-
-    istatus = nf90_inq_dimids(infile%ncid, ndims, idimids, include_parents)
-    if (istatus /= NF90_NOERR) then
-      write(nulerr,'(a,a)') '*** Error reading dimensions of NetCDF file: ', &
-           trim(nf90_strerror(istatus))
-      call my_abort('Error reading NetCDF file')
-    end if
-
-    do jdim = 1,ndims
-      istatus = nf90_inquire_dimension(infile%ncid, idimids(jdim), &
-           &  name=dimname, len=dimlen)
-      if (istatus /= NF90_NOERR) then
-        write(nulerr,'(a,a)') '*** Error reading NetCDF dimension properties: ', &
-             trim(nf90_strerror(istatus))
-        call my_abort('Error reading NetCDF file')
-      end if
-      call this%define_dimension(trim(dimname), dimlen)
-    end do
-
-  end subroutine copy_dimensions
-#endif
 
   !---------------------------------------------------------------------
   ! Copy variable definition and attributes from "infile" to "this"
@@ -2725,11 +2674,6 @@ contains
     type(netcdf_file), intent(in) :: infile
     character(len=*),  intent(in) :: var_name
 
-#ifdef NC_NETCDF4
-    integer :: deflate_level  ! Compression: 0 (none) to 9 (most)
-    logical :: shuffle        ! Shuffle bytes before compression
-    integer :: chunksizes(NF90_MAX_VAR_DIMS)
-#endif
     integer :: data_type
     integer :: ndims
     integer :: idimids_in(NF90_MAX_VAR_DIMS)
@@ -2755,14 +2699,8 @@ contains
     end if
 
     ! Get variable properties
-#ifdef NC_NETCDF4
-    istatus = nf90_inquire_variable(infile%ncid, ivarid_in, xtype=data_type, ndims=ndims, &
-         &  dimids=idimids_in, chunksizes=chunksizes, deflate_level=deflate_level, &
-         &  shuffle=shuffle, natts=nattr)
-#else
     istatus = nf90_inquire_variable(infile%ncid, ivarid_in, xtype=data_type, ndims=ndims, &
          &  dimids=idimids_in, natts=nattr)
-#endif
     if (istatus /= NF90_NOERR) then
       write(nulerr,'(a,a)') '*** Error reading NetCDF variable properties: ', &
            trim(nf90_strerror(istatus))
@@ -2787,12 +2725,7 @@ contains
     end do
 
     ! Create variable
-#ifdef NC_NETCDF4
-    istatus = nf90_def_var(this%ncid, var_name, data_type, idimids_out(1:ndims), &
-         & ivarid_out, deflate_level=deflate_level, shuffle=shuffle, chunksizes=chunksizes(1:ndims))
-#else
     istatus = nf90_def_var(this%ncid, var_name, data_type, idimids_out(1:ndims), ivarid_out)
-#endif
     if (istatus /= NF90_NOERR) then
       write(nulerr,'(a,a,a,a)') '*** Error defining variable "', var_name, &
            &                    '": ', trim(nf90_strerror(istatus))

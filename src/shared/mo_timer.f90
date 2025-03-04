@@ -11,18 +11,10 @@
 
 MODULE mo_timer
 
-#if (defined(__GFORTRAN__) || defined(_CRAYFTN) || defined(__PGIF90__))
+
   USE iso_fortran_env, ONLY: compiler_version, compiler_options
-#endif
+
   
-#ifdef __SCT__
-  USE sct, ONLY: new_timer     => sct_new_timer,             &
-       &         timer_start   => sct_start,                 &
-       &         timer_stop    => sct_stop,                  &
-       &         cleanup_timer => sct_reset_timer,           &
-       &         delete_timer  => sct_del_timer,             &
-       &         sct_init, sct_report, sct_add_report_attribute
-#else
   USE mo_real_timer, ONLY: new_timer,                        &
        &                   timer_start,                      &
        &                   timer_stop,                       &
@@ -30,7 +22,6 @@ MODULE mo_timer
        &                   cleanup_timer => timer_reset,     &
        &                   delete_timer => del_timer
 
-#endif
 
   USE mo_run_config, ONLY: ltimer, timers_level,  activate_sync_timers, iforcing
 
@@ -275,12 +266,6 @@ MODULE mo_timer
   ! Model atmosphere
   PUBLIC :: timer_opt_diag_atmo
 
-#ifndef __NO_ICON_COMIN__
-  ! Timers for ComIn
-  PUBLIC :: timer_comin_init
-  PUBLIC :: timer_comin_primary_constructors
-  PUBLIC :: timer_comin_callbacks
-#endif
 
   ! low level timing routine
   PUBLIC :: tic, toc
@@ -532,108 +517,15 @@ MODULE mo_timer
   ! Model atmosphere
   INTEGER :: timer_opt_diag_atmo
 
-#ifndef __NO_ICON_COMIN__
-  ! Timers for ComIn
-  INTEGER :: timer_comin_init, timer_comin_primary_constructors, timer_comin_callbacks
-#endif
 
 CONTAINS
 
   SUBROUTINE print_timer
-#ifdef __SCT__
-
-    USE mo_util_sysinfo,    ONLY: util_user_name, util_os_system, util_node_name
-    USE mo_util_vcs,        ONLY: get_revision, get_remote_url, get_local_branch
-    USE mtime,              ONLY: timedelta, newTimedelta, deallocateTimedelta, &
-         &                        OPERATOR(-), timedeltaToString, max_timedelta_str_len
-    USE mo_time_config,     ONLY: time_config 
-    USE mo_parallel_config, ONLY: get_nproma
-    USE mo_run_config,      ONLY: nlev
-    USE mo_grid_config,     ONLY: nroot, start_lev
-    
-    INTEGER :: istat
-    
-    CHARACTER(len=256) :: executable  = ''
-    CHARACTER(len=256) :: user_name   = ''
-    CHARACTER(len=256) :: os_name     = ''
-    CHARACTER(len=256) :: host_name   = ''
-    CHARACTER(len=256) :: expname     = ''
-    CHARACTER(len=256) :: jobid       = ''
-    CHARACTER(len=256) :: jobname     = ''
-    CHARACTER(len=256) :: submit_date = ''        
-    CHARACTER(len=256) :: tmp_string  = ''
-    
-    INTEGER :: nlena, nlenb, nlenc, nlend
-
-    CHARACTER(len=max_timedelta_str_len) :: tdstring
-    TYPE(timedelta), POINTER :: length_of_run
-
-    CHARACTER(len=6) :: gridstring
-    
-    tmp_string = ''
-    CALL util_os_system (tmp_string, nlena)
-    os_name = tmp_string(1:nlena)
-    
-    tmp_string = ''
-    CALL util_user_name (tmp_string, nlenb)
-    user_name = tmp_string(1:nlenb)
-    
-    tmp_string = ''
-    CALL util_node_name (tmp_string, nlenc)
-    host_name = tmp_string(1:nlenc)
-
-    CALL get_command_argument(0, executable, nlend)
-    
-    CALL get_environment_variable('EXPNAME', expname, status=istat) 
-    CALL get_environment_variable('SCT_JOB_ID', jobid, status=istat)
-    CALL get_environment_variable('SCT_JOB_NAME', jobname, status=istat)
-    CALL get_environment_variable('SCT_SUBMIT_DATE', submit_date, status=istat)         
-    
-    ! sct end date             missing, to be done in sct
-
-    ! model simulation time    tc_stopdate-tc_startdate
-    length_of_run => newTimedelta("PT0S")
-    length_of_run = time_config%tc_stopdate-time_config%tc_startdate
-    CALL timedeltaToString(length_of_run, tdstring)
-
-    write(gridstring,'(a,i2.2,a,i2.2)') 'R', nroot, 'B', start_lev
-    
-    CALL sct_add_report_attribute('model',                 'icon')
-    CALL sct_add_report_attribute('executable',            executable)
-    CALL sct_add_report_attribute('revision',              get_revision('icon'))
-    CALL sct_add_report_attribute('remote_url',            get_remote_url('icon'))
-    CALL sct_add_report_attribute('branch',                get_local_branch('icon'))
-    CALL sct_add_report_attribute('user name',             user_name)
-    CALL sct_add_report_attribute('operating system name', os_name)
-    CALL sct_add_report_attribute('experiment name',       expname)
-    CALL sct_add_report_attribute('job id',                jobid)
-    CALL sct_add_report_attribute('job name',              jobname)
-    CALL sct_add_report_attribute('submit date',           submit_date)    
-    CALL sct_add_report_attribute('run length',            tdstring)
-    CALL sct_add_report_attribute('vertical levels',       nlev)
-    CALL sct_add_report_attribute('horizontal grid',       gridstring)
-    CALL sct_add_report_attribute('nproma',                get_nproma())    
-#if (defined(__GFORTRAN__) || defined(_CRAYFTN) || defined(__PGIF90__))
-    CALL sct_add_report_attribute('compiler version',      compiler_version())
-    CALL sct_add_report_attribute('compiler options',      compiler_options())
-#else
-    CALL sct_add_report_attribute('compiler version',      'unknown')
-    CALL sct_add_report_attribute('compiler options',      'unknown')    
-#endif
-    
-    CALL sct_report()
-
-    CALL deallocateTimedelta(length_of_run)
-#else
     CALL timer_report()
-#endif
   END SUBROUTINE print_timer
     
   SUBROUTINE init_timer
 
-#ifdef __SCT__
-    CALL sct_init(timer_max=512)
-#endif
 
     ! major timers
     timer_total        = new_timer("total")
@@ -1014,12 +906,6 @@ CONTAINS
       timer_radar_acc_data_copies = new_timer("EMVORADO_acc_data_copies")
     END IF
 
-#ifndef __NO_ICON_COMIN__
-    ! Timers for ComIn
-    timer_comin_init                 = new_timer("comin_init")
-    timer_comin_primary_constructors = new_timer("comin_primary_constructors")
-    timer_comin_callbacks            = new_timer("comin_callbacks")
-#endif
 
     ! Timers for optional diagnostics
     ! Model atmosphere
@@ -1032,17 +918,10 @@ CONTAINS
   !
   !  @note Currently implemented for multi-threaded runs only!
   SUBROUTINE tic(time_s)
-#ifdef _OPENMP
-    USE OMP_LIB
-#endif
 
     REAL, INTENT(OUT) :: time_s
 
-#ifdef _OPENMP
-    time_s = REAL(omp_get_wtime())
-#else
     time_s = 0.
-#endif
   END SUBROUTINE tic
 
   !> Low-level timing routine: stop timing, return elapsed time in
@@ -1050,18 +929,11 @@ CONTAINS
   !
   !  @note Currently implemented for multi-threaded runs only!
   FUNCTION toc(time_s)
-#ifdef _OPENMP
-    USE OMP_LIB
-#endif
 
     REAL :: toc
     REAL, INTENT(IN) :: time_s
 
-#ifdef _OPENMP
-    toc = REAL(omp_get_wtime()) - time_s
-#else
     toc = 0.
-#endif
   END FUNCTION toc
 
 END MODULE mo_timer

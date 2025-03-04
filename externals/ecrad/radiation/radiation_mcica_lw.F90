@@ -20,7 +20,36 @@
 !   2017-07-12  R. Hogan  Call fast adding method if only clouds scatter
 !   2017-10-23  R. Hogan  Renamed single-character variables
 
-#include "ecrad_config.h"
+! ecrad_config.h - Preprocessor definitions to configure compilation ecRad -*- f90 -*-
+!
+! (C) Copyright 2023- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! This file should be included in Fortran source files that require
+! different optimizations or settings for different architectures and
+! platforms.  Feel free to maintain a site-specific version of it.
+
+! The following settings turn on optimizations specific to the
+! long-vector NEC SX (the short-vector x86-64 architecture is assumed
+! otherwise). 
+
+  
+  
+
+! In the IFS, an MPI version of easy_netcdf capability is used so that
+! only one MPI task reads the data files and shares with the other
+! tasks. The MPI version is not used for writing files.
+
+!#define EASY_NETCDF_READ_MPI 1
 
 module radiation_mcica_lw
 
@@ -134,11 +163,7 @@ contains
     real(jprb), dimension(config%n_g_lw,nlev) :: tmp_work_inv_denominator
 
     ! Temporary storage for more efficient summation
-#ifdef DWD_REDUCTION_OPTIMIZATIONS
-    real(jprb), dimension(nlev+1,2) :: sum_aux
-#else
     real(jprb) :: sum_up, sum_dn
-#endif
 
     ! Index of the highest cloudy layer
     integer :: i_cloud_top
@@ -194,17 +219,6 @@ contains
       end if
 
       ! Sum over g-points to compute broadband fluxes
-#ifdef DWD_REDUCTION_OPTIMIZATIONS
-      sum_aux(:,:) = 0.0_jprb
-      do jg = 1,ng
-        do jlev = 1,nlev+1
-          sum_aux(jlev,1) = sum_aux(jlev,1) + flux_up_clear(jg,jlev)
-          sum_aux(jlev,2) = sum_aux(jlev,2) + flux_dn_clear(jg,jlev)
-        end do
-      end do
-      flux%lw_up_clear(jcol,:) = sum_aux(:,1)
-      flux%lw_dn_clear(jcol,:) = sum_aux(:,2)
-#else
       do jlev = 1,nlev+1
         sum_up = 0.0_jprb
         sum_dn = 0.0_jprb
@@ -216,7 +230,6 @@ contains
         flux%lw_up_clear(jcol,jlev) = sum_up
         flux%lw_dn_clear(jcol,jlev) = sum_dn
       end do
-#endif
 
       ! Store surface spectral downwelling fluxes
       flux%lw_dn_surf_clear_g(:,jcol) = flux_dn_clear(:,nlev+1)
@@ -349,17 +362,6 @@ contains
         end if
         
         ! Store overcast broadband fluxes
-#ifdef DWD_REDUCTION_OPTIMIZATIONS
-        sum_aux(:,:) = 0._jprb
-        do jg = 1, ng
-          do jlev = 1, nlev+1
-            sum_aux(jlev,1) = sum_aux(jlev,1) + flux_up(jg,jlev)
-            sum_aux(jlev,2) = sum_aux(jlev,2) + flux_dn(jg,jlev)
-          end do
-        end do
-        flux%lw_up(jcol,:) = sum_aux(:,1)
-        flux%lw_dn(jcol,:) = sum_aux(:,2)
-#else
         do jlev = 1,nlev+1
           sum_up = 0.0_jprb
           sum_dn = 0.0_jprb
@@ -371,7 +373,6 @@ contains
           flux%lw_up(jcol,jlev) = sum_up
           flux%lw_dn(jcol,jlev) = sum_dn
         end do
-#endif
 
         ! Cloudy flux profiles currently assume completely overcast
         ! skies; perform weighted average with clear-sky profile

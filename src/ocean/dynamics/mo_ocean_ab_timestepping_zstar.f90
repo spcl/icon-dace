@@ -128,11 +128,11 @@ MODULE mo_ocean_ab_timestepping_zstar
   PUBLIC :: update_zstar_variables
 
   INTERFACE velocity_diffusion_vertical_implicit_zstar
-#if defined(__LVECTOR__) && !defined(__LVEC_BITID__)
-    MODULE PROCEDURE velocity_diffusion_vertical_implicit_zstar_vector
-#else
+
+
+
     MODULE PROCEDURE velocity_diffusion_vertical_implicit_zstar_scalar
-#endif
+
   END INTERFACE
 
   LOGICAL :: eliminate_upper_diag = .true.
@@ -742,10 +742,10 @@ CONTAINS
        &                          ocean_state%p_diag%press_grad, lacc=lzacc)
 
    ELSE IF ( press_grad_type .EQ. 1 ) THEN
-#ifdef _OPENACC
-    IF (lzacc) CALL finish("calculate_explicit_term_zstar", &
-       & "OpenACC version for press_grad_type == 1 currently not implemented")
-#endif
+
+
+
+
     CALL calc_internal_press_grad_zstar_chain( patch_3d,&
        &                          ocean_state%p_diag%rho,&
        &                          ocean_state%p_diag%press_hyd,& 
@@ -931,10 +931,10 @@ CONTAINS
 
     !-----------------------------------------------------------------------
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish("velocity_diffusion_vertical_implicit_zstar_vector", &
-       & "OpenACC version currently not implemented")
-#endif
+
+
+
+
 
     dolic_e => patch_3d%p_patch_1d(1)%dolic_e(:,edge_block)
     inv_prism_thick_e => patch_3d%p_patch_1d(1)%inv_prism_thick_e(:,:,edge_block)
@@ -1177,10 +1177,10 @@ CONTAINS
       ! FIXME zstar: This is not modified for zstar
       ! requires density gradient, where is that calculated 
       IF (PPscheme_type == PPscheme_ICON_Edge_vnPredict_type) THEN
-#ifdef _OPENACC
-    IF (lzacc) CALL finish("calculate_explicit_term_zstar", &
-       & "OpenACC version for PPscheme_ICON_Edge_vnPredict_type currently not implemented")
-#endif
+
+
+
+
         CALL ICON_PP_Edge_vnPredict_scheme(patch_3d, blockNo, start_edge_index, end_edge_index, &
           & ocean_state, ocean_state%p_diag%vn_pred(:,:,blockNo))
       END IF
@@ -1439,9 +1439,9 @@ CONTAINS
       minmaxmean(:) = global_minmaxmean(values=eta_c_new, in_subset=owned_cells)
       IF ( abs(minmaxmean(1)) >  300 ) CALL finish("Surface height too large!!")
 
-#ifndef NAGFOR
+
       IF ( ieee_is_nan(minmaxmean(1)) ) CALL finish("Surface height too large!!")
-#endif
+
 
       IF (createSolverMatrix) &
         CALL free_sfc_solver%dump_matrix(timestep, lacc=lzacc)

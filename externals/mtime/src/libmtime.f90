@@ -53,29 +53,6 @@ MODULE mtime_calendar
   !
 CONTAINS
   !
-#ifdef DOXYGEN_DOCUMENTATION_ONLY
-  !>
-  !! @brief Initialize a new calendar.
-  !!
-  !! setCalendar is done at the very begining to select one of the
-  !! provided calendar libraries. It intializes the calendar to one of:
-  !!
-  !! - proleptic_gregorian
-  !! - year_of_365_days
-  !! - year_of_360_days
-  !!
-  !! The calendar type and hence it's behaviour (Calendar to Julian
-  !! conversion and vice versa) is fixed for the lifetime of the
-  !! selected calendar.  Attempts to change the calendar type on the
-  !! fly is discouraged. The lib has built-in checks to reject
-  !! change attempts at run time.  However, a calendar can be
-  !! "re-initialized" after calling resetCalendar(), but this is not
-  !! advised.
-  !!
-  !! MANTRA: Know what you are doing before you do it and do it
-  !! right the first time.
-  !!
-#endif
   !>
   !! @brief convert the calendar identifier into a human readable string
   !!
@@ -296,15 +273,7 @@ CONTAINS
     dummy_ptr = my_subtractjulianday(C_LOC(op1), C_LOC(op2), C_LOC(ret))
   END FUNCTION subtractJuliandayFromJulianday
   !
-#ifndef MTIME_PURE_IF_C_LOC_IS_PURE
-#  if defined(__NEC__) || (defined(NAGFOR) &&  __NAG_COMPILER_RELEASE <= 71)
-!    NEC and older versions of NAG do not consider C_LOC as PURE
-#    define MTIME_PURE_IF_C_LOC_IS_PURE
-#  else
-#    define MTIME_PURE_IF_C_LOC_IS_PURE PURE
-#  endif
-#endif
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_gt(op1, op2) RESULT(gt)
+  PURE RECURSIVE FUNCTION julianday_gt(op1, op2) RESULT(gt)
     LOGICAL :: gt
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
@@ -317,7 +286,7 @@ CONTAINS
     END IF
   END FUNCTION julianday_gt
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_lt(op1, op2) RESULT(lt)
+  PURE RECURSIVE FUNCTION julianday_lt(op1, op2) RESULT(lt)
     LOGICAL :: lt
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
@@ -330,7 +299,7 @@ CONTAINS
     END IF
   END FUNCTION julianday_lt
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_lt_or_eq(op1, op2) RESULT(lt_or_eq)
+  PURE RECURSIVE FUNCTION julianday_lt_or_eq(op1, op2) RESULT(lt_or_eq)
     LOGICAL :: lt_or_eq
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
@@ -343,7 +312,7 @@ CONTAINS
     END IF
   END FUNCTION julianday_lt_or_eq
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_gt_or_eq(op1, op2) RESULT(gt_or_eq)
+  PURE RECURSIVE FUNCTION julianday_gt_or_eq(op1, op2) RESULT(gt_or_eq)
     LOGICAL :: gt_or_eq
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
@@ -356,7 +325,7 @@ CONTAINS
     END IF
   END FUNCTION julianday_gt_or_eq
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_eq(op1, op2) RESULT(eq)
+  PURE RECURSIVE FUNCTION julianday_eq(op1, op2) RESULT(eq)
     LOGICAL :: eq
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
@@ -369,7 +338,7 @@ CONTAINS
     END IF
   END FUNCTION julianday_eq
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_ne(op1, op2) RESULT(ne)
+  PURE RECURSIVE FUNCTION julianday_ne(op1, op2) RESULT(ne)
     LOGICAL :: ne
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
@@ -966,7 +935,7 @@ CONTAINS
     dummy_ptr = my_replacedatetime(C_LOC(src), C_LOC(dest))
   END SUBROUTINE replacedatetime
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_gt(op1, op2) RESULT(gt) !OK-TESTED.
+  PURE RECURSIVE FUNCTION datetime_gt(op1, op2) RESULT(gt) !OK-TESTED.
     LOGICAL :: gt
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
@@ -975,7 +944,7 @@ CONTAINS
     gt = (ret == 1_c_int)
   END FUNCTION datetime_gt
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_lt(op1, op2) RESULT(lt) !OK-TESTED.
+  PURE RECURSIVE FUNCTION datetime_lt(op1, op2) RESULT(lt) !OK-TESTED.
     LOGICAL :: lt
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
@@ -984,7 +953,7 @@ CONTAINS
     lt = (ret == -1_c_int)
   END FUNCTION datetime_lt
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_lt_or_eq(op1, op2) RESULT(lt_or_eq) !OK-TESTED.
+  PURE RECURSIVE FUNCTION datetime_lt_or_eq(op1, op2) RESULT(lt_or_eq) !OK-TESTED.
     LOGICAL :: lt_or_eq
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
@@ -993,7 +962,7 @@ CONTAINS
     lt_or_eq = (ret == 0_c_int) .OR. (ret == -1_c_int)
   END FUNCTION datetime_lt_or_eq
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_gt_or_eq(op1, op2) RESULT(gt_or_eq) !OK-TESTED
+  PURE RECURSIVE FUNCTION datetime_gt_or_eq(op1, op2) RESULT(gt_or_eq) !OK-TESTED
     LOGICAL :: gt_or_eq
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
@@ -1002,7 +971,7 @@ CONTAINS
     gt_or_eq = (ret == 0_c_int) .OR. (ret == 1_c_int)
   END FUNCTION datetime_gt_or_eq
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_eq(op1, op2) RESULT(eq) !OK-TESTED.
+  PURE RECURSIVE FUNCTION datetime_eq(op1, op2) RESULT(eq) !OK-TESTED.
     LOGICAL :: eq
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
@@ -1011,7 +980,7 @@ CONTAINS
     eq = ret == 0_c_int
   END FUNCTION datetime_eq
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_ne(op1, op2) RESULT(ne) !OK-TESTED.
+  PURE RECURSIVE FUNCTION datetime_ne(op1, op2) RESULT(ne) !OK-TESTED.
     LOGICAL :: ne
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
@@ -1369,7 +1338,7 @@ CONTAINS
     NULLIFY (my_timedelta)
   END SUBROUTINE deallocateTimedelta
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_gt(op1, op2) RESULT(gt)
+  PURE RECURSIVE FUNCTION timedelta_gt(op1, op2) RESULT(gt)
     LOGICAL :: gt
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
@@ -1378,7 +1347,7 @@ CONTAINS
     gt = ret == 1_c_int
   END FUNCTION timedelta_gt
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_lt(op1, op2) RESULT(lt)
+  PURE RECURSIVE FUNCTION timedelta_lt(op1, op2) RESULT(lt)
     LOGICAL :: lt
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
@@ -1387,7 +1356,7 @@ CONTAINS
     lt = ret == -1_c_int
   END FUNCTION timedelta_lt
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_lt_or_eq(op1, op2) RESULT(lt_or_eq)
+  PURE RECURSIVE FUNCTION timedelta_lt_or_eq(op1, op2) RESULT(lt_or_eq)
     LOGICAL :: lt_or_eq
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
@@ -1396,7 +1365,7 @@ CONTAINS
     lt_or_eq = ret == 0_c_int .OR. ret == -1_c_int
   END FUNCTION timedelta_lt_or_eq
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_gt_or_eq(op1, op2) RESULT(gt_or_eq)
+  PURE RECURSIVE FUNCTION timedelta_gt_or_eq(op1, op2) RESULT(gt_or_eq)
     LOGICAL :: gt_or_eq
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
@@ -1405,7 +1374,7 @@ CONTAINS
     gt_or_eq = ret == 0_c_int .OR. ret == 1_c_int
   END FUNCTION timedelta_gt_or_eq
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_eq(op1, op2) RESULT(eq)
+  PURE RECURSIVE FUNCTION timedelta_eq(op1, op2) RESULT(eq)
     LOGICAL :: eq
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
@@ -1414,7 +1383,7 @@ CONTAINS
     eq = ret == 0_c_int
   END FUNCTION timedelta_eq
   !
-  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_ne(op1, op2) RESULT(ne)
+  PURE RECURSIVE FUNCTION timedelta_ne(op1, op2) RESULT(ne)
     LOGICAL :: ne
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
@@ -2747,17 +2716,6 @@ MODULE mtime
   !
   PUBLIC
   !
-#ifdef DOXYGEN_DOCUMENTATION_ONLY
-  INTEGER, PARAMETER :: no_of_sec_in_a_day = 86400  !!< number of seconds per day, defined in C
-  INTEGER, PARAMETER :: no_of_sec_in_a_hour = 3600  !!< number of seconds per hour, defined in C
-  INTEGER, PARAMETER :: no_of_sec_in_a_minute = 60  !!< number of seconds per minute, defined in C
-  !
-  INTEGER, PARAMETER :: no_of_ms_in_a_day = 86400000  !!< number of milli-seconds per day, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_half_day = 43200000  !!< number of milli-seconds per 12 hours, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_a_hour = 3600000  !!< number of milli-seconds per hour, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_a_minute = 60000  !!< number of milli-seconds per minute, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_a_second = 1000  !!< number of milli-seconds per second, defined in C
-#endif
   !
   !> @cond DOXYGEN_IGNORE_THIS
   INTEGER(c_int), BIND(c, name='NO_OF_SEC_IN_A_DAY') :: no_of_sec_in_a_day

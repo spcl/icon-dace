@@ -37,37 +37,12 @@
 !
 !! @file ppm_ncdf_dump.f90
 !> write a single array to a NetCDF file, for debugging mostly
-#include "fc_feature_defs.inc"
+
 MODULE ppm_ncdf_dump
   USE ppm_std_type_kinds, ONLY: dp, i4, sp
   USE ppm_base, ONLY: assertion, abort_ppm
-#ifdef USE_NETCDF_MOD
-  USE netcdf, ONLY: nf90_def_var, nf_enddef => nf90_enddef, &
-       nf_put_var_real => nf90_put_var, &
-       nf_create => nf90_create, nf_close => nf90_close, &
-       nf_real => nf90_real, nf_double => nf90_double, nf_int => nf90_int, &
-       nf_clobber => nf90_clobber, nf_def_dim => nf90_def_dim, &
-       nf_global => nf90_global, nf_noerr => nf90_noerr, &
-       nf_put_var_int => nf90_put_var, nf_strerror => nf90_strerror, &
-       nf_put_var_double => nf90_put_var, nf90_put_att
-#endif
   IMPLICIT NONE
-#ifdef USE_NETCDF_MOD
-  INTERFACE nf_put_att_int
-!    MODULE PROCEDURE nf_put_att_int_a
-    MODULE PROCEDURE  nf_put_att_int_s
-  END INTERFACE nf_put_att_int
-  INTERFACE nf_put_att_double
-!    MODULE PROCEDURE nf_put_att_double_a
-    MODULE PROCEDURE  nf_put_att_double_s
-  END INTERFACE nf_put_att_double
-  INTERFACE nf_put_att_real
-!    MODULE PROCEDURE nf_put_att_real_a
-    MODULE PROCEDURE  nf_put_att_real_s
-  END INTERFACE nf_put_att_real
-#else
   INCLUDE 'netcdf.inc'
-#endif
   PRIVATE
   PUBLIC :: dump_ncdf_single_array
 
@@ -130,22 +105,22 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_real, ndims, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 133)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_sp(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 140)
 
     CALL handle_ncdf_err(nf_put_var_real(ncid, varid_a, &
-         a(1:PRODUCT(a_shape))), __LINE__)
+         a(1:PRODUCT(a_shape))), 143)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 148)
   END SUBROUTINE dump_ncdf_single_array_sp_asize
 
   SUBROUTINE dump_ncdf_single_array_sp_1d(dump_fname, a, a_name, &
@@ -169,21 +144,21 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_real, 1, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 172)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_sp(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 179)
 
-    CALL handle_ncdf_err(nf_put_var_real(ncid, varid_a, a), __LINE__)
+    CALL handle_ncdf_err(nf_put_var_real(ncid, varid_a, a), 181)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 186)
   END SUBROUTINE dump_ncdf_single_array_sp_1d
 
   SUBROUTINE dump_ncdf_single_array_sp_2d(dump_fname, a, a_name, &
@@ -207,21 +182,21 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_real, 2, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 210)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_sp(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 217)
 
-    CALL handle_ncdf_err(nf_put_var_real(ncid, varid_a, a), __LINE__)
+    CALL handle_ncdf_err(nf_put_var_real(ncid, varid_a, a), 219)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 224)
   END SUBROUTINE dump_ncdf_single_array_sp_2d
 
   SUBROUTINE dump_ncdf_single_array_sp_3d(dump_fname, a, a_name, &
@@ -245,21 +220,21 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_real, 3, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 248)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_sp(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 255)
 
-    CALL handle_ncdf_err(nf_put_var_real(ncid, varid_a, a), __LINE__)
+    CALL handle_ncdf_err(nf_put_var_real(ncid, varid_a, a), 257)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 262)
   END SUBROUTINE dump_ncdf_single_array_sp_3d
 
   SUBROUTINE dump_ncdf_single_array_dp_asize(dump_fname, a, ndims, a_shape, &
@@ -284,22 +259,22 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_double, ndims, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 287)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_dp(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 294)
 
     CALL handle_ncdf_err(nf_put_var_double(ncid, varid_a, &
-         a(1:PRODUCT(a_shape))), __LINE__)
+         a(1:PRODUCT(a_shape))), 297)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 302)
   END SUBROUTINE dump_ncdf_single_array_dp_asize
 
   SUBROUTINE dump_ncdf_single_array_dp_1d(dump_fname, a, a_name, &
@@ -323,21 +298,21 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_double, 1, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 326)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_dp(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 333)
 
-    CALL handle_ncdf_err(nf_put_var_double(ncid, varid_a, a), __LINE__)
+    CALL handle_ncdf_err(nf_put_var_double(ncid, varid_a, a), 335)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 340)
   END SUBROUTINE dump_ncdf_single_array_dp_1d
 
   SUBROUTINE dump_ncdf_single_array_dp_2d(dump_fname, a, a_name, &
@@ -361,21 +336,21 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_double, 2, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 364)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_dp(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 371)
 
-    CALL handle_ncdf_err(nf_put_var_double(ncid, varid_a, a), __LINE__)
+    CALL handle_ncdf_err(nf_put_var_double(ncid, varid_a, a), 373)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 378)
   END SUBROUTINE dump_ncdf_single_array_dp_2d
 
   SUBROUTINE dump_ncdf_single_array_dp_3d(dump_fname, a, a_name, &
@@ -399,21 +374,21 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_double, 3, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 402)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_dp(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 409)
 
-    CALL handle_ncdf_err(nf_put_var_double(ncid, varid_a, a), __LINE__)
+    CALL handle_ncdf_err(nf_put_var_double(ncid, varid_a, a), 411)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 416)
   END SUBROUTINE dump_ncdf_single_array_dp_3d
 
   SUBROUTINE dump_ncdf_single_array_i4_asize(dump_fname, a, ndims, a_shape, &
@@ -438,22 +413,22 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_int, ndims, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 441)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_i4(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 448)
 
     CALL handle_ncdf_err(nf_put_var_int(ncid, varid_a, a(1:PRODUCT(a_shape))), &
-         __LINE__)
+         451)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 456)
   END SUBROUTINE dump_ncdf_single_array_i4_asize
 
   SUBROUTINE dump_ncdf_single_array_i4_1d(dump_fname, a, a_name, &
@@ -477,22 +452,22 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_int, 1, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 480)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_i4(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 487)
 
     CALL handle_ncdf_err(nf_put_var_int(ncid, varid_a, a), &
-         __LINE__)
+         490)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 495)
   END SUBROUTINE dump_ncdf_single_array_i4_1d
 
   SUBROUTINE dump_ncdf_single_array_i4_2d(dump_fname, a, a_name, &
@@ -516,22 +491,22 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_int, 2, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 519)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_i4(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 526)
 
     CALL handle_ncdf_err(nf_put_var_int(ncid, varid_a, a), &
-         __LINE__)
+         529)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 534)
   END SUBROUTINE dump_ncdf_single_array_i4_2d
 
   SUBROUTINE dump_ncdf_single_array_i4_3d(dump_fname, a, a_name, &
@@ -555,22 +530,22 @@ CONTAINS
          title, source, institution)
 
     CALL handle_ncdf_err(nf_def_var(ncid, a_name, nf_int, 3, &
-         a_dimids, varid_a), __LINE__)
+         a_dimids, varid_a), 558)
 
     CALL put_cf_array_attributes_common(ncid, varid_a, &
          ndims, a_dimids, a_shape, &
          varid_lat, varid_lon, alon, alat, a_long_name)
     CALL put_cf_array_attributes_i4(ncid, varid_a, a_valid_range, a_fill_value)
 
-    CALL handle_ncdf_err(nf_enddef(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_enddef(ncid), 565)
 
     CALL handle_ncdf_err(nf_put_var_int(ncid, varid_a, a), &
-         __LINE__)
+         568)
 
     IF (PRESENT(alon) .AND. PRESENT(alat)) &
          CALL put_cf_geometry(ncid, varid_lat, varid_lon, alon, alat)
 
-    CALL handle_ncdf_err(nf_close(ncid), __LINE__)
+    CALL handle_ncdf_err(nf_close(ncid), 573)
   END SUBROUTINE dump_ncdf_single_array_i4_3d
 
   SUBROUTINE cf_common_setup(dump_fname, ncid, a_shape, a_dimids, &
@@ -589,21 +564,21 @@ CONTAINS
 
     ndims = SIZE(a_shape)
     CALL handle_ncdf_err(nf_create(dump_fname, nf_clobber, ncid), &
-         __LINE__)
+         592)
     DO i = 1, ndims
       CALL handle_ncdf_err(nf_def_dim(ncid, TRIM(dim_name(i)), a_shape(i), &
-           a_dimids(i)), __LINE__)
+           a_dimids(i)), 595)
     END DO
     ! write global cf information
     IF (PRESENT(title)) &
          CALL handle_ncdf_err(nf_put_att_text(ncid, nf_global, &
-         'title', LEN(title), title), __LINE__)
+         'title', LEN(title), title), 600)
     IF (PRESENT(institution)) &
          CALL handle_ncdf_err(nf_put_att_text(ncid, nf_global, &
-         'institution', LEN(institution), institution), __LINE__)
+         'institution', LEN(institution), institution), 603)
     IF (PRESENT(source)) &
          CALL handle_ncdf_err(nf_put_att_text(ncid, nf_global, &
-         'source', LEN(source), source), __LINE__)
+         'source', LEN(source), source), 606)
   END SUBROUTINE cf_common_setup
 
   SUBROUTINE put_cf_array_attributes_common(ncid, varid_a, &
@@ -618,13 +593,13 @@ CONTAINS
 
     IF (PRESENT(a_long_name)) &
          CALL handle_ncdf_err(nf_put_att_text(ncid, varid_a, &
-         'long_name', LEN(a_long_name), a_long_name), __LINE__)
+         'long_name', LEN(a_long_name), a_long_name), 621)
     IF (PRESENT(alat) .AND. PRESENT(alon)) THEN
-      CALL assertion(ndims >= 2, filename, __LINE__)
+      CALL assertion(ndims >= 2, filename, 623)
       CALL assertion(SIZE(alon, 1) == SIZE(alat, 1) &
            .AND. SIZE(alon, 2) == SIZE(alat, 2) &
            .AND. SIZE(alon, 1) == a_shape(1) &
-           .AND. SIZE(alon, 2) == a_shape(2), filename, __LINE__)
+           .AND. SIZE(alon, 2) == a_shape(2), filename, 627)
       CALL cf_latlon_geometry_setup(ncid, varid_a, a_shape(1:2), &
            a_dimids(1:2), varid_lat, varid_lon)
     END IF
@@ -637,10 +612,10 @@ CONTAINS
 
     IF (PRESENT(a_valid_range)) &
          CALL handle_ncdf_err(nf_put_att_real(ncid, varid_a, &
-         'valid_range', NF_REAL, 2, a_valid_range(1)), __LINE__)
+         'valid_range', NF_REAL, 2, a_valid_range(1)), 640)
     IF (PRESENT(a_fill_value)) &
          CALL handle_ncdf_err(nf_put_att_real(ncid, varid_a, &
-         '_FillValue', NF_REAL, 1, a_fill_value), __LINE__)
+         '_FillValue', NF_REAL, 1, a_fill_value), 643)
   END SUBROUTINE put_cf_array_attributes_sp
 
   SUBROUTINE put_cf_array_attributes_dp(ncid, varid_a, &
@@ -650,10 +625,10 @@ CONTAINS
 
     IF (PRESENT(a_valid_range)) &
          CALL handle_ncdf_err(nf_put_att_double(ncid, varid_a, &
-         'valid_range', nf_double, 2, a_valid_range(1)), __LINE__)
+         'valid_range', nf_double, 2, a_valid_range(1)), 653)
     IF (PRESENT(a_fill_value)) &
          CALL handle_ncdf_err(nf_put_att_double(ncid, varid_a, &
-         '_FillValue', nf_double, 1, a_fill_value), __LINE__)
+         '_FillValue', nf_double, 1, a_fill_value), 656)
   END SUBROUTINE put_cf_array_attributes_dp
 
   SUBROUTINE put_cf_array_attributes_i4(ncid, varid_a, &
@@ -663,10 +638,10 @@ CONTAINS
 
     IF (PRESENT(a_valid_range)) &
          CALL handle_ncdf_err(nf_put_att_int(ncid, varid_a, &
-         'valid_range', NF_INT, 2, a_valid_range(1)), __LINE__)
+         'valid_range', NF_INT, 2, a_valid_range(1)), 666)
     IF (PRESENT(a_fill_value)) &
          CALL handle_ncdf_err(nf_put_att_int(ncid, varid_a, &
-         '_FillValue', NF_INT, 1, a_fill_value), __LINE__)
+         '_FillValue', NF_INT, 1, a_fill_value), 669)
   END SUBROUTINE put_cf_array_attributes_i4
 
   SUBROUTINE cf_latlon_geometry_setup(ncid, varid_a, a_shape, a_dimids, &
@@ -680,11 +655,11 @@ CONTAINS
 
     ndims = SIZE(a_shape)
     CALL handle_ncdf_err(nf_put_att_text(ncid, varid_a, &
-         'coordinates', LEN(lat_lon_coord), lat_lon_coord), __LINE__)
+         'coordinates', LEN(lat_lon_coord), lat_lon_coord), 683)
     CALL handle_ncdf_err(nf_def_var(ncid, 'lat', NF_DOUBLE, ndims, &
-         a_dimids, varid_lat), __LINE__)
+         a_dimids, varid_lat), 685)
     CALL handle_ncdf_err(nf_def_var(ncid, 'lon', NF_DOUBLE, ndims, &
-         a_dimids, varid_lon), __LINE__)
+         a_dimids, varid_lon), 687)
   END SUBROUTINE
 
   SUBROUTINE put_cf_geometry(ncid, varid_lat, varid_lon, &
@@ -692,8 +667,8 @@ CONTAINS
     INTEGER, INTENT(inout) :: ncid, varid_lat, varid_lon
     REAL(dp), INTENT(in) :: alon(:,:), alat(:,:)
 
-    CALL handle_ncdf_err(nf_put_var_double(ncid, varid_lat, alat), __LINE__)
-    CALL handle_ncdf_err(nf_put_var_double(ncid, varid_lon, alon), __LINE__)
+    CALL handle_ncdf_err(nf_put_var_double(ncid, varid_lat, alat), 695)
+    CALL handle_ncdf_err(nf_put_var_double(ncid, varid_lon, alon), 696)
   END SUBROUTINE put_cf_geometry
 
   SUBROUTINE handle_ncdf_err(errcode, line)
@@ -703,75 +678,6 @@ CONTAINS
     END IF
   END SUBROUTINE handle_ncdf_err
 
-#ifdef USE_NETCDF_MOD
-  FUNCTION nf_put_att_text(ncid, varid, name, slen, s) RESULT(r)
-    INTEGER, INTENT(in) :: ncid, varid, slen
-    CHARACTER(len=*), INTENT(in) :: name
-    CHARACTER(len=slen), INTENT(in) :: s
-    INTEGER :: r
-    r = nf90_put_att(ncid, varid, name, s(1:slen))
-  END FUNCTION nf_put_att_text
-
-  ! FUNCTION nf_put_att_int_a(ncid, varid, name, xtype, slen, s) RESULT(r)
-  !   INTEGER, INTENT(in) :: ncid, varid, xtype, slen
-  !   CHARACTER(len=*), INTENT(in) :: name
-  !   INTEGER, INTENT(in) :: s(*)
-  !   INTEGER :: r
-  !   r = nf90_put_att(ncid, varid, name, s(1:slen))
-  ! END FUNCTION nf_put_att_int_a
-
-  FUNCTION nf_put_att_int_s(ncid, varid, name, xtype, slen, s) RESULT(r)
-    INTEGER, INTENT(in) :: ncid, varid, xtype, slen
-    CHARACTER(len=*), INTENT(in) :: name
-    INTEGER, INTENT(in) :: s
-    INTEGER :: r, ppm_ncdf_dump_wrap_pais
-    EXTERNAL :: ppm_ncdf_dump_wrap_pais
-    r = ppm_ncdf_dump_wrap_pais(ncid, varid, name, xtype, slen, s)
-  END FUNCTION nf_put_att_int_s
-
-  ! FUNCTION nf_put_att_double_a(ncid, varid, name, xtype, slen, s) RESULT(r)
-  !   INTEGER, INTENT(in) :: ncid, varid, xtype, slen
-  !   CHARACTER(len=*), INTENT(in) :: name
-  !   DOUBLE PRECISION, INTENT(in) :: s(*)
-  !   INTEGER :: r
-  !   r = nf90_put_att(ncid, varid, name, s(1:slen))
-  ! END FUNCTION nf_put_att_double_a
-
-  FUNCTION nf_put_att_double_s(ncid, varid, name, xtype, slen, s) RESULT(r)
-    INTEGER, INTENT(in) :: ncid, varid, xtype, slen
-    CHARACTER(len=*), INTENT(in) :: name
-    DOUBLE PRECISION, INTENT(in) :: s
-    INTEGER :: r, ppm_ncdf_dump_wrap_pads
-    EXTERNAL :: ppm_ncdf_dump_wrap_pads
-    r = ppm_ncdf_dump_wrap_pads(ncid, varid, name, xtype, slen, s)
-  END FUNCTION nf_put_att_double_s
-
-  ! FUNCTION nf_put_att_real_a(ncid, varid, name, xtype, slen, s) RESULT(r)
-  !   INTEGER, INTENT(in) :: ncid, varid, xtype, slen
-  !   CHARACTER(len=*), INTENT(in) :: name
-  !   REAL, INTENT(in) :: s(*)
-  !   INTEGER :: r
-  !   r = nf90_put_att(ncid, varid, name, s(1:slen))
-  ! END FUNCTION nf_put_att_real_a
-
-  FUNCTION nf_put_att_real_s(ncid, varid, name, xtype, slen, s) RESULT(r)
-    INTEGER, INTENT(in) :: ncid, varid, xtype, slen
-    CHARACTER(len=*), INTENT(in) :: name
-    REAL, INTENT(in) :: s
-    INTEGER :: r, ppm_ncdf_dump_wrap_pars
-    EXTERNAL :: ppm_ncdf_dump_wrap_pars
-    r = ppm_ncdf_dump_wrap_pars(ncid, varid, name, xtype, slen, s)
-  END FUNCTION nf_put_att_real_s
-
-  FUNCTION nf_def_var(ncid, name, xtype, nvdims, vdims, varid) RESULT(r)
-    INTEGER, INTENT(in) :: ncid, xtype, nvdims
-    CHARACTER(*), INTENT(in) :: name
-    INTEGER, INTENT(in) :: vdims(nvdims)
-    INTEGER, INTENT(out) :: varid
-    INTEGER :: r
-    r = nf90_def_var(ncid, name, xtype, vdims, varid)
-  END FUNCTION nf_def_var
-#endif
 END MODULE ppm_ncdf_dump
 !
 ! Local Variables:

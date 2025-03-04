@@ -59,10 +59,10 @@ module radiation_thermodynamics
      procedure :: get_layer_mass
      procedure :: get_layer_mass_column
      procedure :: out_of_physical_bounds
-#ifdef _OPENACC
-    procedure :: update_host
-    procedure :: update_device
-#endif
+
+
+
+
 
   end type thermodynamics_type
 
@@ -375,52 +375,5 @@ contains
 
   end function out_of_physical_bounds
 
-#ifdef _OPENACC
-  !---------------------------------------------------------------------
-  ! updates fields on host
-  subroutine update_host(this)
-
-    class(thermodynamics_type), intent(inout) :: this
-
-    !$ACC UPDATE HOST(this%pressure_hl) &
-    !$ACC   IF(allocated(this%pressure_hl))
-
-    !$ACC UPDATE HOST(this%temperature_hl) &
-    !$ACC   IF(allocated(this%temperature_hl))
-
-    !$ACC UPDATE HOST(this%pressure_fl) &
-    !$ACC   IF(allocated(this%pressure_fl))
-
-    !$ACC UPDATE HOST(this%temperature_fl) &
-    !$ACC   IF(allocated(this%temperature_fl))
-
-    !$ACC UPDATE HOST(this%h2o_sat_liq) &
-    !$ACC   IF(allocated(this%h2o_sat_liq))
-
-  end subroutine update_host
-
-  !---------------------------------------------------------------------
-  ! updates fields on device
-  subroutine update_device(this)
-
-    class(thermodynamics_type), intent(inout) :: this
-
-    !$ACC UPDATE DEVICE(this%pressure_hl) &
-    !$ACC   IF(allocated(this%pressure_hl))
-
-    !$ACC UPDATE DEVICE(this%temperature_hl) &
-    !$ACC   IF(allocated(this%temperature_hl))
-
-    !$ACC UPDATE DEVICE(this%pressure_fl) &
-    !$ACC   IF(allocated(this%pressure_fl))
-
-    !$ACC UPDATE DEVICE(this%temperature_fl) &
-    !$ACC   IF(allocated(this%temperature_fl))
-
-    !$ACC UPDATE DEVICE(this%h2o_sat_liq) &
-    !$ACC   IF(allocated(this%h2o_sat_liq))
-
-  end subroutine update_device
-#endif 
   
 end module radiation_thermodynamics

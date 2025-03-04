@@ -23,9 +23,9 @@ MODULE mo_restart_patch_description
   USE mo_mpi, ONLY: p_pe_work, my_process_is_work, process_mpi_all_comm, p_pe_work, process_mpi_root_id, &
                   & my_process_is_mpi_workroot, p_comm_work_2_restart
   USE mo_packed_message, ONLY: t_PackedMessage, kPackOp, kUnpackOp
-#ifndef __NO_ICON_UPATMO__
+
   USE mo_upatmo_flowevent_utils, ONLY: t_upatmoRestartAttributes, upatmoRestartAttributesAssign, upatmoRestartAttributesPack
-#endif
+
   USE mo_restart_util, ONLY: restartBcastRoot 
 
   IMPLICIT NONE
@@ -56,9 +56,9 @@ MODULE mo_restart_patch_description
          opt_jstep_adv_marchuk_order, opt_ocean_zlevels
     REAL(wp), ALLOCATABLE :: opt_pvct(:), opt_t_elapsed_phy(:), &
       & opt_ocean_zheight_cellMiddle(:), opt_ocean_zheight_cellInterfaces(:)
-#ifndef __NO_ICON_UPATMO__
+
     TYPE(t_upatmoRestartAttributes) :: opt_upatmo_restart_atts
-#endif
+
     TYPE(t_gpat_ptr) :: gpat(3)
   CONTAINS
     PROCEDURE :: init => restartPatchDescription_init
@@ -112,9 +112,9 @@ CONTAINS
   SUBROUTINE restartPatchDescription_update(me, patch, opt_pvct, opt_t_elapsed_phy, &
                                            &opt_ndyn_substeps, opt_jstep_adv_marchuk_order, opt_depth_lnd, &
                                            &opt_nlev_snow, opt_nice_class, opt_ndom, & 
-#ifndef __NO_ICON_UPATMO__
+
                                            &opt_upatmo_restart_atts,                                    &
-#endif
+
                                            &opt_ocean_zlevels, &
                                            &opt_ocean_zheight_cellMiddle, opt_ocean_zheight_cellInterfaces )
 
@@ -124,9 +124,9 @@ CONTAINS
                                    & opt_nlev_snow, opt_nice_class, opt_ndom, opt_ocean_zlevels
     REAL(wp), INTENT(IN), OPTIONAL :: opt_pvct(:), opt_t_elapsed_phy(:), opt_ocean_zheight_cellMiddle(:), &
          & opt_ocean_zheight_cellInterfaces(:)
-#ifndef __NO_ICON_UPATMO__
+
     TYPE(t_upatmoRestartAttributes), INTENT(IN), OPTIONAL :: opt_upatmo_restart_atts
-#endif
+
     CHARACTER(*), PARAMETER :: routine = modname//":restartPatchDescription_update"
 
     IF(me%id /= patch%id) CALL finish(routine, "assertion failed: wrong patch passed to update()")
@@ -150,9 +150,9 @@ CONTAINS
       CALL set_opt_int(me%opt_nice_class, opt_nice_class)
       IF (PRESENT(opt_ndom)) me%opt_ndom = opt_ndom
       CALL set_opt_int(me%opt_ocean_zlevels, opt_ocean_zlevels)
-#ifndef __NO_ICON_UPATMO__
+
       CALL upatmoRestartAttributesAssign(me%id, me%opt_upatmo_restart_atts, opt_upatmo_restart_atts)
-#endif
+
       ! consistency check for OPTIONAL ocean variables
       IF(ALLOCATED(me%opt_ocean_zheight_cellMiddle)) THEN
         IF(.NOT. ALLOCATED(me%opt_ocean_Zheight_CellInterfaces) .OR. .NOT. me%opt_ocean_Zlevels%present) THEN
@@ -190,25 +190,6 @@ CONTAINS
   ! description from the subset master to the work master.
   SUBROUTINE restartPatchDescription_updateOnMaster(me)
     CLASS(t_restart_patch_description), INTENT(INOUT) :: me
-#ifndef NOMPI
-    TYPE(t_PackedMessage) :: pmsg
-
-    ! First ensure that the patch description IS up to date.
-    CALL me%setTimeLevels() ! copy the global variables (nold, ...) to the patch description
-
-    ! Then communicate it to the work master.
-    IF(me%work_pe0_id == process_mpi_root_id) RETURN   ! nothing to communicate IF PE0 IS already the subset master
-
-    IF(my_process_is_mpi_workroot()) THEN
-      ! receive the package for this patch
-      CALL pmsg%recv(me%work_pe0_id, 0, process_mpi_all_comm)
-      CALL me%packer(kUnpackOp, pmsg)
-    ELSE IF (p_pe_work == me%work_pe0_id) THEN
-      ! send the time dependent DATA to process 0
-      CALL me%packer(kPackOp, pmsg)
-      CALL pmsg%send(process_mpi_root_id, 0, process_mpi_all_comm)
-    END IF
-#endif
   END SUBROUTINE restartPatchDescription_updateOnMaster
 
   SUBROUTINE restartPatchDescription_packer(me, op, pmsg)
@@ -243,9 +224,7 @@ CONTAINS
     ! optional parameter arrays
     CALL pmsg%packer(op, me%opt_pvct)
     CALL pmsg%packer(op, me%opt_t_elapsed_phy)
-#ifndef __NO_ICON_UPATMO__
     CALL upatmoRestartAttributesPack(me%id, me%opt_upatmo_restart_atts, pmsg, op)
-#endif
   CONTAINS
 
     SUBROUTINE packer_opt_int(oi)
@@ -258,13 +237,6 @@ CONTAINS
 
   SUBROUTINE restartPatchDescription_transferToRestart(me)
     CLASS(t_restart_patch_description), INTENT(INOUT) :: me
-#ifndef NOMPI
-    TYPE(t_PackedMessage) :: pmsg
-
-    CALL me%packer(kPackOp, pmsg)
-    CALL pmsg%bcast(restartBcastRoot(), p_comm_work_2_restart)   ! transfer data to restart PEs
-    CALL me%packer(kUnpackOp, pmsg)
-#endif
   END SUBROUTINE restartPatchDescription_transferToRestart
 
 END MODULE mo_restart_patch_description

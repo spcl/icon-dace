@@ -36,7 +36,7 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_random
   USE ppm_std_type_kinds, ONLY: dp, sp
   USE ppm_math_extensions, ONLY: m_pi_dp, m_pi_sp

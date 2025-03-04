@@ -38,7 +38,17 @@
 !   final update of the prognostic variables before the end of the interface.
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_interface_iconam_aes
@@ -79,15 +89,10 @@ MODULE mo_interface_iconam_aes
   USE mo_aes_phy_bcs           ,ONLY: aes_phy_bcs
   USE mo_aes_phy_main          ,ONLY: aes_phy_main
 
-#ifndef __NO_JSBACH__
   USE mo_jsb_interface         ,ONLY: jsbach_start_timestep, jsbach_finish_timestep
-#endif
 
   USE mo_timer                 ,ONLY: timer_coupling
 
-#if defined(_OPENACC)
-  USE mo_var_list_gpu          ,ONLY: gpu_update_var_list
-#endif
 
   IMPLICIT NONE
 
@@ -319,7 +324,6 @@ CONTAINS
             !
             IF (aes_phy_config(jg)%iqneg_d2p /= 0) THEN
                 IF (adv_new%tracer(jc,jk,jb,jt) < 0.0_wp) THEN
-#ifndef _OPENACC
                   IF (aes_phy_config(jg)%iqneg_d2p == 1 .OR. aes_phy_config(jg)%iqneg_d2p == 3) THEN
                      CALL print_value('d2p:index of grid   jg',jg)
                      CALL print_value('d2p:index of block  jb',jb)
@@ -331,7 +335,6 @@ CONTAINS
                      CALL print_value('d2p:latitude     [deg]',f%clat(jc,jb)*rad2deg)
                      CALL print_value('d2p:tracer(jt) [kg/kg]',adv_new%tracer(jc,jk,jb,jt))
                   END IF
-#endif
                   IF (aes_phy_config(jg)%iqneg_d2p == 2 .OR. aes_phy_config(jg)%iqneg_d2p == 3) THEN
                      diag%ddt_tracer_adv(jc,jk,jb,jt) = diag%ddt_tracer_adv(jc,jk,jb,jt) - adv_new%tracer(jc,jk,jb,jt)*inv_dt
                      adv_new%tracer(jc,jk,jb,jt) = 0.0_wp
@@ -399,17 +402,14 @@ CONTAINS
     !
     ! Calculate the physics tendencies
     !
-#ifndef __NO_JSBACH__
     IF (aes_phy_config(jg)%ljsb) CALL jsbach_start_timestep(jg, datetime, dt)
-#endif
 
     IF (ltimer) CALL timer_start(timer_aes_phy)
     CALL aes_phy_main(patch, datetime, dt)
     IF (ltimer) CALL timer_stop(timer_aes_phy)
 
-#ifndef __NO_JSBACH__
     IF (aes_phy_config(jg)%ljsb) CALL jsbach_finish_timestep(jg, datetime, dt)
-#endif
+
     !
     !=====================================================================================
 
@@ -514,7 +514,7 @@ CONTAINS
             ! handle negative tracer mass fractions resulting from physics
             IF (aes_phy_config(jg)%iqneg_p2d /= 0) THEN
               IF (adv_new%tracer(jc,jk,jb,jt) < 0.0_wp) THEN
-#ifndef _OPENACC
+
                 IF (aes_phy_config(jg)%iqneg_p2d == 1 .OR. aes_phy_config(jg)%iqneg_p2d == 3) THEN
                   CALL print_value('p2d:index of grid   jg',jg)
                   CALL print_value('p2d:index of block  jb',jb)
@@ -526,7 +526,7 @@ CONTAINS
                   CALL print_value('p2d:latitude     [deg]',f%clat(jc,jb)*rad2deg)
                   CALL print_value('p2d:tracer(jt) [kg/kg]',adv_new%tracer(jc,jk,jb,jt))
                 END IF
-#endif
+
                 IF (aes_phy_config(jg)%iqneg_p2d == 2 .OR. aes_phy_config(jg)%iqneg_p2d == 3) THEN
                   t%qtrc_phy(jc,jk,jb,jt) = t%qtrc_phy(jc,jk,jb,jt) - adv_new%tracer(jc,jk,jb,jt)*inv_dt
                   adv_new%tracer(jc,jk,jb,jt) = 0.0_wp

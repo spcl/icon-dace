@@ -19,7 +19,17 @@
 ! this command should fix the problem of copying arrays in a subroutine call
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nwp_turbdiff_interface
@@ -51,9 +61,6 @@ MODULE mo_nwp_turbdiff_interface
   USE mo_advection_config,       ONLY: advection_config
   USE mo_turbdiff_config,        ONLY: turbdiff_config
   USE mo_comin_config,           ONLY: comin_config, t_comin_tracer_info
-#ifdef __ICON_ART
-  USE mo_art_turbdiff_interface, ONLY: art_turbdiff_interface
-#endif
   USE mo_lnd_nwp_config,         ONLY: nlev_soil, nlev_snow, ntiles_total, ntiles_water
   USE mo_grid_config,            ONLY: l_scm_mode
   USE mo_scm_nml,                ONLY: scm_sfc_mom, scm_sfc_temp ,scm_sfc_qv
@@ -379,21 +386,6 @@ CONTAINS
         ENDIF ! ltwomoment
       ENDIF ! ldiff_qs
 
-#ifdef __ICON_ART
-      IF ( lart .AND. art_config(jg)%nturb_tracer > 0 ) THEN
-         CALL art_turbdiff_interface( 'setup_ptr', p_patch, p_prog_rcf, prm_nwp_tend,  &
-           &                          ncloud_offset=ncloud_offset,                     &
-           &                          ptr=ptr(:), dt=tcall_turb_jg,                    &
-           &                          p_rho=p_prog%rho(:,:,:),                         &
-           &                          p_metrics=p_metrics,                             &
-           &                          p_diag=p_diag, prm_diag=prm_diag,                &
-           &                          jb=jb, idx_nturb_tracer=idx_nturb_tracer,        &
-           &                          lacc=lacc )
-         DO nturb = 1, art_config(jg)%nturb_tracer
-           ptr(ncloud_offset+nturb)%kstart = kstart_tracer(jg,idx_nturb_tracer(nturb))
-         ENDDO
-      ENDIF
-#endif
 
       ! Add ComIn tracers to the ptr structure
       nturb_tracer_tot = ncloud_offset + art_config(jg)%nturb_tracer &
@@ -452,16 +444,8 @@ CONTAINS
       nzprv = 1
 
       !$ACC KERNELS ASYNC(1) DEFAULT(PRESENT)
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-      ! ACCWA (Cray Fortran <= 16.0.1.1) : explicit type conversion fails with HSA memory error CAST-32450
-      ! In principle, implicit conversion works correctly, however, for code readability 
-      ! this should be removed when compiler is fixed 
-      ut_sso(:,:)=prm_nwp_tend%ddt_u_sso(:,:,jb)
-      vt_sso(:,:)=prm_nwp_tend%ddt_v_sso(:,:,jb)
-#else
       ut_sso(:,:)=REAL(prm_nwp_tend%ddt_u_sso(:,:,jb), wp)
       vt_sso(:,:)=REAL(prm_nwp_tend%ddt_v_sso(:,:,jb), wp)
-#endif
       !$ACC END KERNELS
 
       IF (timers_level > 9) CALL timer_start(timer_nwp_turbdiff)
@@ -672,15 +656,6 @@ CONTAINS
         !$ACC END KERNELS
       END IF
 
-#ifdef __ICON_ART
-      IF ( lart .AND. art_config(jg)%nturb_tracer > 0 ) THEN
-         CALL art_turbdiff_interface( 'update_ptr', p_patch, p_prog_rcf, prm_nwp_tend,  &
-           &                          ncloud_offset=ncloud_offset,                      &
-           &                          ptr=ptr(:), dt=tcall_turb_jg,                     &
-           &                          i_st=i_startidx, i_en=i_endidx,                   &
-           &                          lacc=lacc )
-      ENDIF
-#endif
 
       ! Interpolate updated TVS (still contained in 'tke' back to main levels:
       IF (advection_config(jg)%iadv_tke > 0) THEN
@@ -718,9 +693,6 @@ CONTAINS
 !> GME turbulence scheme 
 !-------------------------------------------------------------------------
 
-#ifdef _OPENACC
-      CALL finish('GPU:mo_nwp_turbdiff_interface:nwp_turbdiff', 'igme unsupported. Only cosmo turbulence is supported on GPU!')
-#endif
 
       ! turbulent diffusion coefficients in atmosphere
       CALL partura( zh=p_metrics%z_ifc(:,:,jb), zf=p_metrics%z_mc(:,:,jb),                 & !in

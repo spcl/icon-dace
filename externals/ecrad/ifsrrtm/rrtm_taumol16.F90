@@ -79,13 +79,13 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,speccomb,  &
     integer(KIND=JPIM) :: ixc(KLEV), ixlow(KFDIA,KLEV), ixhigh(KFDIA,KLEV)
     INTEGER(KIND=JPIM) :: ich, icl, ixc0, ixp, jc, jl
 
-#define MOD1(x) ((x) - AINT((x)))
+
 
     !$ACC DATA PRESENT(taug, P_TAUAERL, fac00, fac01, fac10, fac11, jp, jt, jt1, &
     !$ACC             colh2o, colch4, laytrop, selffac, selffrac, indself, &
     !$ACC             fracs, rat_h2och4, rat_h2och4_1, indfor, forfac, forfrac)
 
-#ifndef _OPENACC
+
     laytrop_min = MINVAL(laytrop)
     laytrop_max = MAXVAL(laytrop)
 
@@ -108,17 +108,6 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,speccomb,  &
       enddo
       ixc(lay) = icl
     enddo
-#else
-    laytrop_min = HUGE(laytrop_min) 
-    laytrop_max = -HUGE(laytrop_max)
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR REDUCTION(min:laytrop_min) REDUCTION(max:laytrop_max)
-    do jc = KIDIA,KFDIA
-      laytrop_min = MIN(laytrop_min, laytrop(jc))
-      laytrop_max = MAX(laytrop_max, laytrop(jc))
-    end do
-    !$ACC END PARALLEL
-#endif
 
 
       ! P = 387. mb (Level 6)
@@ -143,19 +132,19 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,speccomb,  &
           specparm = MIN(colh2o(jl,lay)/speccomb,oneminus)
           specmult = 8._JPRB*(specparm)
           js = 1 + int(specmult)
-          fs = MOD1(specmult)
+          fs = ((specmult) - AINT((specmult)))
 
           speccomb1 = colh2o(jl,lay) + rat_h2och4_1(jl,lay)*colch4(jl,lay)
           specparm1 = MIN(colh2o(jl,lay)/speccomb1,oneminus)
           specmult1 = 8._JPRB*(specparm1)
           js1 = 1 + int(specmult1)
-          fs1 = MOD1(specmult1)
+          fs1 = ((specmult1) - AINT((specmult1)))
 
           speccomb_planck = colh2o(jl,lay)+refrat_planck_a*colch4(jl,lay)
           specparm_planck = MIN(colh2o(jl,lay)/speccomb_planck,oneminus)
           specmult_planck = 8._JPRB*specparm_planck
           jpl = 1 + int(specmult_planck)
-          fpl = MOD1(specmult_planck)
+          fpl = ((specmult_planck) - AINT((specmult_planck)))
 
           ind0 = ((jp(jl,lay)-1)*5+(jt(jl,lay)-1))*nspa(16) + js
           ind1 = (jp(jl,lay)*5+(jt1(jl,lay)-1))*nspa(16) + js1
@@ -332,34 +321,29 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,speccomb,  &
         !$ACC   indf, p, p4, fk0, fk1, fk2, fac000, fac100, fac200, fac010, fac110, fac210, fac001, fac101, fac201, &
         !$ACC   fac011, fac111, fac211, tau_major, tau_major1)
         do lay = laytrop_min+1, laytrop_max
-#ifdef _OPENACC
-          do jl = KIDIA, KFDIA
-            if ( lay <= laytrop(jl) ) then
-#else
           ixc0 = ixc(lay)
 
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixlow(ixp,lay)
-#endif
 
             speccomb = colh2o(jl,lay) + rat_h2och4(jl,lay)*colch4(jl,lay)
             specparm = MIN(colh2o(jl,lay)/speccomb,oneminus)
             specmult = 8._JPRB*(specparm)
             js = 1 + int(specmult)
-            fs = MOD1(specmult)
+            fs = ((specmult) - AINT((specmult)))
 
             speccomb1 = colh2o(jl,lay) + rat_h2och4_1(jl,lay)*colch4(jl,lay)
             specparm1 = MIN(colh2o(jl,lay)/speccomb1,oneminus)
             specmult1 = 8._JPRB*(specparm1)
             js1 = 1 + int(specmult1)
-            fs1 = MOD1(specmult1)
+            fs1 = ((specmult1) - AINT((specmult1)))
 
             speccomb_planck = colh2o(jl,lay)+refrat_planck_a*colch4(jl,lay)
             specparm_planck = MIN(colh2o(jl,lay)/speccomb_planck,oneminus)
             specmult_planck = 8._JPRB*specparm_planck
             jpl = 1 + int(specmult_planck)
-            fpl = MOD1(specmult_planck)
+            fpl = ((specmult_planck) - AINT((specmult_planck)))
 
             ind0 = ((jp(jl,lay)-1)*5+(jt(jl,lay)-1))*nspa(16) + js
             ind1 = (jp(jl,lay)*5+(jt1(jl,lay)-1))*nspa(16) + js1
@@ -499,9 +483,6 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,speccomb,  &
               fracs(jl,ngs15+ig,lay) = fracrefa(ig,jpl) + fpl * &
                   (fracrefa(ig,jpl+1)-fracrefa(ig,jpl))
             enddo
-#ifdef _OPENACC
-         else
-#else
           enddo
 
           ! Upper atmosphere part
@@ -509,7 +490,6 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,speccomb,  &
 !$NEC ivdep
           do ixp = 1, ixc0
             jl = ixhigh(ixp,lay)
-#endif
 
             ind0 = ((jp(jl,lay)-13)*5+(jt(jl,lay)-1))*nspb(16) + 1
             ind1 = ((jp(jl,lay)-12)*5+(jt1(jl,lay)-1))*nspb(16) + 1
@@ -523,9 +503,6 @@ REAL(KIND=JPRB) :: fs, specmult, specparm,speccomb,  &
                   fac11(jl,lay) * absb(ind1+1,ig))
               fracs(jl,ngs15+ig,lay) = fracrefb(ig)
             enddo
-#ifdef _OPENACC
-           endif
-#endif
           enddo
 
         enddo

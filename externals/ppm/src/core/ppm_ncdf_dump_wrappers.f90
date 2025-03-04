@@ -38,7 +38,7 @@
 !> @file ppm_ncdf_dump_wrappers.f90
 !! helper functions for ppm_ncdf_dump.f90, needed to work around
 !! different handling of scalar and array arguments
-#define filename 'ppm_ncdf_dump_wrappers.f90'
+
 FUNCTION ppm_ncdf_dump_wrap_pais(ncid, varid, name, xtype, slen, s) RESULT(r)
   USE netcdf, ONLY: nf90_put_att, nf90_char
   USE ppm_base, ONLY: assertion
@@ -46,7 +46,7 @@ FUNCTION ppm_ncdf_dump_wrap_pais(ncid, varid, name, xtype, slen, s) RESULT(r)
   CHARACTER(len=*), INTENT(in) :: name
   INTEGER, INTENT(in) :: s(*)
   INTEGER :: r
-  CALL assertion(xtype == nf90_char, filename, __LINE__, &
+  CALL assertion(xtype == nf90_char, 'ppm_ncdf_dump_wrappers.f90', 49, &
        'incorrect storage type')
   r = nf90_put_att(ncid, varid, name, s(1:slen))
 END FUNCTION  ppm_ncdf_dump_wrap_pais
@@ -58,7 +58,7 @@ FUNCTION ppm_ncdf_dump_wrap_pads(ncid, varid, name, xtype, slen, s) RESULT(r)
   CHARACTER(len=*), INTENT(in) :: name
   DOUBLE PRECISION, INTENT(in) :: s(*)
   INTEGER :: r
-  CALL assertion(xtype == nf90_double, filename, __LINE__, &
+  CALL assertion(xtype == nf90_double, 'ppm_ncdf_dump_wrappers.f90', 61, &
        'incorrect storage type')
   r = nf90_put_att(ncid, varid, name, s(1:slen))
 END FUNCTION  ppm_ncdf_dump_wrap_pads
@@ -70,7 +70,7 @@ FUNCTION ppm_ncdf_dump_wrap_pars(ncid, varid, name, xtype, slen, s) RESULT(r)
   CHARACTER(len=*), INTENT(in) :: name
   REAL, INTENT(in) :: s(*)
   INTEGER :: r
-  CALL assertion(xtype == nf90_real, filename, __LINE__, &
+  CALL assertion(xtype == nf90_real, 'ppm_ncdf_dump_wrappers.f90', 73, &
        'incorrect storage type')
   r = nf90_put_att(ncid, varid, name, s(1:slen))
 END FUNCTION  ppm_ncdf_dump_wrap_pars

@@ -25,17 +25,7 @@ MODULE mo_grid_config
   USE mo_netcdf_errhandler,  ONLY: nf
   USE mo_netcdf, ONLY: &
     nf90_nowrite, nf90_global, nf90_noerr, nf90_strerror
-#ifndef NOMPI
-! The USE statement below lets this module use the routines from
-! mo_netcdf_parallel where only 1 processor is reading and
-! broadcasting the results
-USE mo_netcdf_parallel, ONLY:     &
-   nf90_open    => p_nf90_open,   &
-   nf90_close   => p_nf90_close,  &
-   nf90_get_att => p_nf90_get_att
-#else
   USE mo_netcdf, ONLY: nf90_open, nf90_close, nf90_get_att
-#endif
 
   IMPLICIT NONE
   PRIVATE

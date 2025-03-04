@@ -11,7 +11,133 @@
 
 ! @page pagecontrolmodelf901 Main program for the ICON icon_output model
 
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !=============================================================================================
 MODULE mo_icon_output_model
 
@@ -21,11 +147,6 @@ MODULE mo_icon_output_model
   USE mo_parallel_config,     ONLY: p_test_run, l_test_openmp, num_io_procs, &
        &                            pio_type, num_test_pe, num_prefetch_proc
   USE mo_mpi,                 ONLY: set_mpi_work_communicators
-#ifdef HAVE_CDI_PIO
-  USE mo_impl_constants,      ONLY: pio_type_cdipio
-  USE mo_cdi_pio_interface,   ONLY: nml_io_cdi_pio_namespace
-  USE mo_cdi,                 ONLY: namespaceGetActive, namespaceSetActive
-#endif
   USE mo_timer,               ONLY: init_timer, timer_start, timer_stop, print_timer, &
        &                            timer_model_init
   USE mo_memory_log,          ONLY: memory_log_terminate
@@ -68,18 +189,11 @@ MODULE mo_icon_output_model
   USE mo_icon_output_variables, ONLY: construct_icon_output_variables, destruct_icon_output_variables, &
        & patch_3d
 
-#ifndef __NO_ICON_COMIN__
-  USE mo_mpi,               ONLY: p_comm_comin
-  USE comin_host_interface, ONLY: mpi_handshake_dummy
-#endif
 
 
   IMPLICIT NONE
 
   PRIVATE
-#ifdef HAVE_CDI_PIO
-  INCLUDE 'cdipio.inc'
-#endif
 
     PUBLIC :: icon_output_driver
 
@@ -179,23 +293,12 @@ MODULE mo_icon_output_model
 !<Optimize:inUse>
   SUBROUTINE destruct_icon_output_model()
     CHARACTER(*), PARAMETER :: method_name = "mo_icon_output_model:destruct_icon_output_model"
-#ifdef HAVE_CDI_PIO
-    INTEGER :: prev_cdi_namespace
-#endif
 
     !  cleaning up process
     CALL message(TRIM(method_name),'start to clean up')
     CALL destruct_comm_patterns( patch_3d%p_patch_2d, p_patch_local_parent )
     CALL destruct_icon_output_variables()
     IF (output_mode%l_nml) CALL close_name_list_output
-#ifdef HAVE_CDI_PIO
-    IF (pio_type == pio_type_cdipio) THEN
-      prev_cdi_namespace = namespaceGetActive()
-      CALL namespaceSetActive(nml_io_cdi_pio_namespace)
-      CALL pioFinalize
-      CALL namespaceSetActive(prev_cdi_namespace)
-    END IF
-#endif
     CALL destruct_icon_communication()
     IF ( is_coupled_run() ) THEN
       CALL destruct_icon_output_coupling ()
@@ -252,10 +355,6 @@ MODULE mo_icon_output_model
          &                          pio_type)
     !pa
 
-#ifndef __NO_ICON_COMIN__
-    ! we dont participate at comin (yet) but we need to be friendly and shake hands
-    CALL mpi_handshake_dummy(p_comm_comin)
-#endif
 
     !-------------------------------------------------------------------
     ! 3.2 Initialize various timers

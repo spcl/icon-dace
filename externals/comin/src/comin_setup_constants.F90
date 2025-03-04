@@ -65,7 +65,7 @@ MODULE comin_setup_constants
   PUBLIC :: COMIN_HGRID_UNSTRUCTURED_CELL, COMIN_HGRID_UNSTRUCTURED_EDGE, COMIN_HGRID_UNSTRUCTURED_VERTEX
   PUBLIC :: EP_NAME
 
-#include "comin_global.inc"
+
 
   !> List of entry points, named constants and accessor functions that
   !> are exposed to both, the host interface and the plugin interface.
@@ -137,7 +137,7 @@ MODULE comin_setup_constants
 
   !> Entry point names (character strings)
    !! @ingroup common
-  CHARACTER(LEN=MAX_LEN_EP_NAME), PARAMETER :: EP_NAME(EP_DESTRUCTOR) = [ &
+  CHARACTER(LEN=32), PARAMETER :: EP_NAME(EP_DESTRUCTOR) = [ &
     &  "EP_SECONDARY_CONSTRUCTOR    ",  &
     &  "EP_ATM_YAC_DEFCOMP_BEFORE   ",  &
     &  "EP_ATM_YAC_DEFCOMP_AFTER    ",  &

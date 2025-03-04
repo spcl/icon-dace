@@ -55,11 +55,11 @@ MODULE mo_memory_log
 
       IF (.NOT. memory_log_active) RETURN
 
-#ifndef NOMPI
-      memory_log_id = get_my_mpi_all_id()
-#else
+
+
+
       memory_log_id = 0
-#endif
+
 
       write(tag,'(i8.8)') memory_log_id
       memHandle = add_rss_list('memUsage',tag=tag)

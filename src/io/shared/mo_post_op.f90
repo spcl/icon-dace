@@ -24,14 +24,14 @@ MODULE mo_post_op
   USE mo_kind,                ONLY: dp, sp
   USE mo_var_metadata_types,  ONLY: t_post_op_meta, POST_OP_NONE,    &
     &                               POST_OP_SCALE, POST_OP_LUC, POST_OP_LIN2DBZ, POST_OP_OFFSET
-#ifndef __NO_ICON_ATMO__
+
   USE mo_lnd_nwp_config,      ONLY: convert_luc_ICON2GRIB
-#endif
+
   USE mo_exception,           ONLY: finish
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device
-#ifdef _OPENACC
-  USE openacc,                  ONLY: acc_is_present
-#endif
+
+
+
   IMPLICIT NONE
   
   PRIVATE
@@ -268,11 +268,11 @@ CONTAINS
 !$OMP END DO
 !$OMP END PARALLEL
 
-#ifndef __NO_ICON_ATMO__
+
     CASE(POST_OP_LUC)
-#ifdef _OPENACC
-      CALL finish(routine,'convert_luc_ICON2GRIB not supported on GPU')
-#endif
+
+
+
 !$OMP PARALLEL
 !$OMP DO PRIVATE(l1,l2), SCHEDULE(runtime)
       DO l2=1,idim(2)
@@ -284,7 +284,7 @@ CONTAINS
       END DO
 !$OMP END DO
 !$OMP END PARALLEL
-#endif
+
     CASE DEFAULT
       CALL finish(routine, "Internal error!")
     END SELECT
@@ -526,11 +526,11 @@ CONTAINS
 !$OMP END DO
 !$OMP END PARALLEL
       !
-#ifndef __NO_ICON_ATMO__
+
     CASE(POST_OP_LUC)
-#ifdef _OPENACC
-      CALL finish(routine,'convert_luc_ICON2GRIB not supported on GPU')
-#endif
+
+
+
 !$OMP PARALLEL
 !$OMP DO PRIVATE(l1,l2,l3), SCHEDULE(runtime)
       DO l3=1,idim(3)
@@ -544,7 +544,7 @@ CONTAINS
       END DO
 !$OMP END DO
 !$OMP END PARALLEL
-#endif
+
     CASE DEFAULT
       CALL finish(routine, "Internal error!")
     END SELECT

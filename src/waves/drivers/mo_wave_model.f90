@@ -62,10 +62,10 @@ MODULE mo_wave_model
   USE mo_alloc_patches,           ONLY: destruct_patches
   USE mo_icon_comm_interface,     ONLY: construct_icon_communication, destruct_icon_communication
   USE mo_complete_subdivision,    ONLY: setup_phys_patches
-#ifndef __NO_ICON_COMIN__
-  USE mo_mpi,               ONLY: p_comm_comin
-  USE comin_host_interface, ONLY: mpi_handshake_dummy
-#endif
+
+
+
+
 
   ! horizontal interpolation
   USE mo_interpol_config,         ONLY: configure_interpolation
@@ -179,10 +179,10 @@ CONTAINS
          &                          pio_type, &
          &                          num_dio_procs=proc0_shift)
 
-#ifndef __NO_ICON_COMIN__
-    ! we dont participate at comin (yet) but we need to be friendly and shake hands
-    CALL mpi_handshake_dummy(p_comm_comin)
-#endif
+
+
+
+
 
     !-------------------------------------------------------------------
     ! 3.2 Initialize various timers

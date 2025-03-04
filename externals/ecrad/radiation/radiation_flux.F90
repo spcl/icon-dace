@@ -22,7 +22,36 @@
 !   2021-01-20  R. Hogan  Added heating_rate_out_of_physical_bounds function
 !   2022-12-07  R. Hogan  Added top-of-atmosphere spectral output
 
-#include "ecrad_config.h"
+! ecrad_config.h - Preprocessor definitions to configure compilation ecRad -*- f90 -*-
+!
+! (C) Copyright 2023- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! This file should be included in Fortran source files that require
+! different optimizations or settings for different architectures and
+! platforms.  Feel free to maintain a site-specific version of it.
+
+! The following settings turn on optimizations specific to the
+! long-vector NEC SX (the short-vector x86-64 architecture is assumed
+! otherwise). 
+
+  
+  
+
+! In the IFS, an MPI version of easy_netcdf capability is used so that
+! only one MPI task reads the data files and shares with the other
+! tasks. The MPI version is not used for writing files.
+
+!#define EASY_NETCDF_READ_MPI 1
 
 module radiation_flux
 
@@ -117,18 +146,10 @@ module radiation_flux
      procedure :: calc_toa_spectral
      procedure :: out_of_physical_bounds
      procedure :: heating_rate_out_of_physical_bounds
-#ifdef _OPENACC
-    procedure :: update_host
-    procedure :: update_device
-#endif
   end type flux_type
 
 ! Added for DWD (2020)
-#ifdef DWD_VECTOR_OPTIMIZATIONS
-      logical, parameter :: use_indexed_sum_vec = .true.
-#else
       logical, parameter :: use_indexed_sum_vec = .false.
-#endif
 
 contains
 
@@ -502,9 +523,6 @@ contains
   subroutine calc_surface_spectral(this, config, istartcol, iendcol)
 
     use ecradhook,          only : lhook, dr_hook, jphook
-#ifdef _OPENACC
-    use radiation_io,     only : nulerr, radiation_abort
-#endif
     use radiation_config, only : config_type
 
     class(flux_type),  intent(inout) :: this
@@ -521,12 +539,6 @@ contains
 
     if (lhook) call dr_hook('radiation_flux:calc_surface_spectral',0,hook_handle)
 
-#ifdef _OPENACC
-    if (use_indexed_sum_vec) then
-      write(nulerr,'(a)') '*** Error: radiation_flux:calc_surface_spectral use_indexed_sum_vec==.true. not ported to GPU'
-      call radiation_abort()
-    endif
-#endif
 
     !$ACC DATA PRESENT(config, this)
 
@@ -707,9 +719,6 @@ contains
 
     use ecradhook,          only : lhook, dr_hook, jphook
     use radiation_config, only : config_type
-#ifdef _OPENACC
-    use radiation_io,     only : nulerr, radiation_abort
-#endif
 
 
     class(flux_type),  intent(inout) :: this
@@ -722,12 +731,6 @@ contains
     
     if (lhook) call dr_hook('radiation_flux:calc_toa_spectral',0,hook_handle)
 
-#ifdef _OPENACC
-    if (config%do_toa_spectral_flux) then
-      write(nulerr,'(a)') '*** Error: radiation_flux:calc_toa_spectral not ported to GPU.'
-      call radiation_abort()
-    end if
-#endif
 
     if (config%do_sw .and. config%do_toa_spectral_flux) then
 
@@ -997,96 +1000,5 @@ contains
 
   end subroutine indexed_sum_profile
   
-#ifdef _OPENACC
-  !---------------------------------------------------------------------
-  ! updates fields on host
-  subroutine update_host(this)
-
-    class(flux_type), intent(inout) :: this
-
-    !$ACC UPDATE HOST(this%lw_up) IF(allocated(this%lw_up))
-    !$ACC UPDATE HOST(this%lw_dn) IF(allocated(this%lw_dn))
-    !$ACC UPDATE HOST(this%lw_up_clear) IF(allocated(this%lw_up_clear))
-    !$ACC UPDATE HOST(this%lw_dn_clear) IF(allocated(this%lw_dn_clear))
-    !$ACC UPDATE HOST(this%sw_up) IF(allocated(this%sw_up))
-    !$ACC UPDATE HOST(this%sw_dn) IF(allocated(this%sw_dn))
-    !$ACC UPDATE HOST(this%sw_up_clear) IF(allocated(this%sw_up_clear))
-    !$ACC UPDATE HOST(this%sw_dn_clear) IF(allocated(this%sw_dn_clear))
-    !$ACC UPDATE HOST(this%sw_dn_direct) IF(allocated(this%sw_dn_direct))
-    !$ACC UPDATE HOST(this%sw_dn_direct_clear) IF(allocated(this%sw_dn_direct_clear))
-    !$ACC UPDATE HOST(this%lw_up_band) IF(allocated(this%lw_up_band))
-    !$ACC UPDATE HOST(this%lw_dn_band) IF(allocated(this%lw_dn_band))
-    !$ACC UPDATE HOST(this%lw_up_clear_band) IF(allocated(this%lw_up_clear_band))
-    !$ACC UPDATE HOST(this%lw_dn_clear_band) IF(allocated(this%lw_dn_clear_band))
-    !$ACC UPDATE HOST(this%sw_up_band) IF(allocated(this%sw_up_band))
-    !$ACC UPDATE HOST(this%sw_dn_band) IF(allocated(this%sw_dn_band))
-    !$ACC UPDATE HOST(this%sw_up_clear_band) IF(allocated(this%sw_up_clear_band))
-    !$ACC UPDATE HOST(this%sw_dn_clear_band) IF(allocated(this%sw_dn_clear_band))
-    !$ACC UPDATE HOST(this%sw_dn_direct_band) IF(allocated(this%sw_dn_direct_band))
-    !$ACC UPDATE HOST(this%sw_dn_direct_clear_band) IF(allocated(this%sw_dn_direct_clear_band))
-    !$ACC UPDATE HOST(this%sw_dn_surf_band) IF(allocated(this%sw_dn_surf_band))
-    !$ACC UPDATE HOST(this%sw_dn_direct_surf_band) IF(allocated(this%sw_dn_direct_surf_band))
-    !$ACC UPDATE HOST(this%sw_dn_surf_clear_band) IF(allocated(this%sw_dn_surf_clear_band))
-    !$ACC UPDATE HOST(this%sw_dn_direct_surf_clear_band) IF(allocated(this%sw_dn_direct_surf_clear_band))
-    !$ACC UPDATE HOST(this%lw_dn_surf_canopy) IF(allocated(this%lw_dn_surf_canopy))
-    !$ACC UPDATE HOST(this%sw_dn_diffuse_surf_canopy) IF(allocated(this%sw_dn_diffuse_surf_canopy))
-    !$ACC UPDATE HOST(this%sw_dn_direct_surf_canopy) IF(allocated(this%sw_dn_direct_surf_canopy))
-    !$ACC UPDATE HOST(this%cloud_cover_sw) IF(allocated(this%cloud_cover_sw))
-    !$ACC UPDATE HOST(this%cloud_cover_lw) IF(allocated(this%cloud_cover_lw))
-    !$ACC UPDATE HOST(this%lw_derivatives) IF(allocated(this%lw_derivatives))
-    !$ACC UPDATE HOST(this%lw_dn_surf_g) IF(allocated(this%lw_dn_surf_g))
-    !$ACC UPDATE HOST(this%lw_dn_surf_clear_g) IF(allocated(this%lw_dn_surf_clear_g))
-    !$ACC UPDATE HOST(this%sw_dn_diffuse_surf_g) IF(allocated(this%sw_dn_diffuse_surf_g))
-    !$ACC UPDATE HOST(this%sw_dn_direct_surf_g) IF(allocated(this%sw_dn_direct_surf_g))
-    !$ACC UPDATE HOST(this%sw_dn_diffuse_surf_clear_g) IF(allocated(this%sw_dn_diffuse_surf_clear_g))
-    !$ACC UPDATE HOST(this%sw_dn_direct_surf_clear_g) IF(allocated(this%sw_dn_direct_surf_clear_g))
-
-  end subroutine update_host
-
-  !---------------------------------------------------------------------
-  ! updates fields on device
-  subroutine update_device(this)
-
-    class(flux_type), intent(inout) :: this
-
-    !$ACC UPDATE DEVICE(this%lw_up) IF(allocated(this%lw_up))
-    !$ACC UPDATE DEVICE(this%lw_dn) IF(allocated(this%lw_dn))
-    !$ACC UPDATE DEVICE(this%lw_up_clear) IF(allocated(this%lw_up_clear))
-    !$ACC UPDATE DEVICE(this%lw_dn_clear) IF(allocated(this%lw_dn_clear))
-    !$ACC UPDATE DEVICE(this%sw_up) IF(allocated(this%sw_up))
-    !$ACC UPDATE DEVICE(this%sw_dn) IF(allocated(this%sw_dn))
-    !$ACC UPDATE DEVICE(this%sw_up_clear) IF(allocated(this%sw_up_clear))
-    !$ACC UPDATE DEVICE(this%sw_dn_clear) IF(allocated(this%sw_dn_clear))
-    !$ACC UPDATE DEVICE(this%sw_dn_direct) IF(allocated(this%sw_dn_direct))
-    !$ACC UPDATE DEVICE(this%sw_dn_direct_clear) IF(allocated(this%sw_dn_direct_clear))
-    !$ACC UPDATE DEVICE(this%lw_up_band) IF(allocated(this%lw_up_band))
-    !$ACC UPDATE DEVICE(this%lw_dn_band) IF(allocated(this%lw_dn_band))
-    !$ACC UPDATE DEVICE(this%lw_up_clear_band) IF(allocated(this%lw_up_clear_band))
-    !$ACC UPDATE DEVICE(this%lw_dn_clear_band) IF(allocated(this%lw_dn_clear_band))
-    !$ACC UPDATE DEVICE(this%sw_up_band) IF(allocated(this%sw_up_band))
-    !$ACC UPDATE DEVICE(this%sw_dn_band) IF(allocated(this%sw_dn_band))
-    !$ACC UPDATE DEVICE(this%sw_up_clear_band) IF(allocated(this%sw_up_clear_band))
-    !$ACC UPDATE DEVICE(this%sw_dn_clear_band) IF(allocated(this%sw_dn_clear_band))
-    !$ACC UPDATE DEVICE(this%sw_dn_direct_band) IF(allocated(this%sw_dn_direct_band))
-    !$ACC UPDATE DEVICE(this%sw_dn_direct_clear_band) IF(allocated(this%sw_dn_direct_clear_band))
-    !$ACC UPDATE DEVICE(this%sw_dn_surf_band) IF(allocated(this%sw_dn_surf_band))
-    !$ACC UPDATE DEVICE(this%sw_dn_direct_surf_band) IF(allocated(this%sw_dn_direct_surf_band))
-    !$ACC UPDATE DEVICE(this%sw_dn_surf_clear_band) IF(allocated(this%sw_dn_surf_clear_band))
-    !$ACC UPDATE DEVICE(this%sw_dn_direct_surf_clear_band) IF(allocated(this%sw_dn_direct_surf_clear_band))
-    !$ACC UPDATE DEVICE(this%lw_dn_surf_canopy) IF(allocated(this%lw_dn_surf_canopy))
-    !$ACC UPDATE DEVICE(this%sw_dn_diffuse_surf_canopy) IF(allocated(this%sw_dn_diffuse_surf_canopy))
-    !$ACC UPDATE DEVICE(this%sw_dn_direct_surf_canopy) IF(allocated(this%sw_dn_direct_surf_canopy))
-    !$ACC UPDATE DEVICE(this%cloud_cover_sw) IF(allocated(this%cloud_cover_sw))
-    !$ACC UPDATE DEVICE(this%cloud_cover_lw) IF(allocated(this%cloud_cover_lw))
-    !$ACC UPDATE DEVICE(this%lw_derivatives) IF(allocated(this%lw_derivatives))
-    !$ACC UPDATE DEVICE(this%lw_dn_surf_g) IF(allocated(this%lw_dn_surf_g))
-    !$ACC UPDATE DEVICE(this%lw_dn_surf_clear_g) IF(allocated(this%lw_dn_surf_clear_g))
-    !$ACC UPDATE DEVICE(this%sw_dn_diffuse_surf_g) IF(allocated(this%sw_dn_diffuse_surf_g))
-    !$ACC UPDATE DEVICE(this%sw_dn_direct_surf_g) IF(allocated(this%sw_dn_direct_surf_g))
-    !$ACC UPDATE DEVICE(this%sw_dn_diffuse_surf_clear_g) IF(allocated(this%sw_dn_diffuse_surf_clear_g))
-    !$ACC UPDATE DEVICE(this%sw_dn_direct_surf_clear_g) IF(allocated(this%sw_dn_direct_surf_clear_g))
-
-  end subroutine update_device
-#endif 
 
 end module radiation_flux

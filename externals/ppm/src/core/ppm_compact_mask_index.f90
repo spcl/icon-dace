@@ -46,7 +46,7 @@
 !! This index variation addresses the case where each range in the
 !! subscript varied most rapidly (ll) corresponds to a change in at least
 !! one slower (hl) subscript.
-#include "fc_feature_defs.inc"
+
 MODULE ppm_compact_mask_index
   USE ppm_extents, ONLY: iinterval
   USE ppm_sparse_mask_index, ONLY: build_ranges_1d, count_ranges_1d

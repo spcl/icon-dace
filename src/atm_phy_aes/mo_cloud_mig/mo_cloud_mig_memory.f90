@@ -44,7 +44,19 @@ MODULE mo_cloud_mig_memory
   USE mo_cloud_mig_types         ,ONLY: t_cloud_mig_input, t_cloud_mig_output
 
   ! include definition for "__acc_attach(ptr)"
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -234,7 +246,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_constant                                           ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%jcs)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='jce_mig') ) THEN
@@ -254,7 +266,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_constant                                           ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%jce)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pdtime_mig') ) THEN
@@ -274,7 +286,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_constant                                           ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%pdtime)
+       
     END IF
 
     ! Input fields
@@ -302,7 +314,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%dz)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='rho_mig') ) THEN
@@ -325,7 +337,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%rho)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pf_mig') ) THEN
@@ -348,7 +360,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%pf)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='ta_mig') ) THEN
@@ -371,7 +383,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%ta)
+       
     END IF
     !
     var_name=TRIM(advection_config(jg)%tracer_names(iqv))//'_mig'
@@ -395,7 +407,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%qv)
+       
     END IF
     !
     var_name=TRIM(advection_config(jg)%tracer_names(iqc))//'_mig'
@@ -420,7 +432,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%qc)
+       
     END IF
     !
     var_name=TRIM(advection_config(jg)%tracer_names(iqi))//'_mig'
@@ -445,7 +457,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%qi)
+       
     END IF
     !
     var_name=TRIM(advection_config(jg)%tracer_names(iqr))//'_mig'
@@ -470,7 +482,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%qr)
+       
     END IF
     !
     var_name=TRIM(advection_config(jg)%tracer_names(iqs))//'_mig'
@@ -495,7 +507,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%qs)
+       
     END IF
     !
     var_name=TRIM(advection_config(jg)%tracer_names(iqg))//'_mig'
@@ -520,7 +532,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_input%qg)
+       
     END IF
 
 
@@ -556,7 +568,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%tend_ta_mig)
+       
     END IF
     !
     var_name='tend_'//TRIM(advection_config(jg)%tracer_names(iqv))//'_mig'
@@ -584,7 +596,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%tend_qv_mig)
+       
     END IF
     !
     var_name='tend_'//TRIM(advection_config(jg)%tracer_names(iqc))//'_mig'
@@ -614,7 +626,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%tend_qc_mig)
+       
     END IF
     !
     var_name='tend_'//TRIM(advection_config(jg)%tracer_names(iqi))//'_mig'
@@ -644,7 +656,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%tend_qi_mig)
+       
     END IF
     !
     var_name='tend_'//TRIM(advection_config(jg)%tracer_names(iqr))//'_mig'
@@ -674,7 +686,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%tend_qr_mig)
+       
     END IF
     !
     var_name='tend_'//TRIM(advection_config(jg)%tracer_names(iqs))//'_mig'
@@ -704,7 +716,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%tend_qs_mig)
+       
     END IF
     !
     var_name='tend_'//TRIM(advection_config(jg)%tracer_names(iqg))//'_mig'
@@ -734,7 +746,7 @@ CONTAINS
             &                             vert_intp_type   = vintp_types("P","Z","I"),       &
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%tend_qg_mig)
+       
     END IF
     !
     ! fluxes at the surface
@@ -758,7 +770,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_instant                                            ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%pr_eflx)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pr_rain') ) THEN
@@ -780,7 +792,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_instant                                            ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%pr_rain)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pr_ice') ) THEN
@@ -802,7 +814,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_instant                                            ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%pr_ice)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pr_snow') ) THEN
@@ -824,7 +836,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_instant                                            ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%pr_snow)
+       
     END IF
     !
     IF ( is_variable_in_output(var_name='pr_grpl') ) THEN
@@ -846,7 +858,7 @@ CONTAINS
             &                                grid_cell)                                     ,&
             &        isteptype   = tstep_instant                                            ,&
             &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_mig_output%pr_grpl)
+       
     END IF
 
   END SUBROUTINE construct_cloud_mig_list

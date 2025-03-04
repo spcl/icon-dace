@@ -14,7 +14,7 @@ MODULE comin_errhandler_constants
   IMPLICIT NONE
 
   PUBLIC
-#include "comin_global.inc"
+
 
   !> define list of error points
   !> COMIN_ERROR_FATAL should always be the last entry
@@ -58,7 +58,7 @@ MODULE comin_errhandler_constants
 CONTAINS
 
   FUNCTION comin_errhandler_get_string(err_code) RESULT(string)
-    CHARACTER(LEN=MAX_LEN_ERR_MESSAGE) :: string
+    CHARACTER(LEN=96) :: string
     INTEGER, INTENT(IN) :: err_code
 
     SELECT CASE(err_code)

@@ -49,7 +49,7 @@ MODULE comin_metadata
   PUBLIC :: comin_metadata_get_integer_c, comin_metadata_get_real_c
   PUBLIC :: comin_metadata_get_character_c, comin_metadata_get_logical_c
 
-#include "comin_global.inc"
+
 
   !> Sets metadata for a requested ComIn variable.
   !> **Note:Plugins use the alias `comin_metadata_set`.**
@@ -101,7 +101,7 @@ CONTAINS
     IF (.NOT. ASSOCIATED(var_item)) THEN
       CALL comin_error_set(COMIN_ERROR_VAR_ITEM_NOT_ASSOCIATED); RETURN
     ELSE
-      IF ( ALL(var_item%metadata%query(TRIM(key)) /= (/COMIN_TYPEID_UNDEFINED, COMIN_TYPEID_INTEGER/) ) ) THEN
+      IF ( ALL(var_item%metadata%query(TRIM(key)) /= (/-1, 0/) ) ) THEN
         CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
       ENDIF
       CALL var_item%metadata%set(key, val)
@@ -120,7 +120,7 @@ CONTAINS
     IF (.NOT. ASSOCIATED(var_item)) THEN
       CALL comin_error_set(COMIN_ERROR_VAR_ITEM_NOT_ASSOCIATED); RETURN
     ELSE
-      IF ( ALL(var_item%metadata%query(TRIM(key)) /= (/COMIN_TYPEID_UNDEFINED, COMIN_TYPEID_LOGICAL/) ) ) THEN
+      IF ( ALL(var_item%metadata%query(TRIM(key)) /= (/-1, 3/) ) ) THEN
         CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
       ENDIF
       CALL var_item%metadata%set(key, val)
@@ -139,7 +139,7 @@ CONTAINS
     IF (.NOT. ASSOCIATED(var_item)) THEN
       CALL comin_error_set(COMIN_ERROR_VAR_ITEM_NOT_ASSOCIATED); RETURN
     ELSE
-      IF ( ALL(var_item%metadata%query(TRIM(key)) /= (/COMIN_TYPEID_UNDEFINED, COMIN_TYPEID_REAL/) ) ) THEN
+      IF ( ALL(var_item%metadata%query(TRIM(key)) /= (/-1, 1/) ) ) THEN
         CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
       ENDIF
       CALL var_item%metadata%set(key, val)
@@ -158,7 +158,7 @@ CONTAINS
     IF (.NOT. ASSOCIATED(var_item)) THEN
       CALL comin_error_set(COMIN_ERROR_VAR_ITEM_NOT_ASSOCIATED); RETURN
     ELSE
-      IF ( ALL(var_item%metadata%query(TRIM(key)) /= (/COMIN_TYPEID_UNDEFINED, COMIN_TYPEID_CHARACTER/) ) ) THEN
+      IF ( ALL(var_item%metadata%query(TRIM(key)) /= (/-1, 2/) ) ) THEN
         CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
       ENDIF
       CALL var_item%metadata%set(key, val)
@@ -183,7 +183,7 @@ CONTAINS
       CALL comin_error_set(COMIN_ERROR_VAR_ITEM_NOT_ASSOCIATED); RETURN
     END IF
 
-    IF ( var_item%metadata%query(TRIM(key)) /= COMIN_TYPEID_INTEGER)  THEN
+    IF ( var_item%metadata%query(TRIM(key)) /= 0)  THEN
       CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE)
       RETURN
     ENDIF
@@ -209,7 +209,7 @@ CONTAINS
       CALL comin_error_set(COMIN_ERROR_VAR_ITEM_NOT_ASSOCIATED); RETURN
     END IF
 
-    IF ( var_item%metadata%query(TRIM(key)) /= COMIN_TYPEID_LOGICAL)  THEN
+    IF ( var_item%metadata%query(TRIM(key)) /= 3)  THEN
       CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE)
       RETURN
     ENDIF
@@ -235,7 +235,7 @@ CONTAINS
       CALL comin_error_set(COMIN_ERROR_VAR_ITEM_NOT_ASSOCIATED); RETURN
     END IF
 
-    IF ( var_item%metadata%query(TRIM(key)) /= COMIN_TYPEID_REAL)  THEN
+    IF ( var_item%metadata%query(TRIM(key)) /= 1)  THEN
       CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE)
       RETURN
     ENDIF
@@ -261,7 +261,7 @@ CONTAINS
       CALL comin_error_set(COMIN_ERROR_VAR_ITEM_NOT_ASSOCIATED); RETURN
     END IF
 
-    IF ( var_item%metadata%query(TRIM(key)) /= COMIN_TYPEID_CHARACTER)  THEN
+    IF ( var_item%metadata%query(TRIM(key)) /= 2)  THEN
       CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE)
       RETURN
     ENDIF
@@ -351,7 +351,7 @@ CONTAINS
       CALL comin_error_set(COMIN_ERROR_VAR_ITEM_NOT_ASSOCIATED); RETURN
     END IF
 
-    IF ( var_item%metadata%query(convert_c_string(key)) /= COMIN_TYPEID_CHARACTER)  THEN
+    IF ( var_item%metadata%query(convert_c_string(key)) /= 2)  THEN
       CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE)
       RETURN
     ENDIF
@@ -368,9 +368,9 @@ CONTAINS
     INTEGER, INTENT(in) :: defaultval
 
     SELECT CASE ( metadata%query(key) )
-    CASE (COMIN_TYPEID_INTEGER)
+    CASE (0)
       CALL metadata%get(key, val)
-    CASE (COMIN_TYPEID_UNDEFINED)
+    CASE (-1)
       val = defaultval
     CASE DEFAULT
       CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
@@ -384,9 +384,9 @@ CONTAINS
     REAL(wp), INTENT(in) :: defaultval
 
     SELECT CASE ( metadata%query(key) )
-    CASE (COMIN_TYPEID_REAL)
+    CASE (1)
       CALL metadata%get(key, val)
-    CASE (COMIN_TYPEID_UNDEFINED)
+    CASE (-1)
       val = defaultval
     CASE DEFAULT
       CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
@@ -400,9 +400,9 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(in) :: defaultval
 
     SELECT CASE ( metadata%query(key) )
-    CASE (COMIN_TYPEID_CHARACTER)
+    CASE (2)
       CALL metadata%get(key, val)
-    CASE (COMIN_TYPEID_UNDEFINED)
+    CASE (-1)
       val = defaultval
     CASE DEFAULT
       CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
@@ -416,9 +416,9 @@ CONTAINS
     LOGICAL, INTENT(in) :: defaultval
 
     SELECT CASE ( metadata%query(key) )
-    CASE (COMIN_TYPEID_LOGICAL)
+    CASE (3)
       CALL metadata%get(key, val)
-    CASE (COMIN_TYPEID_UNDEFINED)
+    CASE (-1)
       val = defaultval
     CASE DEFAULT
       CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
@@ -527,7 +527,7 @@ CONTAINS
           IF (comin_var_descr_match(var_list_request_element%descriptor, var_descriptor_domain)) THEN
             lfound = .TRUE.
             IF ( ALL(var_list_request_element%metadata%query(TRIM(key)) /= &
-              &      (/COMIN_TYPEID_UNDEFINED, COMIN_TYPEID_INTEGER/) ) ) THEN
+              &      (/-1, 0/) ) ) THEN
               CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
             ENDIF
             CALL var_list_request_element%metadata%set(key, val)
@@ -591,7 +591,7 @@ CONTAINS
               CALL comin_error_set(COMIN_ERROR_TRACER_REQUEST_NOT_FOR_ALL_DOMAINS); RETURN
             END IF
             IF ( ALL(var_list_request_element%metadata%query(TRIM(key)) /= &
-              &      (/COMIN_TYPEID_UNDEFINED, COMIN_TYPEID_LOGICAL/) ) ) THEN
+              &      (/-1, 3/) ) ) THEN
               CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
             ENDIF
             CALL var_list_request_element%metadata%set(key, val)
@@ -651,7 +651,7 @@ CONTAINS
           IF (comin_var_descr_match(var_list_request_element%descriptor, var_descriptor_domain)) THEN
             lfound = .TRUE.
             IF ( ALL(var_list_request_element%metadata%query(TRIM(key)) /= &
-              &      (/COMIN_TYPEID_UNDEFINED, COMIN_TYPEID_REAL/) ) ) THEN
+              &      (/-1, 1/) ) ) THEN
               CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
             ENDIF
             CALL var_list_request_element%metadata%set(key, val)
@@ -711,7 +711,7 @@ CONTAINS
           IF (comin_var_descr_match(var_list_request_element%descriptor, var_descriptor_domain)) THEN
             lfound = .TRUE.
             IF ( ALL(var_list_request_element%metadata%query(TRIM(key)) /= &
-              &      (/COMIN_TYPEID_UNDEFINED, COMIN_TYPEID_CHARACTER/) ) ) THEN
+              &      (/-1, 2/) ) ) THEN
               CALL comin_error_set(COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE); RETURN
             ENDIF
             CALL var_list_request_element%metadata%set(key, val)

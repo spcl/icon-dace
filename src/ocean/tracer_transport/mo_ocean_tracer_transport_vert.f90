@@ -13,8 +13,37 @@
 ! This comprises vertical advection.
 
 !----------------------------
-#include "omp_definitions.inc"
-#include "icon_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
 !----------------------------
 MODULE mo_ocean_tracer_transport_vert
   !-------------------------------------------------------------------------
@@ -94,7 +123,7 @@ CONTAINS
     !-------------------------------------------------------------------------------
     TYPE(t_subset_range), POINTER :: cells_in_domain
     !-------------------------------------------------------------------------------
-    start_timer(timer_adv_vert,2)
+    IF (timers_level >= 2) CALL timer_start(timer_adv_vert)
 
     patch_2D         => patch_3d%p_patch_2d(1)
     cells_in_domain => patch_2D%cells%in_domain
@@ -119,7 +148,7 @@ CONTAINS
         & operators_coeff%verticalAdvectionPPMcoeffs, &
         & flux_div_vert, lacc=lzacc)
 
-        stop_timer(timer_adv_vert,2)
+        IF (timers_level >= 2) CALL timer_stop(timer_adv_vert)
         RETURN
 
     ENDIF
@@ -160,9 +189,6 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef NAGFOR
-    flux_div_vert(:,:,:) = 0.0_wp
-#endif
    
 !ICON_OMP_PARALLEL_DO PRIVATE(startIndex, endIndex) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = cells_in_domain%start_block, cells_in_domain%end_block

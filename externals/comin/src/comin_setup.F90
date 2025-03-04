@@ -54,11 +54,11 @@ MODULE comin_setup
     SUBROUTINE comin_plugin_init_fct(state_ptr, host_version, host_wp) BIND(C)
       IMPORT c_ptr, c_int, t_comin_setup_version_info
 
-#ifndef __NVCOMPILER
+
       TYPE(C_PTR), VALUE, INTENT(IN)               :: state_ptr
-#else
-      TYPE(C_PTR), INTENT(IN)                      :: state_ptr
-#endif
+
+
+
 
       TYPE(t_comin_setup_version_info), INTENT(IN) :: host_version
       INTEGER(C_INT), INTENT(IN)                   :: host_wp
@@ -116,7 +116,7 @@ MODULE comin_setup
   !> list of primary constructors
   TYPE(c_ptr), ALLOCATABLE :: dl_handles(:)
 
-#include "comin_version.inc"
+
 
 CONTAINS
 
@@ -309,7 +309,7 @@ CONTAINS
     ! constants directly.
 
     IF( .NOT. comin_setup_version_compatible(host_version, &
-         & t_comin_setup_version_info(COMIN_VERSION_MAJOR, COMIN_VERSION_MINOR, COMIN_VERSION_PATCH))) THEN
+         & t_comin_setup_version_info(0, 2, 0))) THEN
       CALL comin_error_set(COMIN_ERROR_PLUGIN_INIT_COMIN_VERSION); RETURN
     END IF
 

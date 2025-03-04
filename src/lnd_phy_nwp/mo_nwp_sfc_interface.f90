@@ -14,7 +14,17 @@
 ! inwp_sfc  == 1 == surface scheme TERRA run in COSMO
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nwp_sfc_interface
@@ -59,10 +69,6 @@ MODULE mo_nwp_sfc_interface
   USE mo_index_list,          ONLY: generate_index_list
   USE mo_fortran_tools,       ONLY: init, set_acc_host_or_device, assert_acc_device_only
 
-#ifdef ICON_USE_CUDA_GRAPH
-  USE mo_acc_device_management,ONLY: accGraph, accBeginCapture, accEndCapture, accGraphLaunch
-  USE, INTRINSIC :: iso_c_binding
-#endif
 
   IMPLICIT NONE 
 
@@ -73,17 +79,11 @@ MODULE mo_nwp_sfc_interface
   PUBLIC  ::  nwp_surface
 
 
-#ifdef __SX__
-! parameter for loop unrolling
-INTEGER, PARAMETER :: nlsoil= 8
-#endif
 
-#ifdef ICON_USE_CUDA_GRAPH
-TYPE(accGraph) :: graphs(max_dom*2)
-TYPE(c_ptr) :: lnd_prog_now_cache(max_dom*2) = C_NULL_PTR
-LOGICAL :: graph_captured
-INTEGER :: cur_graph_id, ig
-#endif
+
+
+
+
 LOGICAL :: multi_queue_processing
 INTEGER :: acc_async_queue = 1
 
@@ -285,16 +285,16 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = 'mo_nwp_sfc_interface:nwp_surface'
 
 
-#ifdef _OPENACC
-    IF(lmulti_snow) CALL finish(routine, 'lmulti_snow not supported with openACC.')
-#endif
+
+
+
 
 !--------------------------------------------------------------
-#ifdef ICON_USE_CUDA_GRAPH
-    multi_queue_processing = lcuda_graph_lnd
-#else
+
+
+
     multi_queue_processing = .FALSE.
-#endif
+
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
@@ -335,49 +335,6 @@ CONTAINS
 
 !$OMP PARALLEL PRIVATE(p_graupel_gsp_rate)
 
-#ifdef ICON_USE_CUDA_GRAPH
-! Using CUDA graphs here to capture and replay the GPU kernels without host overhead
-! We need to capture two graphs because the source and destination arrays
-!  are swapped every step (alternating nnow and nnew)
-    IF (lzacc .AND. lcuda_graph_lnd) THEN
-      cur_graph_id = -1
-      DO ig=1,max_dom*2
-        IF (C_LOC(lnd_prog_now) == lnd_prog_now_cache(ig)) THEN
-          cur_graph_id = ig
-          graph_captured = .TRUE.
-          EXIT
-        END IF
-      END DO
-
-      IF (cur_graph_id < 0) THEN
-        DO ig=1,max_dom*2
-          IF (lnd_prog_now_cache(ig) == C_NULL_PTR) THEN
-            cur_graph_id = ig
-            lnd_prog_now_cache(ig) = C_LOC(lnd_prog_now)
-            graph_captured = .FALSE.
-            EXIT
-          END IF
-        END DO
-      END IF
-
-      IF (cur_graph_id < 0) THEN
-        CALL finish('mo_nwp_sfc_interface: ', 'error trying to allocate CUDA graph')
-      END IF
-
-      IF (graph_captured) THEN
-        WRITE(message_text,'(a,i2)') 'executing CUDA graph id ', cur_graph_id
-        IF (msg_level >= 14) CALL message('mo_nwp_sfc_interface: ', message_text)
-        CALL accGraphLaunch(graphs(cur_graph_id), 1)
-        !$ACC UPDATE HOST(ext_data%atm%gp_count_t(:,1:ntiles_total)) ASYNC(1)
-        !$ACC WAIT(1)
-        RETURN
-      ELSE
-        WRITE(message_text,'(a,i2)') 'starting to capture CUDA graph, id ', cur_graph_id
-        IF (msg_level >= 13) CALL message('mo_nwp_sfc_interface: ', message_text)
-        CALL accBeginCapture(1)
-      END IF
-    END IF
-#endif
 
     !$ACC DATA PRESENT(ext_data, p_prog, p_prog_rcf, p_diag, p_metrics, prm_diag) &
     !$ACC   PRESENT(lnd_prog_now, lnd_prog_new, p_prog_wtr_now, p_prog_wtr_new, lnd_diag) &
@@ -463,10 +420,8 @@ CONTAINS
 
        ! Copy precipitation fields for subsequent downscaling
        DO isubs = 1,ntiles_total
-#ifndef _OPENACC
          ! skip loop if the index list for the given tile is empty
          IF (ext_data%atm%gp_count_t(jb,isubs) == 0) CYCLE
-#endif
 !$NEC ivdep
          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
          !$ACC LOOP GANG VECTOR PRIVATE(jc)
@@ -676,9 +631,7 @@ CONTAINS
         i_count = ext_data%atm%gp_count_t(jb,isubs) 
         !$ACC END KERNELS
 
-#ifndef _OPENACC
         IF (i_count == 0) CYCLE ! skip loop if the index list for the given tile is empty
-#endif
 
 
 
@@ -891,15 +844,9 @@ CONTAINS
 
        MSNOWI: IF(lmulti_snow) THEN
         
-#ifdef __LOOP_EXCHANGE
-        DO ic = 1, i_count
-          jc = ext_data%atm%idx_lst_t(ic,jb,isubs)
-          DO jk=1,nlev_snow
-#else
         DO jk=1,nlev_snow
           DO ic = 1, i_count
             jc = ext_data%atm%idx_lst_t(ic,jb,isubs)
-#endif
             t_snow_mult_now_t  (ic,jk) = lnd_prog_now%t_snow_mult_t  (jc,jk,jb,isubs) 
             rho_snow_mult_now_t(ic,jk) = lnd_prog_now%rho_snow_mult_t(jc,jk,jb,isubs)
             wliq_snow_now_t    (ic,jk) = lnd_prog_now%wliq_snow_t    (jc,jk,jb,isubs) 
@@ -910,20 +857,12 @@ CONTAINS
        END IF MSNOWI
 
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(acc_async_queue) IF(lzacc)
-#ifdef __LOOP_EXCHANGE
-        !$ACC LOOP GANG VECTOR PRIVATE(jc)
-        DO ic = 1, i_count
-          jc = ext_data%atm%idx_lst_t(ic,jb,isubs)
-          !$ACC LOOP SEQ
-          DO jk=1,nlev_soil
-#else
 !$NEC outerloop_unroll(nlsoil)
         !$ACC LOOP SEQ
         DO jk=1,nlev_soil
           !$ACC LOOP GANG VECTOR PRIVATE(jc)
           DO ic = 1, i_count
             jc = ext_data%atm%idx_lst_t(ic,jb,isubs)
-#endif
             t_so_now_t    (ic,jk) = lnd_prog_now%t_so_t    (jc,jk,jb,isubs) 
             w_so_now_t    (ic,jk) = lnd_prog_now%w_so_t    (jc,jk,jb,isubs) 
             w_so_ice_now_t(ic,jk) = lnd_prog_now%w_so_ice_t(jc,jk,jb,isubs)
@@ -1207,16 +1146,10 @@ CONTAINS
 
         MSNOWO: IF(lmulti_snow) THEN
 
-#ifdef __LOOP_EXCHANGE
-        DO ic = 1, i_count
-          jc = ext_data%atm%idx_lst_t(ic,jb,isubs)
-          DO jk=1,nlev_snow
-#else
         DO jk=1,nlev_snow
 !$NEC ivdep
           DO ic = 1, i_count
             jc = ext_data%atm%idx_lst_t(ic,jb,isubs)
-#endif
             lnd_prog_new%t_snow_mult_t  (jc,jk,jb,isubs) = t_snow_mult_new_t  (ic,jk)   
             lnd_prog_new%rho_snow_mult_t(jc,jk,jb,isubs) = rho_snow_mult_new_t(ic,jk) 
             lnd_prog_new%wliq_snow_t    (jc,jk,jb,isubs) = wliq_snow_new_t    (ic,jk)     
@@ -1227,13 +1160,6 @@ CONTAINS
         END IF MSNOWO
 
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(acc_async_queue) IF(lzacc)
-#ifdef __LOOP_EXCHANGE
-        !$ACC LOOP GANG VECTOR PRIVATE(jc)
-        DO ic = 1, i_count
-          jc = ext_data%atm%idx_lst_t(ic,jb,isubs)
-          !$ACC LOOP
-          DO jk=1,nlev_soil
-#else
 !$NEC outerloop_unroll(nlsoil)
         !$ACC LOOP SEQ
         DO jk=1,nlev_soil
@@ -1241,7 +1167,6 @@ CONTAINS
           !$ACC LOOP GANG VECTOR PRIVATE(jc)
           DO ic = 1, i_count
             jc = ext_data%atm%idx_lst_t(ic,jb,isubs)
-#endif
             lnd_prog_new%t_so_t    (jc,jk,jb,isubs) = t_so_new_t    (ic,jk)          
             lnd_prog_new%w_so_t    (jc,jk,jb,isubs) = w_so_new_t    (ic,jk)          
             lnd_prog_new%w_so_ice_t(jc,jk,jb,isubs) = w_so_ice_new_t(ic,jk)
@@ -1817,14 +1742,6 @@ CONTAINS
 !$OMP END DO
 !$OMP END PARALLEL
  
-#ifdef ICON_USE_CUDA_GRAPH
-    IF (lzacc .AND. lcuda_graph_lnd) THEN
-      CALL accEndCapture(1, graphs(cur_graph_id))
-      WRITE(message_text,'(a,i2,a)') 'finished to capture CUDA graph, id ', cur_graph_id, ', now executing it'
-      IF (msg_level >= 13) CALL message('mo_nwp_sfc_interface: ', message_text)
-      CALL accGraphLaunch(graphs(cur_graph_id), 1)
-    END IF
-#endif
     !$ACC UPDATE HOST(ext_data%atm%gp_count_t(:,1:ntiles_total)) ASYNC(1) IF(lzacc)
     !$ACC WAIT(1) IF(lzacc)
 
@@ -1985,9 +1902,6 @@ CONTAINS
 
 
       IF (lis_coupled_run) THEN
-#ifdef _OPENACC
-        CALL finish('mo_nwp_sfc_interface', 'A-O coupling in nwp_seaice is not available on GPU')
-#endif
         !  set conductive heat flux to zero outside list_seaice,
         !  may be used by ocean (e.g. through interpolation)
         p_lnd_diag%condhf_ice (:,jb) = 0.0_wp

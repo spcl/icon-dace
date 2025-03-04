@@ -29,14 +29,14 @@ MODULE mo_restart_descriptor
     & getRestartFilename, restartBcastRoot, t_rfids
   USE mo_restart_var_data,          ONLY: has_valid_time_level
   USE mo_var_list_register_utils,   ONLY: vlr_replicate
-#ifndef __NO_ICON_UPATMO__
+
   USE mo_upatmo_flowevent_utils,    ONLY: t_upatmoRestartAttributes, upatmoRestartAttributesSet
-#endif
+
   USE mo_cdi,                       ONLY: FILETYPE_NC2, FILETYPE_NC4
   USE mo_restart_patch_data, ONLY: t_restartPatchData
-#ifndef NOMPI
-  USE mo_async_restart_patch_data, ONLY: t_asyncPatchData
-#endif
+
+
+
   USE mo_sync_restart_patch_data, ONLY: t_syncPatchData
   USE mo_multifile_restart_patch_data, ONLY: t_multifilePatchData
   USE mo_var_metadata_types, ONLY: t_var_metadata
@@ -64,9 +64,9 @@ MODULE mo_restart_descriptor
   ! because the destruct() CALL will signal the restart PEs to finish their work, AND wait for them to stop.
   TYPE, ABSTRACT :: t_RestartDescriptor
     CLASS(t_RestartPatchData), POINTER :: patchData(:)
-#ifndef NOMPI
-    TYPE(t_asyncPatchData), ALLOCATABLE :: aPatchData(:)
-#endif
+
+
+
     TYPE(t_syncPatchData), ALLOCATABLE :: sPatchData(:)
     TYPE(t_multifilePatchData), ALLOCATABLE :: mPatchData(:)
     CHARACTER(:), ALLOCATABLE :: modelType
@@ -108,23 +108,6 @@ CONTAINS
   ! Transfers the modelType, n_dom, AND the namelistArchive to the dedicated restart processes.
   SUBROUTINE restartDescriptor_transferGlobalParameters(me)
     CLASS(t_RestartDescriptor), INTENT(INOUT) :: me
-#ifndef NOMPI
-    INTEGER :: error, length, bcast_root
-    CHARACTER(*), PARAMETER :: routine = modname//":restartDescriptor_transferGlobalParameters"
-
-    bcast_root = restartBcastRoot()
-    length = LEN(me%modelType)
-    CALL p_bcast(length, bcast_root, p_comm_work_2_restart)
-    IF (length /= LEN(me%modelType)) THEN
-      DEALLOCATE(me%modelType)
-      ALLOCATE(CHARACTER(LEN = length) :: me%modelType, STAT = error)
-      IF(error /= SUCCESS) CALL finish(routine, "memory allocation failed")
-    END IF
-    CALL p_bcast(me%modelType, bcast_root, p_comm_work_2_restart)
-    CALL p_bcast(n_dom, bcast_root, p_comm_work_2_restart)
-    CALL vlr_replicate(bcast_root, p_comm_work_2_restart)
-    CALL bcastNamelistStore(bcast_root, p_comm_work_2_restart)
-#endif
   END SUBROUTINE restartDescriptor_transferGlobalParameters
 
   ! Update the internal description of the given patch. This should
@@ -133,9 +116,7 @@ CONTAINS
   SUBROUTINE restartDescriptor_updatePatch(me, patch, opt_pvct, opt_t_elapsed_phy, &
                                         &opt_ndyn_substeps, opt_jstep_adv_marchuk_order, opt_depth_lnd, &
                                         &opt_nlev_snow, opt_nice_class, opt_ndom,  &
-#ifndef __NO_ICON_UPATMO__
                                         &opt_upatmo_restart_atts, &
-#endif
                                         &opt_ocean_zlevels, &
                                         &opt_ocean_zheight_cellMiddle, opt_ocean_zheight_cellInterfaces )
     CLASS(t_RestartDescriptor), INTENT(INOUT) :: me
@@ -144,9 +125,7 @@ CONTAINS
                                    & opt_nlev_snow, opt_nice_class, opt_ndom, opt_ocean_zlevels
     REAL(wp), INTENT(IN), OPTIONAL :: opt_pvct(:), opt_t_elapsed_phy(:), opt_ocean_zheight_cellMiddle(:), &
          & opt_ocean_zheight_cellInterfaces(:)
-#ifndef __NO_ICON_UPATMO__
     TYPE(t_upatmoRestartAttributes), INTENT(IN), OPTIONAL :: opt_upatmo_restart_atts
-#endif
     INTEGER :: jg
     CHARACTER(LEN = *), PARAMETER :: routine = modname//":restartDescriptor_updatePatch"
 
@@ -157,9 +136,7 @@ CONTAINS
         CALL me%patchData(jg)%description%update(patch, opt_pvct, opt_t_elapsed_phy,                &
           &      opt_ndyn_substeps, opt_jstep_adv_marchuk_order, opt_depth_lnd,                     &
           &      opt_nlev_snow, opt_nice_class, opt_ndom,                                           &
-#ifndef __NO_ICON_UPATMO__
           &      opt_upatmo_restart_atts,                                                           &
-#endif
           &      opt_ocean_zlevels, opt_ocean_zheight_cellMiddle, opt_ocean_zheight_cellInterfaces)
       END IF
     END DO
@@ -224,9 +201,7 @@ CONTAINS
       & CALL rAttribs%put('ndyn_substeps_DOM'//domStr, desc%opt_ndyn_substeps%v)
     IF (desc%opt_jstep_adv_marchuk_order%present) &
       & CALL rAttribs%put('jstep_adv_marchuk_order_DOM'//domStr, desc%opt_jstep_adv_marchuk_order%v)
-#ifndef __NO_ICON_UPATMO__
     CALL upatmoRestartAttributesSet(desc%id, desc%opt_upatmo_restart_atts, rAttribs)
-#endif
   END SUBROUTINE put_dom_rstrt_attr
 
   SUBROUTINE restartDescriptor_writeFiles(me, rArgs, isSync)
@@ -260,10 +235,6 @@ CONTAINS
       END IF
       IF (ALLOCATED(me%sPatchData)) THEN
         CALL me%sPatchData(jg)%writeData(rfids%ncid)
-#ifndef NOMPI
-      ELSE IF (ALLOCATED(me%aPatchData)) THEN
-        CALL me%aPatchData(jg)%writeData(rfids%ncid)
-#endif
       ELSE
         CALL finish(routine, "multifile does not use this routine!")
       END IF
@@ -281,9 +252,6 @@ CONTAINS
       INTEGER :: i, ncid, tvid
       REAL(dp) :: date_dayas
       TYPE(t_var_metadata), POINTER :: ci
-#ifdef DEBUG
-      WRITE (nerr,'(a,i6)') routine//' p_pe=',p_pe
-#endif
       ! assume all restart variables uses the same file format
       CALL datetimeToString(rArgs%restart_datetime, datetimeString)
       CALL getRestartFilename(desc%base_filename, desc%id, rArgs, fname, date_dayas)
@@ -300,9 +268,6 @@ CONTAINS
       CALL rfids%init(ncid, desc%n_patch_elem_g(1:3), tvid)
       ! set global attributes
       CALL restartAttributeList_write_to_ncdf(rAttribs, ncid)
-#ifdef DEBUG
-      WRITE (nerr, '(2(a,i6))' )routine//' p_pe=',p_pe,' open netCDF file with ID=',ncid
-#endif
       ! go over the all restart variables in the associated array AND define those
       ! that have a valid time level
       DO i = 1, SIZE(pData%varData)

@@ -10,9 +10,9 @@
 ! ---------------------------------------------------------------
 
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#endif
+
+
+
 ! contains extension to solver backend type: CG
 
 MODULE mo_ocean_solve_cg
@@ -34,10 +34,10 @@ MODULE mo_ocean_solve_cg
 ! arrays only used by CG
     REAL(KIND=wp), ALLOCATABLE, DIMENSION(:,:) :: z_wp, d_wp, r_wp, rsq_wp
     REAL(KIND=sp), ALLOCATABLE, DIMENSION(:,:) :: z_sp, d_sp, r_sp, rsq_sp
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_wp, d_wp, r_wp, rsq_wp
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_sp, d_sp, r_sp, rsq_sp
-#endif
+
+
+
+
 ! interfaces
   CONTAINS
     PROCEDURE :: doit_wp => ocean_solve_cg_cal_wp ! override deferred
@@ -269,9 +269,9 @@ SUBROUTINE ocean_solve_cg_cal_wp(this, lacc)
       & x, b, z, d, r, r2
     LOGICAL :: done
 
-#ifdef _OPENACC
-    CALL finish("mo_ocean_solve_cg::ocean_solve_cg_cal_sp", "not ported to GPU")
-#endif
+
+
+
 
 ! retrieve extends of vector to solve
     nblk = this%trans%nblk

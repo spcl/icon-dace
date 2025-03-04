@@ -425,11 +425,11 @@ CONTAINS
         CALL finish( TRIM(routine), 'Incorrect setting: ithermo_water = 1 is not developed for chosen inwp_gscp. ')
       END IF
 
-#ifndef __ICON_ART
+
       IF (inwp_gscp(jg) == 6) THEN
         CALL finish( TRIM(routine),'inwp_gscp == 6, but ICON was compiled with --disable-art')
       ENDIF
-#endif
+
       
       IF (inwp_surface(jg) == 0 .AND. itype_z0 > 1) THEN
         CALL message(TRIM(routine), 'Warning: itype_z0 is reset to 1 because surface scheme is turned off')
@@ -445,19 +445,6 @@ CONTAINS
         CALL finish( TRIM(routine), 'Aerosol-microphysics coupling currently available only for inwp_gscp=1,2,3')
       ENDIF
 
-#ifdef _OPENACC
-      IF ( ALL((/0,1,5/) /= inwp_cldcover(jg)) ) THEN
-        CALL finish(routine,'GPU version only available for cloud cover 0, 1 and 5')
-      ENDIF
-
-      IF (ALL((/0,1/) /= inwp_sso(jg))) THEN
-        CALL finish(routine,'GPU version only available for inwp_sso == 0 or 1.')
-      ENDIF
-
-      IF (inwp_gscp(jg) == 8) THEN
-        CALL finish(routine,'GPU version not available for Stochastic Bin Microphysics (inwp_gscp=8).')
-      ENDIF
-#endif
 
       IF (inwp_surface(jg) == LSS_JSBACH .AND. inwp_turb(jg) /= ivdiff) THEN
         CALL finish( TRIM(routine), 'JSBACH land-surface scheme has to be used with VDIFF turbulence, set inwp_turb=6')
@@ -484,9 +471,7 @@ CONTAINS
     ENDDO
 
     ! deactivate cuda graph if no cpp key => make sure ACC WAIT is activated where needed
-#ifndef ICON_USE_CUDA_GRAPH
     lcuda_graph_turb_tran = .FALSE.
-#endif
 
 
     !----------------------------------------------------

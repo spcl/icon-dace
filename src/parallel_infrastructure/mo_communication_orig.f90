@@ -15,13 +15,47 @@
 ! which an OpenMP parallelization of copying data into / back from the
 ! MPI-buffer seems to give a benefit. Further compilers may be added
 ! here once the OpenMP implementation is sufficiently efficient
-#if ((defined(_CRAYFTN) && !defined(_OPENACC)) || defined(__INTEL_COMPILER))
-#define __OMPPAR_COPY__
-#endif
+
+
+
 
 !----------------------------
-#include "icon_definitions.inc"
-#include "crayftn_ptr_fail.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+!--------------------------------------------------
+! timers definition
+!needs:
+!   USE mo_timer, ONLY: timer_start, timer_stop, timers_level, <timers_names>...
+!
+
+
+
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! Cray ftn compilers 8.4 and 8.6 are known to misidentify argument INTENT
+! of pointer components, i.e. will disallow changes to an array pointed to
+! by a pointer component of a TYPE
+! therefore this case needs to be handled specially
+!
 !----------------------------
 MODULE mo_communication_orig
 !-------------------------------------------------------------------------
@@ -183,18 +217,10 @@ TYPE, EXTENDS(t_comm_pattern_collection) :: t_comm_pattern_collection_orig
 
 END TYPE t_comm_pattern_collection_orig
 
-#if defined( _OPENACC )
-#ifdef __USE_G2G
-LOGICAL, PARAMETER :: global_use_g2g = .TRUE.
-#else
-LOGICAL, PARAMETER :: global_use_g2g = .FALSE.
-#endif
-#else
 ! No _OPENACC
 LOGICAL, PARAMETER :: lzacc       = .FALSE.
 LOGICAL, PARAMETER :: use_g2g     = .FALSE.
 LOGICAL, PARAMETER :: use_staging = .FALSE.
-#endif
 
 !
 !------------------------------------------------------------------------------------------------
@@ -483,10 +509,6 @@ CONTAINS
     DEALLOCATE(icnt, flag, global_recv_index, send_src)
 
     ! consistency check of communication pattern
-#ifndef NOMPI
-    IF (msg_level >= 25)  &
-      CALL check_comm_pattern(p_pat)
-#endif
 
 
     !$ACC ENTER DATA COPYIN(p_pat)
@@ -494,14 +516,6 @@ CONTAINS
     !$ACC   COPYIN(p_pat%send_src_idx, p_pat%send_src_blk) &
     !$ACC   COPYIN(p_pat%recv_dst_idx, p_pat%recv_dst_blk)
 
-#ifdef __REALLOC_BUF
-    CALL realloc_global_buffer_dp(send_buffer_dp, 7*p_pat%n_send)
-    CALL realloc_global_buffer_dp(recv_buffer_dp, 7*p_pat%n_recv)
-#ifdef __MIXED_PRECISION
-    CALL realloc_global_buffer_sp(send_buffer_sp, 7*p_pat%n_send)
-    CALL realloc_global_buffer_sp(recv_buffer_sp, 7*p_pat%n_recv)
-#endif
-#endif
 
   END SUBROUTINE setup_comm_pattern
 
@@ -957,23 +971,12 @@ CONTAINS
     REAL(dp), INTENT(IN), OPTIONAL, TARGET    :: add (:,:,:)
 
     CHARACTER(len=*), PARAMETER :: routine = modname//"::exchange_data_r3d"
-#ifdef __REALLOC_BUF
-    REAL(dp), POINTER :: send_buf(:,:), recv_buf(:,:)
-#else
     REAL(dp) :: send_buf(SIZE(recv,2),p_pat%n_send), &
                 recv_buf(SIZE(recv,2),p_pat%n_recv)
-#endif
 
     REAL(dp), POINTER :: send_ptr(:,:,:)
 
     INTEGER :: i, k, np, irs, iss, pid, icount, ndim2
-#ifdef _OPENACC
-    LOGICAL :: lzacc  , use_g2g, use_staging
-
-    lzacc       = lacc
-    use_g2g     = lzacc .AND.       global_use_g2g
-    use_staging = lzacc .AND. .NOT. global_use_g2g
-#endif
 
     !-----------------------------------------------------------------------
     ! special treatment for trivial communication patterns of
@@ -984,12 +987,12 @@ CONTAINS
     END IF
 
     IF (itype_exch_barrier == 1 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
-    start_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data)
 
     IF(SIZE(recv,1) /= nproma) THEN
       CALL finish(routine,'Illegal first dimension of data array')
@@ -998,15 +1001,12 @@ CONTAINS
     ndim2 = SIZE(recv,2)
 
     !recv may or may not already be on the gpu
-#ifdef __REALLOC_BUF
-    CALL realloc_global_buffer_dp(send_buffer_dp, ndim2*p_pat%n_send)
-    CALL realloc_global_buffer_dp(recv_buffer_dp, ndim2*p_pat%n_recv)
-    send_buf(1:ndim2, 1:p_pat%n_send) => send_buffer_dp(1:ndim2*p_pat%n_send)
-    recv_buf(1:ndim2, 1:p_pat%n_recv) => recv_buffer_dp(1:ndim2*p_pat%n_recv)
-    !$ACC DATA PRESENT(send_buf, recv_buf) &
-#else
+
+
+
+
     !$ACC   DATA CREATE(send_buf, recv_buf) &
-#endif
+
     !$ACC   PRESENT(p_pat) &
     !$ACC   COPYIN(recv) &
     !$ACC   ASYNC(get_comm_acc_queue()) IF(lzacc)
@@ -1041,27 +1041,9 @@ CONTAINS
       ENDDO
       !$ACC END PARALLEL
     ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-!$NEC outerloop_unroll(4)
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(get_comm_acc_queue()) IF(lzacc)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-      DO k = 1, ndim2
-        DO i = 1, p_pat%n_send
-          send_buf(k,i) = send_ptr(p_pat%send_src_idx(i),k,p_pat%send_src_blk(i))
-        ENDDO
-      ENDDO
-      !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
       DO i = 1, p_pat%n_send
         send_buf(1:ndim2,i) = send_ptr(p_pat%send_src_idx(i),1:ndim2, p_pat%send_src_blk(i))
       ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
     ENDIF
 
     ! Send our data
@@ -1105,18 +1087,18 @@ CONTAINS
     ENDIF
 
     ! Wait for all outstanding requests to finish
-    start_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data_wait)
     CALL p_wait
 
     IF (lzacc .and. .not. use_staging) CALL comm_group_end()
 
     !$ACC UPDATE DEVICE(recv_buf) ASYNC(get_comm_acc_queue()) IF(use_staging)
-    stop_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data_wait)
 
     IF (itype_exch_barrier == 2 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
     ! Fill in receive buffer
@@ -1132,29 +1114,10 @@ CONTAINS
         ENDDO
         !$ACC END PARALLEL
       ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(get_comm_acc_queue()) IF(lzacc)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2
-          DO i = 1, p_pat%n_pnts
-            recv(p_pat%recv_dst_idx(i),k,p_pat%recv_dst_blk(i)) = &
-              recv_buf(k,p_pat%recv_src(i)) + add(p_pat%recv_dst_idx(i),k,p_pat%recv_dst_blk(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
         DO i = 1, p_pat%n_pnts
           recv(p_pat%recv_dst_idx(i),:,p_pat%recv_dst_blk(i)) = &
             recv_buf(:,p_pat%recv_src(i)) + add(p_pat%recv_dst_idx(i),1:ndim2,p_pat%recv_dst_blk(i))
         ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
       ENDIF
     ELSE
       IF (ndim2 == 1) THEN
@@ -1166,34 +1129,16 @@ CONTAINS
         ENDDO
         !$ACC END PARALLEL
       ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(get_comm_acc_queue()) IF(lzacc)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2
-          DO i = 1, p_pat%n_pnts
-            recv(p_pat%recv_dst_idx(i),k,p_pat%recv_dst_blk(i)) = recv_buf(k,p_pat%recv_src(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
         DO i = 1, p_pat%n_pnts
           recv(p_pat%recv_dst_idx(i),:,p_pat%recv_dst_blk(i)) = recv_buf(:,p_pat%recv_src(i))
         ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
       ENDIF
     ENDIF
 
     CALL acc_wait_comms(get_comm_acc_queue())
     !$ACC END DATA
 
-    stop_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data)
 
   END SUBROUTINE exchange_data_r3d
 
@@ -1214,23 +1159,12 @@ CONTAINS
     REAL(sp), INTENT(IN), OPTIONAL, TARGET    :: add (:,:,:)
 
     CHARACTER(len=*), PARAMETER :: routine = modname//"::exchange_data_r3d"
-#ifdef __REALLOC_BUF
-    REAL(sp), POINTER :: send_buf(:,:), recv_buf(:,:)
-#else
     REAL(sp) :: send_buf(SIZE(recv,2),p_pat%n_send), &
                 recv_buf(SIZE(recv,2),p_pat%n_recv)
-#endif
 
     REAL(sp), POINTER :: send_ptr(:,:,:)
 
     INTEGER :: i, k, np, irs, iss, pid, icount, ndim2
-#ifdef _OPENACC
-    LOGICAL :: lzacc, use_g2g, use_staging
-
-    lzacc       = lacc
-    use_g2g     = lzacc .AND.       global_use_g2g
-    use_staging = lzacc .AND. .NOT. global_use_g2g
-#endif
 
     !-----------------------------------------------------------------------
     ! special treatment for trivial communication patterns of
@@ -1241,12 +1175,12 @@ CONTAINS
     END IF
 
     IF (itype_exch_barrier == 1 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
-    start_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data)
 
     IF(SIZE(recv,1) /= nproma) THEN
       CALL finish(routine,'Illegal first dimension of data array')
@@ -1255,15 +1189,7 @@ CONTAINS
     ndim2 = SIZE(recv,2)
 
     !recv may or may not already be on the gpu
-#ifdef __REALLOC_BUF
-    CALL realloc_global_buffer_sp(send_buffer_sp, ndim2*p_pat%n_send)
-    CALL realloc_global_buffer_sp(recv_buffer_sp, ndim2*p_pat%n_recv)
-    send_buf(1:ndim2, 1:p_pat%n_send) => send_buffer_sp(1:ndim2*p_pat%n_send)
-    recv_buf(1:ndim2, 1:p_pat%n_recv) => recv_buffer_sp(1:ndim2*p_pat%n_recv)
-    !$ACC DATA PRESENT(send_buf, recv_buf) &
-#else
     !$ACC   DATA CREATE(send_buf, recv_buf) &
-#endif
     !$ACC   PRESENT(p_pat, recv) &
     !$ACC   ASYNC(get_comm_acc_queue()) IF(lzacc)
 
@@ -1297,27 +1223,9 @@ CONTAINS
       ENDDO
       !$ACC END PARALLEL
     ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-!$NEC outerloop_unroll(4)
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(get_comm_acc_queue()) IF(lzacc)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-      DO k = 1, ndim2
-        DO i = 1, p_pat%n_send
-          send_buf(k,i) = send_ptr(p_pat%send_src_idx(i),k,p_pat%send_src_blk(i))
-        ENDDO
-      ENDDO
-      !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
       DO i = 1, p_pat%n_send
         send_buf(1:ndim2,i) = send_ptr(p_pat%send_src_idx(i),1:ndim2, p_pat%send_src_blk(i))
       ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
     ENDIF
 
     ! Send our data
@@ -1362,18 +1270,18 @@ CONTAINS
     ENDIF
 
     ! Wait for all outstanding requests to finish
-    start_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data_wait)
     CALL p_wait
 
     IF (lzacc .and. .not. use_staging) CALL comm_group_end()
 
     !$ACC UPDATE DEVICE(recv_buf) ASYNC(get_comm_acc_queue()) IF(use_staging)
-    stop_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data_wait)
 
     IF (itype_exch_barrier == 2 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
     ! Fill in receive buffer
@@ -1389,29 +1297,10 @@ CONTAINS
         ENDDO
         !$ACC END PARALLEL
       ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(get_comm_acc_queue()) IF(lzacc)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2
-          DO i = 1, p_pat%n_pnts
-            recv(p_pat%recv_dst_idx(i),k,p_pat%recv_dst_blk(i)) = &
-              recv_buf(k,p_pat%recv_src(i)) + add(p_pat%recv_dst_idx(i),k,p_pat%recv_dst_blk(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
         DO i = 1, p_pat%n_pnts
           recv(p_pat%recv_dst_idx(i),:,p_pat%recv_dst_blk(i)) = &
             recv_buf(:,p_pat%recv_src(i)) + add(p_pat%recv_dst_idx(i),1:ndim2,p_pat%recv_dst_blk(i))
         ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
       ENDIF
     ELSE
       IF (ndim2 == 1) THEN
@@ -1423,34 +1312,16 @@ CONTAINS
         ENDDO
         !$ACC END PARALLEL
       ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(get_comm_acc_queue()) IF(lzacc)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2
-          DO i = 1, p_pat%n_pnts
-            recv(p_pat%recv_dst_idx(i),k,p_pat%recv_dst_blk(i)) = recv_buf(k,p_pat%recv_src(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
         DO i = 1, p_pat%n_pnts
           recv(p_pat%recv_dst_idx(i),:,p_pat%recv_dst_blk(i)) = recv_buf(:,p_pat%recv_src(i))
         ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
       ENDIF
     ENDIF
 
     CALL acc_wait_comms(get_comm_acc_queue())
     !$ACC END DATA
 
-    stop_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data)
 
   END SUBROUTINE exchange_data_s3d
 
@@ -1472,11 +1343,6 @@ CONTAINS
     INTEGER, POINTER :: recv_dst_idx(:)
     INTEGER, POINTER :: send_src_blk(:)
     INTEGER, POINTER :: send_src_idx(:)
-#ifdef _OPENACC
-    LOGICAL :: lzacc
-
-    lzacc = lacc
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)
@@ -1574,11 +1440,6 @@ CONTAINS
     INTEGER, POINTER :: recv_dst_idx(:)
     INTEGER, POINTER :: send_src_blk(:)
     INTEGER, POINTER :: send_src_idx(:)
-#ifdef _OPENACC
-    LOGICAL :: lzacc
-
-    lzacc = lacc
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)
@@ -1681,13 +1542,6 @@ CONTAINS
     INTEGER, POINTER :: send_src_idx(:)
 
     INTEGER :: i, k, np, irs, iss, pid, icount, ndim2
-#ifdef _OPENACC
-    LOGICAL :: lzacc, use_g2g, use_staging
-
-    lzacc       = lacc
-    use_g2g     = lzacc .AND.       global_use_g2g
-    use_staging = lzacc .AND. .NOT. global_use_g2g
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)
@@ -1703,12 +1557,12 @@ CONTAINS
     END IF
 
     IF (itype_exch_barrier == 1 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
-    start_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data)
 
     IF(SIZE(recv,1) /= nproma) THEN
       CALL finish(routine,'Illegal first dimension of data array')
@@ -1749,27 +1603,9 @@ CONTAINS
       ENDDO
       !$ACC END PARALLEL
     ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-!$NEC outerloop_unroll(4)
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-      DO k = 1, ndim2
-        DO i = 1, p_pat%n_send
-          send_buf(k,i) = send_ptr(send_src_idx(i),k,send_src_blk(i))
-        ENDDO
-      ENDDO
-      !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
       DO i = 1, p_pat%n_send
         send_buf(1:ndim2,i) = send_ptr(send_src_idx(i),1:ndim2, send_src_blk(i))
       ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
     ENDIF
 
     ! Send our data
@@ -1814,15 +1650,15 @@ CONTAINS
     ENDIF
 
     ! Wait for all outstanding requests to finish
-    start_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data_wait)
     CALL p_wait
     !$ACC UPDATE DEVICE(recv_buf) ASYNC(1) IF(use_staging)
-    stop_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data_wait)
 
     IF (itype_exch_barrier == 2 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
     ! Fill in receive buffer
@@ -1838,29 +1674,10 @@ CONTAINS
         ENDDO
         !$ACC END PARALLEL
       ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2
-          DO i = 1, p_pat%n_pnts
-            recv(recv_dst_idx(i),k,recv_dst_blk(i)) = &
-              recv_buf(k,recv_src(i)) + add(recv_dst_idx(i),k,recv_dst_blk(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
         DO i = 1, p_pat%n_pnts
           recv(recv_dst_idx(i),:,recv_dst_blk(i)) = &
             recv_buf(:,recv_src(i)) + add(recv_dst_idx(i),1:ndim2,recv_dst_blk(i))
         ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
       ENDIF
     ELSE
       IF (ndim2 == 1) THEN
@@ -1872,34 +1689,16 @@ CONTAINS
         ENDDO
         !$ACC END PARALLEL
       ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2
-          DO i = 1, p_pat%n_pnts
-            recv(recv_dst_idx(i),k,recv_dst_blk(i)) = recv_buf(k,recv_src(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
         DO i = 1, p_pat%n_pnts
           recv(recv_dst_idx(i),:,recv_dst_blk(i)) = recv_buf(:,recv_src(i))
         ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
       ENDIF
     ENDIF
 
     !$ACC WAIT(1)
     !$ACC END DATA
 
-    stop_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data)
 
   END SUBROUTINE exchange_data_i3d
 
@@ -1920,11 +1719,6 @@ CONTAINS
     INTEGER, POINTER :: recv_dst_idx(:)
     INTEGER, POINTER :: send_src_blk(:)
     INTEGER, POINTER :: send_src_idx(:)
-#ifdef _OPENACC
-    LOGICAL :: lzacc
-
-    lzacc = lacc
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)
@@ -2027,13 +1821,6 @@ CONTAINS
     INTEGER, POINTER :: send_src_idx(:)
 
     INTEGER :: i, k, np, irs, iss, pid, icount, ndim2
-#ifdef _OPENACC
-    LOGICAL :: lzacc, use_g2g, use_staging
-
-    lzacc       = lacc
-    use_g2g     = lzacc .AND.       global_use_g2g
-    use_staging = lzacc .AND. .NOT. global_use_g2g
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)
@@ -2047,12 +1834,12 @@ CONTAINS
     END IF
 
     IF (itype_exch_barrier == 1 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
-    start_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data)
 
     IF(SIZE(recv,1) /= nproma) THEN
       CALL finish(routine,'Illegal first dimension of data array')
@@ -2091,27 +1878,9 @@ CONTAINS
       ENDDO
       !$ACC END PARALLEL
     ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-!$NEC outerloop_unroll(4)
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(get_comm_acc_queue()) IF(lzacc)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-      DO k = 1, ndim2
-        DO i = 1, p_pat%n_send
-          send_buf(k,i) = send_ptr(send_src_idx(i),k,send_src_blk(i))
-        ENDDO
-      ENDDO
-      !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
       DO i = 1, p_pat%n_send
         send_buf(1:ndim2,i) = send_ptr(send_src_idx(i),1:ndim2, send_src_blk(i))
       ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
     ENDIF
 
     ! Send our data
@@ -2156,15 +1925,15 @@ CONTAINS
     ENDIF
 
     ! Wait for all outstanding requests to finish
-    start_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data_wait)
     CALL p_wait
     !$ACC UPDATE DEVICE(recv_buf) ASYNC(get_comm_acc_queue()) IF(use_staging)
-    stop_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data_wait)
 
     IF (itype_exch_barrier == 2 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
     ! Fill in receive buffer
@@ -2178,33 +1947,15 @@ CONTAINS
       ENDDO
       !$ACC END PARALLEL
     ELSE
-#if defined( __SX__ ) || defined( _OPENACC )
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(get_comm_acc_queue()) IF(lzacc)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-      DO k = 1, ndim2
-        DO i = 1, p_pat%n_pnts
-          recv(recv_dst_idx(i),k,recv_dst_blk(i)) = recv_buf(k,recv_src(i))
-        ENDDO
-      ENDDO
-      !$ACC END PARALLEL
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO
-#endif
         DO i = 1, p_pat%n_pnts
           recv(recv_dst_idx(i),:,recv_dst_blk(i)) = recv_buf(:,recv_src(i))
         ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
     ENDIF
 
     CALL acc_wait_comms(get_comm_acc_queue())
     !$ACC END DATA
 
-    stop_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data)
 
   END SUBROUTINE exchange_data_l3d
 
@@ -2219,31 +1970,17 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(IN) :: nshift
 
     CHARACTER(len=*), PARAMETER :: routine = modname//"::exchange_data_mult"
-    TYPE(t_ptr_3d), PTR_INTENT(in) :: recv(:)
-    TYPE(t_ptr_3d), OPTIONAL, PTR_INTENT(in) :: send(:)
+    TYPE(t_ptr_3d), INTENT(in) :: recv(:)
+    TYPE(t_ptr_3d), OPTIONAL, INTENT(in) :: send(:)
     INTEGER        :: ndim2(SIZE(recv)), noffset(SIZE(recv))
 
-#ifdef __REALLOC_BUF
-    REAL(dp), POINTER :: send_buf(:,:), recv_buf(:,:)
-#else
     REAL(dp) :: send_buf(ndim2tot,p_pat%n_send),recv_buf(ndim2tot,p_pat%n_recv)
-#endif
 
-#if defined( __SX__ ) || defined( _OPENACC )
-    REAL(dp), POINTER :: send_ptr(:,:,:), recv_ptr(:,:,:)  ! Refactoring for OpenACC
-#endif
     INTEGER :: nfields, accum
     INTEGER :: i, k, kshift(SIZE(recv)), jb,ik, jl, n, np, irs, iss, pid, icount
     LOGICAL :: lsend
     INTEGER :: n_send, n_pnts
     INTEGER :: kshift_n, ndim2_n, noffset_n ! temporary variables to avoid copying data in OpenACC
-#ifdef _OPENACC
-    LOGICAL :: lzacc, use_g2g, use_staging
-
-    lzacc       = lacc
-    use_g2g     = lzacc .AND.       global_use_g2g
-    use_staging = lzacc .AND. .NOT. global_use_g2g
-#endif
 
     n_send = p_pat%n_send
     n_pnts = p_pat%n_pnts
@@ -2252,12 +1989,12 @@ CONTAINS
 
     nfields = SIZE(recv)
     IF (itype_exch_barrier == 1 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
-    start_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data)
 
     lsend     = PRESENT(send)
 
@@ -2269,34 +2006,14 @@ CONTAINS
           CALL exchange_data_r3d_seq(p_pat, lacc, recv(n)%p(:,:,:))
         ENDIF
       ENDDO
-      stop_sync_timer(timer_exch_data)
+      IF (activate_sync_timers) CALL timer_stop(timer_exch_data)
       RETURN
     END IF
 
-#ifdef __REALLOC_BUF
-    CALL realloc_global_buffer_dp(send_buffer_dp, ndim2tot*p_pat%n_send)
-    CALL realloc_global_buffer_dp(recv_buffer_dp, ndim2tot*p_pat%n_recv)
-    send_buf(1:ndim2tot, 1:p_pat%n_send) => send_buffer_dp(1:ndim2tot*p_pat%n_send)
-    recv_buf(1:ndim2tot, 1:p_pat%n_recv) => recv_buffer_dp(1:ndim2tot*p_pat%n_recv)
-    !$ACC DATA PRESENT(send_buf, recv_buf) &
-#else
     !$ACC   DATA CREATE(send_buf, recv_buf) &
-#endif
     !$ACC   PRESENT(p_pat) &
     !$ACC   ASYNC(get_comm_acc_queue()) IF(lzacc)
 
-#ifdef _OPENACC
-    ! the `init` subroutine is not used here as this needs to be run with `ASYNC(get_comm_acc_queue())` and not `ASYNC(1)`
-    !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO k = 1, p_pat%n_recv
-      DO i = 1, ndim2tot
-          recv_buf(i,k) = 0._dp
-      ENDDO
-    ENDDO
-    !$ACC END PARALLEL
-    IF (lzacc) CALL acc_wait_comms(get_comm_acc_queue())
-#endif
 
     IF (lzacc .and. .not. use_staging) CALL comm_group_start()
 
@@ -2330,47 +2047,6 @@ CONTAINS
     ENDDO
 
     ! Set up send buffer
-#if defined( __SX__ ) || defined( _OPENACC )
-    IF ( lsend ) THEN
-      DO n = 1, nfields
-        send_ptr => send(n)%p
-        ndim2_n   = ndim2(n)
-        noffset_n = noffset(n)
-        kshift_n  = kshift(n)
-        !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2_n
-          DO i = 1, n_send
-            send_buf(k+noffset_n,i) = &
-              send_ptr(p_pat%send_src_idx(i),k+kshift_n,p_pat%send_src_blk(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-      ENDDO
-    ELSE
-      ! Send and receive arrays are identical (for boundary exchange)
-      DO n = 1, nfields
-        recv_ptr => recv(n)%p
-        ndim2_n   = ndim2(n)
-        noffset_n = noffset(n)
-        kshift_n  = kshift(n)
-        !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2_n
-          DO i = 1, n_send
-            send_buf(k+noffset_n,i) = &
-              recv_ptr(p_pat%send_src_idx(i),k+kshift_n,p_pat%send_src_blk(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-      ENDDO
-    ENDIF
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO PRIVATE(jb,jl,n,k)
-#endif
     DO i = 1, n_send
       jb = p_pat%send_src_blk(i)
       jl = p_pat%send_src_idx(i)
@@ -2388,10 +2064,6 @@ CONTAINS
         ENDDO
       ENDIF
     ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
 
     ! Send our data
     !$ACC UPDATE HOST(send_buf) ASYNC(get_comm_acc_queue()) IF(use_staging)
@@ -2435,43 +2107,21 @@ CONTAINS
     ENDIF
 
     ! Wait for all outstanding requests to finish
-    start_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data_wait)
     CALL p_wait
     !$ACC UPDATE DEVICE(recv_buf) ASYNC(get_comm_acc_queue()) IF(use_staging)
-    stop_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data_wait)
 
     IF (lzacc .and. .not. use_staging) CALL comm_group_end()
 
     IF (itype_exch_barrier == 2 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
     ! Fill in receive buffer
 
-#if defined( __SX__ ) || defined( _OPENACC )
-    DO n = 1, nfields
-      recv_ptr => recv(n)%p
-
-      ndim2_n   = ndim2(n)
-      noffset_n = noffset(n)
-      kshift_n  = kshift(n)
-      !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-      DO k = 1, ndim2_n
-        DO i = 1, n_pnts
-          recv_ptr(p_pat%recv_dst_idx(i),k+kshift_n,p_pat%recv_dst_blk(i)) =  &
-            recv_buf(k+noffset_n,p_pat%recv_src(i))
-        ENDDO
-      ENDDO
-      !$ACC END PARALLEL
-    ENDDO
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO PRIVATE(jb,jl,ik,n,k)
-#endif
     DO i = 1, n_pnts
       jb = p_pat%recv_dst_blk(i)
       jl = p_pat%recv_dst_idx(i)
@@ -2482,15 +2132,11 @@ CONTAINS
         ENDDO
       ENDDO
     ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
 
     CALL acc_wait_comms(get_comm_acc_queue())
     !$ACC END DATA
       
-    stop_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data)
 
   END SUBROUTINE exchange_data_mult
 
@@ -2503,36 +2149,19 @@ CONTAINS
     LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
 
     INTEGER, INTENT(IN)           :: nfields_dp, ndim2tot_dp, nfields_sp, ndim2tot_sp
-    TYPE(t_ptr_3d), PTR_INTENT(in), OPTIONAL :: recv_dp(:)
-    TYPE(t_ptr_3d), PTR_INTENT(in), OPTIONAL :: send_dp(:)
-    TYPE(t_ptr_3d_sp), PTR_INTENT(in), OPTIONAL :: recv_sp(:)
-    TYPE(t_ptr_3d_sp), PTR_INTENT(in), OPTIONAL :: send_sp(:)
+    TYPE(t_ptr_3d), INTENT(in), OPTIONAL :: recv_dp(:)
+    TYPE(t_ptr_3d), INTENT(in), OPTIONAL :: send_dp(:)
+    TYPE(t_ptr_3d_sp), INTENT(in), OPTIONAL :: recv_sp(:)
+    TYPE(t_ptr_3d_sp), INTENT(in), OPTIONAL :: send_sp(:)
 
     INTEGER, OPTIONAL, INTENT(IN) :: nshift
 
     INTEGER             :: ndim2_dp(nfields_dp), noffset_dp(nfields_dp), &
                            ndim2_sp(nfields_sp), noffset_sp(nfields_sp)
 
-#ifdef __REALLOC_BUF
-    REAL(dp), POINTER :: send_buf_dp(:,:), recv_buf_dp(:,:)
-    REAL(sp), POINTER :: send_buf_sp(:,:), recv_buf_sp(:,:)
-#else
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    ! ACCWA (Cray Fortran <= 16.0.1.1) due to bug related to zero sized arrays
-    ! automatic arrays cannot be used here CAST-33010
-    REAL(dp), ALLOCATABLE :: send_buf_dp(:,:), recv_buf_dp(:,:)
-    REAL(sp), ALLOCATABLE :: send_buf_sp(:,:), recv_buf_sp(:,:)
-#else
     REAL(dp) :: send_buf_dp(ndim2tot_dp,p_pat%n_send),recv_buf_dp(ndim2tot_dp,p_pat%n_recv)
     REAL(sp) :: send_buf_sp(ndim2tot_sp,p_pat%n_send),recv_buf_sp(ndim2tot_sp,p_pat%n_recv)
-#endif
-#endif
 
-#if defined( __SX__ ) || defined( _OPENACC )
-    ! Refactoring for OpenACC
-    REAL(dp), POINTER :: send_fld_dp(:,:,:), recv_fld_dp(:,:,:)
-    REAL(sp), POINTER :: send_fld_sp(:,:,:), recv_fld_sp(:,:,:)
-#endif
     INTEGER :: i, k, kshift_dp(nfields_dp), kshift_sp(nfields_sp), &
          jb, ik, jl, n, np, irs, iss, pid, icount, accum
     LOGICAL :: lsend
@@ -2543,13 +2172,6 @@ CONTAINS
     INTEGER, POINTER :: send_src_idx(:)
     INTEGER :: n_send, n_pnts
     INTEGER :: kshift_n, ndim2_n, noffset_n ! temporary variables to avoid copying data in OpenACC
-#ifdef _OPENACC
-    LOGICAL :: lzacc, use_g2g, use_staging
-
-    lzacc       = lacc
-    use_g2g     = lzacc .AND.       global_use_g2g
-    use_staging = lzacc .AND. .NOT. global_use_g2g
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)
@@ -2562,12 +2184,12 @@ CONTAINS
     !-----------------------------------------------------------------------
 
     IF (itype_exch_barrier == 1 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
-    start_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data)
 
     lsend     = PRESENT(send_sp)
 
@@ -2594,46 +2216,14 @@ CONTAINS
           CALL exchange_data_s3d_seq(p_pat, lacc, recv_sp(n)%p)
         ENDIF
       ENDDO
-      stop_sync_timer(timer_exch_data)
+      IF (activate_sync_timers) CALL timer_stop(timer_exch_data)
       RETURN
     ENDIF
 
-#ifdef __REALLOC_BUF
-    CALL realloc_global_buffer_dp(send_buffer_dp, ndim2tot_dp*p_pat%n_send)
-    CALL realloc_global_buffer_dp(recv_buffer_dp, ndim2tot_dp*p_pat%n_recv)
-    CALL realloc_global_buffer_sp(send_buffer_sp, ndim2tot_sp*p_pat%n_send)
-    CALL realloc_global_buffer_sp(recv_buffer_sp, ndim2tot_sp*p_pat%n_recv)
-    send_buf_dp(1:ndim2tot_dp, 1:p_pat%n_send) => send_buffer_dp(1:ndim2tot_dp*p_pat%n_send)
-    recv_buf_dp(1:ndim2tot_dp, 1:p_pat%n_recv) => recv_buffer_dp(1:ndim2tot_dp*p_pat%n_recv)
-    send_buf_sp(1:ndim2tot_sp, 1:p_pat%n_send) => send_buffer_sp(1:ndim2tot_sp*p_pat%n_send)
-    recv_buf_sp(1:ndim2tot_sp, 1:p_pat%n_recv) => recv_buffer_sp(1:ndim2tot_sp*p_pat%n_recv)
-    !$ACC DATA PRESENT(send_buf_dp, recv_buf_dp, send_buf_sp, recv_buf_sp) &
-    !$ACC   PRESENT(recv_src, recv_dst_blk, recv_dst_idx, send_src_blk, send_src_idx) &
-    !$ACC   ASYNC(get_comm_acc_queue()) IF(lzacc)
-#else
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    ! ACCWA (Cray Fortran <= 16.0.1.1) due to bug related to zero sized arrays
-    ! automatic arrays cannot be used here CAST-33010
-    ALLOCATE(send_buf_dp(ndim2tot_dp,p_pat%n_send), recv_buf_dp(ndim2tot_dp,p_pat%n_recv))
-    ALLOCATE(send_buf_sp(ndim2tot_sp,p_pat%n_send), recv_buf_sp(ndim2tot_sp,p_pat%n_recv))
-#endif
     !$ACC DATA CREATE(send_buf_dp, recv_buf_dp, send_buf_sp, recv_buf_sp) &
     !$ACC   PRESENT(recv_src, recv_dst_blk, recv_dst_idx, send_src_blk, send_src_idx) &
     !$ACC   ASYNC(get_comm_acc_queue()) IF(lzacc)
-#endif
 
-#ifdef _OPENACC
-    ! the `init` subroutine is not used here as this needs to be run with `ASYNC(get_comm_acc_queue())` and not `ASYNC(1)`
-    !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-    DO k = 1, p_pat%n_recv
-      DO i = 1, ndim2tot_sp
-        recv_buf_sp(i,k) = 0._sp
-      ENDDO
-    ENDDO
-    !$ACC END PARALLEL
-    IF (lzacc) CALL acc_wait_comms(get_comm_acc_queue())
-#endif
 
     IF (lzacc .and. .not. use_staging) CALL comm_group_start()
 
@@ -2675,79 +2265,6 @@ CONTAINS
     ENDDO
 
     ! Set up send buffer
-#if defined( __SX__ ) || defined( _OPENACC )
-    IF ( lsend ) THEN
-      DO n = 1, nfields_dp
-        send_fld_dp => send_dp(n)%p   ! Refactoring for OpenACC
-        ndim2_n   = ndim2_dp(n)
-        noffset_n = noffset_dp(n)
-        kshift_n  = kshift_dp(n)
-        !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2_n
-          DO i = 1, n_send
-            send_buf_dp(k+noffset_n,i) = &
-              send_fld_dp(send_src_idx(i),k+kshift_n,send_src_blk(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-      ENDDO
-      DO n = 1, nfields_sp
-        send_fld_sp => send_sp(n)%p   ! Refactoring for OpenACC
-        ndim2_n   = ndim2_sp(n)
-        noffset_n = noffset_sp(n)
-        kshift_n  = kshift_sp(n)
-        !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2_n
-          DO i = 1, n_send
-            send_buf_sp(k+noffset_n,i) = &
-              send_fld_sp(send_src_idx(i),k+kshift_n,send_src_blk(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-      ENDDO
-    ELSE
-      ! Send and receive arrays are identical (for boundary exchange)
-      DO n = 1, nfields_dp
-        recv_fld_dp => recv_dp(n)%p
-        ndim2_n   = ndim2_dp(n)
-        noffset_n = noffset_dp(n)
-        kshift_n  = kshift_dp(n)
-        !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2_n
-          DO i = 1, n_send
-            send_buf_dp(k+noffset_n,i) = &
-              recv_fld_dp(send_src_idx(i),k+kshift_n,send_src_blk(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-      ENDDO
-      DO n = 1, nfields_sp
-        recv_fld_sp => recv_sp(n)%p
-        ndim2_n   = ndim2_sp(n)
-        noffset_n = noffset_sp(n)
-        kshift_n  = kshift_sp(n)
-        !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-        DO k = 1, ndim2_n
-          DO i = 1, n_send
-            send_buf_sp(k+noffset_n,i) = &
-              recv_fld_sp(send_src_idx(i),k+kshift_n,send_src_blk(i))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-      ENDDO
-    ENDIF
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO PRIVATE(jb,jl,n,k)
-#endif
     DO i = 1, n_send
       jb = send_src_blk(i)
       jl = send_src_idx(i)
@@ -2775,10 +2292,6 @@ CONTAINS
         ENDDO
       ENDIF
     ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
 
     ! Send our data
     !$ACC UPDATE HOST(send_buf_sp, send_buf_dp) ASYNC(get_comm_acc_queue()) IF(use_staging)
@@ -2831,58 +2344,21 @@ CONTAINS
     ENDIF
 
     ! Wait for all outstanding requests to finish
-    start_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data_wait)
     CALL p_wait
     !$ACC UPDATE DEVICE(recv_buf_sp, recv_buf_dp) ASYNC(get_comm_acc_queue()) IF(use_staging)
-    stop_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data_wait)
 
     IF (lzacc .and. .not. use_staging) CALL comm_group_end()
 
     IF (itype_exch_barrier == 2 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
     ! Fill in receive buffer
 
-#if defined( __SX__ ) || defined( _OPENACC )
-    DO n = 1, nfields_dp
-      recv_fld_dp => recv_dp(n)%p
-      ndim2_n   = ndim2_dp(n)
-      noffset_n = noffset_dp(n)
-      kshift_n  = kshift_dp(n)
-      !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-      DO k = 1, ndim2_n
-        DO i = 1, n_pnts
-            recv_fld_dp(recv_dst_idx(i),k+kshift_n,recv_dst_blk(i)) =  &
-              recv_buf_dp(k+noffset_n,recv_src(i))
-        ENDDO
-      ENDDO
-      !$ACC END PARALLEL
-    ENDDO
-    DO n = 1, nfields_sp
-      recv_fld_sp => recv_sp(n)%p
-      ndim2_n   = ndim2_sp(n)
-      noffset_n = noffset_sp(n)
-      kshift_n  = kshift_sp(n)
-      !$ACC PARALLEL DEFAULT(PRESENT) IF(lzacc) ASYNC(get_comm_acc_queue())
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-!$NEC outerloop_unroll(4)
-      DO k = 1, ndim2_n
-        DO i = 1, n_pnts
-          recv_fld_sp(recv_dst_idx(i),k+kshift_n,recv_dst_blk(i)) =  &
-            recv_buf_sp(k+noffset_n,recv_src(i))
-        ENDDO
-      ENDDO
-      !$ACC END PARALLEL
-    ENDDO
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL DO PRIVATE(jb,jl,ik,n,k)
-#endif
     DO i = 1, n_pnts
       jb = recv_dst_blk(i)
       jl = recv_dst_idx(i)
@@ -2898,22 +2374,12 @@ CONTAINS
         ENDDO
       ENDDO
     ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL DO
-#endif
-#endif
 
     CALL acc_wait_comms(get_comm_acc_queue())
     !$ACC END DATA
 
-#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
-    ! ACCWA (Cray Fortran <= 16.0.1.1) due to bug related to zero sized arrays
-    ! automatic arrays cannot be used here CAST-33010
-    DEALLOCATE(send_buf_dp, recv_buf_dp)
-    DEALLOCATE(send_buf_sp, recv_buf_sp)
-#endif
 
-    stop_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data)
 
   END SUBROUTINE exchange_data_mult_mixprec
 
@@ -2933,11 +2399,7 @@ CONTAINS
 
     INTEGER :: ndim2, koffset
 
-#ifdef __REALLOC_BUF
-    REAL(dp), POINTER :: send_buf(:,:), recv_buf(:,:)
-#else
     REAL(dp) :: send_buf(ndim2tot,p_pat%n_send),recv_buf(ndim2tot,p_pat%n_recv)
-#endif
 
     INTEGER :: i, k, ik, jb, jl, n, np, irs, iss, pid, icount
     LOGICAL :: lsend
@@ -2947,13 +2409,6 @@ CONTAINS
     INTEGER, POINTER :: send_src_blk(:)
     INTEGER, POINTER :: send_src_idx(:)
     INTEGER :: n_send, n_pnts
-#ifdef _OPENACC
-    LOGICAL :: lzacc, use_g2g, use_staging
-
-    lzacc       = lacc
-    use_g2g     = lzacc .AND.       global_use_g2g
-    use_staging = lzacc .AND. .NOT. global_use_g2g
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)
@@ -2970,12 +2425,12 @@ CONTAINS
     END IF
 
     IF (itype_exch_barrier == 1 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
-    start_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data)
 
     IF (PRESENT(send)) THEN
       lsend  = .TRUE.
@@ -2985,21 +2440,10 @@ CONTAINS
 
     ndim2 = SIZE(recv,3)
 
-#ifdef __REALLOC_BUF
-    CALL realloc_global_buffer_dp(send_buffer_dp, ndim2tot*p_pat%n_send)
-    CALL realloc_global_buffer_dp(recv_buffer_dp, ndim2tot*p_pat%n_recv)
-    send_buf(1:ndim2tot, 1:p_pat%n_send) => send_buffer_dp(1:ndim2tot*p_pat%n_send)
-    recv_buf(1:ndim2tot, 1:p_pat%n_recv) => recv_buffer_dp(1:ndim2tot*p_pat%n_recv)
-    !$ACC DATA PRESENT(send_buf, recv_buf) &
-#else
     !$ACC   DATA CREATE(send_buf, recv_buf) &
-#endif
     !$ACC   PRESENT(recv, recv_src, recv_dst_blk, recv_dst_idx, send_src_blk, send_src_idx) &
     !$ACC   IF(lzacc)
 
-#ifdef _OPENACC
-    CALL init(recv_buf, lacc=lzacc, opt_acc_async=.TRUE.)
-#endif
 
     IF ((iorder_sendrecv == 1 .OR. iorder_sendrecv == 3)) THEN
       ! Set up irecv's for receive buffers
@@ -3013,32 +2457,6 @@ CONTAINS
       ENDDO
     ENDIF
 
-#ifdef __SX__
-    IF ( lsend ) THEN
-      DO k = 1, ndim2
-        koffset = (k-1)*nfields
-!$NEC novector
-        DO n = 1, nfields
-          DO i = 1, n_send
-            send_buf(n+koffset,i) = send(n,send_src_idx(i),k,send_src_blk(i))
-          ENDDO
-        ENDDO
-      ENDDO
-    ELSE
-      DO k = 1, ndim2
-        koffset = (k-1)*nfields
-!$NEC novector
-        DO n = 1, nfields
-          DO i = 1, n_send
-            send_buf(n+koffset,i) = recv(n,send_src_idx(i),k,send_src_blk(i))
-          ENDDO
-        ENDDO
-      ENDDO
-    ENDIF
-#else
-#if defined( __OMPPAR_COPY__ ) && !defined( _OPENACC )
-!$OMP PARALLEL DO PRIVATE(jb,jl,koffset,k,n)
-#endif
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     !$ACC LOOP GANG
     DO i = 1, n_send
@@ -3064,10 +2482,6 @@ CONTAINS
     ENDDO
     !$ACC END PARALLEL
 
-#if defined( __OMPPAR_COPY__ ) && !defined( _OPENACC )
-!$OMP END PARALLEL DO
-#endif
-#endif
 
     ! Send our data
     !$ACC UPDATE HOST(send_buf) ASYNC(1) IF(use_staging)
@@ -3111,33 +2525,19 @@ CONTAINS
     ENDIF
 
     ! Wait for all outstanding requests to finish
-    start_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data_wait)
     CALL p_wait
-    stop_sync_timer(timer_exch_data_wait)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data_wait)
 
     !$ACC UPDATE DEVICE(recv_buf) ASYNC(1) IF(use_staging)
 
     IF (itype_exch_barrier == 2 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
     ! Fill in receive buffer
-#ifdef __SX__
-    DO k = 1, ndim2
-      koffset = (k-1)*nfields
-!$NEC novector
-      DO n = 1, nfields
-        DO i = 1, n_pnts
-          recv(n,recv_dst_idx(i),k,recv_dst_blk(i)) = recv_buf(n+koffset,recv_src(i))
-        ENDDO
-      ENDDO
-    ENDDO
-#else
-#if defined( __OMPPAR_COPY__ ) && !defined( _OPENACC )
-!$OMP PARALLEL DO PRIVATE(jb,jl,ik,koffset,k,n)
-#endif
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     !$ACC LOOP GANG
     DO i = 1, n_pnts
@@ -3152,17 +2552,12 @@ CONTAINS
         ENDDO
       ENDDO
     ENDDO
-#if defined( __OMPPAR_COPY__ ) && !defined( _OPENACC )
-!$OMP END PARALLEL DO
-#else
     !$ACC END PARALLEL
-#endif
-#endif
 
     !$ACC WAIT(1)
     !$ACC END DATA
 
-    stop_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data)
 
   END SUBROUTINE exchange_data_4de1
 
@@ -3177,7 +2572,7 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = modname//"::exchange_data_grf"
     INTEGER, INTENT(IN)           :: nfields  ! total number of input fields
     INTEGER, INTENT(IN)           :: ndim2tot ! sum of vertical levels of input fields
-    TYPE(t_ptr_3d), PTR_INTENT(in) :: recv(nfields), send(nfields)
+    TYPE(t_ptr_3d), INTENT(in) :: recv(nfields), send(nfields)
 
     INTEGER           :: nsendtot ! total number of send points
     INTEGER           :: nrecvtot ! total number of receive points
@@ -3202,19 +2597,8 @@ CONTAINS
       isum, ioffset, isum1, n4d, pid, num_send, num_recv, &
       comm_size, idx_1d_i, accum, accum2
     INTEGER, ALLOCATABLE :: pelist_send(:), pelist_recv(:)
-#ifdef __SX__
-    INTEGER, PARAMETER :: npats = 4 ! needed for vectorization
-#else
     INTEGER :: npats
-#endif
     TYPE(t_p_comm_pattern_orig), POINTER :: p_pat(:)
-#ifdef _OPENACC
-    LOGICAL :: lzacc, use_g2g, use_staging
-
-    lzacc       = lacc
-    use_g2g     = lzacc .AND.       global_use_g2g
-    use_staging = lzacc .AND. .NOT. global_use_g2g
-#endif
 
     !-----------------------------------------------------------------------
 
@@ -3236,17 +2620,13 @@ CONTAINS
     !-----------------------------------------------------------------------
 
     IF (itype_exch_barrier == 1 .OR. itype_exch_barrier == 3) THEN
-      start_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_start(timer_barrier)
       CALL p_barrier(p_pat_coll%patterns(1)%p%comm)
-      stop_sync_timer(timer_barrier)
+      IF (activate_sync_timers) CALL timer_stop(timer_barrier)
     ENDIF
 
-    start_sync_timer(timer_exch_data)
-#ifdef __SX__
-    IF (npats /= SIZE(p_pat))       CALL finish('exchange_data_grf', 'invalid number of comm patterns')
-#else
+    IF (activate_sync_timers) CALL timer_start(timer_exch_data)
     npats = SIZE(p_pat)  ! Number of communication patterns provided on input
-#endif
     !-----------------------------------------------------------------------
 
     ! some adjustmens to the standard communication patterns in order to make
@@ -3339,17 +2719,6 @@ CONTAINS
     !$ACC   COPYIN(p_send_src_idx, p_send_src_blk) &
     !$ACC   COPYIN(p_recv_dst_idx, p_recv_dst_blk) IF(lzacc)
 
-#ifdef _OPENACC
-    DO n = 1, nfields
-      !$ACC ENTER DATA ATTACH(send(n)%p, recv(n)%p) IF(lzacc)
-    ENDDO
-
-    DO np = 1, npats
-      !$ACC ENTER DATA ATTACH(p_send_src_idx(np)%p, p_send_src_blk(np)%p) &
-      !$ACC   ATTACH(p_recv_dst_idx(np)%p, p_recv_dst_blk(np)%p) &
-      !$ACC   ATTACH(p_recv_src(np)%p) IF(lzacc)
-    ENDDO
-#endif
 
     IF (my_process_is_mpi_seq()) THEN
 
@@ -3401,33 +2770,7 @@ CONTAINS
       ENDIF
 
       ! Set up send buffer
-#if defined( __SX__ ) || defined( _OPENACC )
-
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP SEQ
-      DO n = 1, nfields
-        !$ACC LOOP SEQ
-        DO np = 1, npats
-          !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-          DO k = 1, ndim2(n)
-            DO i = 1, n_send(np)
-              send_buf(k+noffset(n),i+ioffset_s(np)) =                &
-                & send(n)%p(k, idx_1d(p_send_src_idx(np)%p(i),    &
-                &                     p_send_src_blk(np)%p(i)), np)
-            ENDDO
-          ENDDO
-        ENDDO
-      ENDDO
-      !$ACC END PARALLEL
-      !$ACC WAIT(1)
-#else
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL PRIVATE(np)
-#endif
       DO np = 1, npats
-#ifdef __OMPPAR_COPY__
-!$OMP DO PRIVATE(idx_1d_i,n,k)
-#endif
         DO i = 1, n_send(np)
           idx_1d_i = idx_1d(p_send_src_idx(np)%p(i), p_send_src_blk(np)%p(i))
           DO n = 1, nfields
@@ -3436,14 +2779,7 @@ CONTAINS
             ENDDO
           ENDDO
         ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END DO
-#endif
       ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL
-#endif
-#endif
 
       IF (iorder_sendrecv <= 1) THEN
 
@@ -3524,9 +2860,6 @@ CONTAINS
 
         ENDDO
       ELSE IF (iorder_sendrecv >= 3) THEN ! use isend/recv
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL PRIVATE(ioffset,pid,isum,iss,ise,isum1,np,n,i)
-#endif
         ioffset = 0
         DO np = 1, num_send ! loop over PEs where to send the data
 
@@ -3539,17 +2872,11 @@ CONTAINS
             ise = p_pat(n)%p%send_limits(pid+1) + ioffset_s(n)
             isum1 = ise - iss + 1
             IF (isum1 > 0) THEN
-#ifdef __OMPPAR_COPY__
-!$OMP DO
-#endif
               !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
               DO i = 1, isum1
                 auxs_buf(:,isum+i) = send_buf(:,iss-1+i)
               ENDDO
               !$ACC END KERNELS
-#ifdef __OMPPAR_COPY__
-!$OMP END DO
-#endif
               isum = isum+isum1
             ENDIF
           ENDDO
@@ -3564,29 +2891,23 @@ CONTAINS
           ioffset = isum
 
         ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL
-#endif
       ENDIF
 
       ! Wait for all outstanding requests to finish
-      start_sync_timer(timer_exch_data_wait)
+      IF (activate_sync_timers) CALL timer_start(timer_exch_data_wait)
       CALL p_wait
-      stop_sync_timer(timer_exch_data_wait)
+      IF (activate_sync_timers) CALL timer_stop(timer_exch_data_wait)
 
       IF (itype_exch_barrier == 2 .OR. itype_exch_barrier == 3) THEN
-        start_sync_timer(timer_barrier)
+        IF (activate_sync_timers) CALL timer_start(timer_barrier)
         CALL p_barrier(p_pat_coll%patterns(1)%p%comm)
-        stop_sync_timer(timer_barrier)
+        IF (activate_sync_timers) CALL timer_stop(timer_barrier)
       ENDIF
 
       !$ACC UPDATE DEVICE(auxr_buf) ASYNC(1) IF(use_staging)
 
       ! Copy exchanged data back to receive buffer
 
-#ifdef __OMPPAR_COPY__
-!$OMP PARALLEL PRIVATE(ioffset,pid,isum,irs,ire,isum1,n,i)
-#endif
 
       ioffset = 0
       DO np = 1, num_recv ! loop over PEs from where to receive the data
@@ -3599,9 +2920,6 @@ CONTAINS
           ire = p_pat(n)%p%recv_limits(pid+1) + ioffset_r(n)
           isum1 = ire - irs
           IF (isum1 > 0) THEN
-#ifdef __OMPPAR_COPY__
-!$OMP DO
-#endif
 
             !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
             !$ACC LOOP GANG VECTOR COLLAPSE(2)
@@ -3611,9 +2929,6 @@ CONTAINS
               ENDDO
             ENDDO
             !$ACC END PARALLEL
-#ifdef __OMPPAR_COPY__
-!$OMP END DO
-#endif
             isum = isum + isum1
           ENDIF
         ENDDO
@@ -3624,29 +2939,7 @@ CONTAINS
 
       ! Fill in receive buffer
 
-#if defined( __SX__ ) || defined( _OPENACC )
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-      !$ACC LOOP SEQ
-      DO n = 1, nfields
-        !$ACC LOOP SEQ
-        DO np = 1, npats
-          !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-          DO k = 1, ndim2(n)
-            DO i = 1, n_pnts(np)
-              recv(n)%p(p_recv_dst_idx(np)%p(i),k, &
-                        p_recv_dst_blk(np)%p(i)) =   &
-                recv_buf(k+noffset(n),p_recv_src(np)%p(i)+ioffset_r(np))
-            ENDDO
-          ENDDO
-        ENDDO
-      ENDDO
-      !$ACC END PARALLEL
-      !$ACC WAIT(1)
-#else
       DO np = 1, npats
-#ifdef __OMPPAR_COPY__
-!$OMP DO PRIVATE(jb,jl,ik,n,k)
-#endif
         DO i = 1, n_pnts(np)
           jb = p_recv_dst_blk(np)%p(i)
           jl = p_recv_dst_idx(np)%p(i)
@@ -3657,33 +2950,14 @@ CONTAINS
             ENDDO
           ENDDO
         ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END DO
-#endif
       ENDDO
-#ifdef __OMPPAR_COPY__
-!$OMP END PARALLEL
-#endif
-#endif
 
       !---------------------------------------------------------
     ENDIF  ! .NOT. my_process_is_mpi_seq()
 
-#ifdef _OPENACC
-    !$ACC WAIT(1)
-    DO n = 1, nfields
-      !$ACC EXIT DATA DETACH(recv(n)%p, send(n)%p) IF(lzacc)
-    ENDDO
-
-    DO np = 1, npats
-      !$ACC EXIT DATA DETACH(p_send_src_idx(np)%p, p_send_src_blk(np)%p) &
-      !$ACC   DETACH(p_recv_dst_idx(np)%p, p_recv_dst_blk(np)%p) &
-      !$ACC   DETACH(p_recv_src(np)%p) IF(lzacc)
-    ENDDO
-#endif
 
     !$ACC END DATA
-    stop_sync_timer(timer_exch_data)
+    IF (activate_sync_timers) CALL timer_stop(timer_exch_data)
 
   END SUBROUTINE exchange_data_grf
 
@@ -3813,11 +3087,6 @@ CONTAINS
     INTEGER, POINTER :: send_src_blk(:)
     INTEGER, POINTER :: send_src_idx(:)
     INTEGER :: n_pnts
-#ifdef _OPENACC
-    LOGICAL :: lzacc
-
-    lzacc = lacc
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)
@@ -3893,11 +3162,6 @@ CONTAINS
     INTEGER, POINTER :: send_src_blk(:)
     INTEGER, POINTER :: send_src_idx(:)
     INTEGER :: n_pnts
-#ifdef _OPENACC
-    LOGICAL :: lzacc
-
-    lzacc = lacc
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)
@@ -4022,11 +3286,6 @@ CONTAINS
     INTEGER, POINTER :: send_src_blk(:)
     INTEGER, POINTER :: send_src_idx(:)
     INTEGER :: n_pnts
-#ifdef _OPENACC
-    LOGICAL :: lzacc
-
-    lzacc = lacc
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)
@@ -4139,11 +3398,6 @@ CONTAINS
     INTEGER, POINTER :: send_src_blk(:)
     INTEGER, POINTER :: send_src_idx(:)
     INTEGER :: n_pnts
-#ifdef _OPENACC
-    LOGICAL :: lzacc
-
-    lzacc = lacc
-#endif
 
     recv_src => p_pat%recv_src(:)
     recv_dst_blk => p_pat%recv_dst_blk(:)

@@ -12,7 +12,17 @@
 ! Calculates 3D subgrid-scale viscosity and diffusivity in the nonhydrostatic model
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_sgs_turbulence
@@ -366,13 +376,8 @@ MODULE mo_sgs_turbulence
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
 
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
       DO jk = 2, nlev
         DO je = i_startidx, i_endidx
-#endif
           vn_ie(je,jk,jb) = p_nh_metrics%wgtfac_e(je,jk,jb) * p_nh_prog%vn(je,jk,jb) +            &
                             ( 1._wp - p_nh_metrics%wgtfac_e(je,jk,jb) ) * p_nh_prog%vn(je,jk-1,jb)
         END DO
@@ -420,13 +425,8 @@ MODULE mo_sgs_turbulence
 
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
       DO jk = 1, nlev
         DO je = i_startidx, i_endidx
-#endif
 
           vn_vert1 = u_vert(ividx(je,jb,1),jk,ivblk(je,jb,1))     *   &
                      p_patch%edges%primal_normal_vert(je,jb,1)%v1 +   &
@@ -537,13 +537,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,      &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           div_c(jc,jk,jb) =                                                                       &
                   ( div_of_stress(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%e_bln_c_s(jc,1,jb) +  &
                     div_of_stress(ieidx(jc,jb,2),jk,ieblk(jc,jb,2)) * p_int%e_bln_c_s(jc,2,jb) +  &
@@ -564,13 +564,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,      &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
 
           prm_diag%mech_prod(jc,jk,jb) = p_nh_metrics%wgtfac_c(jc,jk,jb) * (                      &
                       shear(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%e_bln_c_s(jc,1,jb)   +      &
@@ -605,13 +605,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                           i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2 , nlev
-#else
+
+
+
+
       DO jk = 2 , nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           kh_ic(jc,jk,jb) = rho_ic(jc,jk,jb) * les_config(jg)%rturb_prandtl *                     &
                             p_nh_metrics%mixing_length_sq(jc,jk,jb)         *                     &
                             SQRT( MAX( 0._wp, prm_diag%mech_prod(jc,jk,jb) * 0.5_wp -             &
@@ -644,13 +644,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                           i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1 , nlev
-#else
+
+
+
+
       DO jk = 1 , nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           km_c(jc,jk,jb) = MAX( les_config(jg)%km_min, &
                                 ( kh_ic(jc,jk,jb) + kh_ic(jc,jk+1,jb) ) * &
                                 0.5_wp * les_config(jg)%turb_prandtl )
@@ -802,13 +802,13 @@ MODULE mo_sgs_turbulence
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,      &
                          i_startidx, i_endidx, rl_start, rl_end)
 
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO je = i_startidx, i_endidx
-#endif
+
           vn_ie(je,jk,jb)   = p_nh_metrics%wgtfac_e(je,jk,jb) * p_nh_prog%vn(je,jk,jb) +          &
                               ( 1._wp - p_nh_metrics%wgtfac_e(je,jk,jb) ) *                       &
                               p_nh_prog%vn(je,jk-1,jb)
@@ -854,13 +854,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,      &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO je = i_startidx, i_endidx
-#endif
+
 
           vn_vert1   = u_vert(ividx(je,jb,1),jk,ivblk(je,jb,1))     *        & 
                        p_patch%edges%primal_normal_vert(je,jb,1)%v1 +        &
@@ -970,13 +970,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
        CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,      &
                           i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-       DO jc = i_startidx, i_endidx
-         DO jk = 1, nlev
-#else
+
+
+
+
        DO jk = 1, nlev
          DO jc = i_startidx, i_endidx
-#endif
+
            div_c(jc,jk,jb) =                                                                      &
                   ( div_of_stress(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%e_bln_c_s(jc,1,jb) +  &
                     div_of_stress(ieidx(jc,jb,2),jk,ieblk(jc,jb,2)) * p_int%e_bln_c_s(jc,2,jb) +  &
@@ -991,13 +991,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
 
           ddt_tke = km_ic(jc,jk,jb) * ( p_nh_metrics%wgtfac_c(jc,jk,jb) * (                   &
                     shear(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%e_bln_c_s(jc,1,jb)   +    &
@@ -1068,13 +1068,13 @@ MODULE mo_sgs_turbulence
         p_prog_rcf%tke(jc,1,jb)      = p_prog_rcf%tke(jc,2,jb)
       ENDDO 
 
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           p_prog_rcf%tracer(jc,jk,jb,iqtke) = 0.5_wp * ( p_prog_rcf%tke(jc,jk,jb) +               &
                                                          p_prog_rcf%tke(jc,jk+1,jb) )
 
@@ -1190,13 +1190,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO je = i_startidx, i_endidx
-#endif
+
           inv_rhoe(je,jk,jb) = 1._wp / inv_rhoe(je,jk,jb)
         END DO
       END DO
@@ -1210,13 +1210,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO je = i_startidx, i_endidx
-#endif
+
           vn_vert1 = u_vert(ividx(je,jb,1),jk,ivblk(je,jb,1))     *   &
                      p_patch%edges%primal_normal_vert(je,jb,1)%v1 +   &
                      v_vert(ividx(je,jb,1),jk,ivblk(je,jb,1))     *   &
@@ -1314,13 +1314,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO je = i_startidx, i_endidx
-          DO jk = 2, nlev-1
-#else
+
+
+
+
         DO jk = 2, nlev-1
           DO je = i_startidx, i_endidx
-#endif
+
             flux_up_e = km_ie(je,jk,jb) *                                                         &
                         ( ( p_nh_prog%vn(je,jk-1,jb) - p_nh_prog%vn(je,jk,jb) ) *                 &
                           p_nh_metrics%inv_ddqz_z_half_e(je,jk,jb)              +                 &
@@ -1403,13 +1403,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO je = i_startidx, i_endidx
-          DO jk = 2, nlev-1
-#else
+
+
+
+
         DO jk = 2, nlev-1
           DO je = i_startidx, i_endidx
-#endif
+
 
             a(je,jk)   = - km_ie(je,jk,jb) * p_nh_metrics%inv_ddqz_z_full_e(je,jk,jb) *           &
                            p_nh_metrics%inv_ddqz_z_half_e(je,jk,jb) * inv_rhoe(je,jk,jb)
@@ -1508,13 +1508,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO je = i_startidx, i_endidx
-#endif
+
           vn_new(je,jk,jb) = p_nh_prog%vn(je,jk,jb) + dt * tot_tend(je,jk,jb)
         END DO
       END DO
@@ -1536,13 +1536,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           ddt_u(jc,jk,jb) = ( unew(jc,jk,jb) - p_nh_diag%u(jc,jk,jb) ) * inv_dt
           ddt_v(jc,jk,jb) = ( vnew(jc,jk,jb) - p_nh_diag%v(jc,jk,jb) ) * inv_dt
         END DO
@@ -1572,13 +1572,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO je = i_startidx, i_endidx
-          DO jk = 2, nlev
-#else
+
+
+
+
         DO jk = 2, nlev
           DO je = i_startidx, i_endidx
-#endif
+
             vn_new(je,jk-1,jb) = - km_ie(je,jk,jb) *                                              &
                                    ( ( p_nh_prog%vn(je,jk-1,jb) - p_nh_prog%vn(je,jk,jb) ) *      &
                                      p_nh_metrics%inv_ddqz_z_half_e(je,jk,jb)              +      &
@@ -1719,13 +1719,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           inv_rho_ic(jc,jk,jb) = 1._wp / rho_ic(jc,jk,jb)
         END DO
       END DO
@@ -1746,13 +1746,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO je = i_startidx, i_endidx
-#endif
+
 
           ! tendency in normal direction
           ! flux = visc_c * D_31_c where D_31(=D_13) is calculated at half level
@@ -1843,13 +1843,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           tot_tend(jc,jk,jb) = inv_rho_ic(jc,jk,jb)       *                                       &
                                ( hor_tend(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) *                     &
                                  p_int%e_bln_c_s(jc,1,jb) +                                       &
@@ -1874,13 +1874,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,       &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = 2, nlev
-#else
+
+
+
+
         DO jk = 2, nlev
           DO jc = i_startidx, i_endidx
-#endif
+
 
             flux_up_c = km_c(jc,jk-1,jb) * ( ( p_nh_prog%w(jc,jk-1,jb) - p_nh_prog%w(jc,jk,jb) ) *&
                         p_nh_metrics%inv_ddqz_z_full(jc,jk-1,jb) - z_1by3 * div_c(jc,jk-1,jb) )
@@ -1906,13 +1906,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
          CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,      &
                             i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-       DO jc = i_startidx, i_endidx
-         DO jk = 3, nlev-1
-#else
+
+
+
+
        DO jk = 3, nlev-1
          DO jc = i_startidx, i_endidx
-#endif
+
 
              a(jc,jk)   = - 2._wp * km_c(jc,jk-1,jb) * p_nh_metrics%inv_ddqz_z_full(jc,jk-1,jb) * &
                             p_nh_metrics%inv_ddqz_z_half(jc,jk,jb) * inv_rho_ic(jc,jk,jb)
@@ -1984,13 +1984,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           p_nh_prog%w(jc,jk,jb) = p_nh_prog%w(jc,jk,jb) + dt * tot_tend(jc,jk,jb)
         END DO
       END DO
@@ -2099,13 +2099,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,       &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = 2, nlev
-#else
+
+
+
+
         DO jk = 2, nlev
           DO jc = i_startidx, i_endidx
-#endif
+
             exner_ic(jc,jk,jb) = p_nh_metrics%wgtfac_c(jc,jk,jb) * exner(jc,jk,jb) +              &
                                  ( 1._wp - p_nh_metrics%wgtfac_c(jc,jk,jb) ) * exner(jc,jk-1,jb)
           END DO
@@ -2126,13 +2126,13 @@ MODULE mo_sgs_turbulence
         DO jb = i_startblk,i_endblk
           CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                              i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-            DO jk = 1, nlev
-#else
+
+
+
+
           DO jk = 1, nlev
             DO jc = i_startidx, i_endidx
-#endif
+
               fac(jc,jk,jb) = cpd * rcvd / rho(jc,jk,jb)
             END DO
           END DO
@@ -2146,13 +2146,13 @@ MODULE mo_sgs_turbulence
         DO jb = i_startblk,i_endblk
           CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                              i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-            DO jk = 1, nlev
-#else
+
+
+
+
           DO jk = 1, nlev
             DO jc = i_startidx, i_endidx
-#endif
+
               fac(jc,jk,jb) = 1._wp / rho(jc,jk,jb)
             END DO
           END DO
@@ -2166,13 +2166,13 @@ MODULE mo_sgs_turbulence
         DO jb = i_startblk,i_endblk
           CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                              i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-            DO jk = 1 , nlev
-#else
+
+
+
+
           DO jk = 1, nlev
             DO jc = i_startidx, i_endidx
-#endif
+
               fac(jc,jk,jb) = 1._wp / rho(jc,jk,jb)
             END DO
           END DO
@@ -2199,14 +2199,14 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO je = i_startidx, i_endidx
-          DO jk = 1, nlev
-#else
+
+
+
+
         ! compute kh_ie * grad_horiz(var)
         DO jk = 1, nlev
           DO je = i_startidx, i_endidx
-#endif
+
             nabla2_e(je,jk,jb) = 0.5_wp * ( kh_ie(je,jk,jb) + kh_ie(je,jk+1,jb) ) *               &
                                  exner_me(je,jk,jb) *                                             &
                                  p_patch%edges%inv_dual_edge_length(je,jb) *                      &
@@ -2221,14 +2221,14 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_e(p_patch, jb, i_startblk, i_endblk,       &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO je = i_startidx, i_endidx
-          DO jk = 1, nlev
-#else
+
+
+
+
         ! compute kh_ie * grad_horiz(var)
         DO jk = 1, nlev
           DO je = i_startidx, i_endidx
-#endif
+
             nabla2_e(je,jk,jb) = 0.5_wp * ( km_ie(je,jk,jb) + km_ie(je,jk+1,jb) ) *               &
                                  les_config(jg)%rturb_prandtl * exner_me(je,jk,jb) *              &
                                  p_patch%edges%inv_dual_edge_length(je,jb) *                      &
@@ -2252,13 +2252,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,       &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 1, nlev
-#else
+
+
+
+
       DO jk = 1, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           ! horizontal tendency
           tot_tend(jc,jk,jb) = fac(jc,jk,jb) * (                                                  &
                         nabla2_e(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%geofac_div(jc,1,jb) +  &
@@ -2292,13 +2292,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                             i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = 2, nlev-1
-#else
+
+
+
+
         DO jk = 2, nlev-1
           DO jc = i_startidx, i_endidx
-#endif
+
             flux_up = kh_ic(jc,jk,jb) * ( var(jc,jk-1,jb) - var(jc,jk,jb) ) *           &
                       p_nh_metrics%inv_ddqz_z_half(jc,jk,jb) * exner_ic(jc,jk,jb)
 
@@ -2351,13 +2351,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
          CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                             i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-         DO jc = i_startidx, i_endidx
-           DO jk = 2 , nlev-1
-#else
+
+
+
+
          DO jk = 2, nlev-1
            DO jc = i_startidx, i_endidx
-#endif
+
               a(jc,jk)  = - kh_ic(jc,jk,jb) * p_nh_metrics%inv_ddqz_z_full(jc,jk,jb) * &
                    p_nh_metrics%inv_ddqz_z_half(jc,jk,jb) * exner_ic(jc,jk,jb) * fac(jc,jk,jb)
 
@@ -2416,13 +2416,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
          CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                             i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-         DO jc = i_startidx, i_endidx
-           DO jk = 2 , nlev
-#else
+
+
+
+
          DO jk = 2, nlev
            DO jc = i_startidx, i_endidx
-#endif
+
               sgs_flux(jc,jk,jb) = -kh_ic(jc,jk,jb) * (var(jc,jk-1,jb) - var(jc,jk,jb)) * &
                                    p_nh_metrics%inv_ddqz_z_half(jc,jk,jb)
            END DO
@@ -2533,13 +2533,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = 2, nlev
-#else
+
+
+
+
         DO jk = 2, nlev
           DO jc = i_startidx, i_endidx
-#endif
+
             inv_rho_ic(jc,jk,jb) = 1._wp / rho_ic(jc,jk,jb)
             km_c(jc,jk,jb)       = MAX( les_config(jg)%km_min,  &
                                         0.5_wp * ( km_ic(jc,jk,jb) + km_ic(jc,jk+1,jb) ) ) 
@@ -2569,13 +2569,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO je = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO je = i_startidx, i_endidx
-#endif
+
           ! compute 2 * rho_ie * km_ie * grad_horiz(tke)
           nabla2_ie(je,jk,jb) = 2._wp * rho_ie(je,jk,jb) * km_ie(je,jk,jb)   *     &
                                 p_patch%edges%inv_dual_edge_length(je,jb)    *     & 
@@ -2598,13 +2598,13 @@ MODULE mo_sgs_turbulence
     DO jb = i_startblk,i_endblk
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                          i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-      DO jc = i_startidx, i_endidx
-        DO jk = 2, nlev
-#else
+
+
+
+
       DO jk = 2, nlev
         DO jc = i_startidx, i_endidx
-#endif
+
           tot_tend_ic(jc,jk,jb) = inv_rho_ic(jc,jk,jb) * (                                        &
                         nabla2_ie(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%geofac_div(jc,1,jb) + &
                         nabla2_ie(ieidx(jc,jb,2),jk,ieblk(jc,jb,2)) * p_int%geofac_div(jc,2,jb) + &
@@ -2628,13 +2628,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = 2, nlev
-#else
+
+
+
+
         DO jk = 2, nlev
           DO jc = i_startidx, i_endidx
-#endif
+
 
             flux_up = km_c(jc,jk-1,jb) * ( var_ic(jc,jk-1,jb) - var_ic(jc,jk,jb) ) *              &
                       p_nh_metrics%inv_ddqz_z_full(jc,jk-1,jb)
@@ -2659,13 +2659,13 @@ MODULE mo_sgs_turbulence
       DO jb = i_startblk,i_endblk
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, rl_start, rl_end)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = 3, nlev-1
-#else
+
+
+
+
         DO jk = 3, nlev-1
           DO jc = i_startidx, i_endidx
-#endif
+
 
             a(jc,jk)   = - 2._wp * km_c(jc,jk-1,jb) * p_nh_metrics%inv_ddqz_z_full(jc,jk-1,jb) *  &
                            p_nh_metrics%inv_ddqz_z_half(jc,jk,jb) * inv_rho_ic(jc,jk,jb)

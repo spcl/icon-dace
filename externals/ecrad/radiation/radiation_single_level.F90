@@ -101,10 +101,10 @@ module radiation_single_level
     procedure :: init_seed_simple
     procedure :: get_albedos
     procedure :: out_of_physical_bounds
-#ifdef _OPENACC
-    procedure :: update_host
-    procedure :: update_device
-#endif
+
+
+
+
 
   end type single_level_type
 
@@ -319,9 +319,9 @@ contains
         do jband = 1,config%n_bands_sw
           !$ACC LOOP SEQ
           do jalbedoband = 1,nalbedoband
-#ifndef _OPENACC
+
             if (config%sw_albedo_weights(jalbedoband,jband) /= 0.0_jprb) then
-#endif
+
               !$ACC LOOP GANG(STATIC:1) VECTOR
               do jcol = istartcol,iendcol
                 sw_albedo_band(jcol,jband) &
@@ -329,25 +329,15 @@ contains
                     &  + config%sw_albedo_weights(jalbedoband,jband) &
                     &    * this%sw_albedo(jcol, jalbedoband)
               end do
-#ifndef _OPENACC
+
             end if
-#endif
+
           end do
         end do
 
-#ifndef _OPENACC
+
         sw_albedo_diffuse = transpose(sw_albedo_band(istartcol:iendcol, &
              &                              config%i_band_from_reordered_g_sw))
-#else
-        !$ACC LOOP GANG(STATIC:1) VECTOR
-        do jcol = istartcol,iendcol
-          !$ACC LOOP SEQ
-          do jg = 1,config%n_g_sw
-            sw_albedo_diffuse(jg,jcol) = sw_albedo_band(jcol, &
-                &                             config%i_band_from_reordered_g_sw(jg))
-          end do
-        end do
-#endif
         if (allocated(this%sw_albedo_direct)) then
           !$ACC LOOP SEQ
           do jband = 1,config%n_bands_sw
@@ -361,9 +351,7 @@ contains
           do jband = 1,config%n_bands_sw
             !$ACC LOOP SEQ
             do jalbedoband = 1,nalbedoband
-#ifndef _OPENACC
               if (config%sw_albedo_weights(jalbedoband,jband) /= 0.0_jprb) then
-#endif
                 !$ACC LOOP GANG(STATIC:1) VECTOR
                 do jcol = istartcol,iendcol
                   sw_albedo_band(jcol,jband) &
@@ -371,24 +359,11 @@ contains
                       &  + config%sw_albedo_weights(jalbedoband,jband) &
                       &    * this%sw_albedo_direct(jcol, jalbedoband)
                 end do
-#ifndef _OPENACC
               end if
-#endif
             end do
           end do
-#ifndef _OPENACC
           sw_albedo_direct = transpose(sw_albedo_band(istartcol:iendcol, &
                &                             config%i_band_from_reordered_g_sw))
-#else
-        !$ACC LOOP GANG(STATIC:1) VECTOR
-        do jcol = istartcol,iendcol
-          !$ACC LOOP SEQ
-          do jg = 1,config%n_g_sw 
-            sw_albedo_direct(jg,jcol) = sw_albedo_band(jcol, &
-                &                         config%i_band_from_reordered_g_sw(jg))
-          end do
-        end do
-#endif
         else
           !$ACC LOOP GANG(STATIC:1) VECTOR
           do jcol = istartcol,iendcol
@@ -461,20 +436,8 @@ contains
                &  maxval(config%i_emiss_from_band_lw), ' bands'
           call radiation_abort()
         end if
-#ifndef _OPENACC
         lw_albedo = 1.0_jprb - transpose(this%lw_emissivity(istartcol:iendcol, &
              &  config%i_emiss_from_band_lw(config%i_band_from_reordered_g_lw)))
-#else
-        !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-        do jcol = istartcol,iendcol
-          do jg = 1,config%n_g_lw
-            lw_albedo(jg,jcol) = 1.0_jprb - this%lw_emissivity(jcol, &
-                &  config%i_emiss_from_band_lw(config%i_band_from_reordered_g_lw(jg)))
-          end do
-        end do
-        !$ACC END PARALLEL
-#endif
       end if
     end if
 
@@ -527,70 +490,5 @@ contains
 
   end function out_of_physical_bounds
 
-#ifdef _OPENACC
-  !---------------------------------------------------------------------
-  ! updates fields on host
-  subroutine update_host(this)
-
-    class(single_level_type), intent(inout) :: this
-
-    !$ACC UPDATE HOST(this%cos_sza) &
-    !$ACC   IF(allocated(this%cos_sza))
-
-    !$ACC UPDATE HOST(this%skin_temperature) &
-    !$ACC   IF(allocated(this%skin_temperature))
-
-    !$ACC UPDATE HOST(this%sw_albedo) &
-    !$ACC   IF(allocated(this%sw_albedo))
-
-    !$ACC UPDATE HOST(this%sw_albedo_direct) &
-    !$ACC   IF(allocated(this%sw_albedo_direct))
-
-    !$ACC UPDATE HOST(this%lw_emissivity) &
-    !$ACC   IF(allocated(this%lw_emissivity))
-
-    !$ACC UPDATE HOST(this%lw_emission) &
-    !$ACC   IF(allocated(this%lw_emission))
-
-    !$ACC UPDATE HOST(this%spectral_solar_scaling) &
-    !$ACC   IF(allocated(this%spectral_solar_scaling))
-
-    !$ACC UPDATE HOST(this%iseed) &
-    !$ACC   IF(allocated(this%iseed))
-
-  end subroutine update_host
-
-  !---------------------------------------------------------------------
-  ! updates fields on device
-  subroutine update_device(this)
-
-    class(single_level_type), intent(inout) :: this
-
-    !$ACC UPDATE DEVICE(this%cos_sza) &
-    !$ACC   IF(allocated(this%cos_sza))
-
-    !$ACC UPDATE DEVICE(this%skin_temperature) &
-    !$ACC   IF(allocated(this%skin_temperature))
-
-    !$ACC UPDATE DEVICE(this%sw_albedo) &
-    !$ACC   IF(allocated(this%sw_albedo))
-
-    !$ACC UPDATE DEVICE(this%sw_albedo_direct) &
-    !$ACC   IF(allocated(this%sw_albedo_direct))
-
-    !$ACC UPDATE DEVICE(this%lw_emissivity) &
-    !$ACC   IF(allocated(this%lw_emissivity))
-
-    !$ACC UPDATE DEVICE(this%lw_emission) &
-    !$ACC   IF(allocated(this%lw_emission))
-
-    !$ACC UPDATE DEVICE(this%spectral_solar_scaling) &
-    !$ACC   IF( allocated(this%spectral_solar_scaling))
-
-    !$ACC UPDATE DEVICE(this%iseed) &
-    !$ACC   IF(allocated(this%iseed))
-
-  end subroutine update_device
-#endif 
 
 end module radiation_single_level

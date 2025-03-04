@@ -36,7 +36,7 @@
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
 !> data structure for representation of graph in csr format
-#include "fc_feature_defs.inc"
+
 MODULE ppm_graph_csr
   USE ppm_base, ONLY: assertion, abort_ppm
   USE ppm_combinatorics, ONLY: is_permutation
@@ -138,7 +138,7 @@ CONTAINS
     m = SIZE(adj, 1)
     ofs = 1
     IF (PRESENT(node_offset)) ofs = node_offset
-    CALL assertion(m == SIZE(adj, 2), filename, __LINE__, &
+    CALL assertion(m == SIZE(adj, 2), filename, 141, &
          'adjacency matrix must be rectangular')
 !$omp single
     IF (ALLOCATED(csr%edges_of_vtx)) DEALLOCATE(csr%edges_of_vtx)
@@ -167,7 +167,7 @@ CONTAINS
           k = k + 1
         END IF
       END DO
-      CALL assertion(csr%edges_of_vtx(ofs + j) == k, filename, __LINE__, &
+      CALL assertion(csr%edges_of_vtx(ofs + j) == k, filename, 170, &
            'error in building adjacency lists')
     END DO
 !$omp end do nowait
@@ -177,7 +177,7 @@ CONTAINS
         DO i = j + 1, m
           IF (adj(i, j) .NEQV. adj(j, i)) THEN
             CALL abort_ppm('input matrix must be symmetric', filename, &
-                 __LINE__)
+                 180)
           END IF
         END DO
       END DO
@@ -312,7 +312,7 @@ CONTAINS
     weight_fmt = 10
 
     CALL assertion(SIZE(node_weights) == num_nodes(csr), filename, &
-           __LINE__, 'number of node weights must equal number of nodes')
+           315, 'number of node weights must equal number of nodes')
 
     WRITE (unit=lun, fmt='(i0,2(1x,i0))') SIZE(csr%edges_of_vtx) - 1, &
          num, weight_fmt
@@ -359,7 +359,7 @@ CONTAINS
     weight_fmt = 1
 
     CALL assertion(SIZE(edge_weights) == num_edges(csr), filename, &
-           __LINE__, 'number of edge weights must equal number of edges')
+           362, 'number of edge weights must equal number of edges')
 
     WRITE (unit=lun, fmt='(i0,2(1x,i0))') SIZE(csr%edges_of_vtx) - 1, &
          num, weight_fmt
@@ -409,11 +409,11 @@ CONTAINS
     weight_fmt = 10
     node_count = num_nodes(csr)
 
-    CALL assertion(SIZE(node_weights, 2) == node_count, filename, __LINE__, &
+    CALL assertion(SIZE(node_weights, 2) == node_count, filename, 412, &
          'number of node weights must match number of nodes')
 
     nnw = SIZE(node_weights, 1)
-    CALL assertion(nnw > 0, filename, __LINE__, &
+    CALL assertion(nnw > 0, filename, 416, &
            'number of node weights must be greater than zero if given')
 
     WRITE (unit=lun, fmt='(i0,3(1x,i0))') SIZE(csr%edges_of_vtx) - 1, &
@@ -462,11 +462,11 @@ CONTAINS
     weight_fmt = 11
 
     CALL assertion(SIZE(node_weights, 2) == num_nodes(csr), &
-           filename, __LINE__, &
+           filename, 465, &
            'number of node weights must match number of nodes')
 
     nnw = SIZE(node_weights, 1)
-    CALL assertion(nnw > 0, filename, __LINE__, &
+    CALL assertion(nnw > 0, filename, 469, &
            'number of node weights must be greater than zero if given')
 
     WRITE (unit=lun, fmt='(i0,3(1x,i0))') SIZE(csr%edges_of_vtx) - 1, &
@@ -515,9 +515,9 @@ CONTAINS
 
   END SUBROUTINE write_graph_csr_nwmo_ewo
 
-#ifndef __G95__
+
   ELEMENTAL &
-#endif
+
        FUNCTION graph_csr_equal_i4(a, b) RESULT(p)
     TYPE(graph_csr), INTENT(in) :: a, b
     LOGICAL :: p
@@ -572,7 +572,7 @@ CONTAINS
         ierror = 1
         RETURN
       END IF
-      CALL abort_ppm("insufficient graph description", filename, __LINE__)
+      CALL abort_ppm("insufficient graph description", filename, 575)
     CASE(2)
       weight_fmt = 0
       nnw = 0
@@ -583,7 +583,7 @@ CONTAINS
         ierror = 1
         RETURN
       END IF
-      CALL abort_ppm("erroneous graph description", filename, __LINE__)
+      CALL abort_ppm("erroneous graph description", filename, 586)
     END SELECT
     ew_stride = 1
     SELECT CASE(weight_fmt)
@@ -597,7 +597,7 @@ CONTAINS
           RETURN
         END IF
         CALL abort_ppm("invalid weight format specification", filename, &
-             __LINE__)
+             600)
       END IF
     CASE default
       IF (PRESENT(ierror)) THEN
@@ -605,7 +605,7 @@ CONTAINS
         RETURN
       END IF
       CALL abort_ppm("invalid weight format specification", filename, &
-           __LINE__)
+           608)
     END SELECT
     DEALLOCATE(var_fmt)
     n = nnw + 2 * MIN(inum_edges, inum_nodes)
@@ -633,7 +633,7 @@ CONTAINS
           RETURN
         END IF
         CALL abort_ppm("malformed line in graph description", filename, &
-             __LINE__)
+             636)
       END IF
       p = q
       adj_len = (count - nnw)/ew_stride
@@ -688,9 +688,9 @@ CONTAINS
 
     CALL assertion(edge(1) >= LBOUND(graph%edges_of_vtx, 1) &
          .AND. edge(1) < UBOUND(graph%edges_of_vtx, 1), &
-         filename, __LINE__, 'edge violates node constraints')
+         filename, 691, 'edge violates node constraints')
     i = edge_index(graph, edge)
-    CALL assertion(i <= UBOUND(graph%edges, 1), filename, __LINE__, &
+    CALL assertion(i <= UBOUND(graph%edges, 1), filename, 693, &
          'invalid edge specified')
     weights(i) = weight
   END SUBROUTINE assign_edge_weight
@@ -739,7 +739,7 @@ CONTAINS
     symmetry = .TRUE.
     n = num_nodes(graph)
     CALL assertion(SIZE(edge_weights) == SIZE(graph%edges), &
-         filename, __LINE__, 'non-matching edge weights argument')
+         filename, 742, 'non-matching edge weights argument')
     edge_loop: DO i = 1_i4, n
       p = graph%edges_of_vtx(i)
       q = graph%edges_of_vtx(i + 1) - 1

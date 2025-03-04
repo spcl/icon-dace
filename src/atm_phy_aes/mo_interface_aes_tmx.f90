@@ -13,7 +13,17 @@
 ! and the surface schemes using tmx.
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_interface_aes_tmx
@@ -50,12 +60,6 @@ MODULE mo_interface_aes_tmx
 
   USE mo_aes_thermo,          ONLY: potential_temperature
   
-#ifdef _OPENACC
-  use openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)
-#else
-#define __acc_attach(ptr)
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -192,7 +196,7 @@ CONTAINS
           CALL unbind_variable(vdf%atmo%inputs%list%Search('water vapor'))
           CALL bind_variable(vdf%atmo%inputs%list%Search('water vapor'), ptr_r3d)
           ins%pqm1 => ins%list%Get_ptr_r3d('water vapor')
-          __acc_attach(ins%pqm1)
+          
       
           ptr_r3d => field% qtrc_phy(:,:,:,iqc)
           CALL unbind_variable(vdf%atmo%states%search('cloud water'))
@@ -200,7 +204,7 @@ CONTAINS
           CALL unbind_variable(vdf%atmo%inputs%list%Search('cloud water'))
           CALL bind_variable(vdf%atmo%inputs%list%Search('cloud water'), ptr_r3d)
           ins%pxlm1 => ins%list%Get_ptr_r3d('cloud water')
-          __acc_attach(ins%pxlm1)
+          
 
           ptr_r3d => field% qtrc_phy(:,:,:,iqi)
           CALL unbind_variable(vdf%atmo%states%search('cloud ice'))
@@ -208,45 +212,45 @@ CONTAINS
           CALL unbind_variable(vdf%atmo%inputs%list%Search('cloud ice'))
           CALL bind_variable(vdf%atmo%inputs%list%Search('cloud ice'), ptr_r3d)
           ins%pxim1 => ins%list%Get_ptr_r3d('cloud ice')
-          __acc_attach(ins%pxim1)
+          
       
           ptr_r3d => field% qtrc_phy(:,:,:,iqr)
           CALL unbind_variable(vdf%atmo%inputs%list%Search('rain'))
           CALL bind_variable(vdf%atmo%inputs%list%Search('rain'), ptr_r3d)
           ins%pxrm1 => ins%list%Get_ptr_r3d('rain')
-          __acc_attach(ins%pxrm1)
+          
       
           ptr_r3d => field% qtrc_phy(:,:,:,iqs)
           CALL unbind_variable(vdf%atmo%inputs%list%Search('snow'))
           CALL bind_variable(vdf%atmo%inputs%list%Search('snow'), ptr_r3d)
           ins%pxsm1 => ins%list%Get_ptr_r3d('snow')
-          __acc_attach(ins%pxsm1)
+          
       
           ptr_r3d => field% qtrc_phy(:,:,:,iqg)
           CALL unbind_variable(vdf%atmo%inputs%list%Search('graupel'))
           CALL bind_variable(vdf%atmo%inputs%list%Search('graupel'), ptr_r3d)
           ins%pxgm1 => ins%list%Get_ptr_r3d('graupel')
-          __acc_attach(ins%pxgm1)
+          
       
           CALL unbind_variable(vdf%atmo%states%search('temperature'))
           CALL bind_variable(vdf%atmo%states%search('temperature'), field%ta)
           CALL unbind_variable(vdf%atmo%inputs%list%Search('temperature'))
           CALL bind_variable(vdf%atmo%inputs%list%Search('temperature'), field%ta)
           ins%ptm1 => ins%list%Get_ptr_r3d('temperature')
-          __acc_attach(ins%ptm1)
+          
       
           CALL unbind_variable(vdf%atmo%states%search('vertical velocity'))
           CALL bind_variable(vdf%atmo%states%search('vertical velocity'), field%wa)
           CALL unbind_variable(vdf%atmo%inputs%list%Search('vertical wind'))
           CALL bind_variable(vdf%atmo%inputs%list%Search('vertical wind'), field%wa)
           ins%pwp1 => ins%list%Get_ptr_r3d('vertical wind')
-          __acc_attach(ins%pwp1)
+          
             ! CALL vdf%atmo%inputs%Set_pointers()
 
           CALL unbind_variable(vdf%atmo%inputs%list%Search('air density'))
           CALL bind_variable(vdf%atmo%inputs%list%Search('air density'), field%rho)
           ins%rho => ins%list%Get_ptr_r3d('air density')
-          __acc_attach(ins%rho)
+          
   
         END SELECT
 
@@ -257,13 +261,13 @@ CONTAINS
           CALL unbind_variable(vdf%sfc%inputs%list%Search('atm total water'))
           CALL bind_variable(vdf%sfc%inputs%list%Search('atm total water'), ptr_r2d)
           ins%qa => ins%list%Get_ptr_r2d('atm total water')
-          __acc_attach(ins%qa)
+          
 
           ptr_r2d => field%ta(:,nlev,:)
           CALL unbind_variable(vdf%sfc%inputs%list%Search('atm temperature'))
           CALL bind_variable(vdf%sfc%inputs%list%Search('atm temperature'), ptr_r2d)
           ins%ta => ins%list%Get_ptr_r2d('atm temperature')
-          __acc_attach(ins%ta)
+          
 
         END SELECT
 
@@ -579,7 +583,7 @@ CONTAINS
     IF (ilnd <= nsfc_type) sfc_types = [sfc_types, isfc_lnd]
 
     vdf => new_vdf(patch, nproma, nlev=nlev, nsfc_tiles=nsfc_type, sfc_types=sfc_types, dt=dtime)
-    __acc_attach(vdf)
+    
 
     ! CALL vdf%atmo%Add_state('dry static energy', type=heat_type, field=field%cptgz)
     ! CALL vdf%atmo%Add_state('temperature', heat_type, dims=[nproma,nlev,patch%nblks_c])
@@ -642,13 +646,9 @@ CONTAINS
     CALL bind_variable(vdf%atmo%inputs%list%Search('layer thickness full'), p_nh_metrics%ddqz_z_full)
     CALL bind_variable(vdf%atmo%inputs%list%Search('inverse layer thickness full'), p_nh_metrics%inv_ddqz_z_full)
     CALL bind_variable(vdf%atmo%inputs%list%Search('inverse layer thickness half'), p_nh_metrics%inv_ddqz_z_half)
-#ifdef __MIXED_PRECISION
-    ptr_s3d => p_nh_metrics%ddqz_z_half(:,:,:)
-    CALL bind_variable(vdf%atmo%inputs%list%Search('layer thickness half'), ptr_s3d)
-#else
     ptr_r3d => p_nh_metrics%ddqz_z_half(:,:,:)
     CALL bind_variable(vdf%atmo%inputs%list%Search('layer thickness half'), ptr_r3d)
-#endif
+
     CALL bind_variable(vdf%atmo%inputs%list%Search('geopotential above groundlevel at interface and cell center'), p_nh_metrics%geopot_agl_ifc)
     ! 2d
     ! CALL bind_variable(vdf%atmo%inputs%list%Search('area fraction with wet land surface'), field%csat)
@@ -721,13 +721,13 @@ CONTAINS
     CALL bind_variable(vdf%sfc%inputs%list%Search('cosine of zenith angle'), field%cosmu0)
     CALL bind_variable(vdf%sfc%inputs%list%Search('atm CO2 concentration'), zco2) ! TODO carbon cycle
     !
-#ifdef __MIXED_PRECISION
-    ptr_s2d => p_nh_metrics%ddqz_z_half(:,nlevp1,:)
-    CALL bind_variable(vdf%sfc%inputs%list%Search('reference height in surface layer times 2'), ptr_s2d)
-#else
+
+
+
+
     ptr_r2d => p_nh_metrics%ddqz_z_half(:,nlevp1,:)
     CALL bind_variable(vdf%sfc%inputs%list%Search('reference height in surface layer times 2'), ptr_r2d)
-#endif
+
     ! dz_srf(:,:) = 2._wp * (field%zh(:,nlev,:) - field%zh(:,nlevp1,:))
     ! dz_srf(:,:) = 2._wp * (p_nh_metrics%z_mc(:,nlev,:) - p_nh_metrics%z_ifc(:,nlevp1,:))
     ! CALL bind_variable(vdf%sfc%inputs%list%Search('reference height in surface layer times 2'), dz_srf)

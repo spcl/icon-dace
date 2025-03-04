@@ -27,9 +27,9 @@ MODULE mo_radar_data_types
 TYPE t_radar_td_fields
 
   REAL(wp), POINTER      &
-#ifdef _CRAYFTN
-      , CONTIGUOUS             &
-#endif
+
+
+
     & ::               &
     & obs(:,:,:)      ,& ! observations on model grid at six observation time levels
     & spqual(:,:,:)   ,& ! spatial quality function on model grid at two observation time levels
@@ -43,9 +43,9 @@ END TYPE t_radar_td_fields
 TYPE t_radar_ct_fields
 
   REAL(wp), POINTER      &
-#ifdef _CRAYFTN
-      , CONTIGUOUS             &
-#endif
+
+
+
     & :: blacklist(:,:) ! blacklist for DX radar data
 
 END TYPE t_radar_ct_fields
@@ -65,9 +65,9 @@ END TYPE t_radar_fields
 TYPE t_lhn_diag
 !
   REAL(wp), POINTER      &
-#ifdef _CRAYFTN
-      , CONTIGUOUS             &
-#endif
+
+
+
     & ::                    &
     & ttend_lhn(:,:,:)     ,& ! temperature increment due to LHN
     & qvtend_lhn(:,:,:)    ,& ! moisture increment due to LHN
@@ -80,9 +80,9 @@ TYPE t_lhn_diag
     & ref_bias                ! value of bias correction for reference precipitation
 
   LOGICAL, POINTER          &
-#ifdef _CRAYFTN
-      , CONTIGUOUS             &
-#endif
+
+
+
     & ::                    &
     & brightband(:,:)         ! bright band mask field
 

@@ -16,7 +16,17 @@
 ! Boundary exchange, nblks in presence of halos and dummy edge
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_math_gradients
@@ -168,17 +178,10 @@ i_endblk   = ptr_patch%edges%end_blk(rl_end,i_nchdom)
                      i_startidx, i_endidx, rl_start, rl_end)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG
-    DO je = i_startidx, i_endidx
-      !$ACC LOOP VECTOR
-      DO jk = slev, elev
-#else
     !$ACC LOOP GANG
     DO jk = slev, elev
       !$ACC LOOP VECTOR
       DO je = i_startidx, i_endidx
-#endif
       !
       ! compute the normal derivative
       ! by the finite difference approximation
@@ -444,14 +447,11 @@ iblk => ptr_patch%cells%neighbor_blk
   IF (ptr_patch%id > 1) THEN
   ! Fill nest boundaries with zero to avoid trouble with MPI synchronization
 
-#ifdef _OPENACC
-    !$ACC KERNELS PRESENT(p_grad) ASYNC(1) IF(i_am_accel_node)
-    p_grad(:,:,:,1:i_startblk) = 0._wp
-    !$ACC END KERNELS
-#else
+
+
     CALL init(p_grad(:,:,:,1:i_startblk), lacc=i_am_accel_node)
 !$OMP BARRIER
-#endif
+
   ENDIF
 
 !$OMP DO PRIVATE(jb,jc,jk,i_startidx,i_endidx), ICON_OMP_RUNTIME_SCHEDULE
@@ -461,18 +461,18 @@ iblk => ptr_patch%cells%neighbor_blk
                        i_startidx, i_endidx, rl_start, rl_end)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG
-    DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-      !$ACC LOOP VECTOR
-      DO jk = slev, elev
-#else
+
+
+
+
+
+
+
     !$ACC LOOP GANG
     DO jk = slev, elev
       !$ACC LOOP VECTOR
       DO jc = i_startidx, i_endidx
-#endif
+
 
         ! We do not make use of the intrinsic function DOT_PRODUCT on purpose,
         ! since it is extremely slow on the SX9, when combined with indirect
@@ -729,14 +729,14 @@ ENDIF
 
   IF (ptr_patch%id > 1) THEN
   ! Fill nest boundaries with zero to avoid trouble with MPI synchronization
-#ifdef _OPENACC
-    !$ACC KERNELS ASYNC(1) IF(i_am_accel_node)
-    p_grad(:,:,:,1:i_startblk) = 0._wp
-    !$ACC END KERNELS
-#else
+
+
+
+
+
     CALL init(p_grad(:,:,:,1:i_startblk), lacc=i_am_accel_node)
 !$OMP BARRIER
-#endif
+
   ENDIF
 
 !$OMP DO PRIVATE(jb,jc,jk,i_startidx,i_endidx), ICON_OMP_RUNTIME_SCHEDULE
@@ -746,18 +746,18 @@ ENDIF
                        i_startidx, i_endidx, rl_start, rl_end)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG
-    DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-      !$ACC LOOP VECTOR
-      DO jk = slev, elev
-#else
+
+
+
+
+
+
+
     !$ACC LOOP GANG
     DO jk = slev, elev
       !$ACC LOOP VECTOR
       DO jc = i_startidx, i_endidx
-#endif
+
 
         ! multiply cell-based input values with precomputed grid geometry factor
 
@@ -831,11 +831,11 @@ SUBROUTINE grad_green_gauss_cell_dycore(p_ccpr, ptr_patch, ptr_int, p_grad,     
   IF ( PRESENT(opt_elev) ) THEN
     elev = opt_elev
   ELSE
-#ifdef __SWAPDIM
-    elev = UBOUND(p_ccpr,2)
-#else
+
+
+
     elev = UBOUND(p_ccpr,3)
-#endif
+
   END IF
   IF ( PRESENT(opt_rlstart) ) THEN
     rl_start = opt_rlstart
@@ -871,45 +871,18 @@ SUBROUTINE grad_green_gauss_cell_dycore(p_ccpr, ptr_patch, ptr_int, p_grad,     
                          i_startidx, i_endidx, rl_start, rl_end)
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-      !$ACC LOOP GANG
-      DO jc = i_startidx, i_endidx
-!DIR$ IVDEP
-        !$ACC LOOP VECTOR
-        DO jk = slev, elev
-#else
+
+
+
+
+
+
+
 
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
 !$NEC outerloop_unroll(8)
       DO jk = slev, elev
         DO jc = i_startidx, i_endidx
-#endif
-#ifdef __SWAPDIM
-          ! zonal(u)-component of Green-Gauss gradient, field 1
-          p_grad(jc,jk,jb,1) = &
-            ptr_int%geofac_grg(jc,1,jb,1)*p_ccpr(jc,jk,jb,1) + &
-            ptr_int%geofac_grg(jc,2,jb,1)*p_ccpr(iidx(jc,jb,1),jk,iblk(jc,jb,1),1) + &
-            ptr_int%geofac_grg(jc,3,jb,1)*p_ccpr(iidx(jc,jb,2),jk,iblk(jc,jb,2),1) + &
-            ptr_int%geofac_grg(jc,4,jb,1)*p_ccpr(iidx(jc,jb,3),jk,iblk(jc,jb,3),1)
-          ! meridional(v)-component of Green-Gauss gradient, field 1
-          p_grad(jc,jk,jb,2) = &
-            ptr_int%geofac_grg(jc,1,jb,2)*p_ccpr(jc,jk,jb,1) + &
-            ptr_int%geofac_grg(jc,2,jb,2)*p_ccpr(iidx(jc,jb,1),jk,iblk(jc,jb,1),1) + &
-            ptr_int%geofac_grg(jc,3,jb,2)*p_ccpr(iidx(jc,jb,2),jk,iblk(jc,jb,2),1) + &
-            ptr_int%geofac_grg(jc,4,jb,2)*p_ccpr(iidx(jc,jb,3),jk,iblk(jc,jb,3),1)
-          ! zonal(u)-component of Green-Gauss gradient, field 2
-          p_grad(jc,jk,jb,3) = &
-            ptr_int%geofac_grg(jc,1,jb,1)*p_ccpr(jc,jk,jb,2) + &
-            ptr_int%geofac_grg(jc,2,jb,1)*p_ccpr(iidx(jc,jb,1),jk,iblk(jc,jb,1),2) + &
-            ptr_int%geofac_grg(jc,3,jb,1)*p_ccpr(iidx(jc,jb,2),jk,iblk(jc,jb,2),2) + &
-            ptr_int%geofac_grg(jc,4,jb,1)*p_ccpr(iidx(jc,jb,3),jk,iblk(jc,jb,3),2)
-          ! meridional(v)-component of Green-Gauss gradient, field 2
-          p_grad(jc,jk,jb,4) = &
-            ptr_int%geofac_grg(jc,1,jb,2)*p_ccpr(jc,jk,jb,2) + &
-            ptr_int%geofac_grg(jc,2,jb,2)*p_ccpr(iidx(jc,jb,1),jk,iblk(jc,jb,1),2) + &
-            ptr_int%geofac_grg(jc,3,jb,2)*p_ccpr(iidx(jc,jb,2),jk,iblk(jc,jb,2),2) + &
-            ptr_int%geofac_grg(jc,4,jb,2)*p_ccpr(iidx(jc,jb,3),jk,iblk(jc,jb,3),2)
-#else
           ! zonal(u)-component of Green-Gauss gradient, field 1
           p_grad(1,jc,jk,jb) = ptr_int%geofac_grg(jc,1,jb,1)*p_ccpr(1,jc,jk,jb)+     &
             ptr_int%geofac_grg(jc,2,jb,1)*p_ccpr(1,iidx(jc,jb,1),jk,iblk(jc,jb,1)) + &
@@ -933,7 +906,6 @@ SUBROUTINE grad_green_gauss_cell_dycore(p_ccpr, ptr_patch, ptr_int, p_grad,     
             ptr_int%geofac_grg(jc,2,jb,2)*p_ccpr(2,iidx(jc,jb,1),jk,iblk(jc,jb,1)) + &
             ptr_int%geofac_grg(jc,3,jb,2)*p_ccpr(2,iidx(jc,jb,2),jk,iblk(jc,jb,2)) + &
             ptr_int%geofac_grg(jc,4,jb,2)*p_ccpr(2,iidx(jc,jb,3),jk,iblk(jc,jb,3))
-#endif
         END DO ! end loop over cells
       END DO ! end loop over vertical levels
       !$ACC END PARALLEL

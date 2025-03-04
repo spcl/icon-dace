@@ -44,17 +44,6 @@ CONTAINS
       a_stride = 1
     END IF
     a_last_idx = a_offset + a_shape_use - 1
-#if 0
-    WRITE (0, '(a,i0)') &
-         "size(a, 1)=", SIZE(a_wp, 1), &
-         "size(a, 2)=", SIZE(a_wp, 2), &
-         "a_offset(1)=", a_offset(1), &
-         "a_last_idx(1)=", a_last_idx(1), &
-         "a_stride(1)=", a_stride(1), &
-         "a_offset(2)=", a_offset(2), &
-         "a_last_idx(2)=", a_last_idx(2), &
-         "a_stride(2)=", a_stride(2)
-#endif
     CALL RANDOM_NUMBER(a_wp)
     CALL insert_dimension(p_wp, a_wp(a_offset(1):a_last_idx(1):a_stride(1), &
          &                           a_offset(2):a_last_idx(2):a_stride(2)), &
@@ -106,17 +95,6 @@ CONTAINS
       a_stride = 1
     END IF
     a_last_idx = a_offset + a_shape_use - 1
-#if 0
-    WRITE (0, '(a,i0)') &
-         "size(a, 1)=", SIZE(a_i, 1), &
-         "size(a, 2)=", SIZE(a_i, 2), &
-         "a_offset(1)=", a_offset(1), &
-         "a_last_idx(1)=", a_last_idx(1), &
-         "a_stride(1)=", a_stride(1), &
-         "a_offset(2)=", a_offset(2), &
-         "a_last_idx(2)=", a_last_idx(2), &
-         "a_stride(2)=", a_stride(2)
-#endif
     CALL RANDOM_NUMBER(a_r)
     a_i = NINT(((a_r * 2.0) - 1.0) * HUGE(a_i))
     CALL insert_dimension(p_i, a_i(a_offset(1):a_last_idx(1):a_stride(1), &

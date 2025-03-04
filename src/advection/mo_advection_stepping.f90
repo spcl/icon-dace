@@ -26,7 +26,17 @@
 !                     Reports on ICON, Issue 4
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_advection_stepping
 
@@ -935,14 +945,9 @@ CONTAINS
 
           !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
           !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-          DO jc = i_startidx, i_endidx
-            DO jk = iadv_slev_jt, nlev
-#else
 !NEC$ outerloop_unroll(8)
           DO jk = iadv_slev_jt, nlev
             DO jc = i_startidx, i_endidx
-#endif
 
 ! TODO: possible GPU optimization: add tracer_new calculation here
               z_fluxdiv_c(jc,jk) = deepatmo_divh_mc(jk) * (                                            &

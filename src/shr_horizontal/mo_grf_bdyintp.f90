@@ -15,7 +15,17 @@
 ! packed into a separate module to clean up the code
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_grf_bdyintp
@@ -611,12 +621,10 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields, lacc,&
     !$ACC ENTER DATA ATTACH(p_in(jn)%fld) IF(lacc)
   ENDDO
 
-#ifndef __PGI
 ! FIXME: PGI runs into deadlock on loop exit (?), if OMP-parallelized. Compiler bug suspected
 !$OMP PARALLEL DO PRIVATE (jb,nlen,nshift,jk,jc,jn,elev,limfac1,limfac2,limfac, &
 !$OMP   min_expval,max_expval,relaxed_minval,relaxed_maxval, grad_x, grad_y, &
 !$OMP   val_ctr, maxval_neighb, minval_neighb) ICON_OMP_DEFAULT_SCHEDULE
-#endif
     DO jb = 1, nblks_bdyintp
 
       nlen = MERGE(nproma_bdyintp, npromz_bdyintp, jb /= nblks_bdyintp)

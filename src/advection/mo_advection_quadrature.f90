@@ -17,7 +17,17 @@
 ! routines protects from possible circular dependencies.
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_advection_quadrature
 
@@ -107,9 +117,6 @@ CONTAINS
 
     TYPE(t_gauss_quad_2d), POINTER :: gq
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: z_x,z_y
-#endif
   !-----------------------------------------------------------------------
 
     ! Check for optional arguments
@@ -265,9 +272,6 @@ CONTAINS
 
     TYPE(t_gauss_quad_2d), POINTER :: gq
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: z_x,z_y
-#endif
   !-----------------------------------------------------------------------
 
     ! Check for optional arguments
@@ -412,10 +416,6 @@ CONTAINS
 
     TYPE(t_gauss_quad_2d), POINTER :: gq
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: wgt_t_detjac,z_quad_vector,z_x,z_y
-!DIR$ ATTRIBUTES ALIGN :64 :: z_wgt,z_eta
-#endif
 
   !-----------------------------------------------------------------------
 
@@ -601,9 +601,9 @@ CONTAINS
 
     TYPE(t_gauss_quad_2d), POINTER :: gq
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: z_quad_vector,z_x,z_y,z_wgt
-#endif
+
+
+
 
   !-----------------------------------------------------------------------
 
@@ -768,10 +768,10 @@ CONTAINS
 
     TYPE(t_gauss_quad_2d), POINTER :: gq
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: wgt_t_detjac,z_quad_vector,z_x,z_y
-!DIR$ ATTRIBUTES ALIGN :64 :: z_wgt,z_eta
-#endif
+
+
+
+
   !-----------------------------------------------------------------------
 
    ! Check for optional arguments
@@ -940,10 +940,10 @@ CONTAINS
 
     TYPE(t_gauss_quad_2d), POINTER :: gq
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: wgt_t_detjac,z_quad_vector,z_x,z_y
-!DIR$ ATTRIBUTES ALIGN :64 :: z_wgt,z_eta
-#endif
+
+
+
+
 
   !-----------------------------------------------------------------------
 
@@ -1141,9 +1141,9 @@ CONTAINS
 
     TYPE(t_gauss_quad_2d), POINTER :: gq
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: z_quad_vector,z_x,z_y,z_wgt
-#endif
+
+
+
 
   !-----------------------------------------------------------------------
 
@@ -1321,10 +1321,10 @@ CONTAINS
 
     TYPE(t_gauss_quad_2d), POINTER :: gq
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: wgt_t_detjac,z_quad_vector,z_x,z_y
-!DIR$ ATTRIBUTES ALIGN :64 :: z_wgt,z_eta
-#endif
+
+
+
+
 
   !-----------------------------------------------------------------------
 
@@ -1454,9 +1454,9 @@ CONTAINS
     REAL(wp) :: det_jac
 
     REAL(wp), DIMENSION(2,2) :: jacob
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: jacob
-#endif
+
+
+
 
   !-----------------------------------------------------------------------
 

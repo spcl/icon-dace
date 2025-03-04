@@ -65,20 +65,9 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
     !$ACC     PRESENT(P_FAC00, P_FAC01, P_FAC10, P_FAC11, K_JP, K_JT, K_JT1, &
     !$ACC             P_ONEMINUS, P_COLMOL, P_COLO2, P_COLO3, K_LAYTROP, &
     !$ACC             P_SFLUXZEN, P_TAUG, P_TAUR, PRMU0)
-#ifndef _OPENACC
+
     laytrop_min = MINVAL(k_laytrop(KIDIA:KFDIA))
     laytrop_max = MAXVAL(k_laytrop(KIDIA:KFDIA))
-#else
-    laytrop_min = HUGE(laytrop_min) 
-    laytrop_max = -HUGE(laytrop_max)
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR REDUCTION(min:laytrop_min) REDUCTION(max:laytrop_max)
-    do iplon = KIDIA,KFDIA
-      laytrop_min = MIN(laytrop_min, k_laytrop(iplon))
-      laytrop_max = MAX(laytrop_max, k_laytrop(iplon))
-    end do
-    !$ACC END PARALLEL
-#endif
 
     i_nlayers = klev
     !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)

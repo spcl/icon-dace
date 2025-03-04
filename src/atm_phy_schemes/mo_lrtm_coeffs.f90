@@ -32,7 +32,21 @@
 
 
 !----------------------------
-#include "consistent_fma.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! For runs that check result consistency we fix the different
+! contractions that the Intel compiler performs on some loops (at
+! least in version 16.0) for the vectorized part and the
+! non-vectorized parts
 !----------------------------
 
 module mo_lrtm_coeffs
@@ -178,7 +192,7 @@ contains
 
     stpfac = 296._wp/1013._wp
 
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
     do jl = 1, kproma  ! loop over columns
       indbound = INT(tbound(jl) - 159._wp)
       if (indbound .lt. 1) then
@@ -205,7 +219,7 @@ contains
     ! Begin layer loop
     !  Calculate the integrated Planck functions for each band at the
     !  surface, level, and layer temperatures.
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
     do lay = 1, nlayers
       do jl = 1, kproma  ! loop over columns
         t0frac   = t0fraca(jl)

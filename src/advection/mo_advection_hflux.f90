@@ -33,7 +33,17 @@
 ! See Miura, H. (2007), Mon. Wea. Rev., 135, 4038-4044
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_advection_hflux
 
@@ -177,9 +187,6 @@ CONTAINS
 
     !-----------------------------------------------------------------------
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_real_vt
-#endif
 
     ! pointer to advection_config(p_patch%id) to save some paperwork
     advconf => advection_config(p_patch%id)
@@ -335,9 +342,6 @@ CONTAINS
 
         iadv_min_slev = advconf%ffsl_h%iadv_min_slev
 
-#ifdef _OPENACC
-        CALL finish(routine, "FFSL (ihadv_tracer == 4) not ported to GPU yet")
-#endif
 
         ! CALL Flux form semi Lagrangian scheme (extension of MIURA3-scheme)
         ! with second or third order accurate reconstruction
@@ -491,9 +495,6 @@ CONTAINS
 
         qvsubstep_elev = advconf%iadv_qvsubstep_elev
 
-#ifdef _OPENACC
-        CALL finish(routine, "FFSL_MCYCL (ihadv_tracer == 42) not ported to GPU yet")
-#endif
 
         ! CALL standard FFSL for lower atmosphere and the subcycling version of
         ! MIURA for upper atmosphere
@@ -700,9 +701,8 @@ CONTAINS
     !$ACC   PRESENT(btraj)
     !$ACC DATA PRESENT(opt_rhodz_now) IF(PRESENT(opt_rhodz_now))
     !$ACC DATA PRESENT(opt_rhodz_new) IF(PRESENT(opt_rhodz_new))
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_grad,z_lsq_coeff
-#endif
+
+
 
     ! get patch ID
     pid = p_patch%id
@@ -751,14 +751,14 @@ CONTAINS
 
     IF (p_test_run) THEN
       !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
-#ifdef __INTEL_COMPILER
-!$OMP PARALLEL DO SCHEDULE(STATIC)
-      DO i = 1,SIZE(z_grad,4)
-        z_grad(:,:,:,i) = 0._wp
-      ENDDO
-#else
+
+
+
+
+
+
       z_grad(:,:,:,:) = 0._wp
-#endif
+
       !$ACC END KERNELS
     ENDIF
 
@@ -1090,10 +1090,10 @@ CONTAINS
     INTEGER, DIMENSION(:,:,:), POINTER :: &  !< Pointer to line and block indices (array)
       &  iidx, iblk                          !< of edges
     TYPE(t_lsq), POINTER :: lsq_lin          !< Pointer to p_int_state%lsq_lin
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_grad,z_lsq_coeff,z_tracer_mflx,z_rhofluxdiv_c
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_fluxdiv_c,z_tracer,z_rho
-#endif
+
+
+
+
     lsq_lin => p_int%lsq_lin
 
    !-------------------------------------------------------------------------
@@ -1351,14 +1351,14 @@ CONTAINS
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         IF ( nsub == 1 ) THEN
         !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-            DO jc = i_startidx, i_endidx
-              DO jk = slev, elev
-#else
+
+
+
+
 !$NEC outerloop_unroll(8)
             DO jk = slev, elev
               DO jc = i_startidx, i_endidx
-#endif
+
 
               z_rhofluxdiv_c(jc,jk,jb) =  &
                 & p_mass_flx_e(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_int%geofac_div(jc,1,jb) + &
@@ -1371,14 +1371,14 @@ CONTAINS
 
         ! compute tracer mass flux divergence
         !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-        DO jc = i_startidx, i_endidx
-          DO jk = slev, elev
-#else
+
+
+
+
 !$NEC outerloop_unroll(8)
         DO jk = slev, elev
           DO jc = i_startidx, i_endidx
-#endif
+
 
             z_fluxdiv_c(jc,jk) =  &
               & z_tracer_mflx(iidx(jc,jb,1),jk,iblk(jc,jb,1),nsub)*p_int%geofac_div(jc,1,jb) + &
@@ -2605,13 +2605,13 @@ CONTAINS
       &  patch1_cell_idx(:,:),   patch1_cell_blk(:,:),   & !< dim: (npoints,p_patch%nblks_e)
       &  patch2_cell_idx(:,:),   patch2_cell_blk(:,:)
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_lsq_coeff,dreg_patch0,dreg_patch1,dreg_patch2
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_quad_vector_sum0,z_quad_vector_sum1,z_quad_vector_sum2
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_dreg_area
-!DIR$ ATTRIBUTES ALIGN : 64 :: patch0_cell_idx,patch1_cell_idx,patch2_cell_idx
-!DIR$ ATTRIBUTES ALIGN : 64 :: patch0_cell_blk,patch1_cell_blk,patch2_cell_blk
-#endif
+
+
+
+
+
+
+
 
     TYPE(t_list2D), SAVE ::   &    !< list with points for which a local
       &  falist                    !< polynomial approximation is insufficient
@@ -2752,7 +2752,7 @@ CONTAINS
       falist%npoints = npoints ! ACC: caution this is not updated to GPU as it is not used on GPU
 
       ! allocate temporary arrays for quadrature and upwind cells
-#ifndef _OPENACC
+
       ALLOCATE( z_quad_vector_sum0(nproma,dim_unk,nlev,p_patch%nblks_e), &
         &       z_quad_vector_sum1(npoints,dim_unk,p_patch%nblks_e),     &
         &       z_quad_vector_sum2(npoints,dim_unk,p_patch%nblks_e),     &
@@ -2764,19 +2764,6 @@ CONTAINS
         &       dreg_patch1(npoints,4,2,p_patch%nblks_e),                &
         &       dreg_patch2(npoints,4,2,p_patch%nblks_e),                &
         &       STAT=ist )
-#else
-      ALLOCATE( z_quad_vector_sum0(nproma,dim_unk,nlev,p_patch%nblks_e), &
-        &       z_quad_vector_sum1(nproma*nlev,dim_unk,p_patch%nblks_e),     &
-        &       z_quad_vector_sum2(nproma*nlev,dim_unk,p_patch%nblks_e),     &
-        &       z_dreg_area(nproma,nlev,p_patch%nblks_e),                &
-        &       patch1_cell_idx(nproma*nlev,p_patch%nblks_e),                &
-        &       patch2_cell_idx(nproma*nlev,p_patch%nblks_e),                &
-        &       patch1_cell_blk(nproma*nlev,p_patch%nblks_e),                &
-        &       patch2_cell_blk(nproma*nlev,p_patch%nblks_e),                &
-        &       dreg_patch1(nproma*nlev,4,2,p_patch%nblks_e),                &
-        &       dreg_patch2(nproma*nlev,4,2,p_patch%nblks_e),                &
-        &       STAT=ist )
-#endif
       IF (ist /= SUCCESS) THEN
         CALL finish(routine,                                      &
           &  'allocation for z_quad_vector_sum0/1/2, z_dreg_area, ' //    &

@@ -195,11 +195,11 @@ CONTAINS
       & * rtwat_rtice_r)**2)
   END FUNCTION foealfa
 
-#ifdef DOC
 
-  !     Pressure of water vapour at saturation
-  !        INPUT : PTARE = TEMPERATURE
-#endif
+
+
+
+
 
   ELEMENTAL FUNCTION foeewm ( ptare )
     !$ACC ROUTINE SEQ
@@ -229,31 +229,15 @@ CONTAINS
   !FOELHM ( PTARE ) =&
   !         &FOEALFA(PTARE)*RLVTT+(1.0_JPRB-FOEALFA(PTARE))*RLSTT
 
-#ifdef DOC
 
-  !     Temperature normalization for humidity background change of variable
-  !        INPUT : PTARE = TEMPERATURE
-#endif
+
+
+
+
 
   !FOETB ( PTARE )=FOEALFA(PTARE)*R3LES*(RTT-R4LES)*(1.0_JPRB/(PTARE-R4LES)**2)+&
   !             &(1.0_JPRB-FOEALFA(PTARE))*R3IES*(RTT-R4IES)*(1.0_JPRB/(PTARE-R4IES)**2)
 
-#ifdef DOC
-  !     ------------------------------------------------------------------
-  !     *****************************************************************
-
-  !           CONSIDERATION OF DIFFERENT MIXED PHASE FOR CONV
-
-  !     *****************************************************************
-
-  !     FOEALFCU is calculated to distinguish the three cases:
-
-  !                       FOEALFCU=1            water phase
-  !                       FOEALFCU=0            ice phase
-  !                       0 < FOEALFCU < 1      mixed phase
-
-  !               INPUT : PTARE = TEMPERATURE
-#endif
 
   ELEMENTAL FUNCTION foealfcu ( ptare )
     !$ACC ROUTINE SEQ
@@ -263,11 +247,6 @@ CONTAINS
          & -rticecu)*rtwat_rticecu_r)**2)
   END FUNCTION foealfcu
 
-#ifdef DOC
-
-  !     Pressure of water vapour at saturation
-  !        INPUT : PTARE = TEMPERATURE
-#endif
 
   ELEMENTAL FUNCTION foeewmcu ( ptare )
     !$ACC ROUTINE SEQ
@@ -308,18 +287,6 @@ CONTAINS
   END FUNCTION foelhmcu
 
   !     ------------------------------------------------------------------
-#ifdef DOC
-
-  !     Pressure of water vapour at saturation
-  !     This one is for the WMO definition of saturation, i.e. always
-  !     with respect to water.
-  !
-  !     Duplicate to FOEELIQ and FOEEICE for separate ice variable
-  !     FOEELIQ always respect to water
-  !     FOEEICE always respect to ice
-  !     (could use FOEEW and FOEEWMO, but naming convention unclear)
-
-#endif
 
   !FOEEWMO( PTARE ) = R2ES*EXP(R3LES*(PTARE-RTT)/(PTARE-R4LES))
   !FOEELIQ( PTARE ) = R2ES*EXP(R3LES*(PTARE-RTT)/(PTARE-R4LES))

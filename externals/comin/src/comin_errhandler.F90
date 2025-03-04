@@ -30,7 +30,7 @@ MODULE comin_errhandler
   PUBLIC :: comin_error_set, comin_error_get
   PUBLIC :: comin_error_set_errors_return
 
-#include "comin_global.inc"
+
 
 CONTAINS
 
@@ -87,7 +87,7 @@ CONTAINS
   SUBROUTINE comin_error_get_message(error_code, category, message)
     INTEGER, INTENT(IN)                               :: error_code
     CHARACTER(LEN=11), INTENT(INOUT)                  :: category
-    CHARACTER(LEN=MAX_LEN_ERR_MESSAGE), INTENT(INOUT) :: message
+    CHARACTER(LEN=96), INTENT(INOUT) :: message
 
     IF (error_code < COMIN_SUCCESS .OR. error_code > COMIN_ERROR_FATAL) THEN
       CALL comin_plugin_finish("error", "ERROR: Unknown error code.")
@@ -113,10 +113,10 @@ CONTAINS
     & BIND(C, name="comin_error_get_message")
     INTEGER(C_INT), VALUE,  INTENT(IN)  :: error_code
     CHARACTER(KIND=C_CHAR), INTENT(OUT) :: category(11)
-    CHARACTER(KIND=C_CHAR), INTENT(OUT) :: message(MAX_LEN_ERR_MESSAGE)
+    CHARACTER(KIND=C_CHAR), INTENT(OUT) :: message(96)
 
     CHARACTER(LEN=11)                  :: category_f
-    CHARACTER(LEN=MAX_LEN_ERR_MESSAGE) :: message_f
+    CHARACTER(LEN=96) :: message_f
     CALL comin_error_get_message(error_code, category_f, message_f)
     CALL convert_f_string(category_f, category)
     CALL convert_f_string(message_f, message)
@@ -130,7 +130,7 @@ CONTAINS
 
     INTEGER :: error_code
     CHARACTER(LEN=11) :: message_prefix
-    CHARACTER(LEN=MAX_LEN_ERR_MESSAGE) :: message
+    CHARACTER(LEN=96) :: message
 
     error_code = state%errcode
     IF(error_code == COMIN_SUCCESS) RETURN

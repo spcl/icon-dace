@@ -813,36 +813,36 @@ CONTAINS
 
     ! Store time tendencies (optional)
     IF (PRESENT(opt_dticedt)) THEN
-#ifdef _OPENACC
-        CALL finish ('seaice_timestep_nwp', 'OpenACC version currently does not support the optional argument opt_dticedt')
-#endif
+
+
+
       opt_dticedt(1:nsigb)  = dticedt(1:nsigb)
       IF (nsigb < SIZE(opt_dticedt)) THEN
         opt_dticedt(nsigb+1:) = 0._wp 
       ENDIF
     ENDIF
     IF (PRESENT(opt_dhicedt)) THEN
-#ifdef _OPENACC
-        CALL finish ('seaice_timestep_nwp', 'OpenACC version currently does not support the optional argument opt_dhicedt')
-#endif
+
+
+
       opt_dhicedt(1:nsigb)  = dhicedt(1:nsigb)
       IF (nsigb < SIZE(opt_dhicedt)) THEN
         opt_dhicedt(nsigb+1:) = 0._wp
       ENDIF
     ENDIF
     IF (PRESENT(opt_dtsnowdt)) THEN
-#ifdef _OPENACC
-        CALL finish ('seaice_timestep_nwp', 'OpenACC version currently does not support the optional argument opt_dtsnowdt')
-#endif
+
+
+
       opt_dtsnowdt(1:nsigb) = dtsnowdt(1:nsigb)
       IF (nsigb < SIZE(opt_dtsnowdt)) THEN
         opt_dtsnowdt(nsigb+1:)= 0._wp
       ENDIF
     ENDIF
     IF (PRESENT(opt_dhsnowdt)) THEN
-#ifdef _OPENACC
-        CALL finish ('seaice_timestep_nwp', 'OpenACC version currently does not support the optional argument opt_dhsnowdt')
-#endif
+
+
+
       opt_dhsnowdt(1:nsigb) = dhsnowdt(1:nsigb)
       IF (nsigb < SIZE(opt_dhsnowdt)) THEN
         opt_dhsnowdt(nsigb+1:)= 0._wp

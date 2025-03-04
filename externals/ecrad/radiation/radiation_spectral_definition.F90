@@ -14,7 +14,36 @@
 ! License: see the COPYING file for details
 !
 
-#include "ecrad_config.h"
+! ecrad_config.h - Preprocessor definitions to configure compilation ecRad -*- f90 -*-
+!
+! (C) Copyright 2023- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! This file should be included in Fortran source files that require
+! different optimizations or settings for different architectures and
+! platforms.  Feel free to maintain a site-specific version of it.
+
+! The following settings turn on optimizations specific to the
+! long-vector NEC SX (the short-vector x86-64 architecture is assumed
+! otherwise). 
+
+  
+  
+
+! In the IFS, an MPI version of easy_netcdf capability is used so that
+! only one MPI task reads the data files and shares with the other
+! tasks. The MPI version is not used for writing files.
+
+!#define EASY_NETCDF_READ_MPI 1
 
 module radiation_spectral_definition
 
@@ -87,11 +116,7 @@ contains
   ! file of the type used to describe an ecCKD model
   subroutine read_spectral_definition(this, file)
 
-#ifdef EASY_NETCDF_READ_MPI
-    use easy_netcdf_read_mpi, only : netcdf_file
-#else
     use easy_netcdf,          only : netcdf_file
-#endif
     use ecradhook,     only : lhook, dr_hook, jphook
 
     class(spectral_definition_type), intent(inout) :: this
@@ -680,47 +705,6 @@ contains
              &                       this%reference_temperature)
       end if
 
-#ifdef USE_COARSE_MAPPING
-      ! In the processing that follows, we assume that the wavenumber
-      ! grid on which the g-points are defined in the spectral
-      ! definition is much finer than the albedo/emissivity intervals
-      ! that the user will provide.  This means that each wavenumber
-      ! is assigned to only one of the albedo/emissivity intervals.
-
-      ! By default set all wavenumbers to use first input
-      ! albedo/emissivity
-      i_input = 1
-      
-      ! All bounded intervals
-      do jint = 2,ninterval-1
-        wavenumber1_bound = 0.01_jprb / wavelength_bound(jint)
-        wavenumber2_bound = 0.01_jprb / wavelength_bound(jint-1)
-        where (wavenumber_mid > wavenumber1_bound &
-             & .and. wavenumber_mid <= wavenumber2_bound)
-          i_input = i_intervals(jint)
-        end where
-      end do
-
-      ! Final interval in wavelength space goes up to wavelength of
-      ! infinity (wavenumber of zero)
-      if (ninterval > 1) then
-        wavenumber2_bound = 0.01_jprb / wavelength_bound(ninterval-1)
-        where (wavenumber_mid <= wavenumber2_bound)
-          i_input = i_intervals(ninterval)
-        end where
-      end if
-
-      do jg = 1,this%ng
-        do jin = 1,ninput
-          mapping(jin,jg) = sum(this%gpoint_fraction(:,jg) * planck, &
-               &                 mask=(i_input==jin))
-          if (use_fluxes_local) then
-            mapping(jin,jg) = mapping(jin,jg) / sum(this%gpoint_fraction(:,jg) * planck)
-          end if
-        end do
-      end do
-
-#else
 
       ! Loop through all intervals
       do jint = 1,ninterval
@@ -763,7 +747,6 @@ contains
         end do
       end if
 
-#endif
       
     end if
 

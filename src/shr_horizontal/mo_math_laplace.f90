@@ -18,7 +18,17 @@
 ! Boundary exchange, nblks in presence of halos and dummy edge
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_math_laplace
@@ -216,18 +226,11 @@ CASE (3) ! (cell_type == 3)
                      i_startidx, i_endidx, rl_start, rl_end)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-    !$ACC LOOP GANG
-    DO je = i_startidx, i_endidx
-     !$ACC LOOP VECTOR
-      DO jk = slev, elev
-#else
 !CDIR UNROLL=3
    !$ACC LOOP GANG
     DO jk = slev, elev
       !$ACC LOOP VECTOR
       DO je = i_startidx, i_endidx
-#endif
 
         nabla2_vec_e(je,jk,jb) =  &
           &   ptr_patch%edges%tangent_orientation(je,jb) *  &
@@ -441,16 +444,13 @@ CASE (3) ! (cell_type == 3)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
-#ifdef _URD
-!CDIR UNROLL=_URD
-#endif
+
+
+
+
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
-#endif
+
         !
         !  calculate div(grad) in one step
         !
@@ -678,18 +678,9 @@ i_endblk   = ptr_patch%cells%end_blk(rl_end,i_nchdom)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-      !$ACC LOOP VECTOR
-      DO jk = slev, elev
-#else
-#ifdef _URD
-!CDIR UNROLL=_URD
-#endif
     DO jk = slev, elev
       !$ACC LOOP VECTOR
       DO jc = i_startidx, i_endidx
-#endif
         !
         !  calculate div(grad) in one step
         !
@@ -731,18 +722,9 @@ i_endblk   = ptr_patch%cells%end_blk(rl_end,i_nchdom)
 
     !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
     !$ACC LOOP GANG
-#ifdef __LOOP_EXCHANGE
-    DO jc = i_startidx, i_endidx
-      !$ACC LOOP VECTOR
-      DO jk = slev, elev
-#else
-#ifdef _URD
-!CDIR UNROLL=_URD
-#endif
     DO jk = slev, elev
       !$ACC LOOP VECTOR
       DO jc = i_startidx, i_endidx
-#endif
         !
         !  calculate the weighted average
         !

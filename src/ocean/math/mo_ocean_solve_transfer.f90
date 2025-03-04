@@ -12,12 +12,12 @@
 ! provides abstract communication / transfer infrastructure object to
 ! be used by solvers
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#define PURE_OR_OMP
-#else
-#define PURE_OR_OMP PURE
-#endif
+
+
+
+
+
+
 
 MODULE mo_ocean_solve_transfer
 
@@ -249,9 +249,9 @@ CONTAINS
     REAL(KIND=dp), INTENT(OUT) :: summa1
     TYPE(t_ptr_2d) :: data_in_ptr(1)
     REAL(KIND=dp) :: sums(1)
-#ifdef __INTEL_COMPILER
-    !DIR$ ATTRIBUTES ALIGN : 64 :: sums
-#endif
+
+
+
 
     data_in_ptr(1)%p => data_in1
     CALL this%global_sum_internal(1, data_in_ptr, sums)
@@ -267,9 +267,9 @@ CONTAINS
     REAL(KIND=dp), INTENT(OUT) :: summa1, summa2
     TYPE(t_ptr_2d) :: data_in_ptr(2)
     REAL(KIND=dp) :: sums(2)
-#ifdef __INTEL_COMPILER
-    !DIR$ ATTRIBUTES ALIGN : 64 :: sums
-#endif
+
+
+
 
     data_in_ptr(1)%p => data_in1
     data_in_ptr(2)%p => data_in2
@@ -287,9 +287,9 @@ CONTAINS
     REAL(KIND=dp), INTENT(OUT) :: summa1, summa2, summa3
     TYPE(t_ptr_2d) :: data_in_ptr(3)
     REAL(KIND=dp) :: sums(3)
-#ifdef __INTEL_COMPILER
-    !DIR$ ATTRIBUTES ALIGN : 64 :: sums
-#endif
+
+
+
 
     data_in_ptr(1)%p => data_in1
     data_in_ptr(2)%p => data_in2
@@ -308,9 +308,9 @@ CONTAINS
     REAL(KIND=sp), INTENT(OUT) :: summa1
     TYPE(t_ptr_2d_sp) :: data_in_ptr(1)
     REAL(KIND=sp) :: sums(1)
-#ifdef __INTEL_COMPILER
-    !DIR$ ATTRIBUTES ALIGN : 64 :: sums
-#endif
+
+
+
 
     data_in_ptr(1)%p => data_in1
     CALL this%global_sum_internal(1, data_in_ptr, sums)
@@ -326,9 +326,9 @@ CONTAINS
     REAL(KIND=sp), INTENT(OUT) :: summa1, summa2
     TYPE(t_ptr_2d_sp) :: data_in_ptr(2)
     REAL(KIND=sp) :: sums(2)
-#ifdef __INTEL_COMPILER
-    !DIR$ ATTRIBUTES ALIGN : 64 :: sums
-#endif
+
+
+
 
     data_in_ptr(1)%p => data_in1
     data_in_ptr(2)%p => data_in2
@@ -346,9 +346,9 @@ CONTAINS
     REAL(KIND=sp), INTENT(OUT) :: summa1, summa2, summa3
     TYPE(t_ptr_2d_sp) :: data_in_ptr(3)
     REAL(KIND=sp) :: sums(3)
-#ifdef __INTEL_COMPILER
-    !DIR$ ATTRIBUTES ALIGN : 64 :: sums
-#endif
+
+
+
 
     data_in_ptr(1)%p => data_in1
     data_in_ptr(2)%p => data_in2
@@ -371,17 +371,17 @@ CONTAINS
     INTEGER :: i
     CHARACTER(LEN=*), PARAMETER :: routine = module_name // &
       & '::global_sum_2d_dp'
-#ifdef __INTEL_COMPILER
-    !DIR$ ATTRIBUTES ALIGN : 64 :: loc_sum, abs_max_l, abs_max
-#endif
+
+
+
     gbl_sum(:) = 0._dp
     loc_sum(:) = 0._dp
     IF (ltimer) CALL timer_start(this%timer_glob_sum)
     IF (l_fast_sum) THEN
       DO i = 1, n
-#ifdef _CRAYFTN
-!DIR$ NOINLINE
-#endif
+
+
+
         loc_sum(i) = simple_sum_local(xp(i)%p)
       END DO
       gbl_sum(:) = p_sum(loc_sum(:), comm=this%comm)
@@ -417,17 +417,17 @@ CONTAINS
     INTEGER(KIND=i8) :: isum_loc(2*n), isum(2*n), tisum(2)
     CHARACTER(LEN=*), PARAMETER :: routine = module_name // &
       & '::global_sum_2d_sp'
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: loc_sum, abs_max_l, abs_max
-#endif
+
+
+
     gbl_sum(:) = 0._sp
     loc_sum(:) = 0._sp
     IF (ltimer) CALL timer_start(this%timer_glob_sum)
     IF(l_fast_sum) THEN
       DO i = 1, n
-#ifdef _CRAYFTN
-!DIR$ NOINLINE
-#endif
+
+
+
         loc_sum(i) = simple_sum_local(xp(i)%p)
       END DO
       gbl_sum(:) = p_sum(loc_sum(:), comm=this%comm)
@@ -452,13 +452,13 @@ CONTAINS
   END SUBROUTINE ocean_solve_transfer_global_sum_2d_sp
 
 ! performs local sum -- 'fast' implementation - dp variant
-  PURE_OR_OMP FUNCTION simple_sum_loc_dp_2d(vals) RESULT(local_sum)
+  PURE FUNCTION simple_sum_loc_dp_2d(vals) RESULT(local_sum)
     REAL(dp), INTENT(IN), CONTIGUOUS :: vals(:,:)
     REAL(dp) :: local_sum, aux_sum(SIZE(vals, 2))
     INTEGER :: j
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: aux_sum
-#endif
+
+
+
 
 !ICON_OMP PARALLEL DO SCHEDULE(STATIC)
     DO j = 1, SIZE(vals, 2)
@@ -468,13 +468,13 @@ CONTAINS
   END FUNCTION simple_sum_loc_dp_2d
 
 ! performs local sum -- 'fast' implementation - sp variant
-  PURE_OR_OMP FUNCTION simple_sum_loc_sp_2d(vals) RESULT(local_sum)
+  PURE FUNCTION simple_sum_loc_sp_2d(vals) RESULT(local_sum)
     REAL(sp), INTENT(IN), CONTIGUOUS :: vals(:,:)
     REAL(sp) :: local_sum, aux_sum(SIZE(vals, 2))
     INTEGER :: j
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: aux_sum
-#endif
+
+
+
 
 !ICON_OMP PARALLEL DO SCHEDULE(STATIC)
     DO j = 1, SIZE(vals, 2)
@@ -484,13 +484,13 @@ CONTAINS
   END FUNCTION simple_sum_loc_sp_2d
 
 ! finds local MAXVAL(ABS(x(:,:)) implementation - dp variant
-  PURE_OR_OMP FUNCTION abs_max_loc_dp_2d(vals) RESULT(abs_max)
+  PURE FUNCTION abs_max_loc_dp_2d(vals) RESULT(abs_max)
     REAL(dp), INTENT(IN), CONTIGUOUS :: vals(:,:)
     REAL(dp) :: abs_max, aux_max(SIZE(vals, 2))
     INTEGER :: j
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: aux_max
-#endif
+
+
+
 
 !ICON_OMP PARALLEL DO SCHEDULE(STATIC)
     DO j = 1, SIZE(vals, 2)
@@ -500,13 +500,13 @@ CONTAINS
   END FUNCTION abs_max_loc_dp_2d
 
 ! finds local MAXVAL(ABS(x(:,:)) implementation - dp variant
-  PURE_OR_OMP FUNCTION abs_max_loc_sp_2d(vals) RESULT(abs_max)
+  PURE FUNCTION abs_max_loc_sp_2d(vals) RESULT(abs_max)
     REAL(sp), INTENT(IN), CONTIGUOUS :: vals(:,:)
     REAL(sp) :: abs_max, aux_max(SIZE(vals, 2))
     INTEGER :: j
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: aux_max
-#endif
+
+
+
 
 !ICON_OMP PARALLEL DO SCHEDULE(STATIC)
     DO j = 1, SIZE(vals, 2)
@@ -517,7 +517,7 @@ END FUNCTION abs_max_loc_sp_2d
 
 ! first local part of order insensitive summation -- dp-variant
 ! convert to scaled integers and locally sum those
-  PURE_OR_OMP FUNCTION order_insensit_ieee64_sum_frst_dp_2d(vals, abs_max) &
+  PURE FUNCTION order_insensit_ieee64_sum_frst_dp_2d(vals, abs_max) &
     & RESULT(isum)
     REAL(dp), INTENT(IN), CONTIGUOUS :: vals(:,:)
     REAL(dp), INTENT(IN) :: abs_max
@@ -526,9 +526,9 @@ END FUNCTION abs_max_loc_sp_2d
     INTEGER :: j, iexp
     REAL(KIND=dp) :: fact, rval(SIZE(vals, 1))
     REAL(dp), PARAMETER :: two_30 = 1073741824._dp
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: rval, ival, isum1, isum2
-#endif
+
+
+
 
     iexp = EXPONENT(abs_max)
     IF (iexp < -980) THEN
@@ -560,9 +560,9 @@ END FUNCTION abs_max_loc_sp_2d
     INTEGER :: j, iexp
     REAL(KIND=dp) :: fact, rval(SIZE(vals, 1))
     REAL(dp), PARAMETER :: two_30 = 1073741824._dp
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: rval, ival, isum1, isum2
-#endif
+
+
+
 
     iexp = EXPONENT(abs_max)
     IF (iexp < -980) THEN
@@ -595,12 +595,12 @@ END FUNCTION abs_max_loc_sp_2d
     INTEGER :: iexp
     REAL(dp), PARAMETER :: two_30 = 1073741824._dp
     REAL(dp), PARAMETER :: r_two_30 = 1._dp / two_30
-#if defined (__SX__) || defined (__PGI)
-    INTEGER(i8) :: mask30
-    DATA mask30 / z'000000003fffffff' /
-#else
+
+
+
+
     INTEGER(i8), PARAMETER :: mask30 = INT(z'000000003fffffff',i8)
-#endif
+
 
     iexp = EXPONENT(abs_max)
     IF (iexp < -980) THEN

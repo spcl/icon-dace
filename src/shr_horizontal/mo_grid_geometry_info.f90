@@ -26,12 +26,12 @@ MODULE mo_grid_geometry_info
                                        refined_bisection_grid, dualy_refined_grid, undefined, &
                                        t_grid_geometry_info
   USE mo_netcdf
-#if !( defined (NOMPI) || defined (__ICON_GRID_GENERATOR__))
-  ! The USE statement below lets this module use the routines from
-  ! mo_netcdf_parallel where only 1 processor is reading and
-  ! broadcasting the results  
-  USE mo_netcdf_parallel, ONLY: p_nf90_get_att
-#endif
+
+
+
+
+
+
   
   IMPLICIT NONE
 
@@ -133,111 +133,8 @@ CONTAINS
     INTEGER, INTENT(in) :: ncid
     TYPE(t_grid_geometry_info) :: geometry_info
     
-#if ( defined (NOMPI) || defined (__ICON_GRID_GENERATOR__))
+
     parallel_read_geometry_info = read_geometry_info(ncid, geometry_info)
-#else
-    
-    INTEGER :: netcd_status
-    CHARACTER(*), PARAMETER :: method_name = "read_geometry_info"
-            
-    INTEGER :: geometry_type
-    INTEGER :: cell_type
-    REAL(wp) :: mean_edge_length
-    REAL(wp) :: mean_dual_edge_length
-    REAL(wp) :: mean_cell_area
-    REAL(wp) :: mean_dual_cell_area
-    REAL(wp) :: domain_length
-    REAL(wp) :: domain_height
-    REAL(wp) :: sphere_radius
-    REAL(wp) :: center_x(3)
-
-    CALL set_default_geometry_info(geometry_info)
-    parallel_read_geometry_info = -1
-    
-    netcd_status = p_nf90_get_att(ncid, nf90_global,'grid_geometry', geometry_type)
-    IF (netcd_status /= nf90_noerr) THEN
-!       CALL finish("Cannot read","grid_geometry")
-      RETURN
-    ENDIF
-    
-    geometry_info%geometry_type = geometry_type
-
-    netcd_status = p_nf90_get_att(ncid, nf90_global,'grid_cell_type', cell_type)
-    IF (netcd_status /= nf90_noerr) THEN
-!       CALL finish("Cannot read","grid_geometry")
-      RETURN
-    ENDIF
-        
-    geometry_info%cell_type = cell_type
-
-    netcd_status = p_nf90_get_att(ncid, nf90_global,'mean_edge_length', mean_edge_length)
-    IF (netcd_status /= nf90_noerr) THEN
-!       CALL finish("Cannot read","mean_edge_length")
-      RETURN
-    ENDIF
-    
-    geometry_info%mean_edge_length = mean_edge_length
-
-    netcd_status = p_nf90_get_att(ncid, nf90_global,'mean_dual_edge_length', &
-      & mean_dual_edge_length)
-    IF (netcd_status /= nf90_noerr) THEN
-!       CALL finish("Cannot read","mean_dual_edge_length")
-      RETURN
-    ENDIF
-    
-    geometry_info%mean_dual_edge_length = mean_dual_edge_length
-
-    netcd_status = p_nf90_get_att(ncid, nf90_global,'mean_cell_area', mean_cell_area)
-    IF (netcd_status /= nf90_noerr) THEN
-!       CALL finish("Cannot read","mean_cell_area")
-      RETURN
-    ENDIF
-    
-    geometry_info%mean_cell_area = mean_cell_area
-
-    netcd_status = p_nf90_get_att(ncid, nf90_global,'mean_dual_cell_area', mean_dual_cell_area)
-    IF (netcd_status /= nf90_noerr) THEN
-!       CALL finish("Cannot read","mean_dual_cell_area")
-      RETURN
-    ENDIF
-    
-    geometry_info%mean_dual_cell_area = mean_dual_cell_area
-
-    netcd_status = p_nf90_get_att(ncid, nf90_global,'domain_length', domain_length)
-    IF (netcd_status /= nf90_noerr) THEN
-!       CALL finish("Cannot read","domain_length")
-      RETURN
-    ENDIF
-    
-    geometry_info%domain_length = domain_length
-
-    netcd_status = p_nf90_get_att(ncid, nf90_global,'domain_height', domain_height)
-    IF (netcd_status /= nf90_noerr) THEN
-!       CALL finish("Cannot read","domain_height")
-      RETURN
-    ENDIF
-
-    geometry_info%domain_height = domain_height
-
-    netcd_status = p_nf90_get_att(ncid, nf90_global,'sphere_radius', sphere_radius)
-    IF (netcd_status /= nf90_noerr) THEN
-!       CALL finish("Cannot read","sphere_radius")
-      RETURN
-    ENDIF
-    
-    geometry_info%sphere_radius = sphere_radius
-
-    netcd_status = p_nf90_get_att(ncid, nf90_global,'domain_cartesian_center', center_x)
-    IF (netcd_status /= nf90_noerr) THEN
-!       CALL finish("Cannot read","domain_cartesian_center")
-      RETURN
-    ENDIF
-    
-    geometry_info%center%x = center_x
-
-    ! return status ok
-    parallel_read_geometry_info = 0
-#endif
 
   END FUNCTION parallel_read_geometry_info
   !-------------------------------------------------------------------------

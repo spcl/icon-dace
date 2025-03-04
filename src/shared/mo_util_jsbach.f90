@@ -11,7 +11,7 @@
 
 ! Contains modules that provide interfaces to ICON infrastructure for JSBACH4
 
-#ifndef __NO_JSBACH__
+
 
 MODULE mo_jsb_parallel_iface
 
@@ -1764,10 +1764,3 @@ MODULE mo_jsb_surface_exchange_iface
 END MODULE mo_jsb_surface_exchange_iface
 
 !------------------------------------------------------------------------------------------------------------
-#else
-
-! nag does not like empty files
-MODULE util_jsbach
-END MODULE util_jsbach
-
-#endif

@@ -12,7 +12,17 @@
 ! @brief Interface between atmosphere physics and the ocean, through a coupler
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_atmo_ocean_coupling
@@ -20,9 +30,7 @@ MODULE mo_atmo_ocean_coupling
   USE mo_kind,            ONLY: wp
   USE mo_model_domain,    ONLY: t_patch
   USE mo_ext_data_types,  ONLY: t_external_data
-#ifndef __NO_AES__
   USE mo_aes_phy_memory,  ONLY: prm_field
-#endif
   USE mo_parallel_config, ONLY: nproma
   USE mo_impl_constants,  ONLY: inwp, iaes, SUCCESS
   USE mo_mpi,             ONLY: p_pe_work, p_comm_work, p_sum
@@ -138,10 +146,6 @@ CONTAINS
         CALL dbg_print('AtmFrame: fr_lake',ext_data(jg)%atm%fr_lake,str_module,3,in_subset=patch_horz%cells%owned)
 
       CASE ( iaes )
-#ifdef __NO_AES__
-        CALL finish (str_module // ':construct_atmo_ocean_coupling', &
-            & 'coupled model needs aes; remove --disable-aes and reconfigure')
-#else
         !ICON_OMP_PARALLEL_DO PRIVATE(jb,jc) ICON_OMP_RUNTIME_SCHEDULE
         DO jb = 1, patch_horz%nblks_c
           DO jc = 1, nproma
@@ -189,7 +193,6 @@ CONTAINS
           ENDDO
           !ICON_OMP_END_PARALLEL_DO
         ENDIF
-#endif
         CASE DEFAULT
 
           CALL finish ('Please mask handling for new forcing in ' &

@@ -19,7 +19,17 @@
 ! obs-data and model levels (another time interpolation will be added later)
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_o3_util
@@ -116,9 +126,6 @@ CONTAINS
         ! APE ozone: do nothing since everything is already
         ! set in mo_nwp_phy_init
       CASE (6)
-#ifdef _OPENACC
-        IF (lzacc) CALL finish(routine,'calc_o3_clim not ported to gpu')
-#endif
         CALL calc_o3_clim(kbdim      = nproma,        & !< in
           &               jg         = jg,            & !< in
           &               p_inc_rad  = dt_rad,        & !< in
@@ -1177,9 +1184,6 @@ CONTAINS
     !$ACC   PRESENT(atm_phy_nwp_config, o3, p_diag, prm_diag, pt_patch, RGHG7, RGHG7_MACC) &
     !$ACC   IF(lacc)
 
-#ifdef _OPENACC
-    CALL init(zviozo, lacc=lacc, opt_acc_async=.TRUE.)
-#endif
 
     !Time index. Taken from su_ghgclim.F90 of ECMWF's IFS (37r2).
 
@@ -1263,9 +1267,6 @@ CONTAINS
       ENDDO
       !$ACC END PARALLEL
     CASE (9)
-#ifdef _OPENACC
-      IF (lacc) CALL finish('calc_o3_gems','Not ported on gpu for irad_o3 == 9')
-#endif
       DO jk=1,nlev_gems
         DO jl=1,ilat
           zozn(JL,JK) = amo3/amd * (RGHG7_MACC(JL,JK,IM2)&
@@ -1289,9 +1290,8 @@ CONTAINS
       !$ACC END PARALLEL LOOP
 
       IF (irad_o3 == 97) THEN
-#ifdef _OPENACC
-      IF (lacc) CALL finish('calc_o3_gems','Not ported on gpu for irad_o3 == 97')
-#endif
+
+
         ! Pressure-dependent weight for using MACC in the upper stratosphere and mesosphere
         DO jk = 1, nlev_gems
           IF (zrefp(jk) > 500._wp) THEN
@@ -1442,9 +1442,9 @@ CONTAINS
       !$ACC END PARALLEL
 
     CASE (io3_art)
-#ifdef _OPENACC
-      IF (lacc) CALL finish('calc_o3_gems','Not ported on gpu for irad_o3 == io3_art')
-#endif
+
+
+
       DO jk=1,nlev_gems
         DO jl=1,ilat
           zozn(JL,JK) = amo3/amd * (RGHG7(JL,JK,IM2)&
@@ -1566,7 +1566,7 @@ CONTAINS
               idx0(jc,jk) = nlev_gems
             ENDIF
           ENDDO !jc
-#ifndef _OPENACC
+
           IF (ALL(l_found(i_startidx:i_endidx))) THEN
             lfound_all = .TRUE.
             EXIT
@@ -1575,9 +1575,9 @@ CONTAINS
         IF (lfound_all) THEN
           jk_start = MIN(MINVAL(idx0(i_startidx:i_endidx,jk)),nlev_gems-1)
         ENDIF
-#else
-        ENDDO !jkk
-#endif
+
+
+
       ENDDO !jk
       !$ACC END PARALLEL
 
