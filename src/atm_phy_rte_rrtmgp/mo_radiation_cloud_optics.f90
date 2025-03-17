@@ -140,9 +140,9 @@ CONTAINS
     CALL nf(p_nf90_get_var(fid, vid, z_asy_i, (/1,1/), (/n_sizes,n_mdl_bnds/)), routine)
 
 !FIXME: bug on Aurora testbed
-#ifndef __NEC__
+
     CALL nf(p_nf90_close(fid), routine)
-#endif
+
 
     reimin = MINVAL(re_crystal)
     reimax = MAXVAL(re_crystal)

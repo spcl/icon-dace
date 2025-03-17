@@ -99,18 +99,6 @@ CONTAINS
     ! 2. Read user's (new) specifications (done so far by all MPI processes)
     !--------------------------------------------------------------------
 
-#ifdef YAC_coupling
-
-    CALL open_nml (TRIM(namelist_filename))
-
-    CALL position_nml('coupling_mode_nml',STATUS=istat)
-    IF (istat==POSITIONED) THEN
-      READ (nnml, coupling_mode_nml)
-    ENDIF
-
-    CALL close_nml
-
-#endif
 
     config_coupled_to_ocean     = coupled_to_ocean
     config_coupled_to_waves     = coupled_to_waves
@@ -132,13 +120,11 @@ CONTAINS
     ! 3. Sanity checks
     !----------------------------------------------------
 
-#ifndef YAC_coupling
 
     if (coupled_mode) &
       CALL finish( &
         routine, "(coupled_mode == .TRUE.) " // &
         "but not compiled coupling support")
-#endif
 
     my_process_component = get_my_process_type()
 

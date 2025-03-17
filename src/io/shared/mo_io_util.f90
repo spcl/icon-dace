@@ -91,11 +91,11 @@ CONTAINS
     CASE (FILETYPE_GRB2)
       extn = '.grb'
     CASE (FILETYPE_YAC)
-#ifdef YAC_coupling
-      extn = ''
-#else
+
+
+
       CALL finish(routine,'using yac-coupled output but yac coupling is disabled')
-#endif
+
     CASE default
       CALL finish(routine,'unknown output_type')
     END SELECT

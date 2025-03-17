@@ -12,7 +12,17 @@
 ! Subroutine interface_aes_rad calls the radiative transfer scheme.
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_interface_aes_rad
@@ -28,9 +38,7 @@ MODULE mo_interface_aes_rad
   USE mo_run_config,           ONLY: iqs, iqi
   USE mo_aes_graupel,          ONLY: snow_number, snow_lambda, ice_number
 
-#ifndef __NO_RTE_RRTMGP__
   USE mo_rte_rrtmgp_radiation, ONLY: rte_rrtmgp_radiation
-#endif
 
   USE mo_timer,                ONLY: ltimer, timer_start, timer_stop, timer_rad
 
@@ -85,7 +93,6 @@ CONTAINS
 
     IF ( is_in_sd_ed_interval ) THEN
         !
-#ifndef __NO_RTE_RRTMGP__
         IF ( is_active ) THEN
           !
           ! store ts_rad of this radiatiative transfer timestep in ts_rad_rt,
@@ -201,7 +208,6 @@ CONTAINS
           !$ACC END DATA
         !
         END IF
-#endif
           !
        ELSE
           !

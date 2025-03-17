@@ -12,7 +12,17 @@
 ! @brief Interface between AES physics and the ocean, through a coupler
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_aes_ocean_coupling
@@ -467,7 +477,6 @@ CONTAINS
       routine, field_id_pres_msl, 'sea level pressure', nbr_hor_cells, &
       pt_diag%pres_msl(:,1:nblks_c))
 
-#ifndef __NO_ICON_OCEAN__
     IF (ccycle_config(jg)%iccycle /= 0) THEN
 
        ! ------------------------------
@@ -512,7 +521,6 @@ CONTAINS
         put_buffer(:,:,1))
 
     ENDIF
-#endif
 
     !  *****  *****  *****  *****  *****  *****  *****  *****  *****  *****  *****  *****
     !  Receive fields from ocean to atmosphere

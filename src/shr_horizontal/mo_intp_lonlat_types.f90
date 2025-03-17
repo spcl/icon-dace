@@ -31,9 +31,9 @@ MODULE mo_intp_lonlat_types
   USE mo_interpol_config,     ONLY: rbf_vec_dim_c, rbf_dim_c2l, l_mono_c2l
   USE mo_model_domain,        ONLY: t_patch
   USE mo_communication,       ONLY: idx_1d
-#ifdef _OPENACC
-  USE mo_mpi,                     ONLY: i_am_accel_node
-#endif
+
+
+
 
   IMPLICIT NONE
 
@@ -654,13 +654,13 @@ CONTAINS
       i_endidx   = nproma
       IF (jb == nblks_lonlat) i_endidx = npromz_lonlat
       !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
+
       DO jc = i_startidx, i_endidx
         DO jk = slev, elev
-#else
-      DO jk = slev, elev
-        DO jc = i_startidx, i_endidx
-#endif
+
+
+
+
           p_out(jc,jk,jb) = INT(ptr_coeff(1,jc,jb)) *  &
             & p_cell_in(iidx(1,jc,jb), jk, iblk(1,jc,jb))
         ENDDO
@@ -750,13 +750,13 @@ CONTAINS
       CASE(1)
 
         !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
+
         DO jc = i_startidx, i_endidx
           DO jk = slev, elev
-#else
-        DO jk = slev, elev
-          DO jc = i_startidx, i_endidx
-#endif
+
+
+
+
 
             p_out(jc,jk,jb) = ptr_coeff(1,jc,jb) *  &
               & p_cell_in(iidx(1,jc,jb), jk, iblk(1,jc,jb))
@@ -767,13 +767,13 @@ CONTAINS
       CASE(3)
 
         !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
+
         DO jc = i_startidx, i_endidx
           DO jk = slev, elev
-#else
-        DO jk = slev, elev
-          DO jc = i_startidx, i_endidx
-#endif
+
+
+
+
 
             p_out(jc,jk,jb) = &
           &    ptr_coeff(1,jc,jb)*                                            &
@@ -789,13 +789,13 @@ CONTAINS
       CASE(4)
 
         !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
+
         DO jc = i_startidx, i_endidx
           DO jk = slev, elev
-#else
-        DO jk = slev, elev
-          DO jc = i_startidx, i_endidx
-#endif
+
+
+
+
 
             p_out(jc,jk,jb) =                                                   &
               ptr_coeff(1 ,jc,jb)*p_cell_in(iidx(1 ,jc,jb),jk,iblk(1 ,jc,jb)) + &
@@ -828,13 +828,13 @@ CONTAINS
       CASE(10)
 
         !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
+
         DO jc = i_startidx, i_endidx
           DO jk = slev, elev
-#else
-        DO jk = slev, elev
-          DO jc = i_startidx, i_endidx
-#endif
+
+
+
+
 
             p_out(jc,jk,jb) =                                                   &
               ptr_coeff(1 ,jc,jb)*p_cell_in(iidx(1 ,jc,jb),jk,iblk(1 ,jc,jb)) + &
@@ -873,13 +873,13 @@ CONTAINS
       CASE(13)
 
         !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
+
         DO jc = i_startidx, i_endidx
           DO jk = slev, elev
-#else
-        DO jk = slev, elev
-          DO jc = i_startidx, i_endidx
-#endif
+
+
+
+
 
             p_out(jc,jk,jb) =                                                   &
               ptr_coeff(1 ,jc,jb)*p_cell_in(iidx(1 ,jc,jb),jk,iblk(1 ,jc,jb)) + &
@@ -915,13 +915,13 @@ CONTAINS
               p_out(jc,jk,jb) = MAX( MIN(p_out(jc,jk,jb), vmax), vmin )
             END IF
 
-#ifdef __LOOP_EXCHANGE
+
           ENDDO
         ENDDO
-#else
-          ENDDO
-        ENDDO
-#endif
+
+
+
+
 
       END SELECT
 
@@ -1109,13 +1109,13 @@ CONTAINS
       IF (jb == nblks_lonlat) i_endidx = npromz_lonlat
 
       !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
+
       DO jc = i_startidx, i_endidx
         DO jk = slev, elev
-#else
-      DO jk = slev, elev
-        DO jc = i_startidx, i_endidx
-#endif
+
+
+
+
 
           grad_x(jc,jk,jb) =                                               &
             ptr_coeff(1,1,jc,jb)*p_vn_in(iidx(1,jc,jb),jk,iblk(1,jc,jb)) + &

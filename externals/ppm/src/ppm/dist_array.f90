@@ -46,7 +46,7 @@
 !
 
 
-#include "fc_feature_defs.inc"
+
 MODULE ppm_distributed_array_rename
   IMPLICIT NONE
   PUBLIC
@@ -61,17 +61,17 @@ MODULE ppm_distributed_array
   USE iso_c_binding, ONLY: c_ptr, c_f_pointer
   USE ppm_distributed_array_rename, ONLY: &
        dist_mult_array_get => ppm_dist_mult_array_get_f2c
-#ifndef HAVE_POINTER_REMAP
+
   USE ppm_ptr_bnds_remap, ONLY: ptr_bnds_remap
-#endif
-#ifdef USE_MPI_MOD
-  USE mpi
-#endif
+
+
+
+
   IMPLICIT NONE
   PRIVATE
-#if defined USE_MPI && ! defined USE_MPI_MOD
-  INCLUDE 'mpif.h'
-#endif
+
+
+
   INCLUDE 'ftype_size.inc'
   INTEGER, PARAMETER :: max_rank = 7
   !> describes one array-like global data structure to be distributed
@@ -497,18 +497,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      500, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i4_1d
 
@@ -528,18 +528,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      531, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i4_2d
 
@@ -559,18 +559,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      562, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i4_3d
 
@@ -590,18 +590,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      593, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i4_4d
 
@@ -621,18 +621,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      624, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i4_5d
 
@@ -652,18 +652,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      655, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):, lb(6):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i4_6d
 
@@ -683,18 +683,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      686, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):, lb(6):, lb(7):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i4_7d
 
@@ -716,18 +716,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      719, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i8_1d
 
@@ -747,18 +747,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      750, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i8_2d
 
@@ -778,18 +778,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      781, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i8_3d
 
@@ -809,18 +809,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      812, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i8_4d
 
@@ -840,18 +840,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      843, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i8_5d
 
@@ -871,18 +871,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      874, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):, lb(6):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i8_6d
 
@@ -902,18 +902,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      905, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):, lb(6):, lb(7):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_i8_7d
 
@@ -935,18 +935,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      938, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_l_1d
 
@@ -966,18 +966,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      969, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_l_2d
 
@@ -997,18 +997,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1000, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_l_3d
 
@@ -1028,18 +1028,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1031, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_l_4d
 
@@ -1059,18 +1059,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1062, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_l_5d
 
@@ -1090,18 +1090,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1093, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):, lb(6):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_l_6d
 
@@ -1121,18 +1121,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1124, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):, lb(6):, lb(7):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_l_7d
 
@@ -1154,18 +1154,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1157, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_sp_1d
 
@@ -1185,18 +1185,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1188, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_sp_2d
 
@@ -1216,18 +1216,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1219, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_sp_3d
 
@@ -1247,18 +1247,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1250, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_sp_4d
 
@@ -1278,18 +1278,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1281, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_sp_5d
 
@@ -1309,18 +1309,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1312, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):, lb(6):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_sp_6d
 
@@ -1340,18 +1340,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1343, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):, lb(6):, lb(7):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_sp_7d
 
@@ -1373,18 +1373,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1376, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_dp_1d
 
@@ -1404,18 +1404,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1407, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_dp_2d
 
@@ -1435,18 +1435,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1438, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_dp_3d
 
@@ -1466,18 +1466,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1469, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_dp_4d
 
@@ -1497,18 +1497,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1500, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_dp_5d
 
@@ -1528,18 +1528,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1531, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):, lb(6):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_dp_6d
 
@@ -1559,18 +1559,18 @@ CONTAINS
     ! CALL assertion(dm_array%sub_arrays_global_desc(sub_array_idx)%element_dt &
     !      == mp_i4, &
     !      filename, &
-    !      __LINE__, "invalid data type")
+    !      1562, "invalid data type")
     CALL dist_mult_array_rank_rect(dm_array, sub_array_idx, -1, res_rect)
     res_shape = extent_shape(res_rect)
     CALL dist_mult_array_local_ptr_c(dm_array, sub_array_idx, a_ptr)
     CALL C_F_POINTER(a_ptr, sub_array_ptr1, res_shape)
     lb = extent_start(res_rect)
-#ifdef HAVE_POINTER_REMAP
-    sub_array_ptr(lb(1):, lb(2):, lb(3):, lb(4):, lb(5):, lb(6):, lb(7):) &
-         => sub_array_ptr1
-#else
+
+
+
+
     CALL ptr_bnds_remap(sub_array_ptr, sub_array_ptr1, lb)
-#endif
+
 
   END SUBROUTINE dist_mult_array_local_ptr_dp_7d
 

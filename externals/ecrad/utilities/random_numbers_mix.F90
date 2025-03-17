@@ -106,9 +106,9 @@
 !        M Fisher:     2005-03-30 replaced LCG initialization with shift register
 !     ------------------------------------------------------------------
 
-#ifdef RS6K
-@PROCESS HOT(NOVECTOR) NOSTRICT
-#endif
+
+
+
 MODULE RANDOM_NUMBERS_MIX
 USE ecradhook,  ONLY : LHOOK, DR_HOOK, JPHOOK
 USE PARKIND1, ONLY : JPIM, JPRB

@@ -16,7 +16,17 @@
 ! the expansion coefficients associated with land and boundary vary with the vertical level but are constant in time.
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_operator_ocean_coeff_3d
   !-------------------------------------------------------------------------
@@ -53,8 +63,6 @@ MODULE mo_operator_ocean_coeff_3d
 
   IMPLICIT NONE
 
-#define d_norma_3d(v) SQRT(SUM(v%x * v%x))
-#define d_normalize(v) v%x=v%x/d_norma_3d(v)
 
   PRIVATE
 
@@ -394,7 +402,7 @@ CONTAINS
     TYPE(t_cartesian_coordinates) :: d
     !-----------------------------------------------------------------------
     d = distance_vector (y, x, geometry_info)
-    distance = d_norma_3d(d)
+    distance = SQRT(SUM(d%x * d%x))
 
   END FUNCTION distance
   !-------------------------------------------------------------------------
@@ -413,7 +421,7 @@ CONTAINS
     d_vector_2 = distance_vector(x3, x1, geometry_info)
     ! the area is the one defined by the points 0, d_vector_1,  d_vector_2
     p_vector = vector_product(d_vector_1, d_vector_2)
-    planar_triangle_area = 0.5_wp * d_norma_3d(p_vector)
+    planar_triangle_area = 0.5_wp * SQRT(SUM(p_vector%x * p_vector%x))
 
     !test_planar_triangle_area  = triangle_area(x1, x2, x3)
 !     write(0,*) "point 1:", x1%x
@@ -451,7 +459,7 @@ CONTAINS
     TYPE(t_cartesian_coordinates) :: d_vector
 
     d_vector = distance_vector(y, x, geometry_info)
-    planar_distance  = d_norma_3d(d_vector)
+    planar_distance  = SQRT(SUM(d_vector%x * d_vector%x))
 
   END FUNCTION planar_distance
   !-------------------------------------------------------------------------
@@ -470,8 +478,8 @@ CONTAINS
     SELECT CASE(geometry_info%geometry_type)
 
     CASE (sphere_geometry)
-      z_vector%x = x%x !/ d_norma_3d(x)
-      d_normalize(z_vector)
+      z_vector%x = x%x !/ SQRT(SUM(x%x * x%x))
+      z_vector%x=z_vector%x/SQRT(SUM(z_vector%x * z_vector%x))
     CASE ( planar_channel_geometry, planar_geometry, planar_torus_geometry )
       z_vector%x = (/0.0_wp, 0.0_wp, 1.0_wp/)
     CASE DEFAULT
@@ -1465,7 +1473,7 @@ CONTAINS
 
             edge2cell_coeff_cc_t(edge_index, edge_block, neigbor)%x = &
               & patch_2D%edges%primal_cart_normal(edge_index, edge_block)%x &
-              & * d_norma_3d(dist_vector) &
+              & * SQRT(SUM(dist_vector%x * dist_vector%x)) &
               & / dual_edge_length(edge_index, edge_block)
 
           ENDIF ! (cell_block > 0)
@@ -1903,8 +1911,8 @@ CONTAINS
               z = planar_middle( &
                & dual_edge_middle(edge_index_vertex, edge_block_vertex), &
                & vertex_center, patch_2D%geometry_info)
-              z = get_surface_normal(z, patch_2D%geometry_info) ! get_surface_normal has to do d_normalize(z)
-              d_normalize(z)
+              z = get_surface_normal(z, patch_2D%geometry_info) ! get_surface_normal has to do z%x=z%x/SQRT(SUM(z%x * z%x))
+              z%x=z%x/SQRT(SUM(z%x * z%x))
               dist_vector = vector_product(dist_vector, z)
               ! the dist_vector has still dual_edge_middle-vertex length
 
@@ -1926,7 +1934,7 @@ CONTAINS
 !                   dist_vector_orientedLength
 !               write(0,*) edge2edge_viavert_coeff(edge_index,edge_block,ictr),  &
 !                 DOT_PRODUCT(dist_vector_basic%x, patch_2D%edges%primal_cart_normal(edge_index_vertex, edge_block_vertex)%x) * &
-!                 d_norma_3d(dist_vector) *  patch_2D%verts%edge_orientation(vertex_index, vertex_block, vert_edge) &
+!                 SQRT(SUM(dist_vector%x * dist_vector%x)) *  patch_2D%verts%edge_orientation(vertex_index, vertex_block, vert_edge) &
 !                   &  * dual_edge_length(edge_index_vertex, edge_block_vertex)
             ENDIF
 

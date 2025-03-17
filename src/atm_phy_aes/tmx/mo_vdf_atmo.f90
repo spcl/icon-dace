@@ -12,7 +12,17 @@
 ! Classes and functions for the turbulent mixing package (tmx)
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_vdf_atmo
@@ -42,12 +52,6 @@ MODULE mo_vdf_atmo
   USE mo_intp_rbf,          ONLY: rbf_vec_interpol_vertex, rbf_vec_interpol_edge
   USE mo_fortran_tools,     ONLY: init
 
-#ifdef _OPENACC
-  use openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)
-#else
-#define __acc_attach(ptr)
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -122,15 +126,11 @@ MODULE mo_vdf_atmo
       & inv_dzh(:,:,:)                => NULL() , &
       & geopot_agl_ic(:,:,:)          => NULL() , &
       & pfrc(:,:,:)                   => NULL()
-#ifdef __MIXED_PRECISION
-    REAL(sp), POINTER :: &
-      & inv_dzf(:,:,:)                => NULL() , &
-      & dzh(:,:,:)                    => NULL()
-#else
+
     REAL(wp), POINTER :: &
       & inv_dzf(:,:,:)                => NULL() , &
       & dzh(:,:,:)                    => NULL()
-#endif
+
   CONTAINS
     ! PROCEDURE :: Init => init_t_vdf_atmo_variable_set
     PROCEDURE :: Set_pointers => Set_pointers_inputs
@@ -235,7 +235,7 @@ CONTAINS
     !$ACC ENTER DATA COPYIN(result)
     ! Call Init of abstract parent class
     CALL result%Init_process(dt=dt, name=name, domain=domain)
-    __acc_attach(result%domain)
+    
 
     ! Initialize variable sets
     ALLOCATE(t_vdf_atmo_config :: result%config)
@@ -306,17 +306,17 @@ CONTAINS
     TYPE IS (t_vdf_atmo_config)
       conf => set
     END SELECT
-    __acc_attach(conf)
+    
     SELECT TYPE (set => this%inputs)
     TYPE IS (t_vdf_atmo_inputs)
       ins => set
     END SELECT
-    __acc_attach(ins)
+    
     SELECT TYPE (set => this%diagnostics)
     TYPE IS (t_vdf_atmo_diagnostics)
       diags => set
     END SELECT
-    __acc_attach(diags)
+    
 
     ! Prepare variables and pointers
     domain => this%domain 
@@ -487,17 +487,17 @@ CONTAINS
     TYPE IS (t_vdf_atmo_config)
       conf => set
     END SELECT
-    __acc_attach(conf)
+    
     SELECT TYPE (set => this%inputs)
     TYPE IS (t_vdf_atmo_inputs)
       ins => set
     END SELECT
-    __acc_attach(ins)
+    
     SELECT TYPE (set => this%diagnostics)
     TYPE IS (t_vdf_atmo_diagnostics)
       diags => set
     END SELECT
-    __acc_attach(diags)
+    
 
     state_ta     => this%states    %Get_ptr_r3d('temperature') ! old state
     tend_ta      => this%tendencies%Get_ptr_r3d('temperature') ! tendency
@@ -643,33 +643,33 @@ CONTAINS
     SELECT TYPE (this)
     TYPE IS (t_vdf_atmo_config)
       this%cpd => this%list%Get_ptr_r0d('cpd')
-      __acc_attach(this%cpd)
+      
       this%cvd => this%list%Get_ptr_r0d('cvd')
-      __acc_attach(this%cvd)
+      
       this%smag_constant => this%list%Get_ptr_r0d('Smagorinsky constant')
-      __acc_attach(this%smag_constant)
+      
       this%max_turb_scale => this%list%Get_ptr_r0d('maximum turbulence length scale')
-      __acc_attach(this%max_turb_scale)
+      
       this%rturb_prandtl => this%list%Get_ptr_r0d('reverse prandtl number')
-      __acc_attach(this%rturb_prandtl)
+      
       this%turb_prandtl  => this%list%Get_ptr_r0d('prandtl number')
-      __acc_attach(this%turb_prandtl)
+      
       this%use_louis  => this%list%Get_ptr_l0d('switch to activate Louis formula')
-      __acc_attach(this%use_louis)
+      
       this%louis_constant_b => this%list%Get_ptr_r0d('Louis constant b')
-      __acc_attach(this%louis_constant_b)
+      
       this%km_min => this%list%Get_ptr_r0d('minimum Km')
-      __acc_attach(this%km_min)
+      
       this%k_s => this%list%Get_ptr_r0d('k_s')
-      __acc_attach(this%k_s)
+      
       this%dtime => this%list%Get_ptr_r0d('time step')
-      __acc_attach(this%dtime)
+      
       this%solver_type => this%list%Get_ptr_i0d('solver type')
-      __acc_attach(this%solver_type)
+      
       this%energy_type => this%list%Get_ptr_i0d('energy type')
-      __acc_attach(this%energy_type)
+      
       this%dissipation_factor => this%list%Get_ptr_r0d('dissipation factor')
-      __acc_attach(this%dissipation_factor)
+      
     END SELECT
 
   END SUBROUTINE Set_pointers_config
@@ -706,11 +706,11 @@ CONTAINS
     CALL inlist%append(t_variable('full level pressure', shape_3d, "Pa", type_id="real"))
     CALL inlist%append(t_variable('layer thickness', shape_3d, "m", type_id="real"))
     CALL inlist%append(t_variable('layer thickness full', shape_3d, "m", type_id="real"))
-#ifdef __MIXED_PRECISION
-    CALL inlist%append(t_variable('inverse layer thickness full', shape_3d, "1/m", type_id="single"))
-#else
+
+
+
     CALL inlist%append(t_variable('inverse layer thickness full', shape_3d, "1/m", type_id="real"))
-#endif
+
     ! CALL inlist%append(t_variable('saturation specific humidity', shape_3d, "kg/kg", type_id="real"))
     CALL inlist%append(t_variable('moist air mass', shape_3d, "kg/m2", type_id="real"))
     ! CALL inlist%append(t_variable('specific heat of air at constant pressure', shape_3d, "J/kg/K", type_id="real"))
@@ -737,55 +737,55 @@ CONTAINS
     SELECT TYPE (this)
     TYPE IS (t_vdf_atmo_inputs)
       this%ptm1    => this%list%Get_ptr_r3d('temperature')
-      __acc_attach(this%ptm1)
+      
       this%ptvm1   => this%list%Get_ptr_r3d('virtual temperature')
-      __acc_attach(this%ptvm1)
+      
       this%rho     => this%list%Get_ptr_r3d('air density')
-      __acc_attach(this%rho)
+      
       this%mair    => this%list%Get_ptr_r3d('moist air mass')
       this%cvair   => this%list%Get_ptr_r3d('specific heat of air at constant volume')
-      __acc_attach(this%cvair)
+      
       this%zf      => this%list%Get_ptr_r3d('geometric height full')
-      __acc_attach(this%zf)
+      
       this%zh      => this%list%Get_ptr_r3d('geometric height half')
-      __acc_attach(this%zh)
+      
       this%pum1    => this%list%Get_ptr_r3d('zonal wind')
-      __acc_attach(this%pum1)
+      
       this%pvm1    => this%list%Get_ptr_r3d('meridional wind')
-      __acc_attach(this%pvm1)
+      
       this%pwp1    => this%list%Get_ptr_r3d('vertical wind')
-      __acc_attach(this%pwp1)
+      
       this%pqm1    => this%list%Get_ptr_r3d('water vapor')
-      __acc_attach(this%pqm1)
+      
       this%pxlm1   => this%list%Get_ptr_r3d('cloud water')
-      __acc_attach(this%pxlm1)
+      
       this%pxim1   => this%list%Get_ptr_r3d('cloud ice')
-      __acc_attach(this%pxim1)
+      
       this%pxrm1   => this%list%Get_ptr_r3d('rain')
-      __acc_attach(this%pxrm1)
+      
       this%pxsm1   => this%list%Get_ptr_r3d('snow')
-      __acc_attach(this%pxsm1)
+      
       this%pxgm1   => this%list%Get_ptr_r3d('graupel')
-      __acc_attach(this%pxgm1)
+      
       this%papm1   => this%list%Get_ptr_r3d('full level pressure')
-      __acc_attach(this%papm1)
+      
       this%paphm1  => this%list%Get_ptr_r3d('half level pressure')
-      __acc_attach(this%paphm1)
+      
       this%dz      => this%list%Get_ptr_r3d('layer thickness')
-      __acc_attach(this%dz)
-#ifdef __MIXED_PRECISION
-      this%inv_dzf => this%list%Get_ptr_s3d('inverse layer thickness full')
-      this%dzh     => this%list%Get_ptr_s3d('layer thickness half')
-#else
+      
+
+
+
+
       this%inv_dzf => this%list%Get_ptr_r3d('inverse layer thickness full')
       this%dzh     => this%list%Get_ptr_r3d('layer thickness half')
-#endif
-      __acc_attach(this%inv_dzf)
-      __acc_attach(this%dzh)
+
+      
+      
       this%inv_dzh => this%list%Get_ptr_r3d('inverse layer thickness half')
-      __acc_attach(this%inv_dzh)
+      
       this%geopot_agl_ic => this%list%Get_ptr_r3d('geopotential above groundlevel at interface and cell center')
-      __acc_attach(this%geopot_agl_ic)
+      
   END SELECT
 
   END SUBROUTINE Set_pointers_inputs
@@ -897,93 +897,93 @@ CONTAINS
     SELECT TYPE (this)
     TYPE IS (t_vdf_atmo_diagnostics)
       this%ghf => this%list%Get_ptr_r3d('full level geopotential height above ground')
-      __acc_attach(this%ghf)
+      
       this%ctgz => this%list%Get_ptr_r3d('static energy')
-      __acc_attach(this%ctgz)
+      
       this%ctgzvi => this%list%get_ptr_r2d('static energy, vert. int.')
-      __acc_attach(this%ctgzvi)
+      
     ! this%kh => this%list%Get_ptr_r3d('diff coefficient scalar')
       ! this%km => this%list%Get_ptr_r3d('diff coefficient momentum')
       this%km   => this%list%Get_ptr_r3d('exchange coefficient momentum full')
-      __acc_attach(this%km)
+      
       this%kh   => this%list%Get_ptr_r3d('exchange coefficient scalar full')
-      __acc_attach(this%kh)
+      
       this%km_c => this%list%Get_ptr_r3d('exchange coefficient momentum for hor. diff.')
-      __acc_attach(this%km_c)
+      
       this%div_c => this%list%Get_ptr_r3d('divergence cell')
-      __acc_attach(this%div_c)
+      
       this%theta_v => this%list%Get_ptr_r3d('virtual potential temperature')
-      __acc_attach(this%theta_v)
+      
       this%pprfac => this%list%Get_ptr_r3d('rho over dz')
-      __acc_attach(this%pprfac)
+      
       this%rho_ic => this%list%Get_ptr_r3d('air density interface')
-      __acc_attach(this%rho_ic)
+      
       this%km_ic => this%list%Get_ptr_r3d('exchange coefficient momentum interface')
-      __acc_attach(this%km_ic)
+      
       this%kh_ic => this%list%Get_ptr_r3d('exchange coefficient scalar interface')
-      __acc_attach(this%kh_ic)
+      
       this%bruvais => this%list%Get_ptr_r3d('brunt vaisal freq')
-      __acc_attach(this%bruvais)
+      
       this%stability_function => this%list%Get_ptr_r3d('stability function')
-      __acc_attach(this%stability_function)
+      
       this%vn_ie => this%list%Get_ptr_r3d('normal wind at edge')
-      __acc_attach(this%vn_ie)
+      
       this%vt_ie => this%list%Get_ptr_r3d('tangential wind at edge')
-      __acc_attach(this%vt_ie)
+      
       this%w_ie  => this%list%Get_ptr_r3d('vertical wind at edge')
-      __acc_attach(this%w_ie)
+      
       this%km_ie => this%list%Get_ptr_r3d('exchange coefficient momentum interface edge')
-      __acc_attach(this%km_ie)
+      
       this%vn    => this%list%Get_ptr_r3d('normal wind')
-      __acc_attach(this%vn)
+      
       this%shear => this%list%Get_ptr_r3d('shear')
-      __acc_attach(this%shear)
+      
       this%div_of_stress => this%list%Get_ptr_r3d('stress div')
-      __acc_attach(this%div_of_stress)
+      
       this%mech_prod => this%list%Get_ptr_r3d('mechanical production')
-      __acc_attach(this%mech_prod)
+      
       this%u_vert => this%list%Get_ptr_r3d('zonal wind vertice')
-      __acc_attach(this%u_vert)
+      
       this%v_vert => this%list%Get_ptr_r3d('meridional wind vertice')
-      __acc_attach(this%v_vert)
+      
       this%w_vert => this%list%Get_ptr_r3d('vertical wind vertice')
-      __acc_attach(this%w_vert)
+      
       this%km_iv => this%list%Get_ptr_r3d('exchange coefficient momentum interface vertice')
-      __acc_attach(this%km_iv)
+      
       this%heating => this%list%Get_ptr_r3d('layer heating')
-      __acc_attach(this%heating)
+      
       this%dissip_kin_energy => this%list%Get_ptr_r3d('dissipation of kinetic energy')
-      __acc_attach(this%dissip_kin_energy)
+      
       this%dissip_kin_energy_vi => this%list%Get_ptr_r2d('dissipation of kinetic energy, vert. int.')
-      __acc_attach(this%dissip_kin_energy_vi)
+      
       this%scaling_factor_louis => this%list%Get_ptr_r2d('scaling factor for Louis constant b')
-      __acc_attach(this%scaling_factor_louis)
+      
       this%internal_energy_vi => this%list%Get_ptr_r2d('moist internal energy after tmx, vert. int.')
-      __acc_attach(this%internal_energy_vi)
+      
       this%internal_energy_vi_tend => this%list%Get_ptr_r2d('tendency of vert. int. moist internal energy')
-      __acc_attach(this%internal_energy_vi_tend)
+      
       this%mixing_length_sq => this%list%Get_ptr_r3d('square of mixing length for Smagorinsky model')
-      __acc_attach(this%mixing_length_sq)
+      
       ! Velocity gradient tensor
       !$ACC ENTER DATA CREATE(this%vel_grad_e)
       this%vel_grad_e(1,1)%ptr => this%list%Get_ptr_r3d('normal gradient of normal wind at edge') 
-      __acc_attach(this%vel_grad_e(1,1)%ptr)
+      
       this%vel_grad_e(2,1)%ptr => this%list%Get_ptr_r3d('normal gradient of tangential wind at edge')
-      __acc_attach(this%vel_grad_e(2,1)%ptr)
+      
       this%vel_grad_e(3,1)%ptr => this%list%Get_ptr_r3d('normal gradient of vertical wind at edge')
-      __acc_attach(this%vel_grad_e(3,1)%ptr)
+      
       this%vel_grad_e(1,2)%ptr => this%list%Get_ptr_r3d('tangential gradient of normal wind at edge')      
-      __acc_attach(this%vel_grad_e(1,2)%ptr)
+      
       this%vel_grad_e(2,2)%ptr => this%list%Get_ptr_r3d('tangential gradient of tangential wind at edge')
-      __acc_attach(this%vel_grad_e(2,2)%ptr)
+      
       this%vel_grad_e(3,2)%ptr => this%list%Get_ptr_r3d('tangential gradient of vertical wind at edge')
-      __acc_attach(this%vel_grad_e(3,2)%ptr)
+      
       this%vel_grad_e(1,3)%ptr => this%list%Get_ptr_r3d('vertical gradient of normal wind at edge')
-      __acc_attach(this%vel_grad_e(1,3)%ptr)
+      
       this%vel_grad_e(2,3)%ptr => this%list%Get_ptr_r3d('vertical gradient of tangential wind at edge')
-      __acc_attach(this%vel_grad_e(2,3)%ptr)
+      
       this%vel_grad_e(3,3)%ptr => this%list%Get_ptr_r3d('vertical gradient of vertical wind at edge')
-      __acc_attach(this%vel_grad_e(3,3)%ptr)
+      
       !
       !
       ! boundary condition
@@ -1660,13 +1660,13 @@ CONTAINS
       !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4) &
       !$ACC   PRIVATE(vn_vert1, vn_vert2, vn_vert3, vn_vert4, vt_vert1, vt_vert2, vt_vert3, vt_vert4) &
       !$ACC   PRIVATE(w_full_c1, w_full_c2, w_full_v1, w_full_v2)
-#ifdef __LOOP_EXCHANGE
+
       DO je = i_startidx, i_endidx
         DO jk = 1, nlev
-#else
-      DO jk = 1, nlev
-        DO je = i_startidx, i_endidx
-#endif
+
+
+
+
           ! Get normal velocity component at vertices for target edge
           !TODO: can we modify the subroutine get_normal_velocity_vertex from tmx_numerics 
           !      to use within OpenACC loop? 
@@ -1817,13 +1817,13 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
+
       DO je = i_startidx, i_endidx
         DO jk = 1, nlev
-#else
-      DO jk = 1, nlev
-        DO je = i_startidx, i_endidx
-#endif        
+
+
+
+
          ! Compute local shear at edge: 
          !   shear_e = 2 * |S|^2 (|S|=sqrt(2*S_ij*S_ij))
          ! Mechanical prod is half of this value divided by km

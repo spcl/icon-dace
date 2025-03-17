@@ -103,25 +103,10 @@ LOGICAL, PARAMETER :: &
 
 CONTAINS
 
-#ifdef _OPENACC
-! GPU code can't flush to zero double precision denormals
-! So to avoid CPU-GPU differences we'll do it manually
-FUNCTION make_normalized(v)
-  !$ACC ROUTINE SEQ
-  REAL(wp) :: v, make_normalized
-
-  IF (ABS(v) <= 2.225073858507201e-308_wp) THEN
-    make_normalized = 0.0_wp
-  ELSE
-    make_normalized = v
-  END IF
-END FUNCTION
-#else
 FUNCTION make_normalized(v)
   REAL(wp) :: v, make_normalized
     make_normalized = v
 END FUNCTION
-#endif
 
 !==============================================================================
 !> Module procedure "graupel" in "gscp_graupel" for computing effects of grid
@@ -351,11 +336,7 @@ SUBROUTINE graupel     (             &
     zcsdep            ,     & !
     zcidep            
 
-#ifdef __LOOP_EXCHANGE
    REAL (KIND = wp )  ::  zlhv(ke), zlhs(ke)
-#else
-   REAL (KIND = wp )  ::  zlhv(nvec), zlhs(nvec)
-#endif
     
  REAL    (KIND=wp   ) ::  &    
     zsrmax            ,     & !
@@ -526,9 +507,6 @@ SUBROUTINE graupel     (             &
     WRITE (message_text,*) '   ivend   = ',ivend   ; CALL message('',message_text)
   END IF
   IF (izdebug > 50) THEN
-#if defined( _OPENACC )
-    CALL message('gscp_graupel','GPU-info : update host before graupel')
-#endif
     !$ACC UPDATE HOST(dz, t, p, rho, qv, qc, qi, qr, qs, qg, zninc) ASYNC(1)
     !$ACC WAIT(1)
     WRITE (message_text,'(A,2E10.3)') '      MAX/MIN dz  = ',MAXVAL(dz),MINVAL(dz)
@@ -575,20 +553,14 @@ SUBROUTINE graupel     (             &
     dist_cldtop(iv) = 0.0_wp
     zqvsw_up(iv) = 0.0_wp
     IF (lpres_pri) pri_gsp (iv) = 0.0_wp
-#ifndef __LOOP_EXCHANGE
-    zlhv(iv)     = lh_v
-    zlhs(iv)     = lh_s    
-#endif
   END DO
   !$ACC END PARALLEL
 
   ! Initialize latent heats to constant values
-#ifdef __LOOP_EXCHANGE
   !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
   zlhv(:) = lh_v
   zlhs(:) = lh_s
   !$ACC END KERNELS
-#endif
 
 ! *********************************************************************
 ! Loop from the top of the model domain to the surface to calculate the
@@ -598,7 +570,6 @@ SUBROUTINE graupel     (             &
   !$ACC DATA COPYIN(ldass_lhn)
   !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
   !$ACC LOOP SEQ
-#ifdef __LOOP_EXCHANGE
   DO iv = iv_start, iv_end  !loop over horizontal domain
 
 ! Calculate Latent heats if necessary
@@ -611,42 +582,6 @@ SUBROUTINE graupel     (             &
     END IF
 
     DO  k = k_start, ke  ! loop over levels
-#else
-  DO  k = k_start, ke  ! loop over levels
-
-! Calculate Latent heats if necessary
-     IF ( lvariable_lh ) THEN
-      !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(tg)
-      DO  iv = iv_start, iv_end  !loop over horizontal domain
-        tg      = make_normalized(t(iv,k))
-        zlhv(iv) = latent_heat_vaporization(tg)
-        zlhs(iv) = latent_heat_sublimation(tg)
-      END DO
-    END IF
-
-    !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(alf, bet, fnuc, hlp, llqc, llqg, llqi, llqr) &
-    !$ACC   PRIVATE(llqs, m2s, m3s, maxevap, nnr, ppg, qcg) &
-    !$ACC   PRIVATE(qcgk_1, qgg, qig, qrg, qsg, qvg, reduce_dep) &
-    !$ACC   PRIVATE(rhog, sagg, sagg2, scac, scau, scfrz, sconr) &
-    !$ACC   PRIVATE(sconsg, sdau, sev, sgdep, sgmelt, siau) &
-    !$ACC   PRIVATE(sicri, sidep, simelt, snuc, srcri, srfrz) &
-    !$ACC   PRIVATE(srim, srim2, ssdep, sshed, ssmelt, temp_c) &
-    !$ACC   PRIVATE(tg, z1orhog, zbsdep, zcagg, zcidep, zcorr) &
-    !$ACC   PRIVATE(zcrim, zcsdep, zcslam, zdtdh, zdvtp, zeff) &
-    !$ACC   PRIVATE(zeln13o8qrk, zeln27o16qrk, zeln3o4qsk) &
-    !$ACC   PRIVATE(zeln6qgk, zeln7o4qrk, zeln7o8qrk, zeln8qsk) &
-    !$ACC   PRIVATE(zelnrimexp_g, zhi, zimg, zimi, zimr, zims) &
-    !$ACC   PRIVATE(zlnlogmi, zlnqgk, zlnqik, zlnqrk, zlnqsk) &
-    !$ACC   PRIVATE(zmi, zn0s, znid, znin, zphi, zqct, zqgk) &
-    !$ACC   PRIVATE(zqgt, zqik, zqit, zqrk, zqrt, zqsk, zqst) &
-    !$ACC   PRIVATE(zqvsi, zqvsidiff, zqvsw, zqvsw0, zqvsw0diff) &
-    !$ACC   PRIVATE(zqvt, zrho1o2, zrhofac_qi, zscmax, zscsum) &
-    !$ACC   PRIVATE(zsgmax, zsimax, zsisum, zsrmax, zsrsum) &
-    !$ACC   PRIVATE(zssmax, zsssum, zsvidep, zsvisub, zsvmax) &
-    !$ACC   PRIVATE(ztau, ztc, ztfrzdiff, ztt, zvz0s, zx1) &
-    !$ACC   PRIVATE(zxfac, zzag, zzai, zzar, zzas, zztau)
-    DO iv = iv_start, iv_end  !loop over horizontal domain
-#endif
 
       ! add part of latent heating calculated in subroutine graupel to model latent
       ! heating field: subtract temperature from model latent heating field
@@ -1312,11 +1247,7 @@ SUBROUTINE graupel     (             &
       zqst =   siau   + sdau   - ssmelt + srim   + ssdep  + sagg   - sconsg
       zqgt =   sagg2  - sgmelt + sicri  + srcri  + sgdep  + srfrz  + srim2  + sconsg
 
-#ifdef __LOOP_EXCHANGE      
       ztt = z_heat_cap_r*( zlhv(k)*(zqct+zqrt) + zlhs(k)*(zqit+zqst+zqgt) )
-#else
-      ztt = z_heat_cap_r*( zlhv(iv)*(zqct+zqrt) + zlhs(iv)*(zqit+zqst+zqgt) )
-#endif
 
       ! Update variables and add qi to qrs for water loading
       IF (lsedi_ice ) THEN
@@ -1407,7 +1338,6 @@ SUBROUTINE graupel     (             &
       qv (iv,k) = MAX ( 0.0_wp, qv(iv,k) + zqvt*zdt )
       qc (iv,k) = MAX ( 0.0_wp, qc(iv,k) + zqct*zdt )
 
-#if !defined (_OPENACC) && !defined (__SX__)
       IF (izdebug > 15) THEN
         ! Check for negative values
         IF (qr(iv,k) < 0.0_wp) THEN
@@ -1435,7 +1365,6 @@ SUBROUTINE graupel     (             &
           CALL message('',message_text)
         ENDIF
       ENDIF
-#endif
 
     ENDDO  !loop over iv
 
@@ -1479,9 +1408,6 @@ SUBROUTINE graupel     (             &
   ENDIF
 
   IF (izdebug > 15) THEN
-#ifdef _OPENACC
-   CALL message('gscp_graupel', 'GPU-info : update host after graupel')
-#endif
    !$ACC UPDATE HOST(t, qv, qc, qi, qr, qs, qg) ASYNC(1)
    !$ACC WAIT(1)
    CALL message('gscp_graupel', 'UPDATED VARIABLES')

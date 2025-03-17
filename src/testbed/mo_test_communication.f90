@@ -117,10 +117,10 @@ CONTAINS
     CASE(test_exchange_communication)
       CALL exchange_communication_testbed()
       CALL exchange_communication_grf_testbed()
-#ifdef _OPENACC
-      CALL exchange_communication_testbed(test_gpu=.TRUE.)
-      CALL exchange_communication_grf_testbed(test_gpu=.TRUE.)
-#endif
+
+
+
+
 
     CASE(test_bench_exchange_data_mult)
       CALL bench_exchange_data_mult()
@@ -3503,14 +3503,14 @@ CONTAINS
       &                        ref_out_array_r_1d, ref_out_array_r_2d, &
       &                        out_array_i_1d, out_array_i_2d, &
       &                        ref_out_array_i_1d, ref_out_array_i_2d, &
-      &                        gather_pattern, __LINE__)
+      &                        gather_pattern, 3506)
     CALL check_exchange_gather(in_array_r_1d, in_array_r_2d, &
       &                        in_array_i_1d, in_array_i_2d, &
       &                        out_array_r_1d, out_array_r_2d, &
       &                        ref_out_array_r_1d, ref_out_array_r_2d, &
       &                        out_array_i_1d, out_array_i_2d, &
       &                        ref_out_array_i_1d, ref_out_array_i_2d, &
-      &                        gather_pattern, __LINE__, fill_value, INT(fill_value))
+      &                        gather_pattern, 3513, fill_value, INT(fill_value))
 
     ! delete gather pattern and other arrays
     DEALLOCATE(in_array_r_1d, in_array_r_2d, in_array_i_1d, in_array_i_2d)
@@ -3597,14 +3597,14 @@ CONTAINS
         &                        ref_out_array_r_1d, ref_out_array_r_2d, &
         &                        out_array_i_1d, out_array_i_2d, &
         &                        ref_out_array_i_1d, ref_out_array_i_2d, &
-        &                        gather_pattern, __LINE__)
+        &                        gather_pattern, 3600)
       CALL check_exchange_gather(in_array_r_1d, in_array_r_2d, &
         &                        in_array_i_1d, in_array_i_2d, &
         &                        out_array_r_1d, out_array_r_2d, &
         &                        ref_out_array_r_1d, ref_out_array_r_2d, &
         &                        out_array_i_1d, out_array_i_2d, &
         &                        ref_out_array_i_1d, ref_out_array_i_2d, &
-        &                        gather_pattern, __LINE__, fill_value, INT(fill_value))
+        &                        gather_pattern, 3607, fill_value, INT(fill_value))
 
       ! delete gather pattern and other arrays
       DEALLOCATE(in_array_r_1d, in_array_r_2d, in_array_i_1d, in_array_i_2d)
@@ -3696,7 +3696,7 @@ CONTAINS
       &                        ref_out_array_r_1d, ref_out_array_r_2d, &
       &                        out_array_i_1d, out_array_i_2d, &
       &                        ref_out_array_i_1d, ref_out_array_i_2d, &
-      &                        gather_pattern, __LINE__, fill_value, INT(fill_value))
+      &                        gather_pattern, 3699, fill_value, INT(fill_value))
 
     ! delete gather pattern and other arrays
     DEALLOCATE(in_array_r_1d, in_array_r_2d, in_array_i_1d, in_array_i_2d)
@@ -3786,7 +3786,7 @@ CONTAINS
       &                        ref_out_array_r_1d, ref_out_array_r_2d, &
       &                        out_array_i_1d, out_array_i_2d, &
       &                        ref_out_array_i_1d, ref_out_array_i_2d, &
-      &                        gather_pattern, __LINE__, fill_value, INT(fill_value))
+      &                        gather_pattern, 3789, fill_value, INT(fill_value))
 
     ! delete gather pattern and other arrays
     DEALLOCATE(in_array_r_1d, in_array_r_2d, in_array_i_1d, in_array_i_2d)
@@ -3884,7 +3884,7 @@ CONTAINS
         &                        ref_out_array_r_1d, ref_out_array_r_2d, &
         &                        out_array_i_1d, out_array_i_2d, &
         &                        ref_out_array_i_1d, ref_out_array_i_2d, &
-        &                        gather_pattern, __LINE__, fill_value, INT(fill_value))
+        &                        gather_pattern, 3887, fill_value, INT(fill_value))
 
       ! initialise reference out data (for no fill_value case)
       DEALLOCATE(out_array_r_1d, out_array_r_2d, out_array_i_1d, out_array_i_2d, &
@@ -3925,7 +3925,7 @@ CONTAINS
         &                        ref_out_array_r_1d, ref_out_array_r_2d, &
         &                        out_array_i_1d, out_array_i_2d, &
         &                        ref_out_array_i_1d, ref_out_array_i_2d, &
-        &                        gather_pattern, __LINE__)
+        &                        gather_pattern, 3928)
 
       ! delete gather pattern and other arrays
       DEALLOCATE(in_array_r_1d, in_array_r_2d, in_array_i_1d, in_array_i_2d)
@@ -3936,154 +3936,6 @@ CONTAINS
       DEALLOCATE(owner_local, glb_index)
     END IF ! (p_n_work > 1)
 
-#ifndef NOMPI
-    IF (p_n_work > 1) THEN
-      !---------------------------------------------------------------------------
-      ! initial setup for allgather_intercomm tests
-      !---------------------------------------------------------------------------
-      p_comm_work_backup = p_comm_work
-      p_pe_work_backup = p_pe_work
-      p_n_work_backup = p_n_work
-      intercomm_key = MERGE(0, 1, p_pe_work < (p_n_work * 2)/3)
-      CALL MPI_Comm_split(p_comm_work, intercomm_key, p_pe_work, &
-        &                 p_comm_work_new, ierr)
-      CALL MPI_Intercomm_create(p_comm_work_new, 0, p_comm_work, &
-        MERGE((p_n_work*2)/3, 0, intercomm_key == 0), 2, intercomm, ierr)
-      p_comm_work = p_comm_work_new
-      p_pe_work = p_comm_rank(p_comm_work_new)
-      p_n_work = p_comm_size(p_comm_work_new)
-      CALL MPI_Comm_remote_size(intercomm, p_n_intercomm_remote, ierr)
-      IF (p_n_intercomm_remote /= p_n_work_backup - p_n_work) &
-        CALL finish(method_name, "problem with intercomm")
-
-      !---------------------------------------------------------------------------
-      ! simple allgather_intercomm test in which each process has its own local
-      ! contiguous part of the global array
-      !---------------------------------------------------------------------------
-      ! generate gather pattern
-      local_size = 10 * nproma
-      global_size = p_n_work * local_size
-      ALLOCATE(owner_local(local_size), glb_index(local_size))
-      DO i = 1, local_size
-        owner_local(i) = p_pe_work
-        glb_index(i) = local_size * p_pe_work + i
-      END DO
-      disable_consistency_check = .FALSE.
-      CALL setup_comm_gather_pattern(global_size, owner_local, glb_index, &
-        &                            gather_pattern)
-      CALL setup_comm_allgather_pattern(gather_pattern, intercomm, &
-        &                               allgather_pattern)
-
-      ! initialise in- and reference out data
-      nlev = 5
-      fill_value = -1
-      ALLOCATE(in_array_r_1d(nproma, local_size / nproma), &
-        &      in_array_i_1d(nproma, local_size / nproma))
-      DO i = 0, local_size-1
-        in_array_r_1d(MOD(i,nproma)+1, i/nproma+1) = p_pe_work * local_size + i
-        in_array_i_1d(MOD(i,nproma)+1, i/nproma+1) = p_pe_work * local_size + i
-      END DO
-      global_size = p_n_intercomm_remote * local_size
-      ALLOCATE(out_array_r_1d(global_size), &
-        &      out_array_i_1d(global_size), &
-        &      ref_out_array_r_1d(global_size), &
-        &      ref_out_array_i_1d(global_size))
-      DO i = 0, global_size - 1
-        ref_out_array_r_1d(i+1) = i
-        ref_out_array_i_1d(i+1) = i
-      END DO
-
-      ! check gather pattern
-      CALL check_exchange_allgather(in_array_r_1d, in_array_i_1d, &
-        &                           out_array_r_1d, ref_out_array_r_1d, &
-        &                           out_array_i_1d, ref_out_array_i_1d, &
-        &                           allgather_pattern, __LINE__)
-      CALL check_exchange_allgather(in_array_r_1d, in_array_i_1d, &
-        &                           out_array_r_1d, ref_out_array_r_1d, &
-        &                           out_array_i_1d, ref_out_array_i_1d, &
-        &                           allgather_pattern, __LINE__, fill_value, INT(fill_value))
-  !
-      ! delete gather pattern and other arrays
-      DEALLOCATE(in_array_r_1d, in_array_i_1d, &
-        &        out_array_r_1d, out_array_i_1d, &
-        &        ref_out_array_r_1d, ref_out_array_i_1d)
-      CALL delete_comm_allgather_pattern(allgather_pattern)
-      CALL delete_comm_gather_pattern(gather_pattern)
-      DEALLOCATE(owner_local, glb_index)
-
-      !---------------------------------------------------------------------------
-      ! simple allgather_intercomm test in which each process has its own local
-      ! contiguous part of the global array (only one side of the intercomm has
-      ! data)
-      !---------------------------------------------------------------------------
-      do j = 0, 1
-
-        is_active = (intercomm_key == 0) .EQV. (j == 0)
-
-        ! generate gather pattern
-        local_size = MERGE(10 * nproma, 0, is_active)
-        global_size = p_n_work * local_size
-        ALLOCATE(owner_local(local_size), glb_index(local_size))
-        DO i = 1, local_size
-          owner_local(i) = p_pe_work
-          glb_index(i) = local_size * p_pe_work + i
-        END DO
-        disable_consistency_check = .FALSE.
-        CALL setup_comm_gather_pattern(global_size, owner_local, glb_index, &
-          &                            gather_pattern)
-        CALL setup_comm_allgather_pattern(gather_pattern, intercomm, &
-          &                               allgather_pattern)
-
-        ! initialise in- and reference out data
-        nlev = 5
-        fill_value = -1
-        ALLOCATE(in_array_r_1d(nproma, local_size / nproma), &
-          &      in_array_i_1d(nproma, local_size / nproma))
-        DO i = 0, local_size-1
-          in_array_r_1d(MOD(i,nproma)+1, i/nproma+1) = p_pe_work * local_size + i
-          in_array_i_1d(MOD(i,nproma)+1, i/nproma+1) = p_pe_work * local_size + i
-        END DO
-        global_size = p_n_intercomm_remote * MERGE(0, 10 * nproma, is_active)
-        ALLOCATE(out_array_r_1d(global_size), &
-          &      out_array_i_1d(global_size), &
-          &      ref_out_array_r_1d(global_size), &
-          &      ref_out_array_i_1d(global_size))
-        DO i = 0, global_size - 1
-          ref_out_array_r_1d(i+1) = i
-          ref_out_array_i_1d(i+1) = i
-        END DO
-
-        ! check gather pattern
-        CALL check_exchange_allgather(in_array_r_1d, in_array_i_1d, &
-          &                           out_array_r_1d, ref_out_array_r_1d, &
-          &                           out_array_i_1d, ref_out_array_i_1d, &
-          &                           allgather_pattern, __LINE__)
-        CALL check_exchange_allgather(in_array_r_1d, in_array_i_1d, &
-          &                           out_array_r_1d, ref_out_array_r_1d, &
-          &                           out_array_i_1d, ref_out_array_i_1d, &
-          &                           allgather_pattern, __LINE__, fill_value, INT(fill_value))
-    !
-        ! delete gather pattern and other arrays
-        DEALLOCATE(in_array_r_1d, in_array_i_1d, &
-          &        out_array_r_1d, out_array_i_1d, &
-          &        ref_out_array_r_1d, ref_out_array_i_1d)
-        CALL delete_comm_allgather_pattern(allgather_pattern)
-        CALL delete_comm_gather_pattern(gather_pattern)
-        DEALLOCATE(owner_local, glb_index)
-      END DO
-
-      !---------------------------------------------------------------------------
-      ! clean up allgather_intercomm stuff
-      !---------------------------------------------------------------------------
-
-      CALL MPI_Comm_free(intercomm, ierr)
-      CALL MPI_Comm_free(p_comm_work, ierr)
-
-      p_comm_work = p_comm_work_backup
-      p_pe_work = p_pe_work_backup
-      p_n_work = p_n_work_backup
-    END IF ! (p_n_work > 1)
-#endif
 
   CONTAINS
 

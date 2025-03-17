@@ -40,7 +40,7 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_std_type_kinds
   IMPLICIT NONE
   PUBLIC
@@ -75,15 +75,15 @@ MODULE ppm_std_type_kinds
   ! predefined preprocessor macros:
   !
   ! xlf         __64BIT__   checked with P6 and AIX
-  ! gfortran    __LP64__    checked with Darwin and Linux
+  ! gfortran    1    checked with Darwin and Linux
   ! Intel, PGI  __x86_64__  checked with Linux
   ! Sun         __x86_64    checked with Linux
 
-#if defined (__64BIT__) || defined (__LP64__) || defined (__x86_64__) || defined (__x86_64)
+
   INTEGER, PARAMETER :: widx = i8
-#else
-  INTEGER, PARAMETER :: widx = i4
-#endif
+
+
+
   INCLUDE 'ftype_size.inc'
 END MODULE ppm_std_type_kinds
 !

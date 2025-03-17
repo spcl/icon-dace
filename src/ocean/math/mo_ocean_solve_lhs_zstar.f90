@@ -35,9 +35,9 @@ MODULE mo_surface_height_lhs_zstar
     USE mo_sync, ONLY: sync_e, sync_patch_array
     USE mo_fortran_tools, ONLY: set_acc_host_or_device
 
-#ifdef _OPENACC
-    USE openacc, ONLY: acc_is_present 
-#endif
+
+
+
 
       IMPLICIT NONE
     
@@ -54,9 +54,9 @@ MODULE mo_surface_height_lhs_zstar
         TYPE(t_solverCoeff_singlePrecision), POINTER :: op_coeffs_sp => NULL()
         REAL(wp), ALLOCATABLE, DIMENSION(:,:), PRIVATE :: z_grad_h_wp, z_e_wp
         REAL(wp), ALLOCATABLE, DIMENSION(:,:), PRIVATE :: stretch_e 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_grad_h_wp, z_e_wp
-#endif
+
+
+
       CONTAINS
         PROCEDURE :: lhs_wp => lhs_surface_height_zstar
         PROCEDURE :: construct => lhs_surface_height_construct
@@ -123,13 +123,13 @@ MODULE mo_surface_height_lhs_zstar
 
         CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-        IF (lzacc) THEN
-          ! Only have GPU memory cleanup if we're on GPU and there is data present
-          ! as examplified by this%thickness_e_wp
-          lzacc = (lzacc .AND. acc_is_present(this%thickness_e_wp))
-        END IF
-#endif
+
+
+
+
+
+
+
         !$ACC EXIT DATA DELETE(this%patch_3d, this%patch_2d, this%thickness_e_wp) &
         !$ACC   DELETE(this%op_coeffs_wp, this%op_coeffs_sp) ASYNC(1) IF(lzacc)
         !$ACC WAIT(1)
@@ -357,10 +357,10 @@ MODULE mo_surface_height_lhs_zstar
 
         CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-        IF (lzacc) CALL finish("mo_surface_height_lhs_zstar::lhs_surface_height_ab_mim_matrix_wp", &
-          & "OpenACC version currently not implemented")
-#endif
+
+
+
+
 
         cells_in_domain => this%patch_2D%cells%in_domain
         lhs_coeffs => this%op_coeffs_wp%lhs_all
@@ -405,10 +405,10 @@ MODULE mo_surface_height_lhs_zstar
     
         CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-        IF (lzacc) CALL finish("t_surface_height_lhs_zstar::lhs_surface_height_ab_mim_matrix_shortcut", &
-          & "OpenACC version currently not implemented")
-#endif
+
+
+
+
 
         IF (.NOT.this%use_shortcut) &
           & CALL finish( &

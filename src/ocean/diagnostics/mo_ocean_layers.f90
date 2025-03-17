@@ -13,7 +13,17 @@
 ! and that also estimates diapycnal velocities.
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_ocean_layers
   !-------------------------------------------------------------------------
@@ -71,7 +81,19 @@ MODULE mo_ocean_layers
   USE mo_ocean_surface_types, ONLY: t_ocean_surface
   USE mo_ocean_thermodyn,     ONLY: calc_neutralslope_coeff_func_onColumn
 
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -179,7 +201,7 @@ CONTAINS
       & t_cf_var('mass_flux_lay', 'm2 s-1', 'mass flux in isopycnal layer', datatype_flt),&
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_edge),&
       & ldims=(/nproma,n_dlev,nblks_e/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-    !__acc_attach(ocean_state_diag%mass_flux_lay)
+    !
 
     CALL add_var(ocean_default_list,'layer_thickness_e', ocean_state_diag%layer_thickness_e, &
       & grid_unstructured_edge,&
@@ -187,7 +209,7 @@ CONTAINS
       & t_cf_var('layer_thickness_e', 'm', 'thickness of isopycnal layer on edges', datatype_flt),&
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_edge),&
       & ldims=(/nproma,n_dlev,nblks_e/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-    !__acc_attach(ocean_state_diag%layer_thickness_e)
+    !
 
     CALL add_var(ocean_default_list,'layer_thickness_c', ocean_state_diag%layer_thickness_c, &
       & grid_unstructured_cell,&
@@ -195,7 +217,7 @@ CONTAINS
       & t_cf_var('layer_thickness_c', 'm', 'thickness of isopycnal layer on cells', datatype_flt),&
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_dlev,alloc_cell_blocks/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-    !__acc_attach(ocean_state_diag%layer_thickness_c)
+    !
 
     IF (mode_layers == 1) THEN
       CALL add_var(ocean_default_list,'dhdt_tot', ocean_state_diag%dhdt_tot, &
@@ -204,7 +226,7 @@ CONTAINS
         & t_cf_var('dhdt_tot', 'm/s', 'total layer thickness change', datatype_flt),&
         & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
         & ldims=(/nproma,n_dlev,alloc_cell_blocks/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-      !__acc_attach(ocean_state_diag%dhdt_tot)
+      !
 
       CALL add_var(ocean_default_list,'dhdt_srf', ocean_state_diag%dhdt_srf, &
         & grid_unstructured_cell,&
@@ -212,7 +234,7 @@ CONTAINS
         & t_cf_var('dhdt_srf', 'm/s', 'layer thickness change by surface density flux', datatype_flt),&
         & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
         & ldims=(/nproma,n_dlev,alloc_cell_blocks/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-      !__acc_attach(ocean_state_diag%dhdt_srf)
+      !
 
       CALL add_var(ocean_default_list,'dhdt_hfl', ocean_state_diag%dhdt_hfl, &
         & grid_unstructured_cell,&
@@ -220,7 +242,7 @@ CONTAINS
         & t_cf_var('dhdt_hfl', 'm/s', 'layer thickness change by horizontal flux', datatype_flt),&
         & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
         & ldims=(/nproma,n_dlev,alloc_cell_blocks/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-      !__acc_attach(ocean_state_diag%dhdt_hfl)
+      !
     ENDIF
 
     CALL add_var(ocean_default_list,'div_mass_flux_lay', ocean_state_diag%div_mass_flux_lay, &
@@ -229,7 +251,7 @@ CONTAINS
       & t_cf_var('div_mass_flux_lay', 'm/s', 'divergence of mass flux within layer', datatype_flt),&
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_dlev,alloc_cell_blocks/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-    !__acc_attach(ocean_state_diag%div_mass_flux_lay)
+    !
 
     CALL add_var(ocean_default_list, 'diapycnal_velocity', ocean_state_diag%diapycnal_velocity, &
       & grid_unstructured_cell,&
@@ -237,7 +259,7 @@ CONTAINS
       & t_cf_var('diapycnal_velocity','m s-1','diapycnal velocity', datatype_flt),&
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_dlev+1,alloc_cell_blocks/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-    !__acc_attach(ocean_state_diag%diapycnal_velocity)
+    !
 
     CALL add_var(ocean_default_list, 'sigma2', ocean_state_diag%sigma2, &
       & grid_unstructured_cell,&
@@ -245,7 +267,7 @@ CONTAINS
       & t_cf_var('sigma2','kg/m^3','potential density ref. to 2000m', datatype_flt),&
       & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
       & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-    !__acc_attach(ocean_state_diag%sigma2)
+    !
 
     IF (mode_layers == 1) THEN
       CALL add_var(ocean_default_list, 'sflx_dens', ocean_state_diag%sflx_dens, &
@@ -254,7 +276,7 @@ CONTAINS
         & t_cf_var('sflx_dens','kg/s/m^2','potential density ref. to 2000m', datatype_flt),&
         & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
         & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-      !__acc_attach(ocean_state_diag%sflx_dens)
+      !
 
       ! drho = -rho0 alphaT dT + rho0 betaS dS
 
@@ -264,7 +286,7 @@ CONTAINS
         & t_cf_var('alphaT','1/K','thermal expansion coefficient', datatype_flt),&
         & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
         & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-      !__acc_attach(ocean_state_diag%alphaT)
+      !
 
       CALL add_var(ocean_default_list, 'betaS', ocean_state_diag%betaS, &
         & grid_unstructured_cell,&
@@ -272,7 +294,7 @@ CONTAINS
         & t_cf_var('betaS','m^3/kg','haline expansion coefficient', datatype_flt),&
         & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
         & ldims=(/nproma,alloc_cell_blocks/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-      !__acc_attach(ocean_state_diag%betaS)
+      !
 
       CALL add_var(ocean_default_list, 'weight_e_sum', ocean_state_diag%weight_e_sum, &
         & grid_unstructured_edge,&
@@ -280,7 +302,7 @@ CONTAINS
         & t_cf_var('weight_e_sum','','weight_e_sum', datatype_flt),&
         & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_edge),&
         & ldims=(/nproma,n_zlev,nblks_e/),in_group=groups("oce_layers"), lopenacc=.TRUE.)
-      !__acc_attach(ocean_state_diag%weight_e_sum)
+      !
     ENDIF
 
     ocean_state_diag%layer_thickness_c = 0.0_wp

@@ -88,16 +88,16 @@ CONTAINS
 
   !> Initialize the table layout (title, columns).
   !
-#ifdef __INTEL_COMPILER
-  ! HB: silly workaround for compiler issue (ifort16.0)...
-  SUBROUTINE add_table_column(table, column_title, opt_nrows)
-#else
+
+
+
+
     SUBROUTINE add_table_column(table, column_title)
-#endif
+
       TYPE(t_table), INTENT(INOUT) :: table
-#ifdef __INTEL_COMPILER
-      INTEGER, OPTIONAL, INTENT(IN) :: opt_nrows
-#endif
+
+
+
       CHARACTER(LEN=*), INTENT(IN)    :: column_title
 
       table%n_columns = table%n_columns + 1
@@ -105,12 +105,12 @@ CONTAINS
       table%column(table%n_columns)%width = LEN_TRIM(column_title)
       table%column(table%n_columns)%n_rows = 0
       table%n_rows = 0
-#ifdef __INTEL_COMPILER
-      IF (PRESENT(opt_nrows)) THEN
-        IF (opt_nrows .GT. 0) &
-          & CALL resize_column(table%column(table%n_columns), opt_nrows)
-      END IF
-#endif
+
+
+
+
+
+
     END SUBROUTINE add_table_column
 
     !> Set column row size to a given size.

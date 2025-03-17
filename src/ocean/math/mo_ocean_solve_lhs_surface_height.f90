@@ -12,9 +12,9 @@
 ! contains extended lhs-matrix-generator type
 ! provides surface height lhs for free ocean surface solve
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#endif
+
+
+
 
 MODULE mo_surface_height_lhs
 
@@ -55,9 +55,9 @@ MODULE mo_surface_height_lhs
     TYPE(t_operator_coeff), POINTER :: op_coeffs_wp => NULL()
     TYPE(t_solverCoeff_singlePrecision), POINTER :: op_coeffs_sp => NULL()
     REAL(wp), ALLOCATABLE, DIMENSION(:,:), PRIVATE :: z_grad_h_wp, z_e_wp
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_grad_h_wp, z_e_wp
-#endif
+
+
+
   CONTAINS
     PROCEDURE :: lhs_wp => lhs_surface_height_wp
     PROCEDURE :: construct => lhs_surface_height_construct
@@ -138,10 +138,10 @@ CONTAINS
     IF (select_lhs == select_lhs_matrix) THEN
       CALL this%internal_matrix_wp(x, ax, lacc=lzacc)
     ELSE
-#ifdef _OPENACC
-      IF (lzacc) CALL finish("t_surface_height_lhs::lhs_surface_height_wp", &
-        & "OpenACC version not implemented yet")
-#endif
+
+
+
+
       CALL this%internal_wp(x, ax, lacc=lzacc)
     ENDIF
 
@@ -236,9 +236,9 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(routine, "OpenACC version currently not implemented")
-#endif
+
+
+
 
     cells_in_domain => this%patch_2D%cells%in_domain
     edges_in_domain => this%patch_2D%edges%in_domain
@@ -307,10 +307,10 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish("t_surface_height_lhs::lhs_surface_height_ab_mim_matrix_shortcut", &
-      & "OpenACC version currently not implemented")
-#endif
+
+
+
+
 
     IF (.NOT.this%use_shortcut) &
       & CALL finish( &

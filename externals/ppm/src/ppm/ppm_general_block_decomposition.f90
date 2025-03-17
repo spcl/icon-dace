@@ -38,7 +38,7 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_general_block_decomposition
   USE ppm_extents, ONLY: extent, extent_start, extent_end, &
        extent_size
@@ -69,7 +69,7 @@ CONTAINS
     size_x = SIZE(weights, 1)
     size_y = SIZE(weights, 2)
     CALL assertion(size_x == extent_size(global_range(1)) &
-         .AND. size_y == extent_size(global_range(2)), line=__LINE__, &
+         .AND. size_y == extent_size(global_range(2)), line=72, &
          source=filename)
 
     CALL compute_weights

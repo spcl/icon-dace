@@ -12,7 +12,22 @@
 ! This module provides communication pattern types.
 ! for parallel runs
 
-#include "crayftn_ptr_fail.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! Cray ftn compilers 8.4 and 8.6 are known to misidentify argument INTENT
+! of pointer components, i.e. will disallow changes to an array pointed to
+! by a pointer component of a TYPE
+! therefore this case needs to be handled specially
+!
 MODULE mo_communication_types
 !-------------------------------------------------------------------------
 !
@@ -149,8 +164,8 @@ ABSTRACT INTERFACE
     IMPORT t_comm_pattern, t_ptr_3d
     CLASS(t_comm_pattern), TARGET, INTENT(INOUT) :: p_pat
     LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
-    TYPE(t_ptr_3d), PTR_INTENT(IN) :: recv(:)
-    TYPE(t_ptr_3d), PTR_INTENT(IN), OPTIONAL :: send(:)
+    TYPE(t_ptr_3d), INTENT(IN) :: recv(:)
+    TYPE(t_ptr_3d), INTENT(IN), OPTIONAL :: send(:)
     INTEGER, INTENT(IN)           :: ndim2tot
     INTEGER, OPTIONAL, INTENT(IN) :: nshift
   END SUBROUTINE interface_exchange_data_mult
@@ -161,10 +176,10 @@ ABSTRACT INTERFACE
     IMPORT t_comm_pattern, t_ptr_3d, t_ptr_3d_sp
     CLASS(t_comm_pattern), TARGET, INTENT(INOUT) :: p_pat
     LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
-    TYPE(t_ptr_3d), PTR_INTENT(in), OPTIONAL :: recv_dp(:)
-    TYPE(t_ptr_3d), PTR_INTENT(in), OPTIONAL :: send_dp(:)
-    TYPE(t_ptr_3d_sp), PTR_INTENT(in), OPTIONAL :: recv_sp(:)
-    TYPE(t_ptr_3d_sp), PTR_INTENT(in), OPTIONAL :: send_sp(:)
+    TYPE(t_ptr_3d), INTENT(in), OPTIONAL :: recv_dp(:)
+    TYPE(t_ptr_3d), INTENT(in), OPTIONAL :: send_dp(:)
+    TYPE(t_ptr_3d_sp), INTENT(in), OPTIONAL :: recv_sp(:)
+    TYPE(t_ptr_3d_sp), INTENT(in), OPTIONAL :: send_sp(:)
     INTEGER, INTENT(IN)           :: nfields_dp, ndim2tot_dp, nfields_sp, &
          ndim2tot_sp
     INTEGER, OPTIONAL, INTENT(IN) :: nshift
@@ -257,7 +272,7 @@ ABSTRACT INTERFACE
     INTEGER, INTENT(IN) :: nfields
     INTEGER, INTENT(IN) :: ndim2tot
     ! recv itself is intent(in), but the pointed to data will be modified
-    TYPE(t_ptr_3d), PTR_INTENT(in) :: recv(nfields), send(nfields)
+    TYPE(t_ptr_3d), INTENT(in) :: recv(nfields), send(nfields)
   END SUBROUTINE interface_exchange_data_grf
 END INTERFACE
 

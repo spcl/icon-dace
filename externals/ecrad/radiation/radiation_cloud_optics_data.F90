@@ -13,7 +13,36 @@
 ! Email:   r.j.hogan@ecmwf.int
 !
 
-#include "ecrad_config.h"
+! ecrad_config.h - Preprocessor definitions to configure compilation ecRad -*- f90 -*-
+!
+! (C) Copyright 2023- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! This file should be included in Fortran source files that require
+! different optimizations or settings for different architectures and
+! platforms.  Feel free to maintain a site-specific version of it.
+
+! The following settings turn on optimizations specific to the
+! long-vector NEC SX (the short-vector x86-64 architecture is assumed
+! otherwise). 
+
+  
+  
+
+! In the IFS, an MPI version of easy_netcdf capability is used so that
+! only one MPI task reads the data files and shares with the other
+! tasks. The MPI version is not used for writing files.
+
+!#define EASY_NETCDF_READ_MPI 1
 
 module radiation_cloud_optics_data
 
@@ -50,11 +79,7 @@ contains
   subroutine setup_cloud_optics(this, liq_file_name, ice_file_name, iverbose)
     
     use ecradhook,              only : lhook, dr_hook, jphook
-#ifdef EASY_NETCDF_READ_MPI
-    use easy_netcdf_read_mpi, only : netcdf_file
-#else
     use easy_netcdf,          only : netcdf_file
-#endif
 
     class(cloud_optics_type), intent(inout) :: this
     character(len=*), intent(in)            :: liq_file_name, ice_file_name

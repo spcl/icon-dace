@@ -39,10 +39,10 @@ MODULE mo_hamocc_diagnostics
    USE mo_name_list_output_init, ONLY: isRegistered
    USE mo_statistics, ONLY: levels_horizontal_mean
    USE mo_fortran_tools, ONLY: set_acc_host_or_device
-#ifdef _OPENACC
-   USE mo_mpi,                      ONLY: i_am_accel_node
-   USE openacc
-#endif
+
+
+
+
 
 IMPLICIT NONE
 

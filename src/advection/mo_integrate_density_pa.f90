@@ -125,9 +125,9 @@ CONTAINS
 
     IF (lcoupled_rho) THEN  ! integrate mass equation
 
-#ifdef _OPENACC
-    CALL finish (routine,': OpenACC version in case of lcoupled_rho currently not implemented')
-#endif
+
+
+
             
       lcompute =.TRUE.
       lcleanup =.TRUE.

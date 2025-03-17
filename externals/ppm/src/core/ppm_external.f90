@@ -37,7 +37,7 @@
 !
 !> do not use ppm_external directly, instead only the wrapper modules
 !! ppm_sort and ppm_heap should be USE'd.
-#include "fc_feature_defs.inc"
+
 MODULE ppm_external
   IMPLICIT NONE
   PRIVATE

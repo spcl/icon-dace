@@ -31,9 +31,9 @@ MODULE mo_ocean_nml
        &                       datetimeToString, OPERATOR(+),&
        &                       getTimeDeltaFromDateTime, getTotalSecondsTimeDelta
 
-#ifndef __NO_ICON_ATMO__
+
   USE mo_coupling_config,    ONLY: is_coupled_to_atmo
-#endif
+
   IMPLICIT NONE
 
   PUBLIC
@@ -1439,7 +1439,7 @@ MODULE mo_ocean_nml
       CALL message(method_name,'WARNING, forcing_set_runoff_to_zero is .TRUE. - forcing with river runoff is set to zero')
     END IF
 
-#ifndef __NO_ICON_ATMO__
+
     IF ( is_coupled_to_atmo() ) THEN
       iforc_oce = Coupled_FluxFromAtmo
       CALL message(method_name,'WARNING, iforc_oce set to 14 for coupled experiment')
@@ -1449,7 +1449,7 @@ MODULE mo_ocean_nml
  !!!  limit_seaice = .FALSE.
  !!!  CALL message(method_name,'WARNING, limit_seaice set to .FALSE. - no limit for coupled experiment')
     END IF
-#endif
+
 
     ! write the contents of the namelist to an ASCII file
     IF(my_process_is_stdio()) THEN

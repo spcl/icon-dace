@@ -18,8 +18,8 @@ MODULE comin_setup_utils
   PUBLIC :: t_comin_setup_version_info, comin_setup_get_version
   PUBLIC :: comin_setup_version_compatible
 
-#include "comin_global.inc"
-#include "comin_version.inc"
+
+
 
   !> The elements of this derived data type describe the current
   !> community interface.
@@ -46,9 +46,9 @@ CONTAINS
   !! @ingroup constants
   FUNCTION comin_setup_get_version()
     TYPE(t_comin_setup_version_info) :: comin_setup_get_version
-    comin_setup_get_version%version_no_major = COMIN_VERSION_MAJOR
-    comin_setup_get_version%version_no_minor = COMIN_VERSION_MINOR
-    comin_setup_get_version%version_no_patch = COMIN_VERSION_PATCH
+    comin_setup_get_version%version_no_major = 0
+    comin_setup_get_version%version_no_minor = 2
+    comin_setup_get_version%version_no_patch = 0
   END FUNCTION comin_setup_get_version
 
 END MODULE comin_setup_utils

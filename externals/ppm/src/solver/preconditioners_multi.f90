@@ -38,7 +38,7 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#define filename 'preconditioners_multi.f90'
+
 !
 ! Identity function, use this preconditioner for the non-precond. CG-method
 SUBROUTINE IDENTITY(r)
@@ -648,7 +648,7 @@ FUNCTION PRECOND_PREPARED(preconditioner, prototype) RESULT(ans)
     ans = ALLOCATED(ICC_C) .AND. ALLOCATED(ICC_W) .AND. ALLOCATED(ICC_S)
   CASE DEFAULT
     WRITE (msg, '(a,i0,a)') msg_prefix, preconditioner, msg_suffix
-    CALL abort_ppm(msg, filename, __LINE__)
+    CALL abort_ppm(msg, 'preconditioners_multi.f90', 651)
   END SELECT
 
 END FUNCTION PRECOND_PREPARED
@@ -772,7 +772,7 @@ SUBROUTINE SSOR_PRECOND_STENCIL(field, res_field)
 
   ! Apply SSOR preconditioner
   IF (.NOT. precond_prepared(SSOR_PRECOND, 0._precs)) THEN
-    CALL abort_ppm("No SSOR parameter provided!", filename, __LINE__)
+    CALL abort_ppm("No SSOR parameter provided!", 'preconditioners_multi.f90', 775)
   ENDIF
   CALL ssor(res_field)
 
@@ -798,7 +798,7 @@ SUBROUTINE SSOR_PRECOND_SHIFTED_STENCIL(field, res_field)
 
   ! Apply SSOR preconditioner
   IF (.NOT. precond_prepared(SSOR_PRECOND, 0._precs)) THEN
-    CALL abort_ppm("No SSOR parameter provided!", filename, __LINE__)
+    CALL abort_ppm("No SSOR parameter provided!", 'preconditioners_multi.f90', 801)
   ENDIF
   CALL ssor(res_field)
 
@@ -862,7 +862,7 @@ SUBROUTINE ICC_PRECOND_SHIFTED_STENCIL(field, res_field)
   END DO
 
 END SUBROUTINE ICC_PRECOND_SHIFTED_STENCIL
-#undef filename
+
 !
 ! Local Variables:
 ! license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"

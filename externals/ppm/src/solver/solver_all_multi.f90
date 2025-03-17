@@ -37,7 +37,7 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#define filename 'solver_all_multi.f90'
+
 !
 ! Dispatcher solve function which calls the appropiate solver/preconditioner
 ! according to the config settings
@@ -88,7 +88,7 @@ FUNCTION SOLVE(A, b, x, ext_x, exchange, tol_opt, maxiter_opt) RESULT(kiter)
   ! Make sure stencil is set up
   IF (.NOT. stencil_defined(0.0_precs)) THEN
     CALL abort_ppm("Stencil is not defined! Use set_stencil() first.", &
-         filename, __LINE__)
+         'solver_all_multi.f90', 91)
   ENDIF
 
   ! Make sure preconditioner is initialized
@@ -99,7 +99,7 @@ FUNCTION SOLVE(A, b, x, ext_x, exchange, tol_opt, maxiter_opt) RESULT(kiter)
     CASE (ILU0_PRECOND)
       CALL prep_ilu0(0.0_precs)
     CASE (SSOR_PRECOND)
-      CALL abort_ppm("No SSOR parameter provided!", filename, __LINE__)
+      CALL abort_ppm("No SSOR parameter provided!", 'solver_all_multi.f90', 102)
     CASE (ICC_PRECOND)
       CALL prep_icc(config%icc_param, 0.0_precs)
     CASE (MICC_PRECOND)
@@ -107,7 +107,7 @@ FUNCTION SOLVE(A, b, x, ext_x, exchange, tol_opt, maxiter_opt) RESULT(kiter)
     CASE DEFAULT
       CALL abort_ppm("Selected preconditioner [" &
            // int2str(config%preconditioner) &
-           // "]  does not exist!", filename, __LINE__)
+           // "]  does not exist!", 'solver_all_multi.f90', 110)
     END SELECT
   ENDIF
 
@@ -136,14 +136,14 @@ FUNCTION SOLVE(A, b, x, ext_x, exchange, tol_opt, maxiter_opt) RESULT(kiter)
     CASE DEFAULT
       CALL abort_ppm("Selected preconditioner [" &
            // int2str(config%preconditioner) &
-           // "] does not exist!", filename, __LINE__)
+           // "] does not exist!", 'solver_all_multi.f90', 139)
     END SELECT
   CASE (CHEBYSHEV_SOLVER)
     lambda_min = REAL(config%lambda_min, PREC)
     lambda_max = REAL(config%lambda_max, PREC)
     IF (ieee_is_nan(lambda_min) .OR. ieee_is_nan(lambda_max)) THEN
-      CALL abort_ppm("Lambda_min and lambda_max not provided!", filename, &
-           __LINE__)
+      CALL abort_ppm("Lambda_min and lambda_max not provided!", 'solver_all_multi.f90', &
+           146)
     ENDIF
     SELECT CASE (config%preconditioner)
     CASE (NONE_PRECOND)
@@ -173,16 +173,16 @@ FUNCTION SOLVE(A, b, x, ext_x, exchange, tol_opt, maxiter_opt) RESULT(kiter)
     CASE DEFAULT
       CALL abort_ppm("Selected preconditioner [" &
            // int2str(config%preconditioner) &
-           // "] does not exist!", filename, __LINE__)
+           // "] does not exist!", 'solver_all_multi.f90', 176)
     END SELECT
   CASE DEFAULT
     CALL abort_ppm("Selected solver [" // int2str(config%solver) &
-         // "]  does not exist!", filename, __LINE__)
+         // "]  does not exist!", 'solver_all_multi.f90', 180)
   END SELECT
 
 END FUNCTION SOLVE
 
-#undef filename
+
 !
 ! Local Variables:
 ! license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"

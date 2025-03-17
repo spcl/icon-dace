@@ -25,11 +25,11 @@ INTEGER, PARAMETER :: JPIB = SELECTED_INT_KIND(12)
 
 !Special integer type to be used for sensative adress calculations
 !should be *8 for a machine with 8byte adressing for optimum performance
-#ifdef ADDRESS64
-INTEGER, PARAMETER :: JPIA = JPIB
-#else
+
+
+
 INTEGER, PARAMETER :: JPIA = JPIM
-#endif
+
 
 !
 !     Real Kinds
@@ -43,11 +43,11 @@ INTEGER, PARAMETER :: JPRM = SELECTED_REAL_KIND(6,37)
 INTEGER, PARAMETER :: JPRD = SELECTED_REAL_KIND(13,300)
 
 ! This parameter governs the precision of most of the code
-#ifdef PARKIND1_SINGLE
-INTEGER, PARAMETER :: JPRB = JPRM
-#else
+
+
+
 INTEGER, PARAMETER :: JPRB = JPRD
-#endif
+
 !
 
 ! Logical Kinds for RTTOV....

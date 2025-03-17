@@ -13,9 +13,9 @@
 ! It runs only on a single process
 
 !-------------------------------------------------------------------------------------
-#define d_norma_3d(v) SQRT(DOT_PRODUCT(v%x,v%x))
-#define d_normalize(v) v%x=v%x/d_norma_3d(v)
-#define d_sqrdistance_3d(v1,v2) DOT_PRODUCT((v1%x-v2%x),(v1%x-v2%x))
+
+
+
 !-------------------------------------------------------------------------------------
 MODULE mo_decomposition_tools
   !-------------------------------------------------------------------------
@@ -587,7 +587,7 @@ CONTAINS
     END DO
   END SUBROUTINE cell_info_vec_swap
 
-#define SWAP(i,j) temp = a(i) ; a(i) = a(j); a(j) = temp
+
 
   RECURSIVE SUBROUTINE sort_cell_info_by_lat(a, n)
     INTEGER, INTENT(in) :: n
@@ -603,7 +603,7 @@ CONTAINS
         pl = pm
         DO WHILE (pl > 0)
           IF (a(pl - 1)%lat <= a(pl)%lat) EXIT
-          SWAP(pl, pl - 1)
+          temp = a(pl) ; a(pl) = a( pl - 1); a( pl - 1) = temp
           pl = pl - 1
         END DO
       END DO
@@ -621,7 +621,7 @@ CONTAINS
       END IF
       pm = med3_cell_info_lat(a, pl, pm, pn)
     END IF
-    SWAP(0, pm)
+    temp = a(0) ; a(0) = a( pm); a( pm) = temp
     pb = 1
     pa = pb
     pd = n - 1
@@ -632,7 +632,7 @@ CONTAINS
         IF (a(pb)%lat > a(0)%lat) EXIT
         IF (a(pb)%lat == a(0)%lat) THEN
           swap_cnt = .TRUE.
-          SWAP(pa, pb)
+          temp = a(pa) ; a(pa) = a( pb); a( pb) = temp
           pa = pa + 1
         END IF
         pb = pb + 1
@@ -641,13 +641,13 @@ CONTAINS
         IF (a(pc)%lat < a(0)%lat) EXIT
         IF (a(pc)%lat == a(0)%lat) THEN
           swap_cnt = .TRUE.
-          SWAP(pc, pd)
+          temp = a(pc) ; a(pc) = a( pd); a( pd) = temp
           pd = pd - 1
         END IF
         pc = pc - 1
       END DO
       IF (pb > pc) EXIT
-      SWAP(pb, pc)
+      temp = a(pb) ; a(pb) = a( pc); a( pc) = temp
       swap_cnt = .TRUE.
       pb = pb + 1
       pc = pc - 1
@@ -657,7 +657,7 @@ CONTAINS
         pl = pm
         DO WHILE(pl > 0)
           IF (a(pl - 1)%lat <= a(pl)%lat) EXIT
-          SWAP(pl, pl - 1)
+          temp = a(pl) ; a(pl) = a( pl - 1); a( pl - 1) = temp
           pl = pl - 1
         END DO
       END DO
@@ -694,7 +694,7 @@ CONTAINS
         pl = pm
         DO WHILE (pl > 0)
           IF (a(pl - 1)%lon <= a(pl)%lon) EXIT
-          SWAP(pl, pl - 1)
+          temp = a(pl) ; a(pl) = a( pl - 1); a( pl - 1) = temp
           pl = pl - 1
         END DO
       END DO
@@ -712,7 +712,7 @@ CONTAINS
       END IF
       pm = med3_cell_info_lon(a, pl, pm, pn)
     END IF
-    SWAP(0, pm)
+    temp = a(0) ; a(0) = a( pm); a( pm) = temp
     pb = 1
     pa = pb
     pd = n - 1
@@ -723,7 +723,7 @@ CONTAINS
         IF (a(pb)%lon > a(0)%lon) EXIT
         IF (a(pb)%lon == a(0)%lon) THEN
           swap_cnt = .TRUE.
-          SWAP(pa, pb)
+          temp = a(pa) ; a(pa) = a( pb); a( pb) = temp
           pa = pa + 1
         END IF
         pb = pb + 1
@@ -732,13 +732,13 @@ CONTAINS
         IF (a(pc)%lon < a(0)%lon) EXIT
         IF (a(pc)%lon == a(0)%lon) THEN
           swap_cnt = .TRUE.
-          SWAP(pc, pd)
+          temp = a(pc) ; a(pc) = a( pd); a( pd) = temp
           pd = pd - 1
         END IF
         pc = pc - 1
       END DO
       IF (pb > pc) EXIT
-      SWAP(pb, pc)
+      temp = a(pb) ; a(pb) = a( pc); a( pc) = temp
       swap_cnt = .TRUE.
       pb = pb + 1
       pc = pc - 1
@@ -748,7 +748,7 @@ CONTAINS
         pl = pm
         DO WHILE(pl > 0)
           IF (a(pl - 1)%lon <= a(pl)%lon) EXIT
-          SWAP(pl, pl - 1)
+          temp = a(pl) ; a(pl) = a( pl - 1); a( pl - 1) = temp
           pl = pl - 1
         END DO
       END DO
@@ -812,7 +812,7 @@ CONTAINS
         pl = pm
         DO WHILE (pl > 0)
           IF (a(pl - 1)%cell_number <= a(pl)%cell_number) EXIT
-          SWAP(pl, pl - 1)
+          temp = a(pl) ; a(pl) = a( pl - 1); a( pl - 1) = temp
           pl = pl - 1
         END DO
       END DO
@@ -830,7 +830,7 @@ CONTAINS
       END IF
       pm = med3_cell_info_cell_number(a, pl, pm, pn)
     END IF
-    SWAP(0, pm)
+    temp = a(0) ; a(0) = a( pm); a( pm) = temp
     pb = 1
     pa = pb
     pd = n - 1
@@ -841,7 +841,7 @@ CONTAINS
         IF (a(pb)%cell_number > a(0)%cell_number) EXIT
         IF (a(pb)%cell_number == a(0)%cell_number) THEN
           swap_cnt = .TRUE.
-          SWAP(pa, pb)
+          temp = a(pa) ; a(pa) = a( pb); a( pb) = temp
           pa = pa + 1
         END IF
         pb = pb + 1
@@ -850,13 +850,13 @@ CONTAINS
         IF (a(pc)%cell_number < a(0)%cell_number) EXIT
         IF (a(pc)%cell_number == a(0)%cell_number) THEN
           swap_cnt = .TRUE.
-          SWAP(pc, pd)
+          temp = a(pc) ; a(pc) = a( pd); a( pd) = temp
           pd = pd - 1
         END IF
         pc = pc - 1
       END DO
       IF (pb > pc) EXIT
-      SWAP(pb, pc)
+      temp = a(pb) ; a(pb) = a( pc); a( pc) = temp
       swap_cnt = .TRUE.
       pb = pb + 1
       pc = pc - 1
@@ -866,7 +866,7 @@ CONTAINS
         pl = pm
         DO WHILE(pl > 0)
           IF (a(pl - 1)%cell_number <= a(pl)%cell_number) EXIT
-          SWAP(pl, pl - 1)
+          temp = a(pl) ; a(pl) = a( pl - 1); a( pl - 1) = temp
           pl = pl - 1
         END DO
       END DO

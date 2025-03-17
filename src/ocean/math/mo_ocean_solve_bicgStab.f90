@@ -10,9 +10,9 @@
 ! ---------------------------------------------------------------
 
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#endif
+
+
+
 ! contains extension to solver backend type: BiCG stabilized
 
 MODULE mo_ocean_solve_bicgStab
@@ -34,9 +34,9 @@ MODULE mo_ocean_solve_bicgStab
 ! arrays only used by BCGS
     REAL(KIND=wp), ALLOCATABLE, DIMENSION(:,:) :: r0_wp, r_wp, v_wp, &
       & p_wp, ta1_wp, s_wp, ta2_wp
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: r0_wp, r_wp, v_wp, p_wp, ta1_wp, s_wp, ta2_wp
-#endif
+
+
+
 ! interfaces
   CONTAINS
     PROCEDURE :: doit_wp => ocean_solve_bicgStab_cal_wp ! override deferred
@@ -90,9 +90,9 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(this_mod_name, 'OpenACC version currently not tested/validated')
-#endif
+
+
+
 
 ! retrieve extends of vector to solve
     nblk = this%trans%nblk

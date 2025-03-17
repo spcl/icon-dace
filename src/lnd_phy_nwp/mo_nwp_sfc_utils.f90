@@ -12,11 +12,18 @@
 ! Utility routines related to the TERRA surface model
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
-#if defined __xlC__
-@PROCESS SPILL(564)
-#endif
 MODULE mo_nwp_sfc_utils
 
   USE mo_kind,                ONLY: wp
@@ -68,18 +75,11 @@ MODULE mo_nwp_sfc_utils
 
   USE mo_lnd_nwp_config,      ONLY: lcuda_graph_lnd
 
-#ifdef __NVCOMPILER
-  USE mo_coupling_config,     ONLY: is_coupled_to_ocean
-#endif
 
   IMPLICIT NONE
 
   PRIVATE
 
-#ifdef __SX__
-! parameter for loop unrolling
-INTEGER, PARAMETER :: nlsoil= 8
-#endif
 
   REAL(KIND=wp), PARAMETER ::            &
    & csmall_hice = 0.5_wp*h_Ice_min_flk    !< small value to handle lake-ice fraction 
@@ -1383,9 +1383,9 @@ CONTAINS
         !$ACC END PARALLEL
 
         IF (lmulti_snow) THEN
-#ifdef _OPENACC
-          CALL finish('aggregate_landvars', 'lmulti_snow is not ported to openACC.')
-#endif
+
+
+
           DO jk=1,nlev_snow
             DO jc = i_startidx, i_endidx
               lnd_diag%t_snow_mult  (jc,jk,jb) = lnd_prog%t_snow_mult_t(jc,jk,jb,1)
@@ -1462,9 +1462,9 @@ CONTAINS
         !$ACC END PARALLEL
 
         IF (lmulti_snow) THEN
-#ifdef _OPENACC
-          CALL finish('aggregate_landvars', 'lmulti_snow is not ported to openACC.')
-#endif        
+
+
+
           DO jk = 1, nlev_snow+1
             DO jc = i_startidx, i_endidx
               lnd_diag%t_snow_mult  (jc,jk,jb) = 0._wp
@@ -1888,11 +1888,11 @@ CONTAINS
 
 
       IF ( ntiles_total == 1 ) THEN  ! no tile approach
-#ifdef _OPENACC
-        IF (lzacc) THEN
-          CALL finish('init_sea_lists', "The code path without tiling is not ported to GPU")
-        ENDIF
-#endif _OPENACC
+
+
+
+
+
 
         !
         ! mixed water/ice points are not allowed. A sea point can be either
@@ -2004,7 +2004,7 @@ CONTAINS
         !$ACC END PARALLEL
 
 
-#ifndef __SX__
+
         ! Sanity check
         ! Check whether fractions of seaice and non-seaice covered tiles sum up to total sea fraction. 
         max_diff = 0.0_wp
@@ -2041,7 +2041,7 @@ CONTAINS
           CALL message('', TRIM(message_text))
           CALL finish(routine, 'sea-ice + water fractions do not sum up to total sea fraction')
         ENDIF
-#endif
+
       ENDIF   ! IF (ntiles_total == 1)
 
     ENDDO  ! jb
@@ -2443,14 +2443,14 @@ CONTAINS
     IF (msg_level >= 13) CALL message('update_idx_lists_sea', &
       'One or more seaice cells melted -> List update required.')
 
-#ifdef __NVCOMPILER
-    ! nvfortran does not understand passing a NULL pointer to an optional (Fortran 2008) :(
-    lhave_meltpot = is_coupled_to_ocean()
-    lhave_condhf = is_coupled_to_ocean()
-#else
+
+
+
+
+
     lhave_meltpot = PRESENT(meltpot)
     lhave_condhf = PRESENT(condhf)
-#endif
+
 
     !$ACC DATA PRESENT(condhf) IF(lhave_condhf)
     !$ACC DATA PRESENT(meltpot) IF(lhave_meltpot)
@@ -2483,9 +2483,9 @@ CONTAINS
     ! Loop over old sea-ice points, only
 
     IF ( ntiles_total == 1 ) THEN  ! no tile approach
-#ifdef _OPENACC
-      CALL finish('update_idx_lists_sea', "The code path without tiling is not tested on GPU")
-#endif
+
+
+
       !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) &
       !$ACC   PRESENT(list_seawtr_count, list_seaice_count) ! these are entries of vectors that are present on device
       list_seaice_count = 0 ! do the reset on accelerator if using OpenACC
@@ -2986,9 +2986,9 @@ CONTAINS
 
 
         IF (lpresent_h_ice) THEN
-#ifdef _OPENACC
-          CALL finish('process_sst_and_seaice', "lseaice together with lpresent_h_ice is not supported on GPU")
-#endif
+
+
+
 
           CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
             &                i_startidx, i_endidx, rl_start, rl_end)

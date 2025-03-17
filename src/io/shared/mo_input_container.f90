@@ -24,9 +24,9 @@ MODULE mo_input_container
     USE mo_scatter_pattern_base, ONLY: lookupScatterPattern
     USE mo_nwp_sfc_tiles, ONLY: trivial_tile_att, t_tileinfo_icon
     USE mo_util_string, ONLY: int2string, real2string
-#ifdef _OPENMP
-    USE omp_lib
-#endif
+
+
+
 
     IMPLICIT NONE
 

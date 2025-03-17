@@ -9,9 +9,9 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
-#include "omp_definitions.inc"
-#endif
+
+
+
 ! contains extension to solver backend type: MINRES
 
 MODULE mo_ocean_solve_mres
@@ -33,10 +33,10 @@ MODULE mo_ocean_solve_mres
 ! arrays only used by MINRES
     REAL(KIND=wp), ALLOCATABLE, DIMENSION(:,:) :: p0_wp, p1_wp, p2_wp, s0_wp, &
       & s1_wp, s2_wp, r_wp, ss_wp, rs_wp
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: p0_wp, p1_wp, p2_wp, s0_wp, s1_wp, s2_wp, r_wp
-!DIR$ ATTRIBUTES ALIGN : 64 :: ss_wp, rs_wp
-#endif
+
+
+
+
 ! interfaces
   CONTAINS
     PROCEDURE :: doit_wp => ocean_solve_mres_cal_wp ! override deferred
@@ -93,9 +93,9 @@ SUBROUTINE ocean_solve_mres_cal_wp(this, lacc)
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish(this_mod_name, 'OpenACC version currently not tested/validated')
-#endif
+
+
+
 
 ! retrieve extends of vector to solve
     nidx_a = this%trans%nidx
@@ -105,9 +105,9 @@ SUBROUTINE ocean_solve_mres_cal_wp(this, lacc)
     k_final = -1
 ! retrieve arrays
     CALL this%recover_arrays(x, b, r, p0, p1, p2, s0, s1, s2, rs, ss)
-#ifdef __PGI
-    ALLOCATE(tmp(this%trans%nidx, this%trans%nblk))
-#endif
+
+
+
     b(nidx_e+1:, nblk) = 0._wp
 ! compute initial residual and auxiliary vectors
     CALL this%trans%sync(x)
@@ -141,19 +141,6 @@ SUBROUTINE ocean_solve_mres_cal_wp(this, lacc)
     DO k = 1, m
 ! check if done
       IF (done) CYCLE
-#ifdef __PGI
-! pgi does not like pointer juggling !?!
-      DO iblk = 1, nblk
-        tmp(:, iblk) = p2(:, iblk)
-        p2(:, iblk) = p1(:, iblk)
-        p1(:, iblk) = p0(:, iblk)
-        p0(:, iblk) = tmp(:, iblk)
-        tmp(:, iblk) = s2(:, iblk)
-        s2(:, iblk) = s1(:, iblk)
-        s1(:, iblk) = s0(:, iblk)
-        s0(:, iblk) = tmp(:, iblk)
-      END DO
-#else
       tmp => p2
       p2 => p1
       p1 => p0
@@ -162,7 +149,6 @@ SUBROUTINE ocean_solve_mres_cal_wp(this, lacc)
       s2 => s1
       s1 => s0
       s0 => tmp
-#endif
 !ICON_OMP PARALLEL DO SCHEDULE(STATIC)
       DO iblk = 1, nblk
         rs(:, iblk) = s1(:, iblk) * r(:, iblk)
@@ -217,9 +203,6 @@ SUBROUTINE ocean_solve_mres_cal_wp(this, lacc)
     END DO
     this%niter_cal(1) = k_final
     this%res_wp(1) = SQRT(rn)
-#ifdef __PGI
-    DEALLOCATE(tmp)
-#endif
   END SUBROUTINE ocean_solve_mres_cal_wp
 
 ! we should not get here...

@@ -15,9 +15,9 @@
 
 MODULE mo_latbc_read_recv
 
-#ifndef NOMPI
-  USE mpi
-#endif
+
+
+
 
   USE mo_kind,               ONLY: sp, i8
   USE mo_exception,          ONLY: finish, message, message_text
@@ -50,11 +50,11 @@ CONTAINS
   !  Note: This implementation uses a 2D buffer.
   ! 
   SUBROUTINE prefetch_cdi_3d(streamID, varname, latbc_data, nlevs, hgrid, ioff)
-#ifndef NOMPI
-    INTEGER(KIND=MPI_ADDRESS_KIND), INTENT(INOUT) :: ioff(0:)
-#else
+
+
+
     INTEGER, INTENT(INOUT)                        :: ioff(0:)
-#endif
+
     INTEGER,                 INTENT(IN)  :: streamID     !< ID of CDI file stream
     CHARACTER(len=*),        INTENT(IN)  :: varname      !< Var name of field to be read
     !> patch data containing information for prefetch
@@ -72,65 +72,6 @@ CONTAINS
     INTEGER                         :: nread
     TYPE(t_reorder_info), POINTER :: p_ri
 
-#ifndef NOMPI
-    ! allocate a buffer for one vertical level
-    IF (hgrid == GRID_UNSTRUCTURED_CELL) THEN
-
-      IF (latbc_config%lsparse_latbc) THEN
-        nread = SIZE(latbc_data%global_index%cells)
-      ELSE
-        nread = latbc_data%patch_data%n_patch_cells_g
-      END IF
-      p_ri => latbc_data%patch_data%cells
-
-    ELSE IF (hgrid == GRID_UNSTRUCTURED_EDGE) THEN
-
-      IF (latbc_config%lsparse_latbc) THEN
-        nread = SIZE(latbc_data%global_index%edges)
-      ELSE
-        nread = latbc_data%patch_data%n_patch_edges_g
-      END IF
-      p_ri => latbc_data%patch_data%edges
-
-    ELSE
-      CALL finish(routine, "invalid grid type")
-    ENDIF
-
-    ! allocate read buffer (which might be smaller than domain, if
-    ! only boudary rows are read from file.
-    ALLOCATE(read_buf(nread), STAT=ierrstat)
-    IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
-
-    ! get var ID
-    vlistID   = streamInqVlist(streamID)
-    varID     = get_cdi_varID(streamID, name=TRIM(varname)) 
-    zaxisID   = vlistInqVarZaxis(vlistID, varID)
-    gridID    = vlistInqVarGrid(vlistID, varID)
-    dimlen(1) = gridInqSize(gridID)
-    dimlen(2) = zaxisInqSize(zaxisID)
-    nlevs     = dimlen(2) ! vertical levels of netcdf file
-
-    ! Check variable dimensions:
-    IF (dimlen(1) /= SIZE(read_buf)) THEN
-       WRITE(message_text,'(a,2i4,a,i0)') "Horizontal cells: ", dimlen(1), SIZE(read_buf), &
-         &                           "nlev: ", nlevs
-       CALL message(routine, message_text)
-       CALL finish(routine, "Incompatible dimensions!")
-    END IF
-
-    ! fixme: send more than 1 level at a time
-    DO jk=1, nlevs
-
-      ! read record as 1D field
-      CALL streamReadVarSliceF(streamID, varID, jk-1, read_buf, nmiss)
-
-      ! send 2d buffer using MPI_PUT
-      CALL prefetch_proc_send(latbc_data%patch_data%mem_win%mpi_win, read_buf, 1, p_ri, ioff)
-    ENDDO ! jk=1,nlevs 
-  
-    DEALLOCATE(read_buf, STAT=ierrstat)
-    IF (ierrstat /= SUCCESS) CALL finish(routine, "DEALLOCATE failed!")
-#endif
   
   END SUBROUTINE prefetch_cdi_3d
 
@@ -138,11 +79,7 @@ CONTAINS
   !> Read 2D dataset from file, implementation for REAL fields
   !
   SUBROUTINE prefetch_cdi_2d (streamID, varname, latbc_data, hgrid, ioff)
-#ifndef NOMPI
-    INTEGER(KIND=MPI_ADDRESS_KIND), INTENT(INOUT) :: ioff(0:)
-#else
     INTEGER, INTENT(INOUT)                        :: ioff(0:)
-#endif
     CHARACTER(len=*), PARAMETER :: routine = modname//'prefetch_cdi_2d'
     INTEGER,                 INTENT(IN) :: streamID     !< ID of CDI file stream
     CHARACTER(len=*),        INTENT(IN) :: varname      !< Varname of field to be read
@@ -171,33 +108,6 @@ CONTAINS
     ! local variables:
     INTEGER     :: j, jl, jb, jk, mpi_error      
 
-#ifndef NOMPI
-    ! Get pointer to appropriate reorder_info
-    SELECT CASE (hgrid)
-    CASE(GRID_UNSTRUCTURED_CELL)
-       p_ri => patch_data%cells
-    CASE(GRID_UNSTRUCTURED_EDGE)
-       p_ri => patch_data%edges
-    CASE default
-       CALL finish(routine,'unknown grid type')
-    END SELECT
-
-    CALL MPI_Win_lock(MPI_LOCK_SHARED, p_pe_work, MPI_MODE_NOCHECK, patch_data%mem_win%mpi_win, mpi_error)
-
-    ! initialize output field:
-    var_out(:,:,:) = 0._sp
-
-    DO jk=1, nlevs
-      DO j = 1,  p_ri%n_own 
-        jb = p_ri%own_blk(j) ! Block index in distributed patch
-        jl = p_ri%own_idx(j) ! Line  index in distributed patch
-        var_out(jl,jk,jb) = REAL(patch_data%mem_win%mem_ptr_sp(eoff+INT(j,i8)),sp)
-      ENDDO
-      eoff = eoff + INT(p_ri%n_own,i8) 
-    END DO ! jk=1,nlevs
-
-    CALL MPI_Win_unlock(p_pe_work, patch_data%mem_win%mpi_win, mpi_error)
-#endif
 
   END SUBROUTINE compute_data_receive
  
@@ -209,11 +119,7 @@ CONTAINS
   !
   ! fixme: allow actually using more than nlevs = 1
   SUBROUTINE prefetch_proc_send(win, var1_sp, nlevs, p_ri, ioff)
-#ifndef NOMPI
-    INTEGER(KIND=MPI_ADDRESS_KIND), INTENT(INOUT) :: ioff(0:)
-#else
     INTEGER, INTENT(INOUT)                        :: ioff(0:)
-#endif
     ! local variables  
     INTEGER, INTENT(IN) :: win
     REAL(sp),                   INTENT(IN) :: var1_sp(:)
@@ -226,13 +132,6 @@ CONTAINS
     REAL(sp), ALLOCATABLE          :: var3_sp(:)
     INTEGER                        :: np, nval, nv_off, mpi_error, ierrstat
     INTEGER                        :: dst_start, dst_end, src_start, src_end
-#ifndef NOMPI
-#ifdef DO_NOT_COMBINE_PUT_AND_NOCHECK
-    INTEGER, PARAMETER :: lock_assert = 0
-#else
-    INTEGER, PARAMETER :: lock_assert = MPI_MODE_NOCHECK
-#endif
-#endif
 
 
     IF (.NOT. ALLOCATED(p_ri%pe_own)) THEN
@@ -272,35 +171,6 @@ CONTAINS
     nv_off  = 0_i8
     nval = 0
 
-#ifndef NOMPI
-    DO np = 0, num_work_procs-1
-
-       IF (p_ri%pe_own(np) == 0) CYCLE
-
-       nval = p_ri%pe_own(np)*nlevs
-
-       ! fixme: use mpi_win_lock_all here
-       CALL MPI_Win_lock(MPI_LOCK_EXCLUSIVE, np, lock_assert, win, mpi_error)
-         
-       ! consistency check:
-       IF (SIZE(var3_sp) < nv_off+nval) THEN
-         WRITE (0,*) "SIZE(var3_sp) = ", SIZE(var3_sp), " < nv_off+nval = ", nv_off+nval
-         CALL finish(routine, "Internal error!")
-       END IF
-
-       CALL MPI_PUT(var3_sp(nv_off+1), nval, p_real_sp, np, ioff(np), nval, p_real_sp, &
-         & win, mpi_error) !MPI_WIN_NULL) 
-         
-       CALL MPI_Win_unlock(np, win, mpi_error)
-
-       ! Update the offset in var1
-       nv_off = nv_off + nval
-
-       ! Update the offset in the memory window on compute PEs
-       ioff(np) = ioff(np) + INT(nval,i8) ! replace with mpi_kind
-
-    ENDDO
-#endif
 
     DEALLOCATE(var3_sp, STAT=ierrstat) ! Must be allocated to exact size
     IF (ierrstat /= SUCCESS) CALL finish (routine, 'DEALLOCATE failed.')

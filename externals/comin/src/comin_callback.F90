@@ -31,7 +31,7 @@ MODULE comin_callback
   PUBLIC :: comin_callback_register, comin_callback_context_call, comin_callback_complete
   PUBLIC :: comin_callback_get_ep_name
 
-#include "comin_global.inc"
+
 
 CONTAINS
 
@@ -257,7 +257,7 @@ CONTAINS
   SUBROUTINE comin_callback_get_ep_name_c( iep, out_ep_name) &
     &     BIND(C, name="comin_callback_get_ep_name")
     INTEGER(c_int), VALUE, INTENT(IN)  :: iep   !< entry point ID
-    CHARACTER(len=1, kind=c_char),DIMENSION(MAX_LEN_EP_NAME+1)  :: out_ep_name
+    CHARACTER(len=1, kind=c_char),DIMENSION(32+1)  :: out_ep_name
     !
     CHARACTER(LEN=:), ALLOCATABLE :: ep_name
 

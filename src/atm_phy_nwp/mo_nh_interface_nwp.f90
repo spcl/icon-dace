@@ -21,12 +21,19 @@
 !    advection and saturation adjustment
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
-#ifdef _OPENACC
-#define __PGI_WORKAROUND
-#endif
 
 MODULE mo_nh_interface_nwp
 
@@ -89,26 +96,19 @@ MODULE mo_nh_interface_nwp
   USE mo_mpi,                     ONLY: my_process_is_mpi_all_parallel, work_mpi_barrier
   USE mo_nwp_diagnosis,           ONLY: nwp_statistics, nwp_opt_diagnostics_2, &
                                     &   nwp_diag_output_1, nwp_diag_output_2
-#ifdef __ICON_ART
-  USE mo_art_config,              ONLY: art_config
-  USE mo_art_data,                ONLY: p_art_data
-  USE mo_art_atmo_data,           ONLY: t_art_atmo
-  USE mo_art_diagnostics_interface,ONLY: art_diagnostics_interface
 
-  USE mo_art_washout_interface,   ONLY: art_washout_interface
-  USE mo_art_coagulation_interface, ONLY: art_coagulation_interface
-  USE mo_art_reaction_interface,  ONLY: art_reaction_interface
-  USE mo_art_aerodyn_interface,   ONLY: art_aerodyn_interface
-  USE mo_art_cover_koe,           ONLY: art_cover_dusty
-#endif
+
+
+
+
   USE mo_var_list,                ONLY: t_var_list_ptr
-#ifndef __NO_ICON_LES__
+
   USE mo_ls_forcing_nml,          ONLY: is_ls_forcing, is_nudging_uv, is_nudging_tq, is_sim_rad, &
     &                                   nudge_start_height, nudge_full_height, dt_relax
   USE mo_ls_forcing,              ONLY: apply_ls_forcing
   USE mo_les_turb_interface,      ONLY: les_turbulence
   USE mo_les_config,              ONLY: les_config
-#endif
+
   USE mo_sim_rad,                 ONLY: sim_rad
   USE mo_advection_config,        ONLY: advection_config
   USE mo_o3_util,                 ONLY: calc_o3_gems
@@ -120,38 +120,21 @@ MODULE mo_nh_interface_nwp
   USE mo_nwp_reff_interface,      ONLY: set_reff , combine_phases_radiation_reff
   USE mo_upatmo_impl_const,       ONLY: iUpatmoPrcStat, iUpatmoStat
   USE mo_upatmo_config,           ONLY: upatmo_config
-#ifndef __NO_ICON_UPATMO__
+
   USE mo_nwp_upatmo_interface,    ONLY: nwp_upatmo_interface, nwp_upatmo_update
-#endif
+
   USE mo_fortran_tools,           ONLY: set_acc_host_or_device, copy, init
-#ifdef HAVE_RADARFWO
-  USE mo_emvorado_warmbubbles_type, ONLY: autobubs_list
-  USE mo_run_config,                ONLY: luse_radarfwo
-  USE mo_emvorado_warmbubbles,      ONLY: set_artif_heatrate_dist
-#endif
+
+
+
+
+
   USE mo_nwp_sfc_utils,           ONLY: process_sst_and_seaice
   ! SPPT
   USE mo_sppt_state,              ONLY: sppt
   USE mo_sppt_config,             ONLY: sppt_config
   USE mo_sppt_util,               ONLY: construct_rn
   USE mo_sppt_core,               ONLY: calc_tend, pert_tend, apply_tend, save_state
-#ifndef __NO_ICON_COMIN__
-  USE comin_host_interface, ONLY: EP_ATM_SURFACE_BEFORE,           &
-    &                             EP_ATM_SURFACE_AFTER,            &
-    &                             EP_ATM_TURBULENCE_BEFORE,        &
-    &                             EP_ATM_TURBULENCE_AFTER,         &
-    &                             EP_ATM_MICROPHYSICS_BEFORE,      &
-    &                             EP_ATM_MICROPHYSICS_AFTER,       &
-    &                             EP_ATM_CONVECTION_BEFORE,        &
-    &                             EP_ATM_CONVECTION_AFTER,         &
-    &                             EP_ATM_RADIATION_BEFORE,         &
-    &                             EP_ATM_RADIATION_AFTER,          &
-    &                             EP_ATM_RADHEAT_BEFORE,           &
-    &                             EP_ATM_RADHEAT_AFTER,            &
-    &                             EP_ATM_GWDRAG_BEFORE,            &
-    &                             EP_ATM_GWDRAG_AFTER
-  USE mo_comin_adapter,     ONLY: icon_call_callback
-#endif
 
 
   USE mo_nwp_tuning_config,       ONLY: tune_sc_eis
@@ -285,9 +268,6 @@ CONTAINS
     INTEGER :: ntracer_sync
     LOGICAL :: lzacc ! non-optional version of lacc
 
-#ifdef __PGI_WORKAROUND
-    INTEGER :: gp_count_t(ntiles_total)
-#endif
 
     ! inversion height diagnostic for cover_koe with stratocumulus
     INTEGER :: kc_inversion(nproma), kc_entr_zone(nproma)
@@ -304,11 +284,6 @@ CONTAINS
     ! SCM Nudging
     REAL(wp) :: nudgecoeff
 
-#ifdef __ICON_ART
-    ! For ICON-ART dusty cirrus
-    TYPE(t_art_atmo), POINTER    :: &
-      &  art_atmo           !< Pointer to ART atmospheric fields
-#endif
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
@@ -587,11 +562,7 @@ CONTAINS
           !$ACC END KERNELS
         ENDIF
 
-#ifdef _OPENACC
-        CALL satad_v_3D_gpu(                            &
-#else
         CALL satad_v_3D(                                &
-#endif
            & maxiter  = 10                             ,& !> IN
            & tol      = 1.e-3_wp                       ,& !> IN
            & te       = pt_diag%temp       (:,:,jb)    ,& !> INOUT
@@ -659,9 +630,6 @@ CONTAINS
     !!  has to be done afterwards
     !!-------------------------------------------------------------------------
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_SURFACE_BEFORE, jg, lacc=lzacc)
-#endif
 
     !For turbulence schemes NOT including the call to the surface scheme.
     !nwp_surface must even be called in inwp_surface = 0 because the
@@ -692,12 +660,6 @@ CONTAINS
        !$ser verbatim IF (.not. linit) CALL serialize_all(nproma, jg, "surface", .FALSE., opt_dt=mtime_datetime)
       IF (timers_level > 2) CALL timer_stop(timer_nwp_surface)
     END IF
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_SURFACE_AFTER, jg, lacc=lzacc)
-#endif
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_TURBULENCE_BEFORE, jg, lacc=lzacc)
-#endif
 
     !Call to turbulent parameterization schemes
     IF (  lcall_phy_jg(itturb) ) THEN
@@ -750,7 +712,6 @@ CONTAINS
             )
         END IF
 
-#ifndef __NO_ICON_LES__
       CASE(ismag,iprog)
 
         !----------------------------------------------------------------------------------
@@ -778,7 +739,6 @@ CONTAINS
                              & lnd_diag,                         & !>in
                              & lacc=lzacc                        ) !>in
 
-#endif
       CASE DEFAULT
 
         CALL finish('mo_nh_interface_nwp:','unknown choice of turbulence scheme')
@@ -789,12 +749,6 @@ CONTAINS
 
     END IF
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_TURBULENCE_AFTER, jg, lacc=lzacc)
-#endif
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_MICROPHYSICS_BEFORE, jg, lacc=lzacc)
-#endif
     !-------------------------------------------------------------------------
     !  prognostic microphysic and precipitation scheme
     !-------------------------------------------------------------------------
@@ -830,50 +784,7 @@ CONTAINS
 
     ENDIF
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_MICROPHYSICS_AFTER, jg, lacc=lzacc)
-#endif
 
-#ifdef __ICON_ART
-    IF (lart) THEN
-
-      CALL calc_o3_gems(pt_patch,mtime_datetime,pt_diag,prm_diag,ext_data%atm%o3,use_acc=lzacc)
-
-      IF (.NOT. linit) THEN
-        CALL art_reaction_interface(jg,                    & !> in
-                &                   mtime_datetime,        & !> in
-                &                   dt_phy_jg(itfastphy),  & !> in
-                &                   p_prog_list,           & !> in
-                &                   pt_prog_rcf%tracer     ) !>
-
-      !Check where to put coagulation
-        CALL art_coagulation_interface(pt_prog,pt_diag,    & !>in
-                &          dt_phy_jg(itfastphy),           & !>in
-                &          pt_patch,                       & !>in
-                &          prm_diag,                       & !>in
-                &          p_metrics,                      & !>in
-                &          pt_prog_rcf%tracer)               !>inout
-
-        CALL art_aerodyn_interface (pt_patch,              & !> in
-                &                   dt_phy_jg(itfastphy),  & !> in
-                &                   p_prog_list,           & !> in
-                &                   pt_prog,               & !> in
-                &                   p_metrics,             & !> in
-                &                   pt_diag,               & !> inout
-                &                   pt_prog_rcf%tracer,    & !>
-                &                   prm_diag = prm_diag,   & !> optional
-                &                   lacc=lzacc)
-
-        CALL art_washout_interface(pt_prog,pt_diag,        & !>in
-                &            dt_phy_jg(itfastphy),         & !>in
-                &            pt_patch,                     & !>in
-                &            prm_diag,                     & !>in
-                &            p_metrics,                    & !>in
-                &            pt_prog_rcf%tracer,           & !>inout
-                &            lacc=lzacc)
-      END IF
-    ENDIF !lart
-#endif
 
     !!------------------------------------------------------------------
     !> Latent heat nudging (optional)
@@ -929,9 +840,6 @@ CONTAINS
             & i_startidx, i_endidx, rl_start, rl_end )
 
           IF ( assimilation_config(jg)%lhn_updt_rule == 1 ) THEN  ! Humidity update of LHN goes to ice if qi>0 T<0
-#ifdef _OPENACC
-            CALL finish('mo_nh_interface_nwp:','lhn_updt_rule = 1  not available on GPU')
-#endif
 
             ! Update in the two-moment scheme
             DO jk = 1, nlev
@@ -972,11 +880,7 @@ CONTAINS
           !   call the saturation adjustment
           !-------------------------------------------------------------------------
 
-#ifdef _OPENACC
-          CALL satad_v_3D_gpu(                            &
-#else
           CALL satad_v_3D(                                &
-#endif
                & maxiter  = 10                             ,& !> IN
                & tol      = 1.e-3_wp                       ,& !> IN
                & te       = pt_diag%temp       (:,:,jb)    ,& !> INOUT
@@ -1002,43 +906,6 @@ CONTAINS
     ENDIF ! ldass_lhn
 
 
-#ifdef HAVE_RADARFWO
-    !-------------------------------------------------------------------------
-    !
-    !   Call to "set_artif_heatrate_dist()", the
-    !   automatic warm bubbles generator from EMVORADO to trigger
-    !   missing convective cells in the model based on radar observations
-    !   and simulated radar reflectivities.
-    !
-    !   At this stage, if the respective option is switched on in the EMVORADO namelist
-    !   (ldo_bubbles = .TRUE.), EMVORADO has already detected the locations of missing
-    !   cells and has allocated a list of accordingly needed bubble
-    !   locations, heating amplitudes and durations etc. in the derived type "autobubs_list(jg)"
-    !   for each radar-active domain.
-    !
-    !   The number of needed bubbles is stored in "autobubs_list(jg)%num_bubs".
-    !   This number will only be > 0 if ldo_bubbles = .TRUE. in EMVORADO
-    !   and if some missing convective cells were detected during the
-    !   last cell detection time interval, which is usually between 10
-    !   and 15 minutes.
-    !
-    !   In other words, if luse_radarfwo(jg)=.TRUE., the need for running
-    !   the bubble generator routine "set_artif_heatrate_dist()" for domain jg
-    !   is uniquely determined by the condition "autobubs_list(jg)%num_bubs > 0".
-    !
-    !   The warm bubbles themselves are Weisman&Klempp-type warm bubbles in
-    !   the boundary layer. Their temperature amplitude respectively heating rate
-    !   and their horizontal and vertical radii are given by namelist parameters
-    !   in the EMVORADO namelist.
-    !
-    !-------------------------------------------------------------------------
-
-    IF (luse_radarfwo(jg) .AND. autobubs_list(jg)%num_bubs > 0 .AND. .NOT. linit) THEN
-      ! .. update temperature and moisture for the effect of automatic warm bubbles:
-      CALL set_artif_heatrate_dist(jg, p_sim_time, autobubs_list(jg), dt_loc, pt_patch, p_metrics, &
-           &                       pt_prog_rcf, pt_diag)
-    END IF
-#endif
 
 
     IF (timers_level > 1) CALL timer_start(timer_fast_phys)
@@ -1126,9 +993,6 @@ CONTAINS
       ENDIF
 
       IF (iprog_aero >= 1 .AND. .NOT. linit) THEN
-#ifdef _OPENACC
-        CALL finish('mo_nh_interface_nwp:','prog_aerosol_2D not available on GPU')
-#endif
         CALL prog_aerosol_2D (i_startidx, i_endidx, jg, nproma, nlev, dt_loc, iprog_aero,                &
           &                   prm_diag%aerosol(:,:,jb),prm_diag%aercl_ss(:,jb),prm_diag%aercl_or(:,jb),  &
           &                   prm_diag%aercl_bc(:,jb),prm_diag%aercl_su(:,jb),prm_diag%aercl_du(:,jb),   &
@@ -1156,12 +1020,8 @@ CONTAINS
 !$OMP END PARALLEL
 
     IF (timers_level > 1) CALL timer_stop(timer_fast_phys)
-#ifndef __NO_ICON_LES__
     IF ( (lcall_phy_jg(itturb) .OR. linit) .AND. ( ANY((/icosmo,igme/)==atm_phy_nwp_config(jg)%inwp_turb) .OR. &
          (ANY((/ismag,iprog/)==atm_phy_nwp_config(jg)%inwp_turb) .AND. (les_config(jg)%isrfc_type==1)) ) ) THEN
-#else
-    IF ( (lcall_phy_jg(itturb) .OR. linit) .AND. ( ANY((/icosmo,igme/)==atm_phy_nwp_config(jg)%inwp_turb)) ) THEN
-#endif
 
       IF (timers_level > 1) CALL timer_start(timer_nwp_turbulence)
 
@@ -1274,9 +1134,6 @@ CONTAINS
 
     ENDIF
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_CONVECTION_BEFORE, jg, lacc=lzacc)
-#endif
 
     !-------------------------------------------------------------------------
     !> Convection
@@ -1307,9 +1164,6 @@ CONTAINS
 
     ENDIF! convection
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_CONVECTION_AFTER, jg, lacc=lzacc)
-#endif
 
     !-------------------------------------------------------------------------
     !> Cloud cover
@@ -1346,10 +1200,6 @@ CONTAINS
       !-------------------------------------------------------------------------
 
       !$ser verbatim IF (.not. linit) CALL serialize_all(nproma, jg, "cover", .TRUE., opt_dt=mtime_datetime)
-#ifndef __GFORTRAN__
-! FIXME: libgomp seems to run in deadlock here
-!$OMP PARALLEL DO PRIVATE(jb,jc,i_startidx,i_endidx,kc_inversion,kc_entr_zone,lfound_inversion) ICON_OMP_GUIDED_SCHEDULE
-#endif
       DO jb = i_startblk, i_endblk
         !
         CALL get_indices_c(pt_patch, jb, i_startblk, i_endblk, &
@@ -1420,33 +1270,7 @@ CONTAINS
 &              qc_sgs = prm_diag%qc_sgs      (:,:,jb) ,           & !! inout: sgs clw from RH scheme
 &              qi_tot = prm_diag%tot_cld     (:,:,jb,iqi)         ) !! out: ci       -"-
 
-#ifdef __ICON_ART
-        ! dusty cirrus parameterization for ICON-ART prognostic 3D mineral dust
-        IF (lart .AND. art_config(jg)%lart_dusty_cirrus) THEN
-          art_atmo => p_art_data(jg)%atmo
-          CALL art_cover_dusty &
-&               (kidia  = i_startidx ,   kfdia  = i_endidx  ,       & !! in:  horizonal begin, end indices
-&                klon = nproma,  kstart = kstart_moist(jg)  ,       & !! in:  horiz. and vert. vector length
-&                klev   = nlev                              ,       &
-&                deltaz = p_metrics%ddqz_z_full(:,:,jb)     ,       & !! in:  layer thickness
-&                tt     = pt_diag%temp         (:,:,jb)     ,       & !! in:  temperature at full levels
-&                rho    = pt_prog%rho          (:,:,jb)     ,       & !! in:  density
-&                qv     = pt_prog_rcf%tracer   (:,:,jb,iqv) ,       & !! in:  water vapor
-&                dusta  = pt_prog_rcf%tracer   (:,:,jb,art_atmo%idust_insol_acc) ,  & !! in:  dust_insol_acc (resp. dusta)
-&                dustb  = pt_prog_rcf%tracer   (:,:,jb,art_atmo%idust_insol_coa) ,  & !! in:  dust_insol_coa (resp. dustb) 
-&                dustc  = pt_prog_rcf%tracer   (:,:,jb,art_atmo%idust_giant) ,      & !! in:  dust_giant     (resp. dustc)
-&                dustyci_crit = art_config(jg)%rart_dustyci_crit ,  & !! in:  dust threshold for dusty cirrus
-&                dustyci_rhi  = art_config(jg)%rart_dustyci_rhi  ,  & !! in:  rhi  threshold for dusty cirrus
-&                lacc   = lzacc                             ,       & !! in
-&                cc_tot = prm_diag%clc         (:,:,jb)     ,       & !! out: cloud fraction
-&                qi_tot = prm_diag%tot_cld     (:,:,jb,iqi)         ) !! out: qi
-          NULLIFY(art_atmo)
-        ENDIF ! lart, lart_dusty_cirrus
-#endif
       ENDDO
-#ifndef __GFORTRAN__
-!$OMP END PARALLEL DO
-#endif
       !$ser verbatim IF (.not. linit) CALL serialize_all(nproma, jg, "cover", .FALSE., opt_dt=mtime_datetime)
 
       IF (timers_level > 2) CALL timer_stop(timer_cover_koe)
@@ -1487,9 +1311,6 @@ CONTAINS
     END IF
 
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_RADIATION_BEFORE, jg, lacc=lzacc)
-#endif
 
     !-------------------------------------------------------------------------
     !> Radiation
@@ -1520,12 +1341,6 @@ CONTAINS
 
     ENDIF
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_RADIATION_AFTER, jg, lacc=lzacc)
-#endif
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_RADHEAT_BEFORE, jg, lacc=lzacc)
-#endif
 
     IF ( lcall_phy_jg(itradheat) ) THEN
       !$ACC DATA CREATE(cosmu0_slope, shading_mask) IF(lzacc)
@@ -1592,15 +1407,6 @@ CONTAINS
 
         IF (atm_phy_nwp_config(jg)%inwp_surface >= 1 .OR. is_coupled_to_ocean()) THEN
 
-#ifdef __PGI_WORKAROUND
-          !$ACC DATA CREATE(gp_count_t) IF(lzacc)
-          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-          !$ACC LOOP VECTOR
-          DO isubs = 1, ntiles_total
-            gp_count_t(isubs) = ext_data%atm%gp_count_t(jb,isubs)
-          ENDDO
-          !$ACC END PARALLEL
-#endif
           !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
           !$ACC LOOP GANG VECTOR COLLAPSE(2)
           DO isubs = 1, ntiles_total+ntiles_water
@@ -1643,11 +1449,7 @@ CONTAINS
           & list_seaice_idx  = ext_data%atm%list_seaice%idx(:,jb), &! in index list of seaice points
           & list_lake_count  = ext_data%atm%list_lake%ncount(jb),  &! in number of (f)lake points
           & list_lake_idx    = ext_data%atm%list_lake%idx(:,jb),   &! in index list of (f)lake points
-#ifdef __PGI_WORKAROUND
-          & gp_count_t       = gp_count_t,                         &! in number of land points per tile
-#else
           & gp_count_t       = ext_data%atm%gp_count_t(jb,:),      &! in number of land points per tile
-#endif
           & idx_lst_t        = ext_data%atm%idx_lst_t(:,jb,:),     &! in index list of land points per tile
           & cosmu0=zcosmu0(:,jb)                   ,&! in     cosine of solar zenith angle (w.r.t. plain surface)
           & cosmu0_slp=cosmu0_slope(:,jb)          ,&! in     slope-dependent cosine of solar zenith angle
@@ -1694,10 +1496,6 @@ CONTAINS
           & swflx_clr_sfc=prm_diag%swflxclr_sfc(:,jb)  ,&   ! out clear-sky shortwave flux at the surface [W/m2]
           & swflx_dn_sfc_diff=prm_diag%swflx_dn_sfc_diff(:,jb), & ! out shortwave diffuse downward flux at the surface [W/m2]
           & lacc=lzacc                                          )
-#ifdef __PGI_WORKAROUND
-    !$ACC WAIT(1)
-    !$ACC END DATA ! CREATE(gp_count_t)
-#endif
 
         ELSE
           CALL radheat (                   &
@@ -1768,12 +1566,6 @@ CONTAINS
 
     ENDIF
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_RADHEAT_AFTER, jg, lacc=lzacc)
-#endif
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_GWDRAG_BEFORE, jg, lacc=lzacc)
-#endif
 
     !-------------------------------------------------------------------------
     !> Gravity waves drag: orographic and non-orographic
@@ -1802,9 +1594,6 @@ CONTAINS
       IF (timers_level > 3) CALL timer_stop(timer_sso)
     ENDIF ! inwp_sso
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_GWDRAG_AFTER, jg, lacc=lzacc)
-#endif
 
 
     !-------------------------------------------------------------------------
@@ -1814,9 +1603,6 @@ CONTAINS
     IF ( is_coupled_to_waves() .AND. (.NOT. linit) ) THEN
 
       IF (ltimer) CALL timer_start(timer_coupling)
-#ifdef _OPENACC
-      CALL finish('mo_nh_interface_nwp', 'nwp_couple_waves is not available on GPU')
-#endif
 
       CALL couple_atmo_to_wave(p_patch      = pt_patch,              & !in
         &                      list_sea     = ext_data%atm%list_sea, & !in
@@ -1840,13 +1626,6 @@ CONTAINS
 
     IF ( is_coupled_to_hydrodisc() .AND. (.NOT. linit) ) THEN
 
-#ifdef YAC_coupling
-      IF (ltimer) CALL timer_start(timer_coupling)
-
-      CALL nwp_couple_hydrodisc( pt_patch, lnd_diag, prm_diag, ext_data, lacc=lzacc )
-
-      IF (ltimer) CALL timer_stop(timer_coupling)
-#endif
 
     END IF
 
@@ -1859,9 +1638,6 @@ CONTAINS
       & .AND. atm_phy_nwp_config(jg)%inwp_turb /= ivdiff) THEN
 
       IF (ltimer) CALL timer_start(timer_coupling)
-#ifdef _OPENACC
-      CALL finish('mo_nh_interface_nwp', 'nwp_couple_ocean is not available on GPU')
-#endif
       CALL nwp_couple_ocean( pt_patch, pt_diag, lnd_diag, wtr_prog_new, prm_diag, ext_data )
 
       !------------------------------------------------
@@ -1876,7 +1652,6 @@ CONTAINS
     END IF
 
 
-#ifndef __NO_ICON_LES__
     !-------------------------------------------------------------------------
     ! Anurag Dipankar MPIM (2013-May-29)
     ! Large-scale forcing is to be applied at the end of all physics so that
@@ -1962,16 +1737,11 @@ CONTAINS
       IF (timers_level > 3) CALL timer_stop(timer_ls_forcing)
 
     ENDIF
-#endif
 
-#ifndef __NO_ICON_UPATMO__
     !-------------------------------------------------------------------------
     !  Upper-atmosphere physics: compute tendencies
     !-------------------------------------------------------------------------
     IF (l_any_upatmophys) THEN
-#ifdef _OPENACC
-      CALL finish('mo_nh_interface_nwp', 'nwp_upatmo_interface not available on GPU.')
-#endif
       IF (upatmo_config(jg)%l_status( iUpatmoStat%timer )) CALL timer_start(timer_upatmo)
       ! This interface has to be called after all other slow physics.
       CALL nwp_upatmo_interface( dt_loc            = dt_loc,            & !in
@@ -1988,17 +1758,12 @@ CONTAINS
       IF (upatmo_config(jg)%l_status( iUpatmoStat%timer )) CALL timer_stop(timer_upatmo)
 
     ENDIF
-#endif
 
     IF (timers_level > 2) CALL timer_start(timer_phys_acc)
     !-------------------------------------------------------------------------
     !>  accumulate tendencies of slow_physics: Not called when LS focing is ON
     !-------------------------------------------------------------------------
-#ifndef __NO_ICON_LES__
     IF( (l_any_slowphys .OR. lcall_phy_jg(itradheat)) .OR. is_ls_forcing) THEN
-#else
-    IF( l_any_slowphys .OR. lcall_phy_jg(itradheat) ) THEN
-#endif
       ! needs to be always initialized with OpenACC
       IF (p_test_run .OR. lzacc) THEN
         CALL init(z_ddt_u_tot, lacc=lzacc, opt_acc_async=.TRUE.)
@@ -2076,11 +1841,9 @@ CONTAINS
             ENDDO
           ENDDO
           !$ACC END PARALLEL
-#ifndef __NO_ICON_LES__
         ELSE IF (is_ls_forcing) THEN
           z_ddt_u_tot(i_startidx:i_endidx,:,jb) = 0._wp
           z_ddt_v_tot(i_startidx:i_endidx,:,jb) = 0._wp
-#endif
         ENDIF
 
 
@@ -2191,7 +1954,6 @@ CONTAINS
         !$ACC END PARALLEL
 
 
-#ifndef __NO_ICON_LES__
         !-------------------------------------------------------------------------
         !>  accumulate tendencies of slow_physics when LS forcing is ON
         !-------------------------------------------------------------------------
@@ -2271,7 +2033,6 @@ CONTAINS
           END DO  ! jk
 
         ENDIF ! END of LS forcing tendency accumulation
-#endif
 
       ENDDO  ! jb
 !$OMP END DO NOWAIT
@@ -2331,9 +2092,6 @@ CONTAINS
     ! sync here the slowphys for aggregation
     !-------------------------------------------------------------------
     IF (use_physics_barrier) THEN
-#ifdef _OPENACC
-      CALL finish('mo_nh_interface_nwp', 'work_mpi_barrier not available on GPU')
-#endif
       CALL timer_start(timer_barrier)
       CALL work_mpi_barrier()
       CALL timer_stop(timer_barrier)
@@ -2341,11 +2099,7 @@ CONTAINS
     !-------------------------------------------------------------------
     IF (timers_level > 10) CALL timer_start(timer_phys_sync_ddt_u)
 
-#ifndef __NO_ICON_LES__
     IF ( (is_ls_forcing .OR. l_any_slowphys) .AND. lcall_phy_jg(itturb) ) THEN
-#else
-    IF ( l_any_slowphys .AND. lcall_phy_jg(itturb) ) THEN
-#endif
       CALL sync_patch_array_mult(SYNC_C1, pt_patch, 4, z_ddt_u_tot, z_ddt_v_tot, &
                                  prm_nwp_tend%ddt_u_turb, prm_nwp_tend%ddt_v_turb)
 
@@ -2432,23 +2186,13 @@ CONTAINS
       CALL get_indices_e(pt_patch, jb, i_startblk, i_endblk, &
                          i_startidx, i_endidx, rl_start, rl_end)
 
-#ifndef __NO_ICON_LES__
       IF ( (is_ls_forcing .OR. l_any_slowphys) .AND. lcall_phy_jg(itturb) ) THEN
-#else
-      IF ( l_any_slowphys .AND. lcall_phy_jg(itturb) ) THEN
-#endif
 
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
         DO jce = i_startidx, i_endidx
 !DIR$ IVDEP
           DO jk = 1, nlev
-#else
-!CDIR UNROLL=5
-        DO jk = 1, nlev
-          DO jce = i_startidx, i_endidx
-#endif
 
             pt_diag%ddt_vn_phy(jce,jk,jb) =   pt_int_state%c_lin_e(jce,1,jb)           &
 &                                 * ( z_ddt_u_tot(iidx(jce,jb,1),jk,iblk(jce,jb,1))    &
@@ -2480,15 +2224,9 @@ CONTAINS
       ELSE IF (lcall_phy_jg(itturb) ) THEN
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
         DO jce = i_startidx, i_endidx
 !DIR$ IVDEP
           DO jk = 1, nlev
-#else
-!CDIR UNROLL=8
-        DO jk = 1, nlev
-          DO jce = i_startidx, i_endidx
-#endif
 
             pt_prog%vn(jce,jk,jb) = pt_prog%vn(jce,jk,jb) + dt_loc * (                 &
                                               pt_int_state%c_lin_e(jce,1,jb)           &
@@ -2514,14 +2252,10 @@ CONTAINS
 
     IF (timers_level > 10) CALL timer_stop(timer_phys_acc_2)
 
-#ifndef __NO_ICON_UPATMO__
     !-------------------------------------------------------------------------
     !  Upper-atmosphere physics: add tendencies
     !-------------------------------------------------------------------------
     IF (l_any_upatmophys) THEN
-#ifdef _OPENACC
-      CALL finish('mo_nh_interface_nwp', 'nwp_upatmo_update not available on GPU')
-#endif
 
       IF (upatmo_config(jg)%l_status( iUpatmoStat%timer )) CALL timer_start(timer_upatmo)
       ! This interface has to be called after all other tendencies have been accumulated.
@@ -2534,7 +2268,6 @@ CONTAINS
         &                     p_diag            = pt_diag                          ) !inout
       IF (upatmo_config(jg)%l_status( iUpatmoStat%timer )) CALL timer_stop(timer_upatmo)
     ENDIF
-#endif
 
     IF (timers_level > 10) CALL timer_start(timer_phys_dpsdt)
     !
@@ -2558,9 +2291,6 @@ CONTAINS
 
 
     IF (lcall_phy_jg(itturb) .AND. msg_level >= 18) THEN ! extended diagnostic for turbulence quantities
-#ifdef _OPENACC
-      CALL finish('mo_nh_interface_nwp', 'nwp_diag_output_2 not available on GPU.')
-#endif
       CALL nwp_diag_output_2(pt_patch, pt_prog_rcf, prm_nwp_tend)
     ENDIF
 
@@ -2586,20 +2316,6 @@ CONTAINS
                         & prm_diag, lnd_diag,            & !inout
                         & lacc=lzacc                      ) !in
 
-#ifdef __ICON_ART
-    IF (lart) THEN
-
-      ! Call the ART diagnostics
-      CALL art_diagnostics_interface(pt_prog%rho,            &
-        &                            pt_diag%pres,           &
-        &                            pt_prog_now_rcf%tracer, &
-        &                            p_metrics%ddqz_z_full,  &
-        &                            p_metrics%z_mc, jg,     &
-        &                            dt_phy_jg, p_sim_time,  &
-        &                            lacc=lzacc              )
-
-    ENDIF !lart
-#endif
 
     ! SBM microphysics
     ! store temperature snapshot at the end of a timestep

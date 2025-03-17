@@ -31,15 +31,22 @@
 ! Code has been modified for the use in ICON (and formerly in ECHAM)
 
 
-#if defined __xlC__ && !defined NOXLFPROCESS
-@PROCESS HOT
-@PROCESS NOSTRICT
-#endif
-#include "consistent_fma.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
 
-#ifdef __SX__
-#define LRTM_FULL_VECTORIZATION
-#endif
+! For runs that check result consistency we fix the different
+! contractions that the Intel compiler performs on some loops (at
+! least in version 16.0) for the vectorized part and the
+! non-vectorized parts
+
 
 MODULE mo_lrtm_rtrnmr
 
@@ -51,9 +58,7 @@ MODULE mo_lrtm_rtrnmr
 
   USE mo_lrtm_par,         ONLY : nbndlw, delwave, ngs
   USE mo_lrtm_setup,       ONLY : ntbl, bpade, exp_tbl, tfn_tbl
-#ifndef LRTM_FULL_VECTORIZE
   USE mo_lrtm_setup,       ONLY : tau_tbl
-#endif
 
   IMPLICIT NONE
 
@@ -268,7 +273,6 @@ CONTAINS
     !--------------------------------------------------------------------------
 
     REAL(wp) :: cldsrc, oldclr, oldcld, radmod
-#ifndef LRTM_FULL_VECTORIZATION
     REAL(wp) :: odepth_rec, odtot_rec, tblind, tfactot, tfacgas, bbdtot, &
       transc, tausfac
     DIMENSION :: gassrc(kproma), cldsrc(kproma), bbdtot(kproma), &
@@ -276,16 +280,12 @@ CONTAINS
       radmod(kproma)
     INTEGER :: itr, icld1, npoints1, npoints2, npoints3, &
       ilist1(kproma), ilist2(kproma), ilist3(kproma)
-#else
-    REAL(wp) :: odepth_rec_or_tfacgas, odtot_rec_or_tfactot, &
-      clrradd_temp, cldradd_temp
-#endif
     REAL(wp), DIMENSION(kproma) :: clrradd, cldradd, clrradu, cldradu, &
       & rad
 
-#ifdef LRTM_FULL_VECTORIZATION
-    LOGICAL :: branch_od1, branch_od2
-#endif
+
+
+
 
     ! ------- Definitions -------
     ! input
@@ -352,21 +352,6 @@ CONTAINS
     INTEGER :: icld_ind(kproma,nlayers)
     INTEGER :: icld, iclear, n_cloudpoints(nlayers)
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN : 64 :: atot,atrans,bbugas,bbutot,clrurad,clrdrad,urad
-!DIR$ ATTRIBUTES ALIGN : 64 :: drad,secdiff,dplankup,dplankdn,a0,a1,a2
-!DIR$ ATTRIBUTES ALIGN : 64 :: radld,radclrd,bbd,radlu,radclru,d_urad_dt
-!DIR$ ATTRIBUTES ALIGN : 64 :: d_clrurad_dt,d_radlu_dt,d_radclru_dt
-!DIR$ ATTRIBUTES ALIGN : 64 :: lcldlyr,iclddn,ipat,ibv
-!DIR$ ATTRIBUTES ALIGN : 64 :: faccld1,faccld2,facclr1,facclr2,faccmb1,faccmb2
-!DIR$ ATTRIBUTES ALIGN : 64 :: faccld1d,faccld2d,facclr1d,facclr2d,faccmb1d,faccmb2d
-!DIR$ ATTRIBUTES ALIGN : 64 :: clrradd,cldradd,clrradu,cldradu,rad
-!DIR$ ATTRIBUTES ALIGN : 64 :: icld_ind,n_cloudpoints
-#ifndef LRTM_FULL_VECTORIZATION
-!DIR$ ATTRIBUTES ALIGN : 64 :: gassrc,cldsrc,bbdtot,oldcld,oldclr,odepth,odtot,radmod
-!DIR$ ATTRIBUTES ALIGN : 64 :: ilist1,ilist2,ilist3
-#endif
-#endif
 
     ! Reset diffusivity angle for Bands 2-3 and 5-9 to vary (between 1.50
     ! and 1.80) as a function of total column water vapor.  The function
@@ -474,109 +459,9 @@ CONTAINS
       radld(:) = 0._wp
       radclrd(:) = 0._wp
       iclddn(:) = .FALSE.
-#ifdef LRTM_FULL_VECTORIZATION
-      clrradd = 0._wp
-      cldradd = 0._wp
-#endif
 
       ! Downward radiative transfer loop.
       DO lev = nlayers, 1, -1
-#ifdef LRTM_FULL_VECTORIZATION
-        IF (n_cloudpoints(lev) /= 0) THEN
-!DIR$ SIMD
-          DO jl = 1, kproma ! Thus, direct addressing can be used
-            ib = ibv(jl)
-            plfrac = fracs(jl,lev,igc)
-            odepth = secdiff(jl,iband) * taut(jl,lev,igc)
-            odepth = (ABS(odepth) + odepth) * 0.5_wp
-            branch_od2 = odepth .LE. 0.06_wp
-
-            iclddn(jl) = iclddn(jl) .OR. lcldlyr(jl,lev)
-            odtot = odepth + secdiff(jl,ib) * taucloud(jl,lev,ib)
-            branch_od1 = odtot .LT. 0.06_wp
-            itgas = INT(tblint * odepth/(bpade+odepth) + 0.5_wp)
-            atrans(jl,lev) = MERGE(odepth - 0.5_wp*odepth*odepth, &
-              &           1._wp - exp_tbl(itgas), &
-              &           (lcldlyr(jl,lev) .AND. branch_od1) .OR. branch_od2)
-            ittot = INT(tblint * odtot/(bpade+odtot) + 0.5_wp)
-            atot(jl,lev) = MERGE(odtot - 0.5_wp*odtot*odtot, &
-              &                  1._wp - exp_tbl(ittot), branch_od1)
-
-            odepth_rec_or_tfacgas = MERGE(rec_6 * odepth, tfn_tbl(itgas), &
-              &             (lcldlyr(jl,lev) .AND. branch_od1) .OR. branch_od2)
-            bbd(jl)        = plfrac * (planklay(jl,lev,iband) &
-              + odepth_rec_or_tfacgas * dplankdn(jl,lev))
-            bbugas(jl,lev) = plfrac * (planklay(jl,lev,iband) &
-              + odepth_rec_or_tfacgas * dplankup(jl,lev))
-            odtot_rec_or_tfactot = MERGE(rec_6*odtot, tfn_tbl(ittot), branch_od1)
-            bbutot(jl,lev) = plfrac * (planklay(jl,lev,iband) &
-              + odtot_rec_or_tfactot * dplankup(jl,lev)) * atot(jl,lev)
-            gassrc         = bbd(jl) * atrans(jl,lev)
-            cldsrc = plfrac * (planklay(jl,lev,iband) &
-              + odtot_rec_or_tfactot * dplankdn(jl,lev)) * atot(jl,lev)
-            ttot = 1._wp - atot(jl,lev)
-            clrradd_temp = MERGE(clrradd(jl), &
-              & radld(jl) - cldfrac(jl,lev) * radld(jl), lcldlyr(jl,lev+1)) &
-              & * (1._wp-atrans(jl,lev)) + (1._wp-cldfrac(jl,lev))*gassrc
-            cldradd_temp = MERGE(cldradd(jl), cldfrac(jl,lev) * radld(jl), &
-              lcldlyr(jl,lev+1)) * ttot + cldfrac(jl,lev) * cldsrc
-            radmod = MERGE(rad(jl), 0._wp, lcldlyr(jl,lev+1)) * &
-              & (facclr1d(jl,lev-1) * (1._wp-atrans(jl,lev)) + &
-              & faccld1d(jl,lev-1) * ttot) - &
-              & faccmb1d(jl,lev-1) * gassrc + &
-              & faccmb2d(jl,lev-1) * cldsrc
-            rad(jl) = MERGE(-radmod &
-              + facclr2d(jl,lev-1) * (clrradd_temp + radmod) &
-              - faccld2d(jl,lev-1) * (cldradd_temp - radmod), rad(jl), &
-              lcldlyr(jl,lev))
-            cldradd(jl) = MERGE(cldradd_temp + rad(jl), cldradd(jl), &
-              lcldlyr(jl,lev))
-            clrradd(jl) = MERGE(clrradd_temp - rad(jl), clrradd(jl), &
-              lcldlyr(jl,lev))
-            radld(jl) = MERGE(cldradd_temp + clrradd_temp, &
-              radld(jl) + (bbd(jl)-radld(jl))*atrans(jl,lev), lcldlyr(jl,lev))
-          ENDDO
-
-        ELSE ! n_cloudpoints(lev) == 0 implies all points are clear
-
-!DIR$ SIMD
-          DO jl = 1, kproma ! Thus, direct addressing can be used
-
-            plfrac = fracs(jl,lev,igc)
-            odepth = MAX(0.0_wp, secdiff(jl,iband) * taut(jl,lev,igc))
-
-            branch_od2 = odepth .LE. 0.06_wp
-
-            ! only needed for NAG
-            atot(jl, lev) = 0.0_wp
-            bbutot(jl, lev) = 0.0_wp
-
-            odepth_rec_or_tfacgas = MERGE(rec_6*odepth, &
-              tfn_tbl(INT(tblint*odepth/(bpade+odepth)+0.5_wp)), &
-              branch_od2)
-            atrans(jl,lev) = MERGE(odepth-0.5_wp*odepth*odepth, &
-              1._wp - exp_tbl(INT(tblint*odepth/(bpade+odepth) + 0.5_wp)), &
-              branch_od2)
-            bbd(jl) = plfrac * (planklay(jl,lev,iband) &
-              + odepth_rec_or_tfacgas * dplankdn(jl,lev))
-            bbugas(jl,lev) = plfrac * (planklay(jl,lev,iband) &
-              + odepth_rec_or_tfacgas * dplankup(jl,lev))
-            radld(jl) = radld(jl) + (bbd(jl)-radld(jl))*atrans(jl,lev)
-          ENDDO
-
-        ENDIF
-
-        !  Set clear sky stream to total sky stream as long as layers
-        !  remain clear.  Streams diverge when a cloud is reached (iclddn=1),
-        !  and clear sky stream must be computed separately from that point.
-        DO jl = 1, kproma
-          drad(jl,lev-1) = drad(jl,lev-1) + radld(jl)
-          radclrd(jl) = MERGE(radclrd(jl) &
-            + (bbd(jl)-radclrd(jl)) * atrans(jl,lev), radld(jl), iclddn(jl))
-          clrdrad(jl,lev-1) = MERGE(clrdrad(jl,lev-1) + radclrd(jl), &
-            drad(jl,lev-1), iclddn(jl))
-        ENDDO
-#else
         IF (n_cloudpoints(lev) == kproma) THEN ! all points are cloudy
 
           DO jl = 1, kproma ! Thus, direct addressing can be used
@@ -862,7 +747,6 @@ CONTAINS
             clrdrad(jl,lev-1) = drad(jl,lev-1)
           ENDIF
         ENDDO
-#endif
       ENDDO
 
       DO jl = 1, kproma
@@ -898,40 +782,6 @@ CONTAINS
       ENDIF
 
       DO lev = 1, nlayers
-#ifdef LRTM_FULL_VECTORIZATION
-
-!DIR$ SIMD
-          DO jl = 1, kproma
-            gassrc = bbugas(jl,lev) * atrans(jl,lev)
-            IF (.NOT. lcldlyr(jl,lev-1)) THEN
-              cldradu(jl) = cldfrac(jl,lev) * radlu(jl)
-              clrradu(jl) = radlu(jl) - cldradu(jl)
-              rad(jl) = 0._wp
-            ENDIF
-            ttot = 1._wp - atot(jl,lev)
-            cldsrc = bbutot(jl,lev)
-            cldradu(jl) = cldradu(jl) * ttot + cldfrac(jl,lev) * cldsrc
-            clrradu(jl) = clrradu(jl) * (1.0_wp-atrans(jl,lev))+(1._wp-cldfrac(jl,lev))*gassrc
-            ! Total sky radiance
-            ! Clear layer if lcldlyr(jl,lev) == .true.
-            radlu(jl) = MERGE(cldradu(jl) + clrradu(jl), &
-                 radlu(jl) + (bbugas(jl,lev)-radlu(jl))*atrans(jl,lev), &
-                 lcldlyr(jl,lev))
-
-            urad(jl,lev) = urad(jl,lev) + radlu(jl)
-            radmod = rad(jl) * &
-              & (facclr1(jl,lev+1)*(1.0_wp-atrans(jl,lev))+ &
-              & faccld1(jl,lev+1) *  ttot) - &
-              & faccmb1(jl,lev+1) * gassrc + &
-              & faccmb2(jl,lev+1) * cldsrc
-            oldcld = cldradu(jl) - radmod
-            oldclr = clrradu(jl) + radmod
-            rad(jl) = -radmod + facclr2(jl,lev+1)*oldclr - faccld2(jl,lev+1)*oldcld
-            cldradu(jl) = cldradu(jl) + rad(jl)
-            clrradu(jl) = clrradu(jl) - rad(jl)
-          ENDDO
-
-#else
         IF (n_cloudpoints(lev) == kproma) THEN ! all points are cloudy
 
           DO jl = 1, kproma ! Thus, direct addressing can be used
@@ -1044,7 +894,6 @@ CONTAINS
 
         ENDIF
 
-#endif
         !  Set clear sky stream to total sky stream as long as all layers
         !  are clear (iclddn=true).  Streams must be calculated separately at
         !  all layers when a cloud is present (iclddn=false), because surface
@@ -1117,7 +966,7 @@ CONTAINS
     ENDDO
 
     ! Calculate fluxes at surface (lev==0) and model levels
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
     DO lev = 0, nlayers
 !DIR$ SIMD
       DO jl = 1, kproma  ! loop over columns

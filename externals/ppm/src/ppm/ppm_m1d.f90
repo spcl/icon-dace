@@ -37,18 +37,18 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_m1d
   USE ppm_std_type_kinds, ONLY: dp
   USE ppm_base, ONLY: assertion
-#ifdef PPM_HAS_XY_BOUNDS
-  USE partition_descriptors
-#endif
+
+
+
 
   IMPLICIT NONE
   PRIVATE
 
-#ifndef PPM_HAS_XY_BOUNDS
+
   TYPE :: xy_bounds_t
     ! rectangular region bounds
     ! end < start : zero size
@@ -58,7 +58,7 @@ MODULE ppm_m1d
     INTEGER :: ye=0 ! yend
   END TYPE xy_bounds_t
   TYPE(xy_bounds_t), PARAMETER:: zero_xy_bounds=xy_bounds_t(1, 0, 1, 0)
-#endif
+
 
   CHARACTER(len=*),PARAMETER:: mcontext='ppm_m1d'
 

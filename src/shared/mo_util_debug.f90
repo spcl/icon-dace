@@ -68,7 +68,7 @@ CONTAINS
 
     IF (.NOT. ldebug_enable) RETURN
 
-#ifndef DISABLE_DUMP
+
     WRITE (*,*) "Dumping ", zfilename   
     ! create NetCDF file:
     CALL nf(nf90_create("00_"//TRIM(zfilename)//"_"//TRIM(int2string(debug_step))//".nc", &
@@ -89,7 +89,7 @@ CONTAINS
       &     routine)
     ! close file
     CALL nf(nf90_close(ncfile), routine)
-#endif
+
 
   END SUBROUTINE dump_array_to_netcdf_1d
 
@@ -112,7 +112,7 @@ CONTAINS
 
     IF (.NOT. ldebug_enable) RETURN
 
-#ifndef DISABLE_DUMP
+
     WRITE (*,*) "Dumping ", zfilename
     ! create NetCDF file:
     CALL nf(nf90_create("00_"//TRIM(zfilename)//"_"//TRIM(int2string(debug_step))//".nc", &
@@ -134,7 +134,7 @@ CONTAINS
       &     routine)
     ! close file
     CALL nf(nf90_close(ncfile), routine)
-#endif
+
 
   END SUBROUTINE dump_array_to_netcdf_2d
 
@@ -157,7 +157,7 @@ CONTAINS
 
     IF (.NOT. ldebug_enable) RETURN
 
-#ifndef DISABLE_DUMP
+
     WRITE (*,*) "Dumping ", zfilename   
     ! create NetCDF file:
     CALL nf(nf90_create("00_"//TRIM(zfilename)//"_"//TRIM(int2string(debug_step))//".nc", &
@@ -179,7 +179,7 @@ CONTAINS
       &     routine)
     ! close file
     CALL nf(nf90_close(ncfile), routine)
-#endif
+
 
   END SUBROUTINE dump_array_to_netcdf_3d
 

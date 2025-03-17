@@ -9,7 +9,17 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 
 MODULE mo_variable
 
@@ -18,12 +28,6 @@ MODULE mo_variable
   USE mo_fortran_tools, ONLY: init
   USE mo_math_types, ONLY : t_geographical_coordinates
 
-#ifdef _OPENACC
-  use openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)
-#else
-#define __acc_attach(ptr)
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -212,7 +216,7 @@ CONTAINS
       tv%i0d_alloc(1) = v
       !$ACC ENTER DATA COPYIN(tv%i0d_alloc)
       tv%i0d => tv%i0d_alloc(1)
-      __acc_attach(tv%i0d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 0 ) THEN
@@ -227,7 +231,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%i1d => v
-      __acc_attach(tv%i1d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 1 ) THEN
@@ -249,7 +253,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%i2d => v
-      __acc_attach(tv%i2d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 2 ) THEN
@@ -271,7 +275,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%i3d => v
-      __acc_attach(tv%i3d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 3 ) THEN
@@ -293,7 +297,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%i4d => v
-      __acc_attach(tv%i4d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 4 ) THEN
@@ -315,7 +319,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%i5d => v
-      __acc_attach(tv%i5d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 5 ) THEN
@@ -341,7 +345,7 @@ CONTAINS
       tv%r0d_alloc(1) = v
       !$ACC ENTER DATA COPYIN(tv%r0d_alloc)
       tv%r0d => tv%r0d_alloc(1)
-      __acc_attach(tv%r0d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 0 ) THEN
@@ -356,7 +360,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%r1d => v
-      __acc_attach(tv%r1d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 1 ) THEN
@@ -378,7 +382,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%r2d => v
-      __acc_attach(tv%r2d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 2 ) THEN
@@ -400,7 +404,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%r3d => v
-      __acc_attach(tv%r3d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 3 ) THEN
@@ -422,7 +426,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%r4d => v
-      __acc_attach(tv%r4d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 4 ) THEN
@@ -444,7 +448,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%r5d => v
-      __acc_attach(tv%r5d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 5 ) THEN
@@ -466,7 +470,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%s2d => v
-      __acc_attach(tv%s2d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 2 ) THEN
@@ -488,7 +492,7 @@ CONTAINS
       PRINT *, "ERROR: ", TRIM(tv%name), " is already associated"
     ELSE
       tv%s3d => v
-      __acc_attach(tv%s3d)
+      
       tv%bound = .true.
     ENDIF
     IF ( tv%dim /= 3 ) THEN
@@ -546,17 +550,17 @@ CONTAINS
       IF (tv%type_id == "bool") THEN 
         ALLOCATE(tv%l0d_alloc(1)) ; tv%l0d => tv%l0d_alloc(1) ; tv%l0d = .FALSE.
         !$ACC ENTER DATA CREATE(tv%l0d_alloc)
-        __acc_attach(tv%l0d)
+        
       ENDIF
       IF (tv%type_id == "int") THEN
         ALLOCATE(tv%i0d_alloc(1)) ; tv%i0d => tv%i0d_alloc(1) ; tv%i0d = 0
         !$ACC ENTER DATA CREATE(tv%i0d_alloc)
-        __acc_attach(tv%i0d)
+        
       ENDIF
       IF (tv%type_id == "real") THEN 
         ALLOCATE(tv%r0d_alloc(1)) ; tv%r0d => tv%r0d_alloc(1) ; tv%r0d = 0._wp
         !$ACC ENTER DATA COPYIN(tv%r0d_alloc)
-        __acc_attach(tv%r0d)
+        
       ENDIF
     CASE (1)
       IF (tv%type_id == "int") THEN

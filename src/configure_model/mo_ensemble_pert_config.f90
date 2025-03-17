@@ -29,9 +29,9 @@ MODULE mo_ensemble_pert_config
     &                        tune_box_liq_asy, tune_thicklayfac, tune_gkdrag_enh
   USE mo_turbdiff_config,    ONLY: turbdiff_config
   USE mo_gribout_config,     ONLY: gribout_config
-#ifdef __ICON_ART
-  USE mo_art_config,         ONLY: art_config
-#endif
+
+
+
   USE mo_atm_phy_nwp_config, ONLY: atm_phy_nwp_config  ! Also to prepare perturbations of 2mom parameters;
                                                        ! these are in container atm_phy_nwp_config(jg) % cfg_2mom
   USE mo_assimilation_config,ONLY: assimilation_config
@@ -52,10 +52,10 @@ MODULE mo_ensemble_pert_config
   USE mtime,                 ONLY: datetime, getDayOfYearFromDateTime
   USE mo_mpi,                ONLY: p_io, p_comm_work, p_bcast
   USE mo_run_config,         ONLY: lart, ldass_lhn
-#ifdef _OPENACC
-  USE ISO_C_BINDING,         ONLY: C_SIZEOF
-  USE openacc,               ONLY: acc_is_present
-#endif
+
+
+
+
   IMPLICIT NONE
   PRIVATE
 
@@ -245,10 +245,10 @@ MODULE mo_ensemble_pert_config
                                     q_crit_sv, alpha0_sv, alpha0_max_sv, lhn_coef_sv, lhn_artif_fac_sv, fac_lhn_down_sv,    &
                                     fac_lhn_up_sv, gkdrag_enh_sv
 
-#ifdef __ICON_ART
-  ! Dusty Cirrus
-  REAL(wp), DIMENSION(1:max_dom) :: dustyci_crit_sv, dustyci_rhi_sv
-#endif
+
+
+
+
 
 
   CONTAINS
@@ -382,12 +382,12 @@ MODULE mo_ensemble_pert_config
       !$ACC ENTER DATA COPYIN(rnd_tkred_sfc, rnd_fac_ccqc, rnd_entrorg_mult, rnd_rmfdeps)
 
       ! Ensure that perturbations on VH and VE cores are the same
-#if defined (__SX__) || defined (__NEC_VH__)
-      CALL p_bcast(rnd_tkred_sfc, p_io, p_comm_work)
-      CALL p_bcast(rnd_fac_ccqc, p_io, p_comm_work)
-      CALL p_bcast(rnd_entrorg_mult, p_io, p_comm_work)
-      CALL p_bcast(rnd_rmfdeps, p_io, p_comm_work)
-#endif
+
+
+
+
+
+
 
       DEALLOCATE(rnd_seed)
 
@@ -476,13 +476,13 @@ MODULE mo_ensemble_pert_config
     fac_lhn_down_sv(1:max_dom)  = assimilation_config(1:max_dom)%fac_lhn_down
     fac_lhn_up_sv(1:max_dom)    = assimilation_config(1:max_dom)%fac_lhn_up
 
-#ifdef __ICON_ART
-    ! Dusty Cirrus
-    IF (lart .AND. art_config(1)%lart_dusty_cirrus) THEN
-      dustyci_crit_sv(1:max_dom) = art_config(1:max_dom)%rart_dustyci_crit
-      dustyci_rhi_sv(1:max_dom)  = art_config(1:max_dom)%rart_dustyci_rhi
-    ENDIF ! lart, lart_dusty_cirrus
-#endif
+
+
+
+
+
+
+
 
   END SUBROUTINE save_unperturbed_params
 
@@ -496,9 +496,9 @@ MODULE mo_ensemble_pert_config
 
     REAL(wp) :: rnd_fac, rnd_num, tkfac, zvz0i
     INTEGER :: jg
-#ifdef _OPENACC
-    INTEGER :: nbytes
-#endif
+
+
+
 
     ! SSO tuning
     CALL random_gen(rnd_gkwake, rnd_num)
@@ -643,116 +643,8 @@ MODULE mo_ensemble_pert_config
     rnd_fac = range_cwimax_ml**(2._wp*(rnd_num-0.5_wp))
     cwimax_ml = cwimax_ml_sv * rnd_fac
 
-#ifdef __ICON_ART
-    ! Dusty Cirrus
-    IF (lart .AND. art_config(1)%lart_dusty_cirrus) THEN
-      CALL random_gen(rnd_dustyci_crit, rnd_num)
-      art_config(1:max_dom)%rart_dustyci_crit = dustyci_crit_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_dustyci_crit
-      CALL random_gen(rnd_dustyci_rhi, rnd_num)
-      art_config(1:max_dom)%rart_dustyci_rhi  = dustyci_rhi_sv(1:max_dom)  + 2._wp*(rnd_num-0.5_wp)*range_dustyci_rhi
-    ENDIF ! lart, lart_dusty_cirrus
-#endif
 
 
-#ifdef _OPENACC
-    IF(acc_is_present(tune_gkdrag)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_gkdrag` is supposed to be on CPU only.")
-    IF(acc_is_present(tune_gkwake)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_gkwake` is supposed to be on CPU only.")
-    IF(acc_is_present(tune_gfrcrit)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_gfrcrit` is supposed to be on CPU only.")
-    IF(acc_is_present(tune_gfluxlaun, 1)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_gfluxlaun` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_zvz0i)
-    IF(acc_is_present(tune_zvz0i, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_zvz0i` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_rprcon)
-    IF(acc_is_present(tune_rprcon, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_rprcon` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_entrorg)
-    IF(acc_is_present(tune_entrorg, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_entrorg` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_capdcfac_et)
-    IF(acc_is_present(tune_capdcfac_et, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_capdcfac_et` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_rdepths)
-    IF(acc_is_present(tune_rdepths, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_rdepths` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_capdcfac_tr)
-    IF(acc_is_present(tune_capdcfac_tr, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_capdcfac_tr` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_lowcapefac)
-    IF(acc_is_present(tune_lowcapefac, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_lowcapefac` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(limit_negpblcape)
-    IF(acc_is_present(limit_negpblcape, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `limit_negpblcape` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_rhebc_land)
-    IF(acc_is_present(tune_rhebc_land, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_rhebc_land` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_rhebc_ocean)
-    IF(acc_is_present(tune_rhebc_ocean, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_rhebc_ocean` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_rhebc_land_trop)
-    IF(acc_is_present(tune_rhebc_land_trop, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_rhebc_land_trop` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_rhebc_ocean_trop)
-    IF(acc_is_present(tune_rhebc_ocean_trop, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_rhebc_ocean_trop` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_rcucov)
-    IF(acc_is_present(tune_rcucov, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_rcucov` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_rcucov_trop)
-    IF(acc_is_present(tune_rcucov_trop, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_rcucov_trop` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_texc)
-    IF(acc_is_present(tune_texc, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_texc` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_qexc)
-    IF(acc_is_present(tune_qexc, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_qexc` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_box_liq)
-    IF(acc_is_present(tune_box_liq, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_box_liq` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_thicklayfac)
-    IF(acc_is_present(tune_thicklayfac, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_thicklayfac` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_box_liq_asy)
-    IF(acc_is_present(tune_box_liq_asy, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_box_liq_asy` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(tune_minsnowfrac)
-    IF(acc_is_present(tune_minsnowfrac, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `tune_minsnowfrac` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(c_soil)
-    IF(acc_is_present(c_soil, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `c_soil` is supposed to be on CPU only.")
-    nbytes = C_SIZEOF(cwimax_ml)
-    IF(acc_is_present(cwimax_ml, nbytes)) CALL finish("set_scalar_ens_pert", & 
-        "Internal error. `cwimax_ml` is supposed to be on CPU only.")
-
-    DO jg = 1, n_dom
-      ! atm_phy_nwp_config is copied onto the device in an early phase so that it is present while this
-      ! routine is still called with lacc=.FALSE.. Thus IF_PRESENT is used in the following UPDATE.
-      !$ACC UPDATE DEVICE(atm_phy_nwp_config(jg)%rain_n0_factor) ASYNC(1) IF_PRESENT
-
-      !$ACC UPDATE IF(lacc) &
-      !$ACC   DEVICE(turbdiff_config(jg)%tkhmin) &
-      !$ACC   DEVICE(turbdiff_config(jg)%tkhmin_strat) &
-      !$ACC   DEVICE(turbdiff_config(jg)%tkmmin) &
-      !$ACC   DEVICE(turbdiff_config(jg)%tkmmin_strat) &
-      !$ACC   DEVICE(turbdiff_config(jg)%rlam_heat) &
-      !$ACC   DEVICE(turbdiff_config(jg)%rat_sea) &
-      !$ACC   DEVICE(turbdiff_config(jg)%tur_len) &
-      !$ACC   DEVICE(turbdiff_config(jg)%a_hshr) &
-      !$ACC   DEVICE(turbdiff_config(jg)%a_stab) &
-      !$ACC   DEVICE(turbdiff_config(jg)%c_diff) &
-      !$ACC   DEVICE(turbdiff_config(jg)%q_crit) &
-      !$ACC   DEVICE(turbdiff_config(jg)%alpha0) &
-      !$ACC   DEVICE(turbdiff_config(jg)%alpha0_max) &
-      !$ACC   DEVICE(turbdiff_config(jg)%alpha0_pert) &
-      !$ACC   ASYNC(1)
-    ENDDO
-#endif
 
     IF (lprint) THEN
 
@@ -783,13 +675,6 @@ MODULE mo_ensemble_pert_config
       WRITE(message_text,'(2f8.4,e11.4)') tune_minsnowfrac, c_soil, cwimax_ml
       CALL message('Perturbed values, minsnowfrac, c_soil, cwimax_ml', TRIM(message_text))
 
-#ifdef __ICON_ART
-      ! Dusty Cirrus
-      IF (lart .AND. art_config(1)%lart_dusty_cirrus) THEN
-        WRITE(message_text,'(2f8.4)') art_config(1)%rart_dustyci_crit, art_config(1)%rart_dustyci_rhi
-        CALL message('Perturbed values, dustyci_crit, dustyci_rhi', TRIM(message_text))
-      ENDIF ! lart, lart_dusty_cirrus
-#endif
 
     ENDIF
 
@@ -805,9 +690,6 @@ MODULE mo_ensemble_pert_config
 
     REAL(wp) :: rnd_num
     INTEGER :: jg, i
-#ifdef _OPENACC
-    INTEGER :: nbytes
-#endif
 
     ! For identity with previous implementation
     IF (linit) THEN
@@ -828,16 +710,6 @@ MODULE mo_ensemble_pert_config
     CALL random_gen(rnd_fac_lhn_up, rnd_num, .TRUE.)
     assimilation_config(1:max_dom)%fac_lhn_up = MAX(1._wp, fac_lhn_up_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_fac_lhn_up)
 
-#ifdef _OPENACC
-    DO jg = 1, n_dom
-      !$ACC UPDATE IF(ldass_lhn .AND. lacc) &
-      !$ACC   DEVICE(assimilation_config(jg)%lhn_coef) &
-      !$ACC   DEVICE(assimilation_config(jg)%fac_lhn_artif_tune) &
-      !$ACC   DEVICE(assimilation_config(jg)%fac_lhn_down) &
-      !$ACC   DEVICE(assimilation_config(jg)%fac_lhn_up) &
-      !$ACC   ASYNC(1)
-    ENDDO
-#endif
 
     IF (lprint) THEN
 
@@ -1006,9 +878,6 @@ MODULE mo_ensemble_pert_config
       CALL RANDOM_NUMBER(rnd_aux)
 
       ! Ensure that perturbations on VH and VE cores are the same
-#if defined (__SX__) || defined (__NEC_VH__)
-      CALL p_bcast(rnd_aux, p_io, p_comm_work)
-#endif
       IF (itype_pert_gen == 1 .OR. force_type1) THEN
         rnd_val = rnd_aux
       ELSE IF (itype_pert_gen == 2) THEN

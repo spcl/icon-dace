@@ -28,7 +28,7 @@ MODULE comin_metadata_types
   PUBLIC :: comin_keyval_iterator_next_c
   PUBLIC :: comin_keyval_iterator_delete_c
 
-#include "comin_global.inc"
+
 
   TYPE t_comin_var_metadata_iterator
     TYPE(c_ptr) :: comin_metadata_iterator_current_c = c_null_ptr

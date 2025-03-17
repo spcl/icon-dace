@@ -19,11 +19,11 @@ MODULE mo_util_texthash
 
   PUBLIC :: text_hash, text_hash_c, text_isEqual, sel_char
 
-#if defined(__PGI) || defined(__FLANG)
-  TYPE, PUBLIC :: t_char_workaround
-    CHARACTER(:), ALLOCATABLE :: c
-  END TYPE t_char_workaround
-#endif
+
+
+
+
+
 
   CHARACTER(*), PARAMETER :: modname = "mo_util_texthash"
 
@@ -35,10 +35,10 @@ CONTAINS
     CHARACTER(:), POINTER :: ptr
 
     SELECT TYPE (key)
-#if defined(__PGI) || defined(__FLANG)
-    TYPE IS (t_char_workaround)
-      ptr => key%c
-#endif
+
+
+
+
     TYPE IS (CHARACTER(*))
       ptr => key
     CLASS DEFAULT

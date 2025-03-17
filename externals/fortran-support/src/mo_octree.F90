@@ -17,9 +17,9 @@ MODULE mo_octree
   USE, INTRINSIC :: ISO_FORTRAN_ENV, ONLY: wp => real64
   USE mo_exception, ONLY: finish
   USE mo_util_sort, ONLY: quicksort
-#ifdef __SX__
-  USE mo_util_sort, ONLY: radixsort
-#endif
+
+
+
   IMPLICIT NONE
 
   ! subroutines and functions
@@ -112,11 +112,11 @@ CONTAINS
     END IF
     octree%obj_min(1:nobjects, :) = pmin(1:nobjects, :)
     octree%obj_max(1:nobjects, :) = pmax(1:nobjects, :)
-#ifdef __SX__
-    CALL radixsort(box, perm=octree%object_idx)
-#else
+
+
+
     CALL quicksort(box, permutation=octree%object_idx)
-#endif
+
     ! count no. of occupied boxes
     nboxes = 1
     DO i = 2, nobjects

@@ -12,7 +12,17 @@
 ! Initialize the physical schemes at start time
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nwp_phy_init
@@ -59,20 +69,11 @@ MODULE mo_nwp_phy_init
   USE mo_aerosol_util,        ONLY: init_aerosol_props_tegen_rrtm,                  &
     &                               zaea_rrtm, zaes_rrtm, zaeg_rrtm
   USE mo_o3_util,             ONLY: o3_pl2ml!, o3_zl2ml
-#ifdef __ECRAD
-  USE mo_nwp_ecrad_init,      ONLY: setup_ecrad
-  USE mo_ecrad,               ONLY: ecrad_conf, IGasModelIFSRRTMG,                  &
-    &                               ecrad_ssi_default, ecrad_ssi_coddington
-  USE mo_aerosol_util,        ONLY: init_aerosol_props_tegen_ecrad
-#endif
 
   USE mo_2mom_mcrph_driver,   ONLY: two_moment_mcrph_init
   USE microphysics_1mom_schemes, ONLY: microphysics_1mom_init
   USE mo_sbm_util,            ONLY: sbm_init 
 
-#ifdef __ICON_ART
-  USE mo_art_clouds_interface,ONLY: art_clouds_interface_2mom_init
-#endif
   USE mo_cpl_aerosol_microphys, ONLY: lookupcreate_segalkhain, specccn_segalkhain_simple, &
                                       ncn_from_tau_aerosol_speccnconst
 
@@ -123,9 +124,8 @@ MODULE mo_nwp_phy_init
   USE mo_nwp_reff_interface,  ONLY: init_reff
   USE mo_upatmo_config,       ONLY: upatmo_config
   USE mo_upatmo_impl_const,   ONLY: iUpatmoPrcStat, iUpatmoStat
-#ifndef __NO_ICON_UPATMO__
   USE mo_upatmo_phy_setup,    ONLY: init_upatmo_phy_nwp
-#endif
+
 
   USE mo_ape_params,          ONLY: ape_sst
   USE mo_nh_testcases_nml,    ONLY: nh_test_name, ape_sst_case, th_cbl, sol_const
@@ -861,15 +861,6 @@ SUBROUTINE init_nwp_phy ( p_patch, p_metrics,             &
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
     END IF
-#ifdef __ICON_ART
-  CASE (6) ! two-moment scheme with prognostic cloud droplet number
-           ! and chemical composition taken from the ART extension
-    IF (msg_level >= 12)  CALL message(modname, 'init microphysics: ART two-moment')
-    
-    IF (jg == 1) CALL art_clouds_interface_2mom_init(msg_level,cfg_2mom=atm_phy_nwp_config(jg)%cfg_2mom)
-
-    ! Init of number concentrations moved to mo_initicon_io.f90 !!!
-#endif
   END SELECT
 
   ! Fill parameters for cover_koe
@@ -883,14 +874,6 @@ SUBROUTINE init_nwp_phy ( p_patch, p_metrics,             &
   cover_koe_config(jg)%lsgs_cond   = atm_phy_nwp_config(jg)%lsgs_cond
   cover_koe_config(jg)%tune_box_liq_sfc_fac = tune_box_liq_sfc_fac(jg)
 
-#ifdef _OPENACC
-  SELECT CASE( cover_koe_config(jg)%icldscheme )
-    CASE( 3 )
-      CALL finish(routine, "inwp_cldcover=3 is not possible with OpenACC.")
-    CASE( 4 )
-      CALL finish(routine, "inwp_cldcover=4 is not possible with OpenACC.")
-  END SELECT
-#endif
 
   !$ACC ENTER DATA CREATE(cover_koe_config(jg:jg))
   !$ACC UPDATE DEVICE(cover_koe_config(jg:jg)) ASYNC(1) ! This updates all components of cover_koe_config as they are statically allocated
@@ -958,87 +941,8 @@ SUBROUTINE init_nwp_phy ( p_patch, p_metrics,             &
         ENDIF
         !
       CASE(4) ! ecRad init
-#ifdef __ECRAD
-        IF (msg_level >= 12)  CALL message(modname, 'init ECRAD')
-        !
-        ! Do ecrad initialization only once
-        IF (.NOT.lreset_mode .AND. jg==1) THEN
-          CALL setup_ecrad(ecrad_conf)
-          !
-          ! Setup Tegen aerosol needs to be done only once for all domains
-          IF (irad_aero == iRadAeroTegen .OR. irad_aero == iRadAeroART) THEN
-            IF (ecrad_conf%i_gas_model_sw == IGasModelIFSRRTMG .AND. ecrad_conf%i_gas_model_lw == IGasModelIFSRRTMG) THEN
-              CALL init_aerosol_props_tegen_ecrad(ecrad_conf, .TRUE.)
-            ELSE IF (ecrad_conf%i_gas_model_sw .NE. ecrad_conf%i_gas_model_lw ) THEN
-              CALL finish(routine, "Differing gas models for LW and SW are currently unsupported. ")
-            ELSE
-              CALL init_aerosol_props_tegen_ecrad(ecrad_conf, .FALSE.)
-            ENDIF !ecrad_conf%i_gas_model
-          ENDIF !irad_aero==iRadAeroTegen .OR. iRadAeroART
-        ENDIF ! .NOT.lreset_mode .AND. jg==1
-        !
-        ! Domain-specific aerosol setups
-        IF (ANY( irad_aero == (/iRadAeroConstKinne, iRadAeroKinneVolcSP, iRadAeroKinneSP/) )) THEN
-          ! Only the background aerosol (pre-industry) is read in:
-          l_filename_year = .FALSE.
-          CALL read_bc_aeropt_kinne(ini_date, p_patch, l_filename_year, ecrad_conf%n_bands_lw, ecrad_conf%n_bands_sw)
-        ENDIF
-
-        CALL nwp_aerosol_init(ini_date, p_patch)
-
-        IF (ANY( irad_aero == (/iRadAeroKinne,iRadAeroKinneVolc/) )) THEN
-          ! Transient Kinne aerosol:
-          l_filename_year = .TRUE.
-          CALL read_bc_aeropt_kinne(ini_date, p_patch, l_filename_year, ecrad_conf%n_bands_lw, ecrad_conf%n_bands_sw)
-        ENDIF
-        IF (ANY( irad_aero == (/iRadAeroVolc,iRadAeroKinneVolc,iRadAeroKinneVolcSP/) )) THEN
-          ! Volcanic aerosol from CMIP6
-          CALL read_bc_aeropt_cmip6_volc(ini_date, ecrad_conf%n_bands_lw, ecrad_conf%n_bands_sw)
-        ENDIF
-        IF (ANY( irad_aero == (/iRadAeroKinneVolcSP,iRadAeroKinneSP/) )) THEN
-          ! Simple plume anthropogenic aerosol
-          CALL setup_bc_aeropt_splumes
-        ENDIF
-        !
-        ! Read ozone transient data
-        IF (irad_o3 == 5) CALL read_bc_ozone(ini_date%date%year,p_patch,irad_o3,vmr2mmr_opt=o3mr2gg)
-
-        ! cloud_num_fac is used in clim_cdnc, but is only available after the 1st call of init_slowphys
-        ! however, clim_cdnc has to be called once before the 1st call of init_slowphys
-        IF (atm_phy_nwp_config(jg)%lscale_cdnc .AND. linit_mode) THEN
-          prm_diag%cloud_num_fac(:,:) = 1._wp
-        ENDIF
-
-        !------------------------------------------------------------
-        ! Initialize solar flux in SW bands and solar constant (W/m2)
-        !------------------------------------------------------------
-        SELECT CASE (isolrad)
-          CASE(0)       ! Use default ssi values from ecRad
-            ssi_radt(:) = ecrad_ssi_default(:)
-          CASE(1)       ! 1: Use ssi values from Coddington et al (2016)
-            ssi_radt(:) = ecrad_ssi_coddington(:)
-          CASE(2)       ! 2: Use ssi values from external file
-            CALL read_bc_solar_irradiance(ini_date%date%year,.TRUE.)
-            ssi_radt(:) = 0._wp
-        END SELECT
-        tsi_radt    = SUM(ssi_radt(:))
-
-        ! In case of Aqua planet or RCE experiment:
-        IF ( nh_test_name == 'APE_nwp' .OR. nh_test_name == 'dcmip_tc_52' ) THEN
-          ssi_radt(:) = ssi_radt(:)*1365._wp/tsi_radt
-          tsi_radt    = 1365._wp
-        ENDIF  ! APE
-        IF ( nh_test_name == 'RCE'         .OR. nh_test_name == 'RCE_Tconst'         .OR. &
-           & nh_test_name == 'RCE_Tprescr' .OR. nh_test_name == 'RCEMIP_analytical') THEN
-          scale_fac   = sol_const/1361.371_wp   ! computed relative to amip (1361)
-          ssi_radt(:) = scale_fac*ssi_amip(:)
-          tsi_radt    = SUM(ssi_radt(:))
-        ENDIF
-        !
-#else
         CALL finish(routine,  &
           &      'atm_phy_nwp_config(jg)%inwp_radiation = 4 needs -D__ECRAD.')
-#endif
     END SELECT
 
     rl_start = 1  ! Initialization should be done for all points
@@ -1522,13 +1426,11 @@ SUBROUTINE init_nwp_phy ( p_patch, p_metrics,             &
     i_endblk   = p_patch%cells%end_blk(rl_end,i_nchdom)
 
 
-#ifndef __PGI
 !FIXME: PGI + OpenMP produce deadlock in this loop. Compiler bug suspected
 !$OMP PARALLEL DO PRIVATE(jb,jk,i_startidx,i_endidx,ic,jc,jt, &
 !$OMP            ltkeinp_loc,lgz0inp_loc,nlevcm,l_hori,nzprv,zvari,zrhon, &
 !$OMP            l_lake,l_sice, &
 !$OMP            ierrstat, errormsg, eroutine) ICON_OMP_DEFAULT_SCHEDULE
-#endif
 
     DO jb = i_startblk, i_endblk
 
@@ -1860,7 +1762,6 @@ SUBROUTINE init_nwp_phy ( p_patch, p_metrics,             &
     ! interpolation to the current date and time takes place in the radiation interface
   ENDIF
 
-#ifndef __NO_ICON_UPATMO__
   ! Upper-atmosphere physics
   !
   IF (lupatmo_phy) THEN
@@ -1875,7 +1776,6 @@ SUBROUTINE init_nwp_phy ( p_patch, p_metrics,             &
       &                       nproma            = nproma             ) !in
     IF (upatmo_config(jg)%l_status( iUpatmoStat%timer )) CALL timer_stop(timer_upatmo)
   ENDIF
-#endif
 
   ! SPPT
   IF (linit_mode) THEN

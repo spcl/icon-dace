@@ -32,12 +32,12 @@
 
 !NEC$ options "-O1"
 !option! -Nv -NO
-#ifdef VPP
-!OCL SCALAR
-#endif
-#ifdef __xlC__
-@PROCESS NOOPTIMIZE
-#endif
+
+
+
+
+
+
 !pgi$r opt=0
 MODULE mo_srtm_kgb21
 PUBLIC :: srtm_kgb21

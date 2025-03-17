@@ -1752,9 +1752,9 @@ REAL (KIND = wp),     INTENT(OUT)  :: &
 
 ! We rely on Cray inlining the subroutine, otherwise compilation fails with
 ! derived types (that contain only scalars)
-#ifndef CRAY_FIX_SEQ
+
   !$ACC ROUTINE SEQ
-#endif
+
 
 !==============================================================================
 !  Start calculations
@@ -2027,9 +2027,9 @@ REAL (KIND = wp)     :: &
 
 ! We rely on Cray inlining the subroutine, otherwise compilation fails with
 ! derived types (that contain only scalars)
-#ifndef CRAY_FIX_SEQ
+
 !$ACC ROUTINE SEQ
-#endif
+
 
 !==============================================================================
 !  Start calculations
@@ -2900,9 +2900,9 @@ REAL (KIND = wp)    , INTENT(IN) :: &
 !  Start calculations
 !------------------------------------------------------------------------------
 
-#ifndef CRAY_FIX_SEQ
+
   !$ACC ROUTINE SEQ
-#endif
+
 
 ! Buoyancy parameter [m s^{-2} K^{-1}]
 
@@ -2937,9 +2937,9 @@ REAL (KIND = wp)    , INTENT(IN) :: &
 !  Start calculations
 !------------------------------------------------------------------------------
 
-#ifndef CRAY_FIX_SEQ
+
   !$ACC ROUTINE SEQ
-#endif
+
 
 ! Snow density [kg m^{-3}]
 
@@ -2978,9 +2978,9 @@ REAL (KIND = wp)    , INTENT(IN) :: &
 !  Start calculations
 !------------------------------------------------------------------------------
 
-#ifndef CRAY_FIX_SEQ
+
   !$ACC ROUTINE SEQ
-#endif
+
 
 ! Snow heat conductivity [J m^{-1} s^{-1} K^{-1} = kg m s^{-3} K^{-1}]
 

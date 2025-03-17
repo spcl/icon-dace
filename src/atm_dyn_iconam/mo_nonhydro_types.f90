@@ -173,11 +173,11 @@ MODULE mo_nonhydro_types
     &  dwdy(:,:,:)          & ! meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)     [1/s]
     &  => NULL()              ! (nproma,nlevp1,nblks_c,1:3)                  [m/s^2]
 
-#ifdef __SX__
-    REAL(wp), POINTER, CONTIGUOUS :: &
-#else
+
+
+
     REAL(vp), POINTER, CONTIGUOUS :: &
-#endif
+
     &  kh_smag_e(:,:,:)       ! horizontal Smagorinsky diffusion coefficient (m^2/s)
 
     REAL(wp), POINTER, CONTIGUOUS :: &

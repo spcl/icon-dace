@@ -12,7 +12,17 @@
 ! @brief Initialisation of atmosphere coupling
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_atmo_coupling_frame
@@ -25,9 +35,6 @@ MODULE mo_atmo_coupling_frame
   USE mo_impl_constants      ,ONLY: MAX_CHAR_LENGTH, inwp, LSS_JSBACH
   USE mo_ext_data_types      ,ONLY: t_external_data
 
-#if !defined(__NO_JSBACH__) && !defined(__NO_JSBACH_HD__) && defined(YAC_coupling)
-  USE mo_interface_hd_ocean  ,ONLY: jsb_fdef_hd_fields
-#endif
 
   USE mo_coupling_config     ,ONLY: is_coupled_run, is_coupled_to_ocean, &
     &                               is_coupled_to_hydrodisc, &
@@ -52,16 +59,9 @@ MODULE mo_atmo_coupling_frame
 
   USE mtime                  ,ONLY: timedeltaToString, MAX_TIMEDELTA_STR_LEN
 
-#ifndef __NO_ICON_COMIN__
-  USE comin_host_interface, ONLY: EP_ATM_YAC_DEFCOMP_BEFORE,       &
-       &                          EP_ATM_YAC_DEFCOMP_AFTER,        &
-       &                          EP_ATM_YAC_SYNCDEF_BEFORE,       &
-       &                          EP_ATM_YAC_SYNCDEF_AFTER,        &
-       &                          EP_ATM_YAC_ENDDEF_BEFORE,        &
-       &                          EP_ATM_YAC_ENDDEF_AFTER,         &
-       &                          COMIN_DOMAIN_OUTSIDE_LOOP
-  USE mo_comin_adapter,     ONLY: icon_call_callback
-#endif
+
+
+
 
   USE mo_output_coupling     ,ONLY: construct_output_coupling, &
        &                            construct_output_coupling_finalize
@@ -116,9 +116,9 @@ CONTAINS
     jg = 1
     patch_horz => p_patch(jg)
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_DEFCOMP_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
-#endif
+
+
+
 
     ! Do basic initialisation of the component
     IF( is_coupled_to_output() ) THEN
@@ -141,9 +141,9 @@ CONTAINS
                         nbr_inner_cells)     !out
     ENDIF
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_DEFCOMP_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
-#endif
+
+
+
 
     ! get model timestep
     CALL timedeltaToString(time_config%tc_dt_model, timestepstring)
@@ -164,21 +164,6 @@ CONTAINS
       CALL construct_atmo_ocean_coupling( &
         p_patch, ext_data, comp_id, grid_id, cell_point_id, timestepstring)
 
-#if !defined(__NO_JSBACH__) && !defined(__NO_JSBACH_HD__) && defined(YAC_coupling)
-
-      ! Define coupling of runoff if HD model is present and interface is coded
-      !  - discrimination between Proto2 (no HD) and Proto3 (with HD) is needed
-      ! preliminary: coupling to jsbach/hd is active
-      IF ( (iforcing /= INWP .AND. aes_phy_config(jg)%ljsb) .OR. ( atm_phy_nwp_config(jg)%inwp_surface == LSS_JSBACH .AND. .NOT. is_coupled_to_hydrodisc() ) ) THEN
-
-        ! Construct coupling frame for atmosphere/JSBACH-hydrological discharge
-        CALL message(str_module, 'Constructing the coupling frame atmosphere/JSBACH-hydrological discharge.')
-
-        CALL jsb_fdef_hd_fields(comp_id, (/cell_point_id/), grid_id, patch_horz%n_patch_cells)
-
-      ENDIF
-
-#endif
     ENDIF   ! Construct coupling frame for atmosphere-ocean
 
     IF ( is_coupled_to_hydrodisc() ) THEN
@@ -201,16 +186,10 @@ CONTAINS
 
     END IF
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_SYNCDEF_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
-#endif
 
     ! Synchronize all definitions until this point with other components
     CALL cpl_sync_def(str_module)
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_SYNCDEF_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
-#endif
 
     ! add Ozone data field if needed
     IF  ( is_coupled_to_o3() ) THEN
@@ -235,15 +214,9 @@ CONTAINS
 
     ! End definition of coupling fields and search
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_ENDDEF_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
-#endif
 
     CALL cpl_enddef(str_module)
 
-#ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_ENDDEF_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
-#endif
 
     ! finalizes the output coupling
     IF( is_coupled_to_output() ) CALL construct_output_coupling_finalize()

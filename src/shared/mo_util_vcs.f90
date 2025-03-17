@@ -19,17 +19,7 @@ MODULE mo_util_vcs
 
   USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
     C_ASSOCIATED, C_F_POINTER, C_LOC, c_char, c_int, c_ptr, c_size_t
-#if defined(__NVCOMPILER) && __NVCOMPILER_MAJOR__ <= 21
-! NVHPC 21.3.0 has the COMPILER_VERSION function in its ISO_FORTRAN_ENV but it
-! refuses to admit that in the context of this Fortran module. The problem has
-! something to do with using modules from the FORTRAN-SUPPORT library that use
-! ISO_FORTRAN_ENV. Some newer compiler versions are not affected but we do not
-! know the earliest one among them.
-#  define COMPILER_VERSION_BROKEN
-#endif
-#ifndef COMPILER_VERSION_BROKEN
   USE, INTRINSIC :: ISO_FORTRAN_ENV, ONLY: COMPILER_VERSION
-#endif
   USE mo_util_sysinfo, ONLY: util_node_name, util_os_system, util_user_name
   USE mo_cdi, ONLY: cdiLibraryVersion
   USE mo_cf_convention, ONLY: set_cf_global
@@ -243,64 +233,20 @@ CONTAINS
       CALL message('', 'repository: '//icon_remote_url)
       CALL message('', 'local branch: '//icon_local_branch)
 
-#if !defined(__NO_JSBACH__) || defined(__DACE__) || defined(HAVE_RADARFWO) || defined(__ICON_ART)
       CALL message('', 'model components:')
-#ifndef __NO_JSBACH__
       CALL message('', '  JSBACH: '//get_revision('jsbach'))
-#endif
-#ifdef __DACE__
-      CALL message('', '  DACE: '//get_revision('dace_icon'))
-#endif
-#ifdef HAVE_RADARFWO
-      CALL message('', '  EMVORADO: '//get_revision('emvorado'))
-#endif
-#ifdef __ICON_ART
-      CALL message('', '  ART: '//get_revision('art'))
-#endif
-#endif
 
-#if defined(__ECRAD) || !defined(__NO_RTE_RRTMGP__)
       CALL message('', 'application libraries:')
-#ifdef __ECRAD
-      CALL message('', '  ECRAD: '//get_revision('ecrad'))
-#endif
-#ifndef __NO_RTE_RRTMGP__
       CALL message('', '  RTE-RRTMGP: '//get_revision('rte-rrtmgp'))
-#endif
-#endif
 
       CALL message('', 'infrastructure and support libraries:')
       CALL message('', '  MATH-INTERPOLATION: '//get_revision('math-interpolation'))
       CALL message('', '  MATH-SUPPORT: '//get_revision('math-support'))
       CALL message('', '  FORTRAN-SUPPORT: '//get_revision('fortran-support'))
-#ifndef __NO_ICON_COMIN__
-      CALL message('', '  COMIN:')
-      CALL message('', '    version: '//get_comin_version())
-      CALL message('', '    revision: '//get_revision('comin'))
-#endif
-#ifdef __ICON_ART
-      CALL message('', '  TIXI:')
-      CALL message('', '    version: '//get_tixi_version())
-      CALL message('', '    revision: '//get_revision('tixi'))
-#endif
-#ifdef YAC_coupling
-      CALL message('', '  YAC:')
-      CALL message('', '    version: '//get_yac_version())
-      CALL message('', '    revision: '//get_revision('yac'))
-#endif
       CALL message('', '  MTIME: '//get_revision('mtime'))
       CALL message('', '  CDI:')
       CALL message('', '    version: '//f_ptr_to_str(cdiLibraryVersion()))
       CALL message('', '    revision: '//get_revision('cdi'))
-#ifdef HAVE_CDI_PIO
-      CALL message('', '  PPM: '//get_revision('ppm'))
-#endif
-#ifdef HAVE_YAXT
-      CALL message('', '  YAXT: '//get_revision('yaxt'))
-#endif
-#ifdef __SCT__
-      CALL message('', '  SCT: '//get_revision('sct'))
-#endif
 
       CALL message('', 'other libraries:')
       tmp_string1 = get_eccodes_version()
@@ -308,24 +254,9 @@ CONTAINS
         CALL message('', '  ECCODES: '//tmp_string1)
       END IF
       CALL message('', '  NetCDF-C: '//get_netcdf_c_version())
-#ifdef HDF5_RADAR_INPUT
-      CALL message('', '  HDF5: '//get_hdf5_version())
-#endif
-#ifdef WITH_ZLIB
-      CALL message('', '  ZLIB: '//get_zlib_version())
-#endif
-#ifndef NOMPI
-      CALL message( &
-        '', &
-        '  MPI: '//get_first_line(ADJUSTL(get_mpi_library_version())))
-#endif
       CALL message('', 'compilers:')
       tmp_string1 = get_fortran_compiler_name(fallback='')
-#ifndef COMPILER_VERSION_BROKEN
       tmp_string2 = get_first_line(COMPILER_VERSION())
-#else
-      tmp_string2 = ''
-#endif
       IF (LEN(tmp_string2) > 0) tmp_string2 = ' ('//tmp_string2//')'
       IF (LEN(tmp_string1) > 0) THEN
         CALL message('', '  Fortran: '//tmp_string1//' '//get_fortran_compiler_version()//tmp_string2)
@@ -375,72 +306,22 @@ CONTAINS
 
   END SUBROUTINE show_version
 
-#ifndef __NO_ICON_COMIN__
-  FUNCTION get_comin_version()
-    USE comin_host_interface, ONLY: &
-      comin_setup_get_version, t_comin_setup_version_info
-    CHARACTER(:), ALLOCATABLE :: get_comin_version
-    CHARACTER(32) :: buf = ''
-    TYPE(t_comin_setup_version_info) :: ver
-    ver = comin_setup_get_version()
-    WRITE (buf, '(i0,2(a,i0))') ver%version_no_major, '.', &
-      ver%version_no_minor, '.', ver%version_no_patch
-    get_comin_version = buf(1:LEN_TRIM(buf))
-  END FUNCTION get_comin_version
-#endif
 
-#ifdef __ICON_ART
-  FUNCTION get_tixi_version()
-    USE tixi, ONLY: tixiGetVersion
-    CHARACTER(:), ALLOCATABLE :: get_tixi_version
-    CHARACTER(c_char), POINTER :: ptr(:)
-    CALL tixiGetVersion(ptr)
-    get_tixi_version = f_ptr_to_str(ptr)
-  END FUNCTION get_tixi_version
-#endif
 
-#ifdef YAC_coupling
-  FUNCTION get_yac_version()
-    USE yac, ONLY: yac_fget_version
-    CHARACTER(:), ALLOCATABLE :: get_yac_version
-    get_yac_version = yac_fget_version()
-    IF (get_yac_version(1:1) == 'v') THEN
-      get_yac_version = get_yac_version(2:LEN(get_yac_version))
-    END IF
-  END FUNCTION get_yac_version
-#endif
 
   FUNCTION get_eccodes_version()
-#ifdef GRIBAPI
-    ! This is normally the case when EMVORADO is enabled:
-    USE eccodes, ONLY: codes_get_api_version, kindOfInt
-#else
     USE mo_cdi, ONLY: gribapiLibraryVersion
-#endif
     CHARACTER(:), ALLOCATABLE :: get_eccodes_version
     CHARACTER(32) :: buf = ''
     INTEGER(c_int) :: major, minor, patch
-#ifdef GRIBAPI
-    INTEGER(kindOfInt) :: ver
-    CALL codes_get_api_version(ver)
-    major = ver/10000
-    minor = MODULO(ver, 10000)/100
-    patch = MODULO(ver, 100)
-#else
     major = 0; minor = 0; patch = 0
     CALL gribapiLibraryVersion(major, minor, patch)
-#endif
     IF (major /= 0 .OR. minor /= 0 .OR. patch /= 0) THEN
       WRITE (buf, '(i0,2(a,i0))') major, '.', minor, '.', patch
       get_eccodes_version = buf(1:LEN_TRIM(buf))
     ELSE
-#ifdef GRIBAPI
-      ! We use ECCODES but do not know the version:
-      get_eccodes_version = unknown_value
-#else
       ! We might be simply not using ECCODES:
       get_eccodes_version = ''
-#endif
     END IF
   END FUNCTION get_eccodes_version
 
@@ -458,210 +339,34 @@ CONTAINS
     END IF
   END FUNCTION get_netcdf_c_version
 
-#ifdef HDF5_RADAR_INPUT
-  ! This is normally the case when EMVORADO is enabled:
-  FUNCTION get_hdf5_version()
-    USE hdf5, ONLY: h5get_libversion_f
-    CHARACTER(:), ALLOCATABLE :: get_hdf5_version
-    CHARACTER(32) :: buf = ''
-    INTEGER :: major, minor, patch, error
-    CALL h5get_libversion_f(major, minor, patch, error)
-    IF (error == 0) THEN
-      WRITE (buf, '(i0,2(a,i0))') major, '.', minor, '.', patch
-      get_hdf5_version = buf(1:LEN_TRIM(buf))
-    ELSE
-      get_hdf5_version = unknown_value
-    END IF
-  END FUNCTION get_hdf5_version
-#endif
 
-#ifdef WITH_ZLIB
-  FUNCTION get_zlib_version()
-    CHARACTER(:), ALLOCATABLE :: get_zlib_version
-    INTERFACE
-      TYPE(c_ptr) FUNCTION zlibVersion() BIND(c, name='zlibVersion')
-        IMPORT c_ptr
-      END FUNCTION zlibVersion
-      INTEGER(c_size_t) FUNCTION strlen(ptr) BIND(c)
-        IMPORT c_ptr, c_size_t
-        TYPE(c_ptr), VALUE :: ptr
-      END FUNCTION strlen
-    END INTERFACE
-    TYPE(c_ptr) :: ptr
-    ptr = zlibVersion()
-    IF (C_ASSOCIATED(ptr)) THEN
-      get_zlib_version = c_ptr_to_str(ptr, strlen(ptr), unknown_value)
-    END IF
-  END FUNCTION get_zlib_version
-#endif
 
-#ifndef NOMPI
-  FUNCTION get_mpi_library_version(fallback)
-#ifndef MPI_GET_LIBRARY_VERSION_BROKEN
-    USE mpi
-#endif
-    CHARACTER(:), ALLOCATABLE :: get_mpi_library_version
-    CHARACTER(*), OPTIONAL, INTENT(in) :: fallback
-#ifndef MPI_GET_LIBRARY_VERSION_BROKEN
-    CHARACTER(MPI_MAX_LIBRARY_VERSION_STRING) :: ver = ''
-    INTEGER :: ver_len, ierr
-    CALL MPI_Get_library_version(ver, ver_len, ierr)
-    IF (ierr == MPI_SUCCESS) THEN
-      get_mpi_library_version = TRIM(ver)
-    ELSE
-#endif
-      IF (PRESENT(fallback)) THEN
-        get_mpi_library_version = fallback
-      ELSE
-        get_mpi_library_version = unknown_value
-      END IF
-#ifndef MPI_GET_LIBRARY_VERSION_BROKEN
-    END IF
-#endif
-  END FUNCTION get_mpi_library_version
-#endif
 
 ! Intel
-#if defined(__INTEL_LLVM_COMPILER)
-#  define COMPILER_NAME "Intel"
-#  define COMPILER_VERSION_MAJOR __INTEL_LLVM_COMPILER / 10000
-#  define COMPILER_VERSION_MINOR MODULO(__INTEL_LLVM_COMPILER / 100, 100)
-#  define COMPILER_VERSION_PATCH MODULO(__INTEL_LLVM_COMPILER, 100)
-#elif defined(__INTEL_COMPILER) && __INTEL_COMPILER == 201900
-#  define COMPILER_NAME "Intel"
-#  define COMPILER_VERSION_MAJOR 2021
-#  define COMPILER_VERSION_MINOR 1
-#  define COMPILER_VERSION_PATCH __INTEL_COMPILER_UPDATE
-! Intel Classic
-#elif defined(__INTEL_COMPILER)
-#  define COMPILER_NAME "Intel Classic"
-#  if __INTEL_COMPILER < 2021
-#    define COMPILER_VERSION_MAJOR __INTEL_COMPILER / 100
-#    define COMPILER_VERSION_MINOR MODULO(__INTEL_COMPILER / 10, 10)
-#    if __INTEL_COMPILER_BUILD_DATE == 20181018 || __INTEL_COMPILER_BUILD_DATE == 20200306
-#      define COMPILER_VERSION_PATCH 1
-#    elif defined(__INTEL_COMPILER_UPDATE)
-#      define COMPILER_VERSION_PATCH __INTEL_COMPILER_UPDATE
-#    else
-#      undef COMPILER_VERSION_PATCH
-#    endif
-#  else
-#    define COMPILER_VERSION_MAJOR __INTEL_COMPILER
-#    define COMPILER_VERSION_MINOR __INTEL_COMPILER_UPDATE
-#    if __INTEL_COMPILER_BUILD_DATE == 20201208
-#      define COMPILER_VERSION_PATCH 2
-#    else
-#      define COMPILER_VERSION_PATCH 0
-#    endif
-#  endif
-! Cray
-#elif defined(_CRAYFTN)
-#  define COMPILER_NAME "Cray"
-#  define COMPILER_VERSION_MAJOR _RELEASE_MAJOR
-#  define COMPILER_VERSION_MINOR _RELEASE_MINOR
-#  define COMPILER_VERSION_PATCH _RELEASE_PATCHLEVEL
-! NEC
-#elif defined(__NEC__)
-#  define COMPILER_NAME "NEC"
-#  define COMPILER_VERSION_MAJOR __NEC_VERSION__ / 10000
-#  define COMPILER_VERSION_MINOR MODULO(__NEC_VERSION__ / 100, 100)
-#  define COMPILER_VERSION_PATCH MODULO(__NEC_VERSION__, 100)
-! NVHPC
-#elif defined(__NVCOMPILER)
-#  define COMPILER_NAME "NVHPC"
-#  define COMPILER_VERSION_MAJOR __NVCOMPILER_MAJOR__
-#  define COMPILER_VERSION_MINOR __NVCOMPILER_MINOR__
-#  define COMPILER_VERSION_PATCH __NVCOMPILER_PATCHLEVEL__
-#elif defined(__NVCOMPILER_LLVM__)
-#  define COMPILER_NAME "NVHPC"
-#  define COMPILER_VERSION_MAJOR __PGIC__
-#  define COMPILER_VERSION_MINOR __PGIC_MINOR__
-#  define COMPILER_VERSION_PATCH __PGIC_PATCHLEVEL__
-! PGI
-#elif defined(__PGI)
-#  define COMPILER_NAME "PGI"
-#  define COMPILER_VERSION_MAJOR __PGIC__
-#  define COMPILER_VERSION_MINOR __PGIC_MINOR__
-#  define COMPILER_VERSION_PATCH __PGIC_PATCHLEVEL__
-! NAG
-#elif defined(NAGFOR)
-#  define COMPILER_NAME "NAG"
-#  define COMPILER_VERSION_MAJOR __NAG_COMPILER_RELEASE / 10
-#  define COMPILER_VERSION_MINOR MODULO(__NAG_COMPILER_RELEASE, 10)
-#  define COMPILER_VERSION_PATCH __NAG_COMPILER_BUILD
-! Flang
-#elif defined(__flang__)
-#  define COMPILER_NAME "Flang"
-#  define COMPILER_VERSION_MAJOR __flang_major__
-#  define COMPILER_VERSION_MINOR __flang_minor__
-#  define COMPILER_VERSION_PATCH __flang_patchlevel__
-! Flang Classic
-#elif defined(__FLANG)
-#  define COMPILER_NAME "Flang Classic"
-#  undef COMPILER_VERSION_MAJOR
-#  undef COMPILER_VERSION_MINOR
-#  undef COMPILER_VERSION_PATCH
-! GNU
-#elif defined(__GNUC__)
-#  define COMPILER_NAME "GNU"
-#  define COMPILER_VERSION_MAJOR __GNUC__
-#  define COMPILER_VERSION_MINOR __GNUC_MINOR__
-#  define COMPILER_VERSION_PATCH __GNUC_PATCHLEVEL__
-#else
-#  undef COMPILER_NAME
-#  undef COMPILER_VERSION_MAJOR
-#  undef COMPILER_VERSION_MINOR
-#  undef COMPILER_VERSION_PATCH
-#endif
 
   FUNCTION get_fortran_compiler_name(fallback)
     CHARACTER(:), ALLOCATABLE :: get_fortran_compiler_name
     CHARACTER(*), OPTIONAL, INTENT(in) :: fallback
-#ifdef COMPILER_NAME
     ! Avoid the 'unused dummy variable' compiler warning:
     IF (PRESENT(fallback)) THEN
-      get_fortran_compiler_name = COMPILER_NAME
+      get_fortran_compiler_name = "GNU"
     ELSE
-      get_fortran_compiler_name = COMPILER_NAME
+      get_fortran_compiler_name = "GNU"
     END IF
-#else
-    IF (PRESENT(fallback)) THEN
-      get_fortran_compiler_name = fallback
-    ELSE
-      get_fortran_compiler_name = unknown_value
-    END IF
-#endif
   END FUNCTION get_fortran_compiler_name
 
   FUNCTION get_fortran_compiler_version(fallback)
     CHARACTER(:), ALLOCATABLE :: get_fortran_compiler_version
     CHARACTER(*), OPTIONAL, INTENT(in) :: fallback
-#if defined(COMPILER_VERSION_MAJOR)
     CHARACTER(32) :: buf = ''
-#  if defined(COMPILER_VERSION_MINOR)
-#    if defined(COMPILER_VERSION_PATCH)
-    WRITE (buf, '(i0,2(a,i0))') COMPILER_VERSION_MAJOR, &
-      '.', COMPILER_VERSION_MINOR, '.', COMPILER_VERSION_PATCH
-#    else
-    WRITE (buf, '(i0,a,i0)') COMPILER_VERSION_MAJOR, &
-      '.', COMPILER_VERSION_MINOR
-#    endif
-#  else
-    WRITE (buf, '(i0)') COMPILER_VERSION_MAJOR
-#  endif
+    WRITE (buf, '(i0,2(a,i0))') 14, &
+      '.', 2, '.', 0
     ! Avoid the 'unused dummy variable' compiler warning:
     IF (PRESENT(fallback)) THEN
       get_fortran_compiler_version = buf(1:LEN_TRIM(buf))
     ELSE
       get_fortran_compiler_version = buf(1:LEN_TRIM(buf))
     END IF
-#else
-    IF (PRESENT(fallback)) THEN
-      get_fortran_compiler_version = fallback
-    ELSE
-      get_fortran_compiler_version = unknown_value
-    END IF
-#endif
   END FUNCTION get_fortran_compiler_version
 
   FUNCTION get_c_compiler_name(fallback)

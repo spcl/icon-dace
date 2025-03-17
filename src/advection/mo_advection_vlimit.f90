@@ -15,7 +15,17 @@
 ! vertical tracer transport.
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 MODULE mo_advection_vlimit
 
@@ -99,9 +109,6 @@ CONTAINS
     INTEGER  :: jk, jc               !< index of vert level, cell
     INTEGER  :: jkp1, jkm1
 
-#ifdef __INTEL_COMPILER
-!DIR$ ATTRIBUTES ALIGN :64 :: r_m
-#endif
   !-------------------------------------------------------------------------
 
 

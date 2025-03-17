@@ -38,7 +38,19 @@ MODULE mo_sppt_state
   USE mo_sppt_config,             ONLY: sppt_config
 
 
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -227,7 +239,7 @@ MODULE mo_sppt_state
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%temp_now)
+    
 
     ! qv_now         sppt%qv_now(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('qv_now', 'kg kg-1', 'current value of tracer water vapour - sppt)', datatype_flt)
@@ -242,7 +254,7 @@ MODULE mo_sppt_state
                 &             vert_intp_type=vintp_types("P","Z","I"),                             &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                                 &
                 & lopenacc=.TRUE. )
-      __acc_attach(sppt%qv_now)
+      
 
 
     ! qi_now         sppt%qi_now(nproma,nlev,nblks_c)
@@ -258,7 +270,7 @@ MODULE mo_sppt_state
                 &             vert_intp_type=vintp_types("P","Z","I"),                             &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                                 &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%qi_now)
+    
 
 
     ! qr_now         sppt%qr_now(nproma,nlev,nblks_c)
@@ -274,7 +286,7 @@ MODULE mo_sppt_state
                 &             vert_intp_type=vintp_types("P","Z","I"),                             &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                                 &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%qr_now)
+    
 
 
     ! qs_now         sppt%qs_now(nproma,nlev,nblks_c)
@@ -290,7 +302,7 @@ MODULE mo_sppt_state
                 &             vert_intp_type=vintp_types("P","Z","I"),                             &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                                 &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%qs_now)
+    
 
 
     ! qc_now         sppt%qc_now(nproma,nlev,nblks_c)
@@ -306,7 +318,7 @@ MODULE mo_sppt_state
                 &             vert_intp_type=vintp_types("P","Z","I"),                             &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                                 &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%qc_now)
+    
 
     IF ( iqg /= 0 ) THEN
       ! qg_now         sppt%qg_now(nproma,nlev,nblks_c)
@@ -322,7 +334,7 @@ MODULE mo_sppt_state
                   &             vert_intp_type=vintp_types("P","Z","I"),                             &
                   &             vert_intp_method=VINTP_METHOD_LIN ),                                 &
                   & lopenacc=.TRUE. )
-      __acc_attach(sppt%qg_now)
+      
     ENDIF
 
     ! b) fields for random number generation
@@ -340,7 +352,7 @@ MODULE mo_sppt_state
                &             vert_intp_type=vintp_types("P","Z","I"),                &
                &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                & lopenacc=.TRUE. )
-   __acc_attach(sppt%rn_3d)
+   
 
 
     ! rn_2d_now     sppt%rn_2d_now(nproma,nblks_c)
@@ -350,7 +362,7 @@ MODULE mo_sppt_state
          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,          &
          & ldims=shape2d_c, lrestart=.FALSE.,                                  &
          & lopenacc=.TRUE. )
-__acc_attach(sppt%rn_2d_now)
+
 
 
     ! rn_2d_new     sppt%rn_2d_new(nproma,nblks_c)
@@ -360,7 +372,7 @@ __acc_attach(sppt%rn_2d_now)
          & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,           &
          & ldims=shape2d_c, lrestart=.FALSE.,                                   &
          & lopenacc=.TRUE. )
-__acc_attach(sppt%rn_2d_new)
+
 
 
     ! c) additional fields for SPPT
@@ -378,7 +390,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_temp_fast)
+    
 
     ! ddt_u_fast         sppt%ddt_u_fast(nproma,nlev,nblks_c)
     cf_desc    = t_cf_var('ddt_u_fast', 'm s-2', 'fast physics tendencies for u component)', datatype_flt)
@@ -393,7 +405,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_u_fast)
+    
 
 
     ! ddt_v_fast         sppt%ddt_v_fast(nproma,nlev,nblks_c)
@@ -409,7 +421,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_v_fast)
+    
 
 
     ! ddt_qv_fast         sppt%ddt_qv_fast(nproma,nlev,nblks_c)
@@ -425,7 +437,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_qv_fast)
+    
 
 
     ! ddt_qi_fast         sppt%ddt_qi_fast(nproma,nlev,nblks_c)
@@ -441,7 +453,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_qi_fast)
+    
 
 
     ! ddt_qr_fast         sppt%ddt_qr_fast(nproma,nlev,nblks_c)
@@ -457,7 +469,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_qr_fast)
+    
 
 
     ! ddt_qs_fast         sppt%ddt_qs_fast(nproma,nlev,nblks_c)
@@ -473,7 +485,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_qs_fast)
+    
 
 
     ! ddt_qc_fast         sppt%ddt_qc_fast(nproma,nlev,nblks_c)
@@ -489,7 +501,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_qc_fast)
+    
 
     IF ( iqg /= 0 ) THEN
       ! ddt_qg_fast         sppt%ddt_qg_fast(nproma,nlev,nblks_c)
@@ -505,7 +517,7 @@ __acc_attach(sppt%rn_2d_new)
                   &             vert_intp_type=vintp_types("P","Z","I"),                &
                   &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                   & lopenacc=.TRUE. )
-      __acc_attach(sppt%ddt_qg_fast)
+      
     ENDIF
 
     ! ddt_qv         sppt%ddt_qv(nproma,nlev,nblks_c)
@@ -521,7 +533,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_qv)
+    
 
 
     ! ddt_qi         sppt%ddt_qi(nproma,nlev,nblks_c)
@@ -537,7 +549,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_qi)
+    
 
 
     ! ddt_qr         sppt%ddt_qr(nproma,nlev,nblks_c)
@@ -553,7 +565,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_qr)
+    
 
 
     ! ddt_qs         sppt%ddt_qs(nproma,nlev,nblks_c)
@@ -569,7 +581,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_qs)
+    
 
 
     ! ddt_qc         sppt%ddt_qc(nproma,nlev,nblks_c)
@@ -585,7 +597,7 @@ __acc_attach(sppt%rn_2d_new)
                 &             vert_intp_type=vintp_types("P","Z","I"),                &
                 &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                 & lopenacc=.TRUE. )
-    __acc_attach(sppt%ddt_qc)
+    
 
     IF ( iqg /= 0 ) THEN
       ! ddt_qg         sppt%ddt_qg(nproma,nlev,nblks_c)
@@ -601,7 +613,7 @@ __acc_attach(sppt%rn_2d_new)
                   &             vert_intp_type=vintp_types("P","Z","I"),                &
                   &             vert_intp_method=VINTP_METHOD_LIN ),                    &
                   & lopenacc=.TRUE. )
-      __acc_attach(sppt%ddt_qg)
+      
     ENDIF
 
   END SUBROUTINE new_sppt_list

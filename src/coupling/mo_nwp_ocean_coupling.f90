@@ -26,7 +26,17 @@
 !      CALL sync_patch_array(sync_c, p_patch, prm_diag%swflxsfc_t (:,:,isub_water) )
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nwp_ocean_coupling
@@ -476,7 +486,6 @@ CONTAINS
     !    - CO2 mixing ratio in ppmv
     !------------------------------------------------
 
-#ifndef __NO_ICON_OCEAN__
     IF (ccycle_config(jg)%iccycle /= CCYCLE_MODE_NONE) THEN
 
       IF (ccycle_config(jg)%iccycle == CCYCLE_MODE_INTERACTIVE .AND. .NOT. ASSOCIATED(tx%q_co2)) THEN
@@ -523,7 +532,6 @@ CONTAINS
         routine, field_id_co2_vmr, 'co2 vmr', p_patch%n_patch_cells, buf)
 
     ENDIF
-#endif /* ifndef __NO_ICON_OCEAN__ */
 
 
     !  *****  *****  *****  *****  *****  *****  *****  *****  *****  *****  *****  *****

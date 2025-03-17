@@ -19,7 +19,36 @@
 !   2017-04-22  R. Hogan  Store surface fluxes at all g-points
 !   2017-10-23  R. Hogan  Renamed single-character variables
 
-#include "ecrad_config.h"
+! ecrad_config.h - Preprocessor definitions to configure compilation ecRad -*- f90 -*-
+!
+! (C) Copyright 2023- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! This file should be included in Fortran source files that require
+! different optimizations or settings for different architectures and
+! platforms.  Feel free to maintain a site-specific version of it.
+
+! The following settings turn on optimizations specific to the
+! long-vector NEC SX (the short-vector x86-64 architecture is assumed
+! otherwise). 
+
+  
+  
+
+! In the IFS, an MPI version of easy_netcdf capability is used so that
+! only one MPI task reads the data files and shares with the other
+! tasks. The MPI version is not used for writing files.
+
+!#define EASY_NETCDF_READ_MPI 1
 
 module radiation_mcica_sw
 
@@ -28,7 +57,152 @@ module radiation_mcica_sw
 contains
 
   ! Provides elemental function "delta_eddington"
-#include "radiation_delta_eddington.h"
+! radiation_delta_eddington.h - Delta-Eddington scaling -*- f90 -*-
+!
+! (C) Copyright 2015- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+!
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! Author:  Robin Hogan
+! Email:   r.j.hogan@ecmwf.int
+!
+! This file is intended to be included inside a module to ensure that
+! these simple functions may be inlined
+
+!---------------------------------------------------------------------
+! Perform in-place delta-Eddington scaling of the phase function
+elemental subroutine delta_eddington(od, ssa, g)
+
+  use parkind1, only : jprb
+  
+  ! Total optical depth, single scattering albedo and asymmetry
+  ! factor
+  real(jprb), intent(inout) :: od, ssa, g
+  
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+  
+  f   = g*g
+  od  = od * (1.0_jprb - ssa*f)
+  ssa = ssa * (1.0_jprb - f) / (1.0_jprb - ssa*f)
+  g   = g / (1.0_jprb + g)
+  
+end subroutine delta_eddington
+
+
+!---------------------------------------------------------------------
+! Perform in-place delta-Eddington scaling of the phase function, but
+! using extensive variables (i.e. the scattering optical depth,
+! scat_od, rather than the single-scattering albedo, and the
+! scattering-optical-depth-multiplied-by-asymmetry-factor, scat_od_g,
+! rather than the asymmetry factor.
+elemental subroutine delta_eddington_extensive(od, scat_od, scat_od_g)
+
+  !$ACC ROUTINE SEQ
+
+  use parkind1, only : jprb
+
+  ! Total optical depth, scattering optical depth and asymmetry factor
+  ! multiplied by the scattering optical depth
+  real(jprb), intent(inout) :: od, scat_od, scat_od_g
+
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f, g
+
+  if (scat_od > 0.0_jprb) then
+    g = scat_od_g / scat_od
+  else
+    g = 0.0
+  end if
+
+  f         = g*g
+  od        = od - scat_od * f
+  scat_od   = scat_od * (1.0_jprb - f)
+  scat_od_g = scat_od * g / (1.0_jprb + g)
+  
+end subroutine delta_eddington_extensive
+
+
+!---------------------------------------------------------------------
+! Array version of delta_eddington_extensive, more likely to vectorize
+ subroutine delta_eddington_extensive_vec(ng, od, scat_od, scat_od_g)
+
+  use parkind1, only : jprb
+
+  ! Total optical depth, scattering optical depth and asymmetry factor
+  ! multiplied by the scattering optical depth
+  integer,                   intent(in)    :: ng
+  real(jprb), dimension(ng), intent(inout) :: od, scat_od, scat_od_g
+
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f, g
+  integer :: j
+
+  do j = 1,ng
+    g            = scat_od_g(j) / max(scat_od(j), 1.0e-24)
+    f            = g*g
+    od(j)        = od(j) - scat_od(j) * f
+    scat_od(j)   = scat_od(j) * (1.0_jprb - f)
+    scat_od_g(j) = scat_od(j) * g / (1.0_jprb + g)
+  end do
+  
+end subroutine delta_eddington_extensive_vec
+
+
+!---------------------------------------------------------------------
+! Perform in-place delta-Eddington scaling of the phase function,
+! using the scattering optical depth rather than the single scattering
+! albedo
+elemental subroutine delta_eddington_scat_od(od, scat_od, g)
+
+  use parkind1, only : jprb
+  
+  ! Total optical depth, scattering optical depth and asymmetry factor
+  real(jprb), intent(inout) :: od, scat_od, g
+
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+
+  !$ACC ROUTINE SEQ
+
+  f       = g*g
+  od      = od - scat_od * f
+  scat_od = scat_od * (1.0_jprb - f)
+  g       = g / (1.0_jprb + g)
+
+end subroutine delta_eddington_scat_od
+
+
+!---------------------------------------------------------------------
+! Revert delta-Eddington-scaled quantities in-place, back to their
+! original state
+elemental subroutine revert_delta_eddington(od, ssa, g)
+
+  use parkind1, only : jprb
+  
+  ! Total optical depth, single scattering albedo and asymmetry
+  ! factor
+  real(jprb), intent(inout) :: od, ssa, g
+  
+  ! Fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+  
+  g   = g / (1.0_jprb - g)
+  f   = g*g
+  ssa = ssa / (1.0_jprb - f + f*ssa);
+  od  = od / (1.0_jprb - ssa*f)
+  
+end subroutine revert_delta_eddington
 
   !---------------------------------------------------------------------
   ! Shortwave Monte Carlo Independent Column Approximation
@@ -129,11 +303,7 @@ contains
     real(jprb) :: total_cloud_cover
 
     ! Temporary storage for more efficient summation
-#ifdef DWD_REDUCTION_OPTIMIZATIONS
-    real(jprb), dimension(nlev+1,3) :: sum_aux
-#else
     real(jprb) :: sum_up, sum_dn_diff, sum_dn_dir
-#endif
 
     ! Number of g points
     integer :: ng
@@ -196,22 +366,6 @@ contains
         ! fluxes. Note that the built-in "sum" function is very slow,
         ! and before being replaced by the alternatives below
         ! accounted for around 40% of the total cost of this routine.
-#ifdef DWD_REDUCTION_OPTIMIZATIONS
-        ! Optimized summation for the NEC architecture
-        sum_aux(:,:) = 0.0_jprb
-        do jg = 1,ng
-          do jlev = 1,nlev+1
-            sum_aux(jlev,1) = sum_aux(jlev,1) + flux_up(jg,jlev)
-            sum_aux(jlev,2) = sum_aux(jlev,2) + flux_dn_direct(jg,jlev)
-            sum_aux(jlev,3) = sum_aux(jlev,3) + flux_dn_diffuse(jg,jlev)
-          end do
-        end do
-        flux%sw_up_clear(jcol,:) = sum_aux(:,1)
-        flux%sw_dn_clear(jcol,:) = sum_aux(:,2) + sum_aux(:,3)
-        if (allocated(flux%sw_dn_direct_clear)) then
-          flux%sw_dn_direct_clear(jcol,:) = sum_aux(:,2)
-        end if
-#else
         ! Optimized summation for the x86-64 architecture
         do jlev = 1,nlev+1
           sum_up      = 0.0_jprb
@@ -229,7 +383,6 @@ contains
             flux%sw_dn_direct_clear(jcol,jlev) = sum_dn_dir
           end if
         end do
-#endif
         
         ! Store spectral downwelling fluxes at surface
         do jg = 1,ng
@@ -316,21 +469,6 @@ contains
                &  inv_denominator=tmp_work_inv_denominator)
           
           ! Store overcast broadband fluxes
-#ifdef DWD_REDUCTION_OPTIMIZATIONS
-          sum_aux(:,:) = 0.0_jprb
-          do jg = 1,ng
-            do jlev = 1,nlev+1
-              sum_aux(jlev,1) = sum_aux(jlev,1) + flux_up(jg,jlev)
-              sum_aux(jlev,2) = sum_aux(jlev,2) + flux_dn_direct(jg,jlev)
-              sum_aux(jlev,3) = sum_aux(jlev,3) + flux_dn_diffuse(jg,jlev)
-            end do
-          end do
-          flux%sw_up(jcol,:) = sum_aux(:,1)
-          flux%sw_dn(jcol,:) = sum_aux(:,2) + sum_aux(:,3)
-          if (allocated(flux%sw_dn_direct)) then
-            flux%sw_dn_direct(jcol,:) = sum_aux(:,2)
-          end if
-#else
           do jlev = 1,nlev+1
             sum_up      = 0.0_jprb
             sum_dn_diff = 0.0_jprb
@@ -347,7 +485,6 @@ contains
               flux%sw_dn_direct(jcol,jlev) = sum_dn_dir
             end if
           end do
-#endif
           
           ! Cloudy flux profiles currently assume completely overcast
           ! skies; perform weighted average with clear-sky profile

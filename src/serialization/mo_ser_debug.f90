@@ -55,30 +55,6 @@ MODULE mo_ser_debug
 
     !$ser verbatim IF(ser_debug .and. ser_debug_on) THEN
     !$ser verbatim   CALL warning('SER:mo_ser_debug:debug-output','Serialization is active!')
-#if defined(_OPENACC)
-    !$ser verbatim IF(.NOT. lcpu_only) THEN
-    !$ser verbatim   CALL warning('GPU:mo_ser_debug:debug-output','GPU HOST synchronization forced by serialization!')
-    !$ser verbatim   !$ACC UPDATE HOST(r1d1) ASYNC(1) IF(PRESENT(r1d1))
-    !$ser verbatim   !$ACC UPDATE HOST(r1d2) ASYNC(1) IF(PRESENT(r1d2))
-    !$ser verbatim   !$ACC UPDATE HOST(r1d3) ASYNC(1) IF(PRESENT(r1d3))
-    !$ser verbatim   !$ACC UPDATE HOST(r1d4) ASYNC(1) IF(PRESENT(r1d4))
-    !$ser verbatim   !$ACC UPDATE HOST(r1d5) ASYNC(1) IF(PRESENT(r1d5))
-    !$ser verbatim   !$ACC UPDATE HOST(r2d1) ASYNC(1) IF(PRESENT(r2d1))
-    !$ser verbatim   !$ACC UPDATE HOST(r2d2) ASYNC(1) IF(PRESENT(r2d2))
-    !$ser verbatim   !$ACC UPDATE HOST(r2d3) ASYNC(1) IF(PRESENT(r2d3))
-    !$ser verbatim   !$ACC UPDATE HOST(r2d4) ASYNC(1) IF(PRESENT(r2d4))
-    !$ser verbatim   !$ACC UPDATE HOST(r2d5) ASYNC(1) IF(PRESENT(r2d5))
-    !$ser verbatim   !$ACC UPDATE HOST(r2d6) ASYNC(1) IF(PRESENT(r2d6))
-    !$ser verbatim   !$ACC UPDATE HOST(r2d7) ASYNC(1) IF(PRESENT(r2d7))
-    !$ser verbatim   !$ACC UPDATE HOST(r3d1) ASYNC(1) IF(PRESENT(r3d1))
-    !$ser verbatim   !$ACC UPDATE HOST(r3d2) ASYNC(1) IF(PRESENT(r3d2))
-    !$ser verbatim   !$ACC UPDATE HOST(r3d3) ASYNC(1) IF(PRESENT(r3d3))
-    !$ser verbatim   !$ACC UPDATE HOST(r3d4) ASYNC(1) IF(PRESENT(r3d4))
-    !$ser verbatim   !$ACC UPDATE HOST(r3d5) ASYNC(1) IF(PRESENT(r3d5))
-    !$ser verbatim   !$ACC UPDATE HOST(r3d6) ASYNC(1) IF(PRESENT(r3d6))
-    !$ser verbatim   !$ACC WAIT(1)
-    !$ser verbatim ENDIF
-#endif
 
     !$ser verbatim   CALL datetimeToString(time_config%tc_current_date, date)
     !$ser verbatim   CALL init('icon')

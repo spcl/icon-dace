@@ -42,21 +42,21 @@
 !> @brief internal solver module
 !! @details Avoid including/importing this module as it is supposed to be only
 !! used from other solver modules.
-#include "fc_feature_defs.inc"
+
 MODULE solver_internal
   USE ppm_std_type_kinds, ONLY: wp, sp, dp
   USE ppm_extents, ONLY: extent, extent_start, extent_end
   USE ppm_base, ONLY: abort_ppm
   USE ieee_arithmetic, ONLY: is_normal => ieee_is_normal
 
-#ifdef USE_MPI_MOD
-  USE mpi
-#endif
+
+
+
   IMPLICIT NONE
   PRIVATE
-#if defined USE_MPI && ! defined USE_MPI_MOD
-  INCLUDE 'mpif.h'
-#endif
+
+
+
 
   !> @brief the stencil type, i.e. structure in single precision
   !! @details it holds pointers to the zonal, meridional and central components
@@ -203,15 +203,15 @@ CONTAINS
     CHARACTER(len=*), INTENT(IN), OPTIONAL :: t2, t3, t4, t5
 
     INTEGER :: my_rank
-#ifdef USE_MPI
-    INTEGER :: ierror
-#endif
 
-#ifdef USE_MPI
-    CALL MPI_Comm_rank(mpi_comm_world, my_rank, ierror)
-#else
+
+
+
+
+
+
     my_rank = 0
-#endif
+
 
     IF (my_rank == 0) THEN
       IF (PRESENT(t5)) THEN
@@ -229,32 +229,320 @@ CONTAINS
   END SUBROUTINE debug
 
   ! Include SP and DP variants here
-#define PREC sp
-#define ABORT_UNLESS_NORMAL0 abort_unless_normal0_sp
-#define ABORT_UNLESS_NORMAL1 abort_unless_normal1_sp
-#define ABORT_UNLESS_NORMAL2 abort_unless_normal2_sp
-#define ABORT_UNLESS_NORMAL3 abort_unless_normal3_sp
-#define CLEAR_HALOS clear_halos_sp
-#include "solver_internal_multi.f90"
-#undef PREC
-#undef ABORT_UNLESS_NORMAL0
-#undef ABORT_UNLESS_NORMAL1
-#undef ABORT_UNLESS_NORMAL2
-#undef ABORT_UNLESS_NORMAL3
-#undef CLEAR_HALOS
-#define PREC dp
-#define ABORT_UNLESS_NORMAL0 abort_unless_normal0_dp
-#define ABORT_UNLESS_NORMAL1 abort_unless_normal1_dp
-#define ABORT_UNLESS_NORMAL2 abort_unless_normal2_dp
-#define ABORT_UNLESS_NORMAL3 abort_unless_normal3_dp
-#define CLEAR_HALOS clear_halos_dp
-#include "solver_internal_multi.f90"
-#undef PREC
-#undef ABORT_UNLESS_NORMAL0
-#undef ABORT_UNLESS_NORMAL1
-#undef ABORT_UNLESS_NORMAL2
-#undef ABORT_UNLESS_NORMAL3
-#undef CLEAR_HALOS
+!>
+!! @file solver_internal_multi.f90
+!! @author Florian Wilhelm
+!!
+!! @copyright Copyright  (C)  2010  Florian Wilhelm <Florian.Wilhelm@kit.edu>
+!!
+!! @version 1.0
+!
+! Keywords: scales ppm solver internal
+! Maintainer: Florian Wilhelm <Florian.Wilhelm@kit.edu>
+! URL: https://www.dkrz.de/redmine/projects/scales-ppm
+!
+! Redistribution and use in source and binary forms, with or without
+! modification, are  permitted provided that the following conditions are
+! met:
+!
+! Redistributions of source code must retain the above copyright notice,
+! this list of conditions and the following disclaimer.
+!
+! Redistributions in binary form must reproduce the above copyright
+! notice, this list of conditions and the following disclaimer in the
+! documentation and/or other materials provided with the distribution.
+!
+! Neither the name of the DKRZ GmbH nor the names of its contributors
+! may be used to endorse or promote products derived from this software
+! without specific prior written permission.
+!
+! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+! IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+! TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+! PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+! OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+! EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+! PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+! PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+! LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!
+!
+!
+SUBROUTINE abort_unless_normal0_sp(x, x_str)
+  REAL(sp), INTENT(IN) :: x
+  CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
+  INTEGER :: rank
+
+  rank = 0
+
+  IF ( .NOT. is_normal(x) ) THEN
+    CALL abort_ppm("Not normal number found in " // x_str // &
+         " on rank " // int2str(rank) // ".", 'solver_internal_multi.f90', 59)
+  ENDIF
+
+END SUBROUTINE abort_unless_normal0_sp
+
+! Aborts if abnormal (NaN, Inf etc.) entries are present
+SUBROUTINE abort_unless_normal1_sp(x, x_str)
+  REAL(sp), INTENT(IN) :: x(:)
+  CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
+  INTEGER :: i, ie, rank
+
+  ie = SIZE(x,1)
+
+  rank = 0
+
+  DO i=1,ie
+    IF ( .NOT. is_normal(x(i)) ) THEN
+      CALL abort_ppm("Abnormal number found in " // x_str // &
+           ", i=" // int2str(i) // &
+           " on rank " // int2str(rank) // ".", &
+           'solver_internal_multi.f90', 86)
+    ENDIF
+  ENDDO
+
+END SUBROUTINE abort_unless_normal1_sp
+
+! Aborts if abnormal (NaN, Inf etc.) entries are present
+SUBROUTINE abort_unless_normal2_sp(x, x_str)
+  REAL(sp), INTENT(IN) :: x(:,:)
+  CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
+  INTEGER :: i, j, ie, je, rank
+
+  ie = SIZE(x,1)
+  je = SIZE(x,2)
+
+  rank = 0
+
+  DO j=1,je
+    DO i=1,ie
+      IF ( .NOT. is_normal(x(i,j)) ) THEN
+        CALL abort_ppm("Not normal number found in " // x_str // &
+             ", i=" // int2str(i) // ", j=" // int2str(j) // &
+             " on rank " // int2str(rank) // ".", &
+             'solver_internal_multi.f90', 116)
+      ENDIF
+    ENDDO
+  ENDDO
+
+END SUBROUTINE abort_unless_normal2_sp
+
+! Aborts if abnormal (NaN, Inf etc.) entries are present
+SUBROUTINE abort_unless_normal3_sp(x, x_str)
+  REAL(sp), INTENT(IN) :: x(:,:,:)
+  CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
+  INTEGER :: i, j, k, ie, je, ke, rank
+
+  ie = SIZE(x,1)
+  je = SIZE(x,2)
+  ke = SIZE(x,3)
+
+  rank = 0
+
+  DO k=1,ke
+    DO j=1,je
+      DO i=1,ie
+        IF ( .NOT. is_normal(x(i,j,k)) ) THEN
+          CALL abort_ppm("Not normal number found in " // x_str &
+               // ", i=" // int2str(i) // ", j=" // int2str(j) // &
+               ", k=" // int2str(k) // " on rank " &
+               // int2str(rank) // ".", &
+               'solver_internal_multi.f90', 150)
+        ENDIF
+      ENDDO
+    ENDDO
+  ENDDO
+
+END SUBROUTINE abort_unless_normal3_sp
+
+! sets halos to zero
+SUBROUTINE clear_halos_sp(x, ext_x)
+  REAL(sp), INTENT(INOUT) :: x(:,:)
+  TYPE(extent), INTENT(IN) :: ext_x(:)
+  INTEGER :: jb, ib, il, jl, ie, je
+
+  ! sp suffix (precs) as constant to avoid Preprocessor problems
+  INTEGER, PARAMETER :: precs = sp
+
+  ie = SIZE(x,1)
+  je = SIZE(x,2)
+  ib = extent_start(ext_x(1))
+  jb = extent_start(ext_x(2))
+  il = extent_end(ext_x(1))
+  jl = extent_end(ext_x(2))
+
+  x(1:ib-1,:) = 0.0_precs
+  x(il+1:ie,:) = 0.0_precs
+  x(ib:il,1:jb-1) = 0.0_precs
+  x(ib:il,jl+1:je) = 0.0_precs
+
+END SUBROUTINE clear_halos_sp
+
+!
+! Local Variables:
+! license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+! license-markup: "doxygen"
+! license-default: "bsd"
+! End:
+!>
+!! @file solver_internal_multi.f90
+!! @author Florian Wilhelm
+!!
+!! @copyright Copyright  (C)  2010  Florian Wilhelm <Florian.Wilhelm@kit.edu>
+!!
+!! @version 1.0
+!
+! Keywords: scales ppm solver internal
+! Maintainer: Florian Wilhelm <Florian.Wilhelm@kit.edu>
+! URL: https://www.dkrz.de/redmine/projects/scales-ppm
+!
+! Redistribution and use in source and binary forms, with or without
+! modification, are  permitted provided that the following conditions are
+! met:
+!
+! Redistributions of source code must retain the above copyright notice,
+! this list of conditions and the following disclaimer.
+!
+! Redistributions in binary form must reproduce the above copyright
+! notice, this list of conditions and the following disclaimer in the
+! documentation and/or other materials provided with the distribution.
+!
+! Neither the name of the DKRZ GmbH nor the names of its contributors
+! may be used to endorse or promote products derived from this software
+! without specific prior written permission.
+!
+! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+! IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+! TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+! PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+! OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+! EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+! PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+! PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+! LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!
+!
+!
+SUBROUTINE abort_unless_normal0_dp(x, x_str)
+  REAL(dp), INTENT(IN) :: x
+  CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
+  INTEGER :: rank
+
+  rank = 0
+
+  IF ( .NOT. is_normal(x) ) THEN
+    CALL abort_ppm("Not normal number found in " // x_str // &
+         " on rank " // int2str(rank) // ".", 'solver_internal_multi.f90', 59)
+  ENDIF
+
+END SUBROUTINE abort_unless_normal0_dp
+
+! Aborts if abnormal (NaN, Inf etc.) entries are present
+SUBROUTINE abort_unless_normal1_dp(x, x_str)
+  REAL(dp), INTENT(IN) :: x(:)
+  CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
+  INTEGER :: i, ie, rank
+
+  ie = SIZE(x,1)
+
+  rank = 0
+
+  DO i=1,ie
+    IF ( .NOT. is_normal(x(i)) ) THEN
+      CALL abort_ppm("Abnormal number found in " // x_str // &
+           ", i=" // int2str(i) // &
+           " on rank " // int2str(rank) // ".", &
+           'solver_internal_multi.f90', 86)
+    ENDIF
+  ENDDO
+
+END SUBROUTINE abort_unless_normal1_dp
+
+! Aborts if abnormal (NaN, Inf etc.) entries are present
+SUBROUTINE abort_unless_normal2_dp(x, x_str)
+  REAL(dp), INTENT(IN) :: x(:,:)
+  CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
+  INTEGER :: i, j, ie, je, rank
+
+  ie = SIZE(x,1)
+  je = SIZE(x,2)
+
+  rank = 0
+
+  DO j=1,je
+    DO i=1,ie
+      IF ( .NOT. is_normal(x(i,j)) ) THEN
+        CALL abort_ppm("Not normal number found in " // x_str // &
+             ", i=" // int2str(i) // ", j=" // int2str(j) // &
+             " on rank " // int2str(rank) // ".", &
+             'solver_internal_multi.f90', 116)
+      ENDIF
+    ENDDO
+  ENDDO
+
+END SUBROUTINE abort_unless_normal2_dp
+
+! Aborts if abnormal (NaN, Inf etc.) entries are present
+SUBROUTINE abort_unless_normal3_dp(x, x_str)
+  REAL(dp), INTENT(IN) :: x(:,:,:)
+  CHARACTER(len=*), INTENT(IN) :: x_str ! string representation of x
+  INTEGER :: i, j, k, ie, je, ke, rank
+
+  ie = SIZE(x,1)
+  je = SIZE(x,2)
+  ke = SIZE(x,3)
+
+  rank = 0
+
+  DO k=1,ke
+    DO j=1,je
+      DO i=1,ie
+        IF ( .NOT. is_normal(x(i,j,k)) ) THEN
+          CALL abort_ppm("Not normal number found in " // x_str &
+               // ", i=" // int2str(i) // ", j=" // int2str(j) // &
+               ", k=" // int2str(k) // " on rank " &
+               // int2str(rank) // ".", &
+               'solver_internal_multi.f90', 150)
+        ENDIF
+      ENDDO
+    ENDDO
+  ENDDO
+
+END SUBROUTINE abort_unless_normal3_dp
+
+! sets halos to zero
+SUBROUTINE clear_halos_dp(x, ext_x)
+  REAL(dp), INTENT(INOUT) :: x(:,:)
+  TYPE(extent), INTENT(IN) :: ext_x(:)
+  INTEGER :: jb, ib, il, jl, ie, je
+
+  ! dp suffix (precs) as constant to avoid Preprocessor problems
+  INTEGER, PARAMETER :: precs = dp
+
+  ie = SIZE(x,1)
+  je = SIZE(x,2)
+  ib = extent_start(ext_x(1))
+  jb = extent_start(ext_x(2))
+  il = extent_end(ext_x(1))
+  jl = extent_end(ext_x(2))
+
+  x(1:ib-1,:) = 0.0_precs
+  x(il+1:ie,:) = 0.0_precs
+  x(ib:il,1:jb-1) = 0.0_precs
+  x(ib:il,jl+1:je) = 0.0_precs
+
+END SUBROUTINE clear_halos_dp
+
+!
+! Local Variables:
+! license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+! license-markup: "doxygen"
+! license-default: "bsd"
+! End:
 
 END MODULE solver_internal
 !

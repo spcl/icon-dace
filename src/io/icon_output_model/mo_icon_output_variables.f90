@@ -16,7 +16,128 @@
 ! to store the shallow water model state and other auxiliary variables.
 ! Constructors and destructors for these data structures are also defined here.
 
-#include "iconfor_dsl_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! DSL definitions 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! block definitions
+
+
+
+
+!---------------------
+! mappings
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! connectivity
+
+
+
+
+
+
+
+
+
+!---------------------
+! generic types
+
+
+
+
+!---------------------
+! shortcuts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+!---------------------
+! Upper-lower case
 !=============================================================================================
 MODULE mo_icon_output_variables
   !-------------------------------------------------------------------------
@@ -78,7 +199,7 @@ MODULE mo_icon_output_variables
   REAL(wp) :: dz_full_level(max_allocated_levels) = 0  ! namelist input of layer thickness
   
   TYPE t_output_collection
-    onCells_3D_sp :: output_variable
+    REAL(sp),  POINTER, DIMENSION(:,:,:) :: output_variable
   END TYPE t_output_collection
 
   ! variables

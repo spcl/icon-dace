@@ -122,10 +122,10 @@ MODULE mo_hamocc_model
   USE mo_dummy_coupling_frame,   ONLY: construct_dummy_coupling, &
     &                                  destruct_dummy_coupling
   USE mo_icon_output_tools,      ONLY: init_io_processes, prepare_output
-#ifndef __NO_ICON_COMIN__
-  USE mo_mpi,               ONLY: p_comm_comin
-  USE comin_host_interface, ONLY: mpi_handshake_dummy
-#endif
+
+
+
+
 
   IMPLICIT NONE
 
@@ -419,10 +419,10 @@ MODULE mo_hamocc_model
     CALL set_mpi_work_communicators(p_test_run, l_test_openmp, num_io_procs, &
       &  dedicatedRestartProcs, my_comp_id=hamocc_process, num_test_pe=num_test_pe, pio_type=pio_type)
 
-#ifndef __NO_ICON_COMIN__
-    ! we dont participate at comin (yet) but we need to be friendly and shake hands
-    CALL mpi_handshake_dummy(p_comm_comin)
-#endif
+
+
+
+
 
     !-------------------------------------------------------------------
     ! 3.2 Initialize various timers

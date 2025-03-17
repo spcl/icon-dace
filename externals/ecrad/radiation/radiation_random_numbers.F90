@@ -69,25 +69,25 @@ module radiation_random_numbers
   ! found that operations on double-precision reals are faster. Select
   ! which you prefer by defining USE_REAL_RNG_STATE for double
   ! precision, or undefining it for an 8-byte integer.
-#define USE_REAL_RNG_STATE 1
 
-  ! Define RNG_STATE_TYPE based on USE_REAL_RNG_STATE, where jprd
+
+  ! Define RNG_STATE_TYPE based on 1, where jprd
   ! refers to a double-precision number regardless of the working
   ! precision described by jprb, while jpib describes an 8-byte
   ! integer
-#ifdef USE_REAL_RNG_STATE
-#define RNG_STATE_TYPE real(kind=jprd)
-#else
-#define RNG_STATE_TYPE integer(kind=jpib)
-#endif
+
+
+
+
+
 
   ! The constants used in the main random number generator
-  RNG_STATE_TYPE , parameter :: IMinstdA  = 48271
-  RNG_STATE_TYPE , parameter :: IMinstdM  = 2147483647
+  real(kind=jprd) , parameter :: IMinstdA  = 48271
+  real(kind=jprd) , parameter :: IMinstdM  = 2147483647
 
   ! An alternative value of A that can be used to initialize the
   ! members of the state from a single seed
-  RNG_STATE_TYPE , parameter :: IMinstdA0 = 16807
+  real(kind=jprd) , parameter :: IMinstdA0 = 16807
   
   ! Scaling to convert the state to a uniform deviate in the range 0
   ! to 1 in working precision
@@ -101,7 +101,7 @@ module radiation_random_numbers
   type rng_type
 
     integer(kind=jpim) :: itype = IRngNative
-    RNG_STATE_TYPE     :: istate(NMaxStreams)
+    real(kind=jprd)     :: istate(NMaxStreams)
     integer(kind=jpim) :: nmaxstreams = NMaxStreams
     integer(kind=jpim) :: iseed
 

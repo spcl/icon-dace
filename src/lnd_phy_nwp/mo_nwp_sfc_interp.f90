@@ -15,7 +15,21 @@
 ! Soil moisture is read from IFS2ICON as soil moisture index and then
 ! converted back to soil moisture mass [m] using TERRA soil types.
 
-#include "consistent_fma.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! For runs that check result consistency we fix the different
+! contractions that the Intel compiler performs on some loops (at
+! least in version 16.0) for the vectorized part and the
+! non-vectorized parts
 MODULE mo_nwp_sfc_interp
 
   USE mo_kind,                ONLY: wp
@@ -92,7 +106,7 @@ CONTAINS
     END IF
 
     ! Vertical interpolation indices and weights
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
     DO jk = 1, nlev_soil-1
       IF (zml_soil(jk) <= zsoil_ifs(1)) THEN
         idx0(jk)       = 0
@@ -112,7 +126,7 @@ CONTAINS
       ENDIF
     ENDDO
 
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb,jk,jc,nlen,wfac,tcorr1,tcorr2,snowdep,wfac_snow)
     DO jb = 1, p_patch%nblks_c

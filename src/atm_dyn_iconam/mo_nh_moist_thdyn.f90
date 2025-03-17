@@ -12,7 +12,17 @@
 ! Contains correction term for moist thermodynamics (moisture-dependence of heat capacities)
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_nh_moist_thdyn
@@ -95,14 +105,8 @@ MODULE mo_nh_moist_thdyn
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
       DO jc = i_startidx, i_endidx
         DO jk = 1, nlev
-#else
-!$NEC outerloop_unroll(8)
-      DO jk = 1, nlev
-        DO jc = i_startidx, i_endidx
-#endif
           qsum_liq(jc,jk) = 0.0_wp
           qsum_ice(jc,jk) = 0.0_wp
 

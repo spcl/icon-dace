@@ -43,7 +43,19 @@ MODULE mo_atm_energy_memory
   USE mo_atm_energy_types        ,ONLY: t_atm_energy, t_atm_energy_config
 
   ! include definition for "__acc_attach(ptr)"
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -488,7 +500,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein1)
+       
     END IF
     !
     IF (   leinphyvi .OR. ltend_eindynvi .OR. ltend_eincldvi .OR. ltend_einradvi .OR. ltend_eintmxvi .OR. &
@@ -503,7 +515,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein1vi)
+       
     END IF
     !
     IF (leinphyhi .OR. ltend_eindynhi .OR. ltend_eincldhi .OR. ltend_einradhi .OR. ltend_eintmxhi) THEN
@@ -517,7 +529,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein1hi)
+       
     END IF
     !
     IF (leinphyti .OR. ltend_eindynti .OR. ltend_eincldti .OR. ltend_einradti .OR. ltend_eintmxti) THEN
@@ -531,7 +543,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein1ti)
+       
     END IF
     !
     !   - 2nd stage, for difference ..2.. - ..1.. and ..2.. - ..3.., and for output at the end of the time step
@@ -550,7 +562,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein2)
+       
     END IF
     !
     IF (   leinvi .OR. leindynvi .OR. leinphyvi .OR. &
@@ -567,7 +579,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein2vi)
+       
     END IF
     !
     IF (   leinhi .OR. leindynhi .OR. leinphyhi .OR. &
@@ -582,7 +594,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein2hi)
+       
     END IF
     !
     IF (   leinti .OR. leindynti .OR. leinphyti .OR. &
@@ -597,7 +609,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein2ti)
+       
     END IF
     !
     !   - 3rd stage, for difference ..2.. - ..3.., and for output after dynamics
@@ -614,7 +626,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein3)
+       
     END IF
     !
     IF (   leindynvi .OR. ltend_einphyvi .OR. &
@@ -629,7 +641,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein3vi)
+       
     END IF
     !
     IF (leindynhi .OR. ltend_einphyhi) THEN
@@ -643,7 +655,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein3hi)
+       
     END IF
     !
     IF (leindynti .OR. ltend_einphyti) THEN
@@ -657,7 +669,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ein3ti)
+       
     END IF
     !
     !
@@ -677,7 +689,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh1)
+       
     END IF
     !
     IF (   lekhphyvi .OR. ltend_ekhdynvi .OR. ltend_ekhtmxvi .OR. &
@@ -692,7 +704,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh1vi)
+       
     END IF
     !
     IF (lekhphyhi .OR. ltend_ekhdynhi .OR. ltend_ekhtmxhi) THEN
@@ -706,7 +718,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh1hi)
+       
     END IF
     !
     IF (lekhphyti .OR. ltend_ekhdynti .OR. ltend_ekhtmxti) THEN
@@ -720,7 +732,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh1ti)
+       
     END IF
     !
     !   - 2nd stage, for difference ..2.. - ..1.. and ..2.. - ..3.., and for output at the end of the time step
@@ -739,7 +751,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh2)
+       
     END IF
     !
     IF (   lekhvi .OR. lekhdynvi .OR. lekhphyvi .OR. &
@@ -756,7 +768,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh2vi)
+       
     END IF
     !
     IF (   lekhhi .OR. lekhdynhi .OR. lekhphyhi .OR. &
@@ -771,7 +783,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh2hi)
+       
     END IF
     !
     IF (   lekhti .OR. lekhdynti .OR. lekhphyti .OR. &
@@ -786,7 +798,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh2ti)
+       
     END IF
     !
     !   - 3rd stage, for difference ..2.. - ..3.., and for output after dynamics
@@ -803,7 +815,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh3)
+       
     END IF
     !
     IF (   lekhdynvi .OR. ltend_ekhphyvi .OR. &
@@ -818,7 +830,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh3vi)
+       
     END IF
     !
     IF (lekhdynhi .OR. ltend_ekhphyhi) THEN
@@ -832,7 +844,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh3hi)
+       
     END IF
     !
     IF (lekhdynti .OR. ltend_ekhphyti) THEN
@@ -846,7 +858,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekh3ti)
+       
     END IF
     !
     !
@@ -866,7 +878,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv1)
+       
     END IF
     !
     IF (   lekvphyvi .OR. ltend_ekvdynvi .OR. ltend_ekvtmxvi .OR. &
@@ -881,7 +893,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv1vi)
+       
     END IF
     !
     IF (lekvphyhi .OR. ltend_ekvdynhi .OR. ltend_ekvtmxhi) THEN
@@ -895,7 +907,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv1hi)
+       
     END IF
     !
     IF (lekvphyti .OR. ltend_ekvdynti .OR. ltend_ekvtmxti) THEN
@@ -909,7 +921,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv1ti)
+       
     END IF
     !
     !   - 2nd stage, for difference ..2.. - ..1.. and ..2.. - ..3.., and for output at the end of the time step
@@ -928,7 +940,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv2)
+       
     END IF
     !
     IF (   lekvvi .OR. lekvdynvi .OR. lekvphyvi .OR. &
@@ -945,7 +957,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv2vi)
+       
     END IF
     !
     IF (   lekvhi .OR. lekvdynhi .OR. lekvphyhi .OR. &
@@ -960,7 +972,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv2hi)
+       
     END IF
     !
     IF (   lekvti .OR. lekvdynti .OR. lekvphyti .OR. &
@@ -975,7 +987,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv2ti)
+       
     END IF
     !
     !   - 3rd stage, for difference ..2.. - ..3.., and for output after dynamics
@@ -992,7 +1004,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv3)
+       
     END IF
     !
     IF (   lekvdynvi .OR. ltend_ekvphyvi .OR. &
@@ -1007,7 +1019,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv3vi)
+       
     END IF
     !
     IF (lekvdynhi .OR. ltend_ekvphyhi) THEN
@@ -1021,7 +1033,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv3hi)
+       
     END IF
     !
     IF (lekvdynti .OR. ltend_ekvphyti) THEN
@@ -1035,7 +1047,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekv3ti)
+       
     END IF
     !
     !
@@ -1055,7 +1067,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp1)
+       
     END IF
     !
     IF (   legpphyvi .OR. ltend_egpdynvi .OR. &
@@ -1070,7 +1082,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp1vi)
+       
     END IF
     !
     IF (legpphyhi .OR. ltend_egpdynhi) THEN
@@ -1084,7 +1096,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp1hi)
+       
     END IF
     !
     IF (legpphyti .OR. ltend_egpdynti) THEN
@@ -1098,7 +1110,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp1ti)
+       
     END IF
     !
     !   - 2nd stage, for difference ..2.. - ..1.. and ..2.. - ..3.., and for output at the end of the time step
@@ -1117,7 +1129,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp2)
+       
     END IF
     !
     IF (   legpvi .OR. legpdynvi .OR. legpphyvi .OR. &
@@ -1134,7 +1146,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp2vi)
+       
     END IF
     !
     IF (   legphi .OR. legpdynhi .OR. legpphyhi .OR. &
@@ -1149,7 +1161,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp2hi)
+       
     END IF
     !
     IF (   legpti .OR. legpdynti .OR. legpphyti .OR. &
@@ -1164,7 +1176,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp2ti)
+       
     END IF
     !
     !   - 3rd stage, for difference ..2.. - ..3.., and for output after dynamics
@@ -1181,7 +1193,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp3)
+       
     END IF
     !
     IF (   legpdynvi .OR. ltend_egpphyvi .OR. &
@@ -1196,7 +1208,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp3vi)
+       
     END IF
     !
     IF (legpdynhi .OR. ltend_egpphyhi) THEN
@@ -1210,7 +1222,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp3hi)
+       
     END IF
     !
     IF (legpdynti .OR. ltend_egpphyti) THEN
@@ -1224,7 +1236,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egp3ti)
+       
     END IF
     !
     !
@@ -1244,7 +1256,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto1)
+       
     END IF
     !
     IF (   letophyvi .OR. ltend_etodynvi .OR. &
@@ -1259,7 +1271,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto1vi)
+       
     END IF
     !
     IF (letophyhi .OR. ltend_etodynhi) THEN
@@ -1273,7 +1285,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto1hi)
+       
     END IF
     !
     IF (letophyti .OR. ltend_etodynti) THEN
@@ -1287,7 +1299,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto1ti)
+       
     END IF
     !
     !   - 2nd stage, for difference ..2.. - ..1.. and ..2.. - ..3.., and for output at the end of the time step
@@ -1306,7 +1318,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto2)
+       
     END IF
     !
     IF (   letovi .OR. letodynvi .OR. letophyvi .OR. &
@@ -1323,7 +1335,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto2vi)
+       
     END IF
     !
     IF (   letohi .OR. letodynhi .OR. letophyhi .OR. &
@@ -1338,7 +1350,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto2hi)
+       
     END IF
     !
     IF (   letoti .OR. letodynti .OR. letophyti .OR. &
@@ -1353,7 +1365,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto2ti)
+       
     END IF
     !
     !   - 3rd stage, for difference ..2.. - ..3.., and for output after dynamics
@@ -1370,7 +1382,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto3)
+       
     END IF
     !
     IF (   letodynvi .OR. ltend_etophyvi .OR. &
@@ -1385,7 +1397,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto3vi)
+       
     END IF
     !
     IF (letodynhi .OR. ltend_etophyhi) THEN
@@ -1399,7 +1411,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto3hi)
+       
     END IF
     !
     IF (letodynti .OR. ltend_etophyti) THEN
@@ -1413,7 +1425,7 @@ CONTAINS
             &        lrestart = .FALSE.,                                          &
             &        isteptype=tstep_instant,                                     &
             &        lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eto3ti)
+       
     END IF
     !
 
@@ -1437,7 +1449,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eindyn)
+       
     END IF
     !
     !
@@ -1453,7 +1465,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eindynvi)
+       
     END IF
     !
     !
@@ -1469,7 +1481,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eindynhi)
+       
     END IF
     !
     !
@@ -1485,7 +1497,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eindynti)
+       
     END IF
 
 
@@ -1503,7 +1515,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhdyn)
+       
     END IF
     !
     !
@@ -1519,7 +1531,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhdynvi)
+       
     END IF
     !
     !
@@ -1535,7 +1547,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhdynhi)
+       
     END IF
     !
     !
@@ -1551,7 +1563,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhdynti)
+       
     END IF
 
 
@@ -1569,7 +1581,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvdyn)
+       
     END IF
     !
     !
@@ -1585,7 +1597,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvdynvi)
+       
     END IF
     !
     !
@@ -1601,7 +1613,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvdynhi)
+       
     END IF
     !
     !
@@ -1617,7 +1629,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvdynti)
+       
     END IF
 
 
@@ -1635,7 +1647,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egpdyn)
+       
     END IF
     !
     !
@@ -1651,7 +1663,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egpdynvi)
+       
     END IF
     !
     !
@@ -1667,7 +1679,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egpdynhi)
+       
     END IF
     !
     !
@@ -1683,7 +1695,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egpdynti)
+       
     END IF
 
 
@@ -1701,7 +1713,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%etodyn)
+       
     END IF
     !
     !
@@ -1717,7 +1729,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%etodynvi)
+       
     END IF
     !
     !
@@ -1733,7 +1745,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%etodynhi)
+       
     END IF
     !
     !
@@ -1749,7 +1761,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%etodynti)
+       
     END IF
 
 
@@ -1770,7 +1782,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eincld)
+       
     END IF
     !
     !
@@ -1786,7 +1798,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eincldvi)
+       
     END IF
     !
     !
@@ -1802,7 +1814,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eincldhi)
+       
     END IF
     !
     !
@@ -1818,7 +1830,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eincldti)
+       
     END IF
 
 
@@ -1839,7 +1851,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%einrad)
+       
     END IF
     !
     !
@@ -1855,7 +1867,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%einradvi)
+       
     END IF
     !
     !
@@ -1871,7 +1883,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%einradhi)
+       
     END IF
     !
     !
@@ -1887,7 +1899,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%einradti)
+       
     END IF
 
 
@@ -1908,7 +1920,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eintmx)
+       
     END IF
     !
     !
@@ -1924,7 +1936,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eintmxvi)
+       
     END IF
     !
     !
@@ -1940,7 +1952,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eintmxhi)
+       
     END IF
     !
     !
@@ -1956,7 +1968,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%eintmxti)
+       
     END IF
 
 
@@ -1974,7 +1986,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhtmx)
+       
     END IF
     !
     !
@@ -1990,7 +2002,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhtmxvi)
+       
     END IF
     !
     !
@@ -2006,7 +2018,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhtmxhi)
+       
     END IF
     !
     !
@@ -2022,7 +2034,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhtmxti)
+       
     END IF
 
 
@@ -2040,7 +2052,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvtmx)
+       
     END IF
     !
     !
@@ -2056,7 +2068,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvtmxvi)
+       
     END IF
     !
     !
@@ -2072,7 +2084,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvtmxhi)
+       
     END IF
     !
     !
@@ -2088,7 +2100,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvtmxti)
+       
     END IF
 
 
@@ -2109,7 +2121,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%einphy)
+       
     END IF
     !
     !
@@ -2125,7 +2137,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%einphyvi)
+       
     END IF
     !
     !
@@ -2141,7 +2153,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%einphyhi)
+       
     END IF
     !
     !
@@ -2157,7 +2169,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%einphyti)
+       
     END IF
 
 
@@ -2175,7 +2187,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhphy)
+       
     END IF
     !
     !
@@ -2191,7 +2203,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhphyvi)
+       
     END IF
     !
     !
@@ -2207,7 +2219,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhphyhi)
+       
     END IF
     !
     !
@@ -2223,7 +2235,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekhphyti)
+       
     END IF
 
 
@@ -2241,7 +2253,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvphy)
+       
     END IF
     !
     !
@@ -2257,7 +2269,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvphyvi)
+       
     END IF
     !
     !
@@ -2273,7 +2285,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvphyhi)
+       
     END IF
     !
     !
@@ -2289,7 +2301,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%ekvphyti)
+       
     END IF
 
 
@@ -2307,7 +2319,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egpphy)
+       
     END IF
     !
     !
@@ -2323,7 +2335,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egpphyvi)
+       
     END IF
     !
     !
@@ -2339,7 +2351,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egpphyhi)
+       
     END IF
     !
     !
@@ -2355,7 +2367,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%egpphyti)
+       
     END IF
 
 
@@ -2373,7 +2385,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%etophy)
+       
     END IF
     !
     !
@@ -2389,7 +2401,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%etophyvi)
+       
     END IF
     !
     !
@@ -2405,7 +2417,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%etophyhi)
+       
     END IF
     !
     !
@@ -2421,7 +2433,7 @@ CONTAINS
             &       lrestart = .FALSE.,                                    &
             &       isteptype=tstep_instant,                               &
             &       lopenacc=.TRUE.)
-       __acc_attach(atm_energy%etophyti)
+       
     END IF
 
 

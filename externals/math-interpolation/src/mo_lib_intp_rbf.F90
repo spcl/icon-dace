@@ -17,7 +17,17 @@
 !! reconstruction routines.
 !!
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_lib_intp_rbf
@@ -139,13 +149,8 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
       DO jc = i_startidx, i_endidx
         DO jk = slev, elev
-#else
-      DO jk = slev, elev
-        DO jc = i_startidx, i_endidx
-#endif
           p_u_out(jc, jk, jb) = &
             ptr_coeff(1, 1, jc, jb)*p_vn_in(iidx(1, jc, jb), jk, iblk(1, jc, jb)) + &
             ptr_coeff(2, 1, jc, jb)*p_vn_in(iidx(2, jc, jb), jk, iblk(2, jc, jb)) + &
@@ -271,15 +276,10 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG
-#ifdef __LOOP_EXCHANGE
       DO jc = i_startidx, i_endidx
         !$ACC LOOP VECTOR
         DO jk = slev, elev
-#else
-      DO jk = slev, elev
-        !$ACC LOOP VECTOR
-        DO jc = i_startidx, i_endidx
-#endif
+
 
           grad_x(jc, jk, jb) = &
             ptr_coeff(1, 1, jc, jb)*p_cell_in(jc, jk, jb) + &
@@ -410,14 +410,14 @@ CONTAINS
                              i_startidx, i_endidx)
 
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(lzacc)
-#ifdef __LOOP_EXCHANGE
+
       DO jv = i_startidx, i_endidx
         DO jk = slev, elev
-#else
-!$NEC outerloop_unroll(4)
-      DO jk = slev, elev
-        DO jv = i_startidx, i_endidx
-#endif
+
+
+
+
+
 
           p_u_out(jv, jk, jb) = &
             ptr_coeff(1, 1, jv, jb)*p_e_in(iidx(1, jv, jb), jk, iblk(1, jv, jb)) + &
@@ -535,14 +535,14 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
+
       DO jv = i_startidx, i_endidx
         DO jk = slev, elev
-#else
-!$NEC outerloop_unroll(4)
-      DO jk = slev, elev
-        DO jv = i_startidx, i_endidx
-#endif
+
+
+
+
+
 
           p_u_out(jv, jk, jb) = &
             ptr_coeff(1, 1, jv, jb)*p_e_in(iidx(1, jv, jb), jk, iblk(1, jv, jb)) + &
@@ -670,13 +670,13 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
+
       DO je = i_startidx, i_endidx
         DO jk = slev, elev
-#else
-      DO jk = slev, elev
-        DO je = i_startidx, i_endidx
-#endif
+
+
+
+
 
           p_vt_out(je, jk, jb) = &
             ptr_coeff(1, je, jb)*p_vn_in(iidx(1, je, jb), jk, iblk(1, je, jb)) + &

@@ -17,17 +17,6 @@ MODULE mo_icon_output_tools
   USE mo_parallel_config,     ONLY: pio_type
   USE mo_mpi,                 ONLY: process_mpi_io_size, stop_mpi, my_process_is_io
   USE mo_impl_constants,      ONLY: pio_type_async, pio_type_cdipio
-#ifdef HAVE_CDI_PIO
-  USE mo_mpi,                 ONLY: mpi_comm_null, p_comm_work_io
-  USE yaxt,                   ONLY: xt_initialize, xt_initialized
-  USE mo_cdi_pio_interface,   ONLY: nml_io_cdi_pio_namespace, &
-    &                                   cdi_base_namespace, &
-    &                                   nml_io_cdi_pio_client_comm, &
-    &                                   nml_io_cdi_pio_conf_handle
-  USE mo_name_list_output_init, ONLY: init_cdipio_cb
-  USE mo_name_list_output,    ONLY: write_ready_files_cdipio
-  USE mo_cdi,                 ONLY: namespaceGetActive, namespaceSetActive
-#endif
   USE mo_timer,               ONLY: timer_stop, timer_model_init, timers_level
   USE mo_name_list_output,    ONLY: name_list_io_main_proc
   USE mo_name_list_output_init, ONLY: init_name_list_output, parse_variable_groups, &
@@ -45,9 +34,6 @@ MODULE mo_icon_output_tools
   IMPLICIT NONE
 
   PRIVATE
-#ifdef HAVE_CDI_PIO
-  INCLUDE 'cdipio.inc'
-#endif
 
     PUBLIC :: init_io_processes
     PUBLIC :: prepare_output
@@ -101,46 +87,7 @@ MODULE mo_icon_output_tools
       ENDIF
     ELSE IF (process_mpi_io_size > 0 .AND. pio_type == pio_type_cdipio) THEN
 
-#ifdef HAVE_CDI_PIO
-      CALL message(routine,'Collective asynchronous namelist I/O scheme is enabled.')
-      IF (my_process_is_io()) THEN
-        ! Stop timer which is already started but would not be stopped
-        ! since xxx_io_main_proc never returns
-        IF (timers_level > 1) CALL timer_stop(timer_model_init)
-
-        ! compute sim_start, sim_end
-        sim_step_info%sim_start = time_config%tc_exp_startdate
-        sim_step_info%sim_end = time_config%tc_exp_stopdate
-        sim_step_info%run_start = time_config%tc_startdate
-        sim_step_info%restart_time = time_config%tc_stopdate
-
-        sim_step_info%dtime  = dtime
-        sim_step_info%jstep0 = 0
-
-        CALL getAttributesForRestarting(restartAttributes)
-        ! get start counter for time loop from restart file:
-        IF (restartAttributes%is_init) &
-          & CALL restartAttributes%get("jstep", sim_step_info%jstep0)
-      ENDIF
-
-      IF (.NOT. xt_initialized()) CALL xt_initialize(p_comm_work_io)
-
-
-      cdi_base_namespace = namespaceGetActive()
-      CALL cdiPioConfSetCallBackActions(nml_io_cdi_pio_conf_handle, &
-           cdipio_callback_postcommsetup, init_cdipio_cb)
-      CALL cdiPioConfSetCallBackActions(nml_io_cdi_pio_conf_handle, &
-           cdipio_callback_postwritebatch, write_ready_files_cdipio)
-      nml_io_cdi_pio_client_comm = &
-           &   cdiPioInit(p_comm_work_io, nml_io_cdi_pio_conf_handle, &
-           &              nml_io_cdi_pio_namespace)
-      IF (nml_io_cdi_pio_client_comm == mpi_comm_null) THEN
-        ! todo: terminate program cleanly here
-        CALL stop_mpi
-      END IF
-#else
       CALL finish(routine, 'CDI-PIO requested but unavailable')
-#endif
     ELSE
       ! -----------------------------------------
       ! non-asynchronous I/O (performed by PE #0)

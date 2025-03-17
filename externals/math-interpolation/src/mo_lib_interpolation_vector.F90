@@ -17,7 +17,17 @@
 !! reconstruction routines.
 !!
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_lib_interpolation_vector
@@ -33,11 +43,7 @@ MODULE mo_lib_interpolation_vector
 
   PUBLIC :: edges2cells_vector_lib
 
-#ifdef __MIXED_PRECISION
-  INTEGER, PARAMETER :: vp = sp
-#else
   INTEGER, PARAMETER :: vp = wp
-#endif
 
 CONTAINS
 
@@ -117,14 +123,8 @@ CONTAINS
       CALL get_indices_c_lib(i_startidx_in, i_endidx_in, nproma, jb, i_startblk, i_endblk, &
                              i_startidx, i_endidx)
 
-#ifdef __LOOP_EXCHANGE
       DO jc = i_startidx, i_endidx
         DO jk = slev, elev
-#else
-!CDIR UNROLL=6
-      DO jk = slev, elev
-        DO jc = i_startidx, i_endidx
-#endif
 
           p_u_out(jc, jk, jb) = &
             e_bln_c_u(jc, 1, jb)*p_vn_in(iidx(jc, jb, 1), jk, iblk(jc, jb, 1)) + &

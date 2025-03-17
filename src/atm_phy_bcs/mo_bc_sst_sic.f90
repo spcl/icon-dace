@@ -241,15 +241,6 @@ CONTAINS
     REAL(dp), CONTIGUOUS, POINTER :: sst(:,:,:), sic(:,:,:)
 
     INTEGER  :: jc, jb, jg, jce, nblk
-#ifdef _OPENACC
-    LOGICAL  :: lzopenacc
-
-    IF (PRESENT(lopenacc)) THEN
-      lzopenacc = lopenacc
-    ELSE
-      lzopenacc = .FALSE.
-    ENDIF
-#endif
 
     jg = p_patch%id
 

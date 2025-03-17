@@ -96,11 +96,11 @@ MODULE mo_action
                                                         ! this action is to be performed
   CONTAINS
     PROCEDURE :: initialize => action__collect_vars  ! initialize action object
-#if defined (__SX__) || defined (__NEC_VH__)
-    PROCEDURE :: execute    => action__execute_SX    ! execute action object
-#else
+
+
+
     PROCEDURE :: execute    => action__execute       ! execute action object
-#endif
+
     PROCEDURE :: print_setup=> action__print_setup   ! Screen print out of action object setup
     ! deferred routine for action specific kernel (to be defined in extended type)
     PROCEDURE(kernel), deferred :: kernel

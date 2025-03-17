@@ -40,7 +40,7 @@
 !
 !
 !> provides naming parameters for the solver
-#include "fc_feature_defs.inc"
+
 MODULE solver_public
 
   IMPLICIT NONE

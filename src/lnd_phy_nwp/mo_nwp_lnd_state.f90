@@ -71,7 +71,19 @@ MODULE mo_nwp_lnd_state
   USE mo_action_types,         ONLY: ACTION_RESET, actions, new_action
 
 
-#include "add_var_acc_macro.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 
 
   IMPLICIT NONE
@@ -411,7 +423,7 @@ MODULE mo_nwp_lnd_state
          &                 "mode_iau_fg_in","mode_iau_old_fg_in",              &
          &                 "mode_combined_in","mode_cosmo_in","mode_iniana"),  &
          & lopenacc=.TRUE. ) 
-    __acc_attach(p_prog_lnd%t_g)
+    
 
 
     ! & p_prog_lnd%t_g_t(nproma,nblks_c,ntiles_total+ntiles_water), STAT = ist)
@@ -424,7 +436,7 @@ MODULE mo_nwp_lnd_state
          & tlev_source=TLEV_NNOW_RCF,                                          &
          & in_group=groups("iau_restore_vars"),                                &
          & lopenacc=.TRUE. )  
-    __acc_attach(p_prog_lnd%t_g_t)
+    
 
 
     ! fill the separate variables belonging to the container t_gt
@@ -454,7 +466,7 @@ MODULE mo_nwp_lnd_state
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,            &
          & ldims=shape3d_subsw, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,&
          & lopenacc=.TRUE.)
-    __acc_attach(p_prog_lnd%t_s_t)
+    
 
     ! fill the separate variables belonging to the container t_s
     ALLOCATE(p_prog_lnd%t_s_ptr(ntiles_total+ntiles_water))
@@ -484,7 +496,7 @@ MODULE mo_nwp_lnd_state
          & tlev_source=TLEV_NNOW_RCF,                                      &
          & in_group=groups("iau_restore_vars"),                            &
          & lopenacc=.TRUE.)
-    __acc_attach(p_prog_lnd%t_sk_t)
+    
 
     ! fill the separate variables belonging to the container t_sk
     ALLOCATE(p_prog_lnd%t_sk_ptr(ntiles_total+ntiles_water))
@@ -518,7 +530,7 @@ MODULE mo_nwp_lnd_state
          & tlev_source=TLEV_NNOW_RCF,                                             &
          & in_group=groups("iau_restore_vars"),                                   &
          & lopenacc=.TRUE.)
-    __acc_attach(p_prog_lnd%w_i_t)
+    
 
     ! fill the separate variables belonging to the container w_i
     ALLOCATE(p_prog_lnd%w_i_ptr(ntiles_total))
@@ -549,7 +561,7 @@ MODULE mo_nwp_lnd_state
            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,              &
            & ldims=shape3d_subs, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,&
            & lopenacc=.TRUE.)
-      __acc_attach(p_prog_lnd%w_p_t)
+      
 
       ! fill the separate variables belonging to the container w_p
       ALLOCATE(p_prog_lnd%w_p_ptr(ntiles_total))
@@ -576,7 +588,7 @@ MODULE mo_nwp_lnd_state
            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,grib2_desc,                 &
            & ldims=shape3d_subs, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,&
            & lopenacc=.TRUE.)
-      __acc_attach(p_prog_lnd%w_s_t)
+      
 
       ! fill the separate variables belonging to the container w_s
       ALLOCATE(p_prog_lnd%w_s_ptr(ntiles_total))
@@ -608,7 +620,7 @@ MODULE mo_nwp_lnd_state
          & tlev_source=TLEV_NNOW_RCF,                                            &
          & in_group=groups("iau_restore_vars"),                                  &
          & lopenacc=.TRUE.)
-    __acc_attach(p_prog_lnd%t_so_t)
+    
 
     ! fill the separate variables belonging to the container t_so
     !
@@ -644,7 +656,7 @@ MODULE mo_nwp_lnd_state
          & tlev_source=TLEV_NNOW_RCF,                                            &
          & in_group=groups("iau_restore_vars"),                                  &
          & lopenacc=.TRUE.)
-    __acc_attach(p_prog_lnd%w_so_t)
+    
 
     ! fill the separate variables belonging to the container w_so
     ALLOCATE(p_prog_lnd%w_so_ptr(ntiles_total))
@@ -679,7 +691,7 @@ MODULE mo_nwp_lnd_state
          & tlev_source=TLEV_NNOW_RCF,                                            &
          & in_group=groups("iau_restore_vars"),                                  &
          & lopenacc=.TRUE.)
-    __acc_attach(p_prog_lnd%w_so_ice_t)
+    
 
     ! fill the separate variables belonging to the container w_so_ice
     ALLOCATE(p_prog_lnd%w_so_ice_ptr(ntiles_total))
@@ -715,7 +727,7 @@ MODULE mo_nwp_lnd_state
          & tlev_source=TLEV_NNOW_RCF,                                              &
          & in_group=groups("iau_restore_vars"),                                    &
          & lopenacc=.TRUE. ) 
-    __acc_attach(p_prog_lnd%t_snow_t)
+    
 
     ! fill the separate variables belonging to the container t_snow
     ALLOCATE(p_prog_lnd%t_snow_ptr(ntiles_total))
@@ -747,7 +759,7 @@ MODULE mo_nwp_lnd_state
          & tlev_source=TLEV_NNOW_RCF,                                              &
          & in_group=groups("iau_restore_vars"),                                    &
          & lopenacc=.TRUE.)
-    __acc_attach(p_prog_lnd%w_snow_t)
+    
 
     ! fill the separate variables belonging to the container w_snow
     ALLOCATE(p_prog_lnd%w_snow_ptr(ntiles_total))
@@ -779,7 +791,7 @@ MODULE mo_nwp_lnd_state
          & tlev_source=TLEV_NNOW_RCF,                                                   &
          & in_group=groups("iau_restore_vars"),                                         &
          & lopenacc=.TRUE.)
-        __acc_attach(p_prog_lnd%rho_snow_t)
+        
 
     ! fill the separate variables belonging to the container rho_snow
     ALLOCATE(p_prog_lnd%rho_snow_ptr(ntiles_total))
@@ -812,7 +824,7 @@ MODULE mo_nwp_lnd_state
            & tlev_source=TLEV_NNOW_RCF,                                              &
            & in_group=groups("iau_restore_vars"),                                    &
            & lopenacc=.TRUE.)
-      __acc_attach(p_prog_lnd%rho_snow_mult_t)
+      
 
       ! fill the separate variables belonging to the container rho_snow_mult
       !
@@ -848,7 +860,7 @@ MODULE mo_nwp_lnd_state
        & tlev_source=TLEV_NNOW_RCF,                                               &
        & in_group=groups("iau_restore_vars"),                                     &
        & lopenacc=.TRUE.)
-      __acc_attach(p_prog_lnd%t_snow_mult_t)
+      
 
       ! fill the separate variables belonging to the container t_snow_mult
       !
@@ -882,7 +894,7 @@ MODULE mo_nwp_lnd_state
            & tlev_source=TLEV_NNOW_RCF,                                            &
            & in_group=groups("iau_restore_vars"),                                  &
            & lopenacc=.TRUE.)
-      __acc_attach(p_prog_lnd%wtot_snow_t)
+      
 
       ! fill the separate variables belonging to the container wtot_snow
       !
@@ -914,7 +926,7 @@ MODULE mo_nwp_lnd_state
            & tlev_source=TLEV_NNOW_RCF,                                            &
            & in_group=groups("iau_restore_vars"),                                  &
            & lopenacc=.TRUE.)
-      __acc_attach(p_prog_lnd%wliq_snow_t)
+      
 
       ! fill the separate variables belonging to the container wliq_snow
       !
@@ -946,7 +958,7 @@ MODULE mo_nwp_lnd_state
            & tlev_source=TLEV_NNOW_RCF,                                            &
            & in_group=groups("iau_restore_vars"),                                  &
            & lopenacc=.TRUE.)
-      __acc_attach(p_prog_lnd%dzh_snow_t)
+      
 
       ! fill the separate variables belonging to the container dzh_snow
       !
@@ -1071,7 +1083,7 @@ MODULE mo_nwp_lnd_state
          & in_group=groups("dwd_fg_sfc_vars","mode_dwd_ana_in","mode_iau_fg_in", &
          &                 "mode_iau_old_fg_in","mode_combined_in","mode_cosmo_in", &
          &                 "mode_iniana","iau_restore_vars"), lopenacc=.TRUE. )
-    __acc_attach(p_prog_wtr%t_ice)
+    
 
 
     ! since it is currently not envisaged to have mixed sea-lake gridpoints, h_ice 
@@ -1087,7 +1099,7 @@ MODULE mo_nwp_lnd_state
          &                 "mode_iau_old_fg_in","mode_combined_in",            &
          &                 "mode_cosmo_in","mode_iniana","iau_restore_vars"),  &
          & lopenacc=.TRUE. )   
-    __acc_attach(p_prog_wtr%h_ice)
+    
 
 
     !
@@ -1100,7 +1112,7 @@ MODULE mo_nwp_lnd_state
     CALL add_var( prog_list, vname_prefix//'t_snow_si'//suffix, p_prog_wtr%t_snow_si,  &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, ldims=shape2d,     &
          & tlev_source=TLEV_NNOW_RCF, lopenacc=.TRUE.)
-    __acc_attach(p_prog_wtr%t_snow_si)
+    
 
 
     ! & p_prog_wtr%h_snow_si(nproma,nblks_c)
@@ -1109,7 +1121,7 @@ MODULE mo_nwp_lnd_state
     CALL add_var( prog_list, vname_prefix//'h_snow_si'//suffix, p_prog_wtr%h_snow_si,  &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, ldims=shape2d,     &
          & tlev_source=TLEV_NNOW_RCF, lopenacc=.TRUE.)
-    __acc_attach(p_prog_wtr%h_snow_si)
+    
 
     ! & p_prog_wtr%alb_si(nproma,nblks_c)
     cf_desc     = t_cf_var('sea_ice_albedo', '-', 'sea ice albedo (diffuse)', datatype_flt)
@@ -1125,7 +1137,7 @@ MODULE mo_nwp_lnd_state
          &  "mode_combined_in","iau_restore_vars"),                              &
          & post_op=post_op(POST_OP_SCALE, arg1=100._wp, new_cf=new_cf_desc),     &
          & lopenacc=.TRUE. )   
-    __acc_attach(p_prog_wtr%alb_si)
+    
 
 
     !
@@ -1140,7 +1152,7 @@ MODULE mo_nwp_lnd_state
       CALL add_var( prog_list, vname_prefix//'t_snow_lk'//suffix, p_prog_wtr%t_snow_lk,  &
            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, ldims=shape2d,     &
            & tlev_source=TLEV_NNOW_RCF, lopenacc=.TRUE. )   
-      __acc_attach(p_prog_wtr%t_snow_lk)
+      
 
 
       ! p_prog_wtr%h_snow_lk(nproma,nblks_c)
@@ -1149,7 +1161,7 @@ MODULE mo_nwp_lnd_state
       CALL add_var( prog_list, vname_prefix//'h_snow_lk'//suffix, p_prog_wtr%h_snow_lk,  &
            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, ldims=shape2d,     &
            & tlev_source=TLEV_NNOW_RCF, lopenacc=.TRUE. )   
-      __acc_attach(p_prog_wtr%h_snow_lk)
+      
 
 
       ! p_prog_wtr%t_mnw_lk(nproma,nblks_c)
@@ -1161,7 +1173,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("dwd_fg_sfc_vars","mode_dwd_fg_in","mode_iau_fg_in","mode_iau_old_fg_in","mode_iniana",  &
            & "iau_restore_vars"),                                                                                     &
            & lopenacc=.TRUE. )   
-      __acc_attach(p_prog_wtr%t_mnw_lk)
+      
 
 
       ! p_prog_wtr%t_wml_lk(nproma,nblks_c)
@@ -1173,7 +1185,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("dwd_fg_sfc_vars","mode_dwd_fg_in","mode_iau_fg_in","mode_iau_old_fg_in","mode_iniana",  &
            & "iau_restore_vars"),                                                                                     &
            & lopenacc=.TRUE. )   
-      __acc_attach(p_prog_wtr%t_wml_lk)
+      
 
 
       ! p_prog_wtr%h_ml_lk(nproma,nblks_c)
@@ -1185,7 +1197,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("dwd_fg_sfc_vars","mode_dwd_fg_in","mode_iau_fg_in","mode_iau_old_fg_in","mode_iniana",  &
            & "iau_restore_vars"),                                                                                     &
            & lopenacc=.TRUE. )   
-      __acc_attach(p_prog_wtr%h_ml_lk)
+      
 
 
       ! p_prog_wtr%t_bot_lk(nproma,nblks_c)
@@ -1197,7 +1209,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("dwd_fg_sfc_vars","mode_dwd_fg_in","mode_iau_fg_in","mode_iau_old_fg_in","mode_iniana",     &
            & "iau_restore_vars"),                                                                                        &
            & lopenacc=.TRUE. )   
-      __acc_attach(p_prog_wtr%t_bot_lk)
+      
 
 
       ! p_prog_wtr%c_t_lk(nproma,nblks_c)
@@ -1210,7 +1222,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("dwd_fg_sfc_vars","mode_dwd_fg_in","mode_iau_fg_in","mode_iau_old_fg_in","mode_iniana",  &
            & "iau_restore_vars"),                                                                                     &
            & lopenacc=.TRUE. )   
-      __acc_attach(p_prog_wtr%c_t_lk)
+      
 
 
       ! p_prog_wtr%t_b1_lk(nproma,nblks_c)
@@ -1223,7 +1235,7 @@ MODULE mo_nwp_lnd_state
            & grib2_desc, ldims=shape2d, tlev_source=TLEV_NNOW_RCF,                  &
            & in_group=groups("iau_restore_vars"),                                   &
            & lopenacc=.TRUE. )   
-      __acc_attach(p_prog_wtr%t_b1_lk)
+      
 
 
       ! p_prog_wtr%h_b1_lk(nproma,nblks_c)
@@ -1236,7 +1248,7 @@ MODULE mo_nwp_lnd_state
            & tlev_source=TLEV_NNOW_RCF,                                                  &
            & in_group=groups("iau_restore_vars"),                                        &
            & lopenacc=.TRUE. )
-      __acc_attach(p_prog_wtr%h_b1_lk)
+      
 
     ENDIF  ! llake
 
@@ -1357,7 +1369,7 @@ MODULE mo_nwp_lnd_state
            &                 "mode_iau_fg_in","mode_iau_old_fg_in",          &
            &                 "mode_combined_in","mode_cosmo_in",             &
            &                 "mode_iniana"), lopenacc=.TRUE. )      
-    __acc_attach(p_diag_lnd%qv_s)
+    
 
 
     ! & p_diag_lnd%fr_seaice(nproma,nblks_c)
@@ -1370,7 +1382,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("dwd_fg_sfc_vars","mode_dwd_ana_in","mode_iau_ana_in",&
            &                 "mode_iau_old_ana_in","mode_combined_in",         &
            &                 "mode_iniana","iau_restore_vars"), lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%fr_seaice)
+    
 
     IF (is_coupled_to_ocean()) THEN
       ! & p_diag_lnd%condhf_ice(nproma,nblks_c)
@@ -1379,7 +1391,7 @@ MODULE mo_nwp_lnd_state
       CALL add_var( diag_list, vname_prefix//'condhf_ice', p_diag_lnd%condhf_ice,&
             & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,          &
             & ldims=shape2d, lrestart=.TRUE., lopenacc=.TRUE.)
-      __acc_attach(p_diag_lnd%condhf_ice)
+      
 
       ! & p_diag_lnd%meltpot_ice(nproma,nblks_c)
       cf_desc    = t_cf_var('meltpot_ice', 'W m-2', 'melt potential at sea-ice top', datatype_flt)
@@ -1387,7 +1399,7 @@ MODULE mo_nwp_lnd_state
       CALL add_var( diag_list, vname_prefix//'meltpot_ice', p_diag_lnd%meltpot_ice,&
             & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,          &
             & ldims=shape2d, lrestart=.FALSE., lopenacc=.TRUE.)
-      __acc_attach(p_diag_lnd%meltpot_ice)
+      
     END IF
 
     ! & p_diag_lnd%qv_s_t(nproma,nblks_c,ntiles_total+ntiles_water)
@@ -1399,7 +1411,7 @@ MODULE mo_nwp_lnd_state
            & loutput=.FALSE.,                                                  &
            & in_group=groups("iau_restore_vars"),                              &
            & initval=0.001_wp, lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%qv_s_t)
+    
 
     ! fill the separate variables belonging to the container qv_s_t
     ALLOCATE(p_diag_lnd%qv_st_ptr(ntiles_total+ntiles_water))
@@ -1426,7 +1438,7 @@ MODULE mo_nwp_lnd_state
     CALL add_var( diag_list, vname_prefix//'t_s', p_diag_lnd%t_s,                &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,              &
          & ldims=shape2d, lrestart=.FALSE., loutput=.TRUE., lopenacc=.TRUE.      )
-    __acc_attach(p_diag_lnd%t_s)
+    
 
 
     ! & p_diag_lnd%t_sk(nproma,nblks_c)
@@ -1437,7 +1449,7 @@ MODULE mo_nwp_lnd_state
          & ldims=shape2d, lrestart=.FALSE., loutput=.TRUE., in_group=              &
          & groups("dwd_fg_sfc_vars", "mode_iau_fg_in", "mode_dwd_fg_in", "mode_combined_in"), &
          & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%t_sk)
+    
 
 
     ! & p_diag_lnd%t_seasfc(nproma,nblks_c)
@@ -1451,7 +1463,7 @@ MODULE mo_nwp_lnd_state
          & in_group=groups("dwd_fg_sfc_vars","mode_dwd_ana_in",                  &
          &                 "mode_iau_ana_in","mode_iau_old_ana_in"),             &
          & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%t_seasfc)
+    
 
 
     ! & p_diag_lnd%w_i(nproma,nblks_c)
@@ -1468,7 +1480,7 @@ MODULE mo_nwp_lnd_state
          &                 "mode_cosmo_in","mode_iniana"),                       &
          & post_op=post_op(POST_OP_SCALE, arg1=1000._wp, new_cf=new_cf_desc),    &
          & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%w_i)
+    
 
 
     IF (itype_interception == 2) THEN
@@ -1485,7 +1497,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("land_vars"),                                         &
            & post_op=post_op(POST_OP_SCALE, arg1=1000._wp, new_cf=new_cf_desc),    &
            & lopenacc=.TRUE. )
-      __acc_attach(p_diag_lnd%w_p)
+      
 
       ! & p_diag_lnd%w_s(nproma,nblks_c)
       cf_desc     = t_cf_var('w_s', 'm H2O', 'water content of interception snow', &
@@ -1499,7 +1511,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("land_vars"),                                         &
            & post_op=post_op(POST_OP_SCALE, arg1=1000._wp, new_cf=new_cf_desc),    &
            & lopenacc=.TRUE. )
-      __acc_attach(p_diag_lnd%w_s)
+      
 
     END IF  ! itype_interception == 2
 
@@ -1514,7 +1526,7 @@ MODULE mo_nwp_lnd_state
              &                "mode_dwd_fg_in","mode_iniana","mode_combined_in", &
              &                "iau_restore_vars"),                               &
              & lopenacc=.TRUE.)
-      __acc_attach(p_diag_lnd%hsnow_max)
+      
 
       ! duration of current snow-cover peiod
       cf_desc    = t_cf_var('snow_age', 'd', 'duration of snow cover', datatype_flt)
@@ -1526,7 +1538,7 @@ MODULE mo_nwp_lnd_state
              &                "mode_dwd_fg_in","mode_iniana","mode_combined_in", &
              &                "iau_restore_vars"),                               &
              & lopenacc=.TRUE.)
-      __acc_attach(p_diag_lnd%snow_age)
+      
 
       ! cloud-ice flux from drifting snow
       cf_desc    = t_cf_var('qi_snowdrift_flx', 'kg m-2 s', &
@@ -1537,7 +1549,7 @@ MODULE mo_nwp_lnd_state
              & ldims=shape2d, lrestart=.FALSE.,                                  &
              & in_group=groups('land_vars'),                                     &
              & lopenacc=.TRUE.)
-      __acc_attach(p_diag_lnd%qi_snowdrift_flx)
+      
     ENDIF
 
     ! & p_diag_lnd%t_so(nproma,nlev_soil+1,nblks_c)
@@ -1553,7 +1565,7 @@ MODULE mo_nwp_lnd_state
          &                 "mode_dwd_ana_in","mode_iau_ana_in",                  &
          &                 "mode_iau_old_ana_in","mode_combined_in",             &
          &                 "mode_cosmo_in","mode_iniana"), lopenacc=.TRUE.       )
-      __acc_attach(p_diag_lnd%t_so)
+      
 
 
     ! & p_diag_lnd%w_so(nproma,nlev_soil,nblks_c)
@@ -1571,7 +1583,7 @@ MODULE mo_nwp_lnd_state
          & hor_interp=create_hor_interp_metadata(hor_intp_type=HINTP_TYPE_LONLAT_NNB ),&
          & post_op=post_op(POST_OP_SCALE, arg1=1000._wp, new_cf=new_cf_desc),    &
          & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%w_so)
+    
 
     ! & p_diag_lnd%w_so_ice(nproma,nlev_soil,nblks_c)
     cf_desc      = t_cf_var('w_so_ice', 'm H20',   'ice content', datatype_flt)
@@ -1586,7 +1598,7 @@ MODULE mo_nwp_lnd_state
          & hor_interp=create_hor_interp_metadata(hor_intp_type=HINTP_TYPE_LONLAT_NNB ),&
          & post_op=post_op(POST_OP_SCALE, arg1=1000._wp, new_cf=new_cf_desc),    &
          & lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%w_so_ice)
+    
 
     IF (l_smi) THEN
       ! & p_diag_lnd%smi(nproma,nlev_soil,nblks_c)
@@ -1600,7 +1612,7 @@ MODULE mo_nwp_lnd_state
            & hor_interp=create_hor_interp_metadata(hor_intp_type=HINTP_TYPE_LONLAT_NNB ), &
            & l_pp_scheduler_task=TASK_COMPUTE_SMI,                                 &
            & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%smi)
+    
     ENDIF  ! l_smi
 
 
@@ -1618,7 +1630,7 @@ MODULE mo_nwp_lnd_state
            & initval=0._wp, resetval=0._wp,                              &
            & action_list=actions(new_action(ACTION_RESET,runoff_interval(p_jg))),  &
            & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%runoff_s)
+    
 
 
     ! & p_diag_lnd%runoff_g(nproma,nblks_c)
@@ -1635,7 +1647,7 @@ MODULE mo_nwp_lnd_state
            & initval=0._wp, resetval=0._wp,                              &
            & action_list=actions(new_action(ACTION_RESET,runoff_interval(p_jg))),  &
            & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%runoff_g)
+    
 
     IF (var_in_output(p_jg)%res_soilwatb) THEN
       ! & p_diag_lnd%resid_wso(nproma,nblks_c)
@@ -1654,7 +1666,7 @@ MODULE mo_nwp_lnd_state
             & initval=0._wp, resetval=0._wp,                                        &
             & action_list=actions(new_action(ACTION_RESET,runoff_interval(p_jg))),  &
             & lopenacc=.TRUE.)
-      __acc_attach(p_diag_lnd%resid_wso)
+      
     ENDIF
 
     ! & p_diag_lnd%runoff_s_inst_t(nproma,nblks_c,ntiles_total)
@@ -1666,7 +1678,7 @@ MODULE mo_nwp_lnd_state
            & ldims=shape3d_subsw, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,    &
            & in_group=groups("iau_init_vars"),                                             &
            & lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%runoff_s_inst_t)
+    
 
     ! & p_diag_lnd%runoff_g_inst_t(nproma,nblks_c,ntiles_total)
     cf_desc    = t_cf_var('runoff_g_inst_t', 'kg m-2', &
@@ -1677,7 +1689,7 @@ MODULE mo_nwp_lnd_state
            & ldims=shape3d_subsw, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,      &
            & in_group=groups("iau_init_vars"),                                               &
            & lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%runoff_g_inst_t) 
+     
 
     IF (var_in_output(p_jg)%res_soilwatb) THEN    
       ! & p_diag_lnd%resid_wso_inst_t(nproma,nblks_c,ntiles_total)
@@ -1689,7 +1701,7 @@ MODULE mo_nwp_lnd_state
             & ldims=shape3d_subs, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,       &
             & in_group=groups("iau_init_vars"),                                               &
             & lopenacc=.TRUE.)
-      __acc_attach(p_diag_lnd%resid_wso_inst_t) 
+       
     ENDIF
 
     ! & p_diag_lnd%runoff_s_t(nproma,nblks_c,ntiles_total)
@@ -1703,7 +1715,7 @@ MODULE mo_nwp_lnd_state
            & action_list=actions(new_action(ACTION_RESET,runoff_interval(p_jg))), &
            & in_group=groups("iau_init_vars"),                                    &
            & lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%runoff_s_t)
+    
 
     ! & p_diag_lnd%runoff_g_t(nproma,nblks_c,ntiles_total)
     cf_desc    = t_cf_var('runoff_g_t', 'kg m-2', &
@@ -1716,7 +1728,7 @@ MODULE mo_nwp_lnd_state
            & action_list=actions(new_action(ACTION_RESET,runoff_interval(p_jg))), &
            & in_group=groups("iau_init_vars"),                                    &
            & lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%runoff_g_t)
+    
 
     IF (var_in_output(p_jg)%res_soilwatb) THEN
       ! & p_diag_lnd%resid_wso_t(nproma,nblks_c,ntiles_total)
@@ -1730,7 +1742,7 @@ MODULE mo_nwp_lnd_state
             & action_list=actions(new_action(ACTION_RESET,runoff_interval(p_jg))), &
             & in_group=groups("iau_init_vars"),                                    &
             & lopenacc=.TRUE.)
-      __acc_attach(p_diag_lnd%resid_wso_t)
+      
     ENDIF
 
     ! fill the separate variables belonging to the container runoff_s
@@ -1800,7 +1812,7 @@ MODULE mo_nwp_lnd_state
              & isteptype=TSTEP_ACCUM,                                             &
              & initval=0._wp, resetval=0._wp, lopenacc=.TRUE.,                    &
              & action_list=actions(new_action(ACTION_RESET,melt_interval(p_jg))) )
-        __acc_attach(p_diag_lnd%snow_melt)
+        
 
         ! & lnd_diag%snow_melt_flux_t(nproma,nblks_c,ntiles_total)
         cf_desc    = t_cf_var('surface_snow_melt_flux_t', 'kg m-2 s-1', &
@@ -1810,7 +1822,7 @@ MODULE mo_nwp_lnd_state
            & p_diag_lnd%snow_melt_flux_t, GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, &
            & grib2_desc, ldims=shape3d_subs, lcontainer=.TRUE., lrestart=.FALSE.,      &
            & loutput=.FALSE., initval=0._wp, resetval=0._wp, lopenacc=.TRUE.)
-        __acc_attach(p_diag_lnd%snow_melt_flux_t)
+        
 
         ! fill the separate variables belonging to the container snow_melt
         ALLOCATE(p_diag_lnd%snow_melt_ptr(ntiles_total))
@@ -1837,7 +1849,7 @@ MODULE mo_nwp_lnd_state
            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,             &
            & ldims=shape2d, lrestart=.FALSE.,                                     &
            & loutput=.TRUE., lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%rstom)
+    
 
 
     ! & p_diag_lnd%rstom_t(nproma,nblks_c,ntiles_total)
@@ -1848,7 +1860,7 @@ MODULE mo_nwp_lnd_state
            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,        &
            & ldims=shape3d_subs, lcontainer=.TRUE., lrestart=.FALSE.,        &
            & loutput=.FALSE., lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%rstom_t) 
+     
 
     IF (itype_trvg == 3) THEN ! extended plant evaporation scheme
       ! & p_diag_lnd%plantevap(nproma,nblks_c)
@@ -1860,7 +1872,7 @@ MODULE mo_nwp_lnd_state
            & ldims=shape2d,in_group=groups("dwd_fg_sfc_vars", "mode_iau_fg_in",   &
            & "mode_dwd_fg_in","mode_iniana","mode_combined_in"), lrestart=.FALSE.,&
            & loutput=.TRUE., lopenacc=.TRUE. )
-      __acc_attach(p_diag_lnd%plantevap)
+      
 
       ! & p_diag_lnd%plantevap_t(nproma,nblks_c,ntiles_total)
       cf_desc    = t_cf_var('plantevap_t', 'kg m-2', &
@@ -1872,7 +1884,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("iau_restore_vars"),                                    &
            & loutput=.FALSE.,                                                        &
            & lopenacc=.TRUE.)
-      __acc_attach(p_diag_lnd%plantevap_t)
+      
 
       ! fill the separate variables belonging to the container plantevap
       ALLOCATE(p_diag_lnd%plantevap_ptr(ntiles_total))
@@ -1904,7 +1916,7 @@ MODULE mo_nwp_lnd_state
          &                 "mode_iau_old_fg_in","mode_combined_in",            &
          &                 "mode_cosmo_in","mode_iniana"),                     &
          & lopenacc=.TRUE.                                                     )
-    __acc_attach(p_diag_lnd%t_snow)
+    
 
 
     ! & p_diag_lnd%w_snow(nproma,nblks_c)
@@ -1919,7 +1931,7 @@ MODULE mo_nwp_lnd_state
          &                 "mode_combined_in","mode_cosmo_in","mode_iniana"),  &
          & post_op=post_op(POST_OP_SCALE, arg1=1000._wp, new_cf=new_cf_desc),  &
          & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%w_snow)
+    
 
 
     ! & p_diag_lnd%rho_snow(nproma,nblks_c)
@@ -1932,7 +1944,7 @@ MODULE mo_nwp_lnd_state
          &                 "mode_dwd_fg_in","mode_iau_fg_in",                    &
          &                 "mode_iau_old_ana_in","mode_combined_in",             &
          &                 "mode_cosmo_in","mode_iniana"), lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%rho_snow)
+    
 
 
     ! & p_diag_lnd%h_snow(nproma,nblks_c)
@@ -1945,7 +1957,7 @@ MODULE mo_nwp_lnd_state
            &                 "mode_iau_ana_in","mode_iau_old_ana_in",              &
            &                 "mode_combined_in","mode_iniana","iau_restore_vars"), &
            &                 lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%h_snow)
+    
 
     ! & p_diag_lnd%h_snow_t(nproma,nblks_c,ntiles_total)
     cf_desc    = t_cf_var('h_snow_t', 'm', 'snow height', datatype_flt)
@@ -1956,7 +1968,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("iau_restore_vars"),                              &
            & loutput=.FALSE.,                                                  &
            & lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%h_snow_t)
+    
 
     ! fill the separate variables belonging to the container h_snow
     ALLOCATE(p_diag_lnd%h_snow_ptr(ntiles_total))
@@ -1987,7 +1999,7 @@ MODULE mo_nwp_lnd_state
            &                 "mode_iau_ana_in","mode_iau_old_ana_in",             &
            &                 "mode_combined_in","mode_cosmo_in","mode_iniana"),   &
            & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%freshsnow)
+    
 
 
     ! & p_diag_lnd%freshsnow_t(nproma,nblks_c,ntiles_total)
@@ -2000,7 +2012,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("iau_restore_vars"),                                 &
            & loutput=.FALSE.,                                                     &
            & lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%freshsnow_t)
+    
 
     ! fill the separate variables belonging to the container freshsnow
     ALLOCATE(p_diag_lnd%freshsnow_ptr(ntiles_total))
@@ -2030,7 +2042,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("land_vars"),                                        &
            & post_op=post_op(POST_OP_SCALE, arg1=100._wp, new_cf=new_cf_desc),    &
            & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%snowfrac)
+    
 
 
     ! & p_diag_lnd%snowfrac_lc(nproma,nblks_c)
@@ -2043,7 +2055,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("land_vars","dwd_fg_sfc_vars","mode_iau_fg_in"),     &
            & post_op=post_op(POST_OP_SCALE, arg1=100._wp, new_cf=new_cf_desc),    &
            & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%snowfrac_lc)
+    
 
 
     ! local snow-cover referring to a tile; zero on snow-free tiles, one (except for very low snow depths) on snow-tile
@@ -2058,7 +2070,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("iau_restore_vars"),                               &
            & loutput=.FALSE.,                                                   &
            & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%snowfrac_t)
+    
 
     ! fill the separate variables belonging to the container snowfrac
     ALLOCATE(p_diag_lnd%snowfrac_ptr(ntiles_total))
@@ -2092,7 +2104,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("iau_restore_vars"),                                &
            & loutput=.FALSE.,                                                    &
            & lopenacc=.TRUE. )
-    __acc_attach(p_diag_lnd%snowfrac_lc_t)
+    
 
     ! fill the separate variables belonging to the container snowfrac
     ALLOCATE(p_diag_lnd%snowfrac_lc_ptr(ntiles_total))
@@ -2124,7 +2136,7 @@ MODULE mo_nwp_lnd_state
            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,            &
            & ldims=shape3d_subs, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,  &
            & lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%snowfrac_lcu_t)
+    
 
     ! fill the separate variables belonging to the container snowfrac
     ALLOCATE(p_diag_lnd%snowfrac_lcu_ptr(ntiles_total))
@@ -2155,7 +2167,7 @@ MODULE mo_nwp_lnd_state
            & in_group=groups("dwd_fg_sfc_vars","mode_dwd_fg_in","mode_iau_fg_in",  &
            &                 "mode_iau_old_fg_in","multisnow_vars"),               &
            & lopenacc=.TRUE. )
-      __acc_attach(p_diag_lnd%rho_snow_mult)
+      
 
     ENDIF
 

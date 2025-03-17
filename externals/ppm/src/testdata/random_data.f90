@@ -37,7 +37,7 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#include "fc_feature_defs.inc"
+
 MODULE random_data
   USE ppm_extents, ONLY: extent, iinterval
   USE ppm_graph_csr, ONLY: graph_csr, assign_symmetric_edge_weight, &

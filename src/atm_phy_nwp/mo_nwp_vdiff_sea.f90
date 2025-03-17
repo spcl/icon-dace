@@ -47,9 +47,9 @@ MODULE mo_nwp_vdiff_sea
   USE sfc_terra_data, ONLY: csalb, ist_seawtr, ist_seaice
   USE sfc_seaice, ONLY: alb_seaice_equil, seaice_init_nwp, seaice_timestep_nwp
 
-#ifdef __NVCOMPILER
-  USE mo_coupling_config, ONLY: is_coupled_to_ocean
-#endif
+
+
+
 
   IMPLICIT NONE
   PRIVATE
@@ -248,39 +248,10 @@ CONTAINS
 
     ! Asynchronous data regions are a too recent feature. We have to resort to unstructured ones.
     ! This crutch ensures that we don't forget to delete any variable.
-#   define LIST_CREATE \
-        s_hat_wtr, \
-        s_hat_ice, \
-        qsat_hat_wtr, \
-        qsat_hat_ice, \
-        qsen, \
-        qlat, \
-        qlwrnet, \
-        qsolnet, \
-        snow_rate, \
-        rain_rate, \
-        tice_p, \
-        hice_p, \
-        tsnow_p, \
-        hsnow_p, \
-        albsi_p, \
-        tice_n, \
-        hice_n, \
-        tsnow_n, \
-        hsnow_n, \
-        condhf, \
-        meltpot, \
-        albsi_n
-    !$ACC ENTER DATA ASYNC(1) CREATE(LIST_CREATE)
+    !$ACC ENTER DATA ASYNC(1) CREATE(s_hat_wtr,         s_hat_ice,         qsat_hat_wtr,         qsat_hat_ice,         qsen,         qlat,         qlwrnet,         qsolnet,         snow_rate,         rain_rate,         tice_p,         hice_p,         tsnow_p,         hsnow_p,         albsi_p,         tice_n,         hice_n,         tsnow_n,         hsnow_n,         condhf,         meltpot,         albsi_n)
 
-#ifdef __NVCOMPILER
-    ! nvfortran does not understand passing a NULL pointer to an optional (Fortran 2008) :(
-    have_conductive_hflx_ice = is_coupled_to_ocean()
-    have_melt_potential_ice = is_coupled_to_ocean()
-#else
     have_conductive_hflx_ice = PRESENT(conductive_hflx_ice)
     have_melt_potential_ice = PRESENT(melt_potential_ice)
-#endif
 
     !$ACC DATA PRESENT(conductive_hflx_ice) IF(have_conductive_hflx_ice)
     !$ACC DATA PRESENT(melt_potential_ice) IF(have_melt_potential_ice)
@@ -565,8 +536,7 @@ CONTAINS
     !$ACC END DATA ! NO_CREATE(conductive_hflx_ice, melt_potential_ice)
     !$ACC END DATA ! PRESENT(melt_potential_ice)
     !$ACC END DATA ! PRESENT(conductive_hflx_ice)
-    !$ACC EXIT DATA DELETE(LIST_CREATE)
-#   undef LIST_CREATE
+    !$ACC EXIT DATA DELETE(s_hat_wtr,         s_hat_ice,         qsat_hat_wtr,         qsat_hat_ice,         qsen,         qlat,         qlwrnet,         qsolnet,         snow_rate,         rain_rate,         tice_p,         hice_p,         tsnow_p,         hsnow_p,         albsi_p,         tice_n,         hice_n,         tsnow_n,         hsnow_n,         condhf,         meltpot,         albsi_n)
 
   END SUBROUTINE sea_model
 
@@ -1110,19 +1080,7 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#   define LIST_CREATE \
-        frsi, \
-        tice_p, \
-        hice_p, \
-        tsnow_p, \
-        hsnow_p, \
-        albsi_p, \
-        tice_n, \
-        hice_n, \
-        tsnow_n, \
-        hsnow_n, \
-        albsi_n
-    !$ACC ENTER DATA ASYNC(1) CREATE(LIST_CREATE) IF(lzacc)
+    !$ACC ENTER DATA ASYNC(1) CREATE(frsi,         tice_p,         hice_p,         tsnow_p,         hsnow_p,         albsi_p,         tice_n,         hice_n,         tsnow_n,         hsnow_n,         albsi_n) IF(lzacc)
 
     !$OMP PARALLEL
       !$OMP DO PRIVATE(iblk, i_count, ic, jc, frsi, tice_p, hice_p, tsnow_p, hsnow_p, albsi_p) &
@@ -1180,7 +1138,7 @@ CONTAINS
     !$OMP END PARALLEL
 
     !$ACC WAIT(1)
-    !$ACC EXIT DATA DELETE(LIST_CREATE) IF(lzacc)
+    !$ACC EXIT DATA DELETE(frsi,         tice_p,         hice_p,         tsnow_p,         hsnow_p,         albsi_p,         tice_n,         hice_n,         tsnow_n,         hsnow_n,         albsi_n) IF(lzacc)
 
   END SUBROUTINE nwp_vdiff_update_seaice_vars
 

@@ -14,7 +14,17 @@
 ! reconstruction routines.
 
 !----------------------------
-#include "omp_definitions.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !----------------------------
 
 MODULE mo_intp_rbf
@@ -232,16 +242,9 @@ i_endidx_in   = ptr_patch%cells%end_index(rl_end)
 !$OMP PARALLEL
 
 IF (ptr_patch%id > 1) THEN
-#ifdef _OPENACC
-  !$ACC KERNELS ASYNC(1) IF(i_am_accel_node)
-  grad_x(:,:,1:i_startblk) = 0._wp
-  grad_y(:,:,1:i_startblk) = 0._wp
-  !$ACC END KERNELS
-#else
   CALL init(grad_x(:,:,1:i_startblk), lacc=i_am_accel_node)
   CALL init(grad_y(:,:,1:i_startblk), lacc=i_am_accel_node)
 !$OMP BARRIER
-#endif
 ENDIF
 
 !$OMP END PARALLEL

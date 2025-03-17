@@ -12,7 +12,19 @@
 ! Subroutines for computing turbulent exchange coefficients.
 
 !------------------
-#include "fsel.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+
+
 !------------------
 
 MODULE mo_turb_vdiff_diag
@@ -21,11 +33,7 @@ MODULE mo_turb_vdiff_diag
   USE mo_convect_tables,    ONLY: compute_qsat, cthomi, csecfrl
 
   ! DA: is it fine??
-#ifndef _OPENACC
   USE mo_convect_tables,    ONLY: prepare_ua_index_spline, lookup_ua_spline
-#else
-  USE mo_aes_convect_tables,ONLY: prepare_ua_index_spline_batch, lookup_ua_spline_batch
-#endif
 
   USE mo_sleve_config,      ONLY: top_height
   USE mo_turb_vdiff_config, ONLY: t_vdiff_config
@@ -166,13 +174,6 @@ CONTAINS
 
     REAL(wp) :: zonethird
 
-#ifdef _OPENACC
-    ! DA: for GPU it's much better to collapse the jk and jl loops,
-    !     therefore we need to use 2D temporary arrays
-    INTEGER  :: idx_batch(kbdim,klev)
-    REAL(wp) :: za_batch (kbdim,klev), zua_batch(kbdim,klev)
-    REAL(wp) :: zpapm1i_s
-#endif
 
     ! Shortcuts to components of vdiff_config
     !
@@ -216,7 +217,6 @@ CONTAINS
     ! 2. NEW THERMODYNAMIC VARIABLES
     !-------------------------------------
 
-#ifndef _OPENACC
     DO 212 jk=1,klev
       CALL prepare_ua_index_spline('vdiff (1)',jcs,kproma,ptm1(:,jk),idx,za        &
       &                                       ,klev=jk,kblock=jb,kblock_size=kbdim,&
@@ -244,7 +244,7 @@ CONTAINS
 
         ! Latent heat, liquid (and ice) potential temperature
 
-        zlh(jl,jk)     = FSEL(ptm1(jl,jk)-tmelt,alv,als) ! latent heat
+        zlh(jl,jk)     = MERGE(alv,als,(ptm1(jl,jk)-tmelt).GE.0._wp) ! latent heat
         zusus1         = zlh(jl,jk)/cpd*ztheta(jl,jk)/ptm1(jl,jk)*pxm1(jl,jk)
         zthetal(jl,jk) = ztheta(jl,jk)-zusus1
 
@@ -255,42 +255,6 @@ CONTAINS
       !$ACC END PARALLEL
 212 END DO
 
-#else
-    ! DA: warning: those are from AES convect tables!!
-    CALL prepare_ua_index_spline_batch('vdiff (1)', jcs, kproma, klev, &
-      &                                ptm1, idx_batch, za_batch,          &
-      &                                kblock=jb,kblock_size=kbdim, &
-                                       csecfrl=csecfrl, cthomi=cthomi, &
-                                       extend_upper_limit=top_height >= THERMOSPHERE_HEIGHT)
-    CALL lookup_ua_spline_batch(jcs, kproma, klev, idx_batch, za_batch, zua_batch)
-
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(zpapm1i_s, zusus1, zes)
-    DO jk=1,klev
-      DO jl=jcs,kproma
-        zpapm1i_s = 1._wp/papm1(jl,jk)
-        ztheta(jl,jk) = (p0ref*zpapm1i_s)**rd_o_cpd
-
-        ! Virtual dry static energy, potential temperature, virtual potential
-        ! temperature
-
-        pcptgz (jl,jk) = pgeof(jl,jk)+ptm1(jl,jk)*cpd
-        ztheta (jl,jk) = ptm1(jl,jk)*ztheta(jl,jk)
-        zthetav(jl,jk) = ztheta(jl,jk)*(1._wp+vtmpc1*pqm1(jl,jk)-pxm1(jl,jk))
-
-        ! Latent heat, liquid (and ice) potential temperature
-
-        zlh(jl,jk)     = FSEL(ptm1(jl,jk)-tmelt,alv,als) ! latent heat
-        zusus1         = zlh(jl,jk)/cpd*ztheta(jl,jk)/ptm1(jl,jk)*pxm1(jl,jk)
-        zthetal(jl,jk) = ztheta(jl,jk)-zusus1
-
-        zes=zua_batch(jl,jk)*zpapm1i_s              ! (sat. vapour pressure)*Rd/Rv/ps
-        zes=MIN(zes,0.5_wp)
-        zqsat(jl,jk)=zes/(1._wp-vtmpc1*zes)  ! specific humidity at saturation
-      END DO
-    END DO
-    !$ACC END PARALLEL
-#endif
 
     ! Copy bottom-level values to dummy arguments
 

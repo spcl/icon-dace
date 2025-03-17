@@ -19,7 +19,21 @@
 ! - prognostic total water variance AND prognostic ice
 
 !----------------------------
-#include "consistent_fma.inc"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! For runs that check result consistency we fix the different
+! contractions that the Intel compiler performs on some loops (at
+! least in version 16.0) for the vectorized part and the
+! non-vectorized parts
 !----------------------------
 
 MODULE mo_cover_koe
@@ -534,7 +548,6 @@ CASE( 2 )
 !-----------------------------------------------------------------------
 
 ! clouds as in COSMO
-#ifndef _OPENACC
 CASE( 3 )
 
   lprog_qi   = .true.       ! .true.: running with cloud ice
@@ -594,7 +607,6 @@ CASE( 4 )
                     itype_wcld )
 
   qi_tot     = 0.0_wp
-#endif
 
 !-----------------------------------------------------------------------
 
@@ -622,7 +634,7 @@ END SELECT
 
 ! total water vapor by conservation of grid-scale total water
 
-!PREVENT_INCONSISTENT_IFORT_FMA
+!
 !$ACC LOOP SEQ
 DO jk = kstart,klev
   !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zf_ice)

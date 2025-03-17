@@ -91,10 +91,10 @@ CONTAINS
     TYPE(datetime), POINTER             :: dummy_ptr
     TYPE(t_var_action_element)          :: var_action
     CHARACTER(LEN=MAX_DATETIME_STR_LEN) :: start0, end0, ref0
-#ifdef _MTIME_DEBUG
-    CHARACTER(LEN=MAX_DATETIME_STR_LEN) :: start1, end1, ref1, itime
-    TYPE(datetime), POINTER             :: itime_dt
-#endif
+
+
+
+
 
     start0 = get_time_str(time_config%tc_startdate, &
       &                        time_config%tc_startdate,     opt_start)
@@ -102,21 +102,6 @@ CONTAINS
       &                        time_config%tc_startdate,     opt_end)
     ref0   = get_time_str(time_config%tc_exp_startdate, &
       &                        time_config%tc_startdate,     opt_ref)
-#ifdef _MTIME_DEBUG
-    ! CONSISTENCY CHECK:
-    CALL dateTimeToString(time_config%tc_startdate, itime)
-    itime_dt => newDatetime(TRIM(itime))
-    start1 = get_time_str(time_config%tc_startdate,     itime_dt, opt_start)
-    end1   = get_time_str(time_config%tc_stopdate,      itime_dt, opt_end)
-    ref1   = get_time_str(time_config%tc_exp_startdate, itime_dt, opt_ref)
-    CALL deallocateDatetime(itime_dt)
-
-    IF ((TRIM(start0) /= TRIM(start1)) .OR.   &
-      & (TRIM(end0)   /= TRIM(end1))   .OR.   &
-      & (TRIM(ref0)   /= TRIM(ref1))) THEN
-      CALL finish(routine, "Error in mtime consistency check!")
-    END IF
-#endif
     ! define var_action
     var_action%actionTyp  = actionTyp
     var_action%intvl      = TRIM(intvl)               ! interval

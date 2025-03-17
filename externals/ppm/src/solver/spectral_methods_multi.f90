@@ -38,7 +38,7 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#define filename 'spectral_methods_multi.f90'
+
 !
 ! Power method to calculate dominant eigenvalue and corresponding eigenvector
 FUNCTION POWER_METHOD(A, x, ext_x, exchange, tol_opt, maxiter_opt) &
@@ -295,7 +295,7 @@ FUNCTION CALC_OPTIMAL_SOR_PARAM(rho) RESULT(sor_param)
 
   IF ( rho < 0.0_precs .OR. rho >= 1.0_precs ) THEN
     CALL abort_ppm("Provided spectral radius rho does not satisfy 0<=rho<1.", &
-         filename, __LINE__)
+         'spectral_methods_multi.f90', 298)
   ENDIF
 
   sor_param = 2.0_precs/(1.0_precs + SQRT(1.0_precs-rho**2.0_precs))
@@ -316,7 +316,7 @@ SUBROUTINE JACOBI_ITER(field, res_field)
 
   IF (.NOT. stencil_defined(0._precs)) THEN
     CALL abort_ppm("Stencil is not defined! Use set_stencil() first.", &
-         filename, __LINE__)
+         'spectral_methods_multi.f90', 319)
   ENDIF
 
   ! Define some variables for the ranges of the fields
@@ -346,7 +346,7 @@ SUBROUTINE JACOBI_ITER(field, res_field)
 
 END SUBROUTINE JACOBI_ITER
 
-#undef filename
+
 !
 ! Local Variables:
 ! license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"

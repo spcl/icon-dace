@@ -38,13 +38,13 @@
 ! NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ! SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 !
-#include "fc_feature_defs.inc"
+
 MODULE ppm_irand_internal
   USE ppm_std_type_kinds, ONLY: i4, i8, dp, sp
   USE ppm_extents, ONLY: iinterval, iinterval_sp, iinterval_dp
-#ifdef _OPENMP
-  USE omp_lib, ONLY: omp_get_thread_num
-#endif
+
+
+
   IMPLICIT NONE
   PRIVATE
   !> irand returns integers in the range irand_min..irand_max
@@ -938,11 +938,11 @@ CONTAINS
     INTEGER :: temp
 
     IF (PRESENT(random_seed)) THEN; temp = random_seed; ELSE
-#ifdef _OPENMP
-      temp = 9 + omp_get_thread_num()
-#else
+
+
+
       temp = 9
-#endif
+
     END IF
 
     CALL ppm_initialize_irand(comm, temp)

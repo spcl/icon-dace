@@ -155,25 +155,10 @@ REAL(wp), PARAMETER ::             &  ! some constants needed for Kaercher and L
 
 CONTAINS
 
-#ifdef _OPENACC
-! GPU code can't flush to zero double precision denormals
-! So to avoid CPU-GPU differences we'll do it manually
-FUNCTION make_normalized(v)
-  !$ACC ROUTINE SEQ
-  REAL(wp) :: v, make_normalized
-
-  IF (ABS(v) <= 2.225073858507201e-308_wp) THEN
-    make_normalized = 0.0_wp
-  ELSE
-    make_normalized = v
-  END IF
-END FUNCTION
-#else
 FUNCTION make_normalized(v)
   REAL(wp) :: v, make_normalized
     make_normalized = v
 END FUNCTION
-#endif
 
 !==============================================================================
 !> Module procedure "cloudice2mom" in "gscp_ice" for computing effects of 
@@ -453,11 +438,7 @@ SUBROUTINE cloudice2mom (            &
        v_th,n_sat,flux,phi,cool,tau,delta,scr,wcr,ctau,acoeff(3),bcoeff(2),ri_dot,  &
        kappa,sqrtkap,ren,R_imfc,R_im,R_ik,ri_0,zri,mi_hom,ni_hom,ri_hom,w_pre
 
-#ifdef __LOOP_EXCHANGE
    REAL (KIND = wp )  ::  zlhv(ke), zlhs(ke)
-#else
-   REAL (KIND = wp )  ::  zlhv(nvec), zlhs(nvec) ! Latent heat if vaporization and sublimation
-#endif
 
   LOGICAL :: lvariable_lh   ! Use constant latent heat (default .true.)
 
@@ -478,9 +459,6 @@ SUBROUTINE cloudice2mom (            &
   fxna(ztx)   = 1.0E2_wp * EXP(0.2_wp * (t0 - ztx))
   fxna_cooper(ztx) = 5.0E+0_wp * EXP(0.304_wp * (t0 - ztx))   ! FR: Cooper (1986) used by Greg Thompson(2008)
 
-#ifdef _OPENACC
-  CALL finish('mo_nwp_gscp_interface: ', 'subroutine cloudice2mom (gscp=3) not available on GPU') ! not tested
-#endif
 
 ! Define reciprocal of heat capacity of dry air (at constant pressure vs at constant volume)
 
@@ -607,9 +585,6 @@ SUBROUTINE cloudice2mom (            &
     WRITE (message_text,*) '   ivend   = ',ivend   ; CALL message('',message_text)
   END IF
   IF (izdebug > 50) THEN
-#if defined( _OPENACC )
-    CALL message('cloudice2mom','GPU-info : update host before cloudice')
-#endif
     !$ACC UPDATE HOST(dz, t, p, rho, qv, qc, qi, qr, qs) ASYNC(1)
     !$ACC WAIT(1)
     WRITE (message_text,'(A,2E10.3)') '      MAX/MIN dz  = ',MAXVAL(dz),MINVAL(dz)
@@ -655,18 +630,12 @@ SUBROUTINE cloudice2mom (            &
     dist_cldtop(iv) = 0.0_wp
     zqvsw_up(iv) = 0.0_wp
     pri_gsp (iv) = 0.0_wp
-#ifndef __LOOP_EXCHANGE
-    zlhv(iv)     = lh_v
-    zlhs(iv)     = lh_s    
-#endif
   END DO
   !$ACC END PARALLEL
 
   ! Initialize latent heats to constant values
-#ifdef __LOOP_EXCHANGE
   zlhv(:) = lh_v
   zlhs(:) = lh_s
-#endif
 
 
 ! *********************************************************************
@@ -676,7 +645,6 @@ SUBROUTINE cloudice2mom (            &
 
   !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
   !$ACC LOOP SEQ
-#ifdef __LOOP_EXCHANGE
   DO iv = iv_start, iv_end  !loop over horizontal domain
 
     ! Calculate latent heats if necessary
@@ -689,42 +657,6 @@ SUBROUTINE cloudice2mom (            &
     END IF
 
     DO  k = k_start, ke  ! loop over levels
-#else
-  DO  k = k_start, ke  ! loop over levels
-
-    ! Calculate latent heats if necessary
-    IF ( lvariable_lh ) THEN
-      !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(tg)
-      DO  iv = iv_start, iv_end  !loop over horizontal domain
-        tg      = make_normalized(t(iv,k))
-        zlhv(iv) = latent_heat_vaporization(tg)
-        zlhs(iv) = latent_heat_sublimation(tg)
-      END DO
-    END IF
-
-    !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(alf, bet, fnuc, llqc, llqi, llqr) &
-    !$ACC   PRIVATE(llqs, m2s, m3s, maxevap, nnr, ppg, qcg) &
-    !$ACC   PRIVATE(rhog, qig, qrg, qsg, qvg, reduce_dep) &
-    !$ACC   PRIVATE(sagg, scac, scau, scfrz, sdau, sev, siau) &
-    !$ACC   PRIVATE(sicri, sidep, simelt, snuc, srcri, srfrz) &
-    !$ACC   PRIVATE(srim, ssdep, sshed, ssmelt, temp_c) &
-    !$ACC   PRIVATE(tg, z1orhog, zbsdep, zcagg, zcidep, zcorr) &
-    !$ACC   PRIVATE(zcrim, zcsdep, zcslam, zdtdh, zdvtp, zeff) &
-    !$ACC   PRIVATE(zeln13o8qrk, zeln27o16qrk, zeln5o24qsk) &
-    !$ACC   PRIVATE(zeln2o3qsk, zeln7o4qrk, zeln7o8qrk) &
-    !$ACC   PRIVATE(zhi, zimi, zimr, zims, hlp) &
-    !$ACC   PRIVATE(zlnlogmi, zvi, zlnqrk, zlnqsk) &
-    !$ACC   PRIVATE(zmi, zn0s, znid, znin, zphi, zqct) &
-    !$ACC   PRIVATE(zqik, zqit, zqrk, zqrt, zqsk, zqst) &
-    !$ACC   PRIVATE(zqvsi, zqvsidiff, zqvsw, zqvsw0) &
-    !$ACC   PRIVATE(zqvt, zrho1o2, zrhofac_qi, zscmax, zscsum) &
-    !$ACC   PRIVATE(zsimax, zsisum, zsrmax, zsrsum) &
-    !$ACC   PRIVATE(zssmax, zsvidep, zsvisub, zsvmax) &
-    !$ACC   PRIVATE(ztau, ztc, ztfrzdiff, ztt, zvz0s, zx1, zx2) &
-    !$ACC   PRIVATE(zxfac, zzai, zzar, zzas, zztau) &
-    !$ACC   PRIVATE(nig, niactg, znik, zzni, zini, znit, snucn, scfrzn)
-    DO iv = iv_start, iv_end  !loop over horizontal domain
-#endif
 
       ! add part of latent heating calculated in subroutine graupel to model latent
       ! heating field: subtract temperature from model latent heating field
@@ -1467,11 +1399,7 @@ SUBROUTINE cloudice2mom (            &
         znit = 0.0_wp
       END IF
       
-#ifdef __LOOP_EXCHANGE      
       ztt = z_heat_cap_r*( zlhv(k)*(zqct+zqrt) + zlhs(k)*(zqit+zqst) )
-#else
-      ztt = z_heat_cap_r*( zlhv(iv)*(zqct+zqrt) + zlhs(iv)*(zqit+zqst) )
-#endif
 
       ! Update variables and add qi to qrs for water loading
       IF (lsedi_ice) THEN
@@ -1601,7 +1529,6 @@ SUBROUTINE cloudice2mom (            &
         ninact(iv,k) = 0.0_wp
       END IF
 
-#if !defined (_OPENACC) && !defined (__SX__)
       IF (izdebug > 15) THEN
         ! Check for negative values
         IF (qr(iv,k) < 0.0_wp) THEN
@@ -1625,7 +1552,6 @@ SUBROUTINE cloudice2mom (            &
           CALL message('',message_text)
         ENDIF
       ENDIF
-#endif
 
     END DO  !loop over iv
 
@@ -1681,9 +1607,6 @@ SUBROUTINE cloudice2mom (            &
   ENDIF
 
   IF (izdebug > 15) THEN
-#ifdef _OPENACC
-   CALL message('cloudice2mom', 'GPU-info : update host after cloudice')
-#endif
    !$ACC UPDATE HOST(t, qv, qc, qi, qr, qs) ASYNC(1)
    !$ACC WAIT(1)
    CALL message('cloudice2mom', 'UPDATED VARIABLES')

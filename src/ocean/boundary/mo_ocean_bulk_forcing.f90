@@ -64,9 +64,9 @@ MODULE mo_ocean_bulk_forcing
   USE mo_lib_grid_geometry_info,  ONLY: planar_torus_geometry
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device
 
-#ifdef _OPENACC
-  USE openacc, ONLY: acc_is_present 
-#endif
+
+
+
   
   IMPLICIT NONE
   

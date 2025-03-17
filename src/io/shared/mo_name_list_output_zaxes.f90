@@ -70,16 +70,16 @@ MODULE mo_name_list_output_zaxes
   USE mo_math_utilities,                    ONLY: set_zlev, t_value_set
   USE mo_run_config,                        ONLY: num_lev, iforcing, nlev
   USE mo_name_list_output_zaxes_types,      ONLY: t_verticalAxis, t_verticalAxisList
-#ifndef __NO_ICON_ATMO__
+
   USE mo_io_config,                         ONLY: echotop_meta, wshear_uv_heights, srh_heights
   USE mo_nonhydrostatic_config,             ONLY: ivctype
   USE mo_lnd_nwp_config,                    ONLY: nlev_snow, zml_soil
-#endif
-#ifndef __NO_ICON_OCEAN__
+
+
   USE mo_ocean_nml,                         ONLY: dzlev_m,lhamocc, n_zlev
   USE mo_hamocc_nml,                        ONLY: ks, ksp, dzsed
   USE mo_ocean_nml,                         ONLY: rho_lev_in, n_dlev, use_layers    ! by_nils
-#endif
+
 
   IMPLICIT NONE
 
@@ -113,7 +113,7 @@ CONTAINS
     INTEGER                           :: k, nlev, nlevp1, znlev_soil
     INTEGER                           :: n_echotop, n_wshear, n_srh
     TYPE(t_verticalAxisList), POINTER :: it
-#ifndef __NO_ICON_ATMO__
+
 
     nlev            = num_lev(log_patch_id)
     nlevp1          = num_lev(log_patch_id) + 1
@@ -345,7 +345,7 @@ CONTAINS
       DEALLOCATE(levels)
     END IF
 
-#endif
+
     ! #ifndef __NO_ICON_ATMO__
 
     it => verticalAxisList
@@ -364,7 +364,7 @@ CONTAINS
     TYPE (t_value_set),       INTENT(IN)          :: levels
     TYPE(t_level_selection),  INTENT(IN), POINTER :: level_selection
 
-#ifndef __NO_ICON_ATMO__
+
     ! surface level (required, e.g., for RLON, RLAT)
     CALL verticalAxisList%append(single_level_axis(ZA_surface))
 
@@ -374,7 +374,7 @@ CONTAINS
       &                       levels                = levels%values,      &
       &                       level_selection       = level_selection,    &
       &                       opt_set_vct_as_levels = .TRUE.))
-#endif
+
 
   END SUBROUTINE setup_pl_axis_atmo
 
@@ -387,7 +387,7 @@ CONTAINS
     TYPE (t_value_set),       INTENT(IN)          :: levels
     TYPE(t_level_selection),  INTENT(IN), POINTER :: level_selection
 
-#ifndef __NO_ICON_ATMO__
+
     ! surface level (required, e.g., for RLON, RLAT)
     CALL verticalAxisList%append(single_level_axis(ZA_surface))
     ! Altitude above mean sea level
@@ -396,7 +396,7 @@ CONTAINS
       &                          levels                = levels%values,      &
       &                          level_selection       = level_selection,    &
       &                          opt_set_vct_as_levels = .TRUE.))
-#endif
+
 
   END SUBROUTINE setup_hl_axis_atmo
 
@@ -409,7 +409,7 @@ CONTAINS
     TYPE (t_value_set),       INTENT(IN)          :: levels
     TYPE(t_level_selection),  INTENT(IN), POINTER :: level_selection
 
-#ifndef __NO_ICON_ATMO__
+
     ! surface level (required, e.g., for RLON, RLAT)
     CALL verticalAxisList%append(single_level_axis(ZA_surface))
     ! i-axis (isentropes)
@@ -419,7 +419,7 @@ CONTAINS
       &                          level_selection       = level_selection,    &
       &                          opt_set_vct_as_levels = .TRUE.))
 
-#endif
+
 
   END SUBROUTINE setup_il_axis_atmo
 
@@ -436,7 +436,7 @@ CONTAINS
     REAL(wp), ALLOCATABLE             :: levels_s(:), levels_sp(:)
     REAL(wp), ALLOCATABLE             :: layers_int(:), layers_cent(:)
     
-#ifndef __NO_ICON_OCEAN__
+
     ALLOCATE(levels_i(n_zlev+1), levels_m(n_zlev))
     CALL set_zlev(levels_i, levels_m, n_zlev, dzlev_m)
 
@@ -478,7 +478,7 @@ CONTAINS
       &                          level_selection=level_selection))
     DEALLOCATE(layers_int, layers_cent)
     endif
-#endif
+
 
   END SUBROUTINE setup_zaxes_oce
 
