@@ -1,5 +1,5 @@
 INCS="-I./src/include -I./externals/ecrad/include -I./externals/ecrad/radiation -I./externals/yaxt/include -I./externals/comin/include -I./externals/comin/build/include -I./externals/ppm/include/f77"
-DEFS="-DNOMPI -D__NO_ICON_COMIN__"
+DEFS="-DNOMPI -D__NO_ICON_COMIN__ -D__LOOP_EXCHANGE"
 
 # For ecrad.
 for f in $(find externals/ecrad | grep -E "\.F90\$|\.f90\$"); do
