@@ -20,8 +20,6 @@ except ImportError:
 import dace
 
 # FIXME(small): maybe use `contiguous` attribute  to better ensure C interoperatiblity
-# FIXME: Analysis pass to find out which struct members are actually read & written by SDFG
-# FIXME: Need free function (for verification deep copies & uncached dace shallow copies)!
 # FIXME: add caching of struct & struct array arguments
 # FIXME: have to see about copy back from dace structs/arrays to fortran
 # FIXME: check if arrays are allocated/associated etc when copying in
@@ -66,19 +64,6 @@ def _(scalar: dace.data.Scalar) -> str:
 @dace_type_to_fortran_c_var_type_decl.register(dace.data.Structure)
 def _(_) -> str:
     return "type(c_ptr)"
-
-
-script_dir = os.path.dirname(os.path.abspath(__file__))
-input_file = os.path.join(script_dir, "../unused_names.txt")
-unused_names = set()
-
-# Read the file line by line and add each line to the set
-with open(input_file, "r") as file:
-    for line in file:
-        # Strip any leading/trailing whitespace and add the line to the set
-        unused_names.add(line.strip())
-
-print(unused_names)
 
 
 class ImportsCollector:
@@ -198,7 +183,8 @@ def collect_structs_and_arrays(
         if desc in structs:
             return
         structs[desc] = None
-        imports_collector.require_symbol(desc.name)
+        if desc.name != _STRUCT_GLOBAL_DATA_TYPE_NAME:
+            imports_collector.require_symbol(desc.name)
         for member in desc.members.values():
             collect_structs_and_arrays(member, structs, arrays, imports_collector)
 
@@ -272,30 +258,11 @@ def extract_array_helper_information(name: str, pattern_str: str) -> Tuple[str, 
     return match.group("array_name"), int(match.group("dim_num"))
 
 
-# Error: 'cells_plwa_verts' at (1) is not a member of the 't_int_state' structure; did you mean 'cells_aw_verts'?
-# Error: 'geofac_qdiv' at (1) is not a member of the 't_int_state' structure; did you mean 'geofac_div'?
-# Error: 'cn_e' at (1) is not a member of the 't_grid_edges' structure; did you mean 'fn_e'?
-# Error: 'cz_c' at (1) is not a member of the 't_grid_cells' structure; did you mean 'f_c'?
-# Error: 'ddt_ua_cen' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_ua_dyn'?
-# Error: 'ddt_ua_cen_is_associated' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_ua_dyn_is_associated'?
-# Error: 'ddt_va_cen' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_va_dyn'?
-# Error: 'ddt_va_cen_is_associated' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_va_dyn_is_associated'?
-# Error: 'ddt_vn_cen' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_vn_dyn'?
-# Error: 'ddt_vn_cen_is_associated' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_vn_dyn_is_associated'?
-# Error: 'vor_u' at (1) is not a member of the 't_nh_diag' structure; did you mean 'vor'?
-# Error: 'vor_v' at (1) is not a member of the 't_nh_diag' structure; did you mean 'vor'?
-# Error: 'deepatmo_t1ifc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'deepatmo_vol_mc'?
-# Error: 'deepatmo_t1mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'deepatmo_vol_mc'?
-# Error: 'deepatmo_t2mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'deepatmo_vol_mc'?
-# Error: 'dzgpot_mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'dgeopot_mc'?
-# Error: 'fbk_dom_volume' at (1) is not a member of the 't_nh_metrics' structure
-# Error: 'zgpot_ifc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'z_ifc'?
-# Error: 'zgpot_mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'dgeopot_mc'?
-
-
 _STRUCT_MEMBER_TYPES_IGNORE_LIST = {
     dace.data.Scalar(dace.int8),  # this likely was a string, so we ignore it
 }
+_STRUCT_GLOBAL_DATA_TYPE_NAME = "global_data_type"
+_STRUCT_GLOBAL_DATA_NAME = "global_data"
 
 
 # TODO: better checks that ```malloc``` memory is suitable for DaCe data descriptors
@@ -306,7 +273,6 @@ def generate_copy_in_function_struct(
     struct_ignore_list: Set[str],
     struct_members_use_null: Dict[str, Set[str]],
 ) -> str:
-    global unused_names
     dace_type_name = f"dace_{struct.name}"
 
     members_use_null = struct_members_use_null.get(struct.name, set())
@@ -322,67 +288,49 @@ def generate_copy_in_function_struct(
 
         member_name = fix_identifier(member_name)
 
-        if member_name not in unused_names:
-            if member_name in members_use_null:
-                copy_fields_src += f"""\
-        dace_rich_obj%{member_name} = c_null_ptr
-    """
-            elif member_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX):
-                array_name, dim_num = extract_array_helper_information(
-                    member_name, _F2DACE_STRUCT_ARRAY_SIZE_HELPER_PATTERN_STR
-                )
-                copy_fields_src += f"""\
-        dace_rich_obj%{member_name} = size(fortran_obj%{array_name}, dim={dim_num + 1})
-    """
-
-            elif member_name.startswith(
-                _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX
-            ):
-                array_name, dim_num = extract_array_helper_information(
-                    member_name, _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_PATTERN_STR
-                )
-                copy_fields_src += f"""\
-        dace_rich_obj%{member_name} = lbound(fortran_obj%{array_name}, dim={dim_num + 1})
-    """
-
-            else:
-                copy_fields_src += f"""\
-        dace_rich_obj%{member_name} = {
-            generate_copy_in_fortran_expr(
-                member_type,
-                expr=f"fortran_obj%{member_name}",
-                steal_arrays_expr="steal_arrays",
-                minimal_structs_expr="minimal_structs",
+        if member_name in members_use_null:
+            copy_fields_src += f"""\
+    dace_rich_obj%{member_name} = c_null_ptr
+"""
+        elif member_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX):
+            array_name, dim_num = extract_array_helper_information(
+                member_name, _F2DACE_STRUCT_ARRAY_SIZE_HELPER_PATTERN_STR
             )
-    }
-    """
-        else:
-            if member_name in members_use_null:
+            if array_name in members_use_null:
                 copy_fields_src += f"""\
-        dace_rich_obj%{member_name} = c_null_ptr
-    """
-            elif member_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX):
-                array_name, dim_num = extract_array_helper_information(
-                    member_name, _F2DACE_STRUCT_ARRAY_SIZE_HELPER_PATTERN_STR
-                )
-                copy_fields_src += f"""\
-        dace_rich_obj%{member_name} = 0
-    """
-
-            elif member_name.startswith(
-                _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX
-            ):
-                array_name, dim_num = extract_array_helper_information(
-                    member_name, _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_PATTERN_STR
-                )
-                copy_fields_src += f"""\
-        dace_rich_obj%{member_name} = 0
-    """
-
+    dace_rich_obj%{member_name} = 0
+"""
             else:
                 copy_fields_src += f"""\
-        dace_rich_obj%{member_name} = c_null_ptr
-    """
+    dace_rich_obj%{member_name} = size(fortran_obj%{array_name}, dim={dim_num + 1})
+"""
+
+        elif member_name.startswith(
+            _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX
+        ):
+            array_name, dim_num = extract_array_helper_information(
+                member_name, _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_PATTERN_STR
+            )
+            if array_name in members_use_null:
+                copy_fields_src += f"""\
+    dace_rich_obj%{member_name} = 0
+"""
+            else:
+                copy_fields_src += f"""\
+    dace_rich_obj%{member_name} = lbound(fortran_obj%{array_name}, dim={dim_num + 1})
+"""
+
+        else:
+            copy_fields_src += f"""\
+    dace_rich_obj%{member_name} = {
+        generate_copy_in_fortran_expr(
+            member_type,
+            expr=f"fortran_obj%{member_name}",
+            steal_arrays_expr="steal_arrays",
+            minimal_structs_expr="minimal_structs",
+        )
+}
+"""
 
     if struct.name in struct_ignore_list:
         logging.warning(
@@ -405,6 +353,93 @@ def generate_copy_in_function_struct(
 
 """
 
+def generate_copy_in_function_global_data(
+    struct: dace.data.Structure,
+    struct_ignore_list: Set[str],
+    struct_members_use_null: Dict[str, Set[str]],
+    imports_collector: ImportsCollector,
+) -> str:
+    dace_type_name = f"dace_{struct.name}"
+
+    members_use_null = struct_members_use_null.get(struct.name, set())
+    copy_fields_src = ""
+    for member_name, member_type in struct.members.items():
+
+        if member_type in _STRUCT_MEMBER_TYPES_IGNORE_LIST:
+            logging.warning(
+                f"Ignoring member initialization '{member_name}' in struct '{struct.name}' "
+                f"because type '{member_type}' is on the ignore list."
+            )
+            continue
+
+        member_name = fix_identifier(member_name)
+
+        if member_name in members_use_null:
+            copy_fields_src += f"""\
+    dace_rich_obj%{member_name} = c_null_ptr
+"""
+        elif member_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX):
+            array_name, dim_num = extract_array_helper_information(
+                member_name, _F2DACE_STRUCT_ARRAY_SIZE_HELPER_PATTERN_STR
+            )
+            if array_name in members_use_null:
+                copy_fields_src += f"""\
+    dace_rich_obj%{member_name} = 0
+"""
+            else:
+                imports_collector.require_symbol(array_name)
+                copy_fields_src += f"""\
+    dace_rich_obj%{member_name} = size({array_name}, dim={dim_num + 1})
+"""
+
+        elif member_name.startswith(
+            _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX
+        ):
+            array_name, dim_num = extract_array_helper_information(
+                member_name, _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_PATTERN_STR
+            )
+            if array_name in members_use_null:
+                copy_fields_src += f"""\
+    dace_rich_obj%{member_name} = 0
+"""
+            else:
+                imports_collector.require_symbol(array_name)
+                copy_fields_src += f"""\
+    dace_rich_obj%{member_name} = lbound({array_name}, dim={dim_num + 1})
+"""
+
+        else:
+            imports_collector.require_symbol(member_name)
+            copy_fields_src += f"""\
+    dace_rich_obj%{member_name} = {
+        generate_copy_in_fortran_expr(
+            member_type,
+            expr=f"{member_name}",
+            steal_arrays_expr="steal_arrays",
+            minimal_structs_expr="minimal_structs",
+        )
+}
+"""
+
+    if struct.name in struct_ignore_list:
+        logging.warning(
+            f"Disabling copy in of struct '{struct.name}' because it's on the ignore list."
+        )
+        copy_fields_src = ""
+
+    return f"""\
+  function copy_in_{struct.name}(steal_arrays, minimal_structs) result(dace_obj_ptr)
+    logical :: steal_arrays, minimal_structs
+    type(c_ptr) :: dace_obj_ptr
+    type({dace_type_name}), pointer :: dace_rich_obj
+
+    dace_obj_ptr = malloc(c_sizeof(dace_rich_obj))
+    call c_f_pointer(dace_obj_ptr, dace_rich_obj)
+
+{copy_fields_src}
+  end function copy_in_{struct.name}
+
+"""
 
 class ArrayLoopHelper:
 
@@ -560,6 +595,7 @@ _PRIMITIVE_FORTRAN_TO_DACE_COPY_IN_FUNCTIONS: Dict[
 }
 
 
+# TODO: Cast int to LOGICAL if needed (transfer trick)
 @generate_copy_in_fortran_expr.register
 def _(
     dtype: dace.dtypes.typeclass,
@@ -572,7 +608,6 @@ def _(
     if copy_in_func is not None:
         return f"{copy_in_func}({expr})"
     return expr
-
 
 @generate_copy_in_fortran_expr.register
 def _(
@@ -623,6 +658,11 @@ def _(
     minimal_structs_expr: str,
     enable_inout_hack: bool = False,
 ) -> str:
+    if struct.name == _STRUCT_GLOBAL_DATA_TYPE_NAME:
+        return f"""copy_in_{struct.name}( &
+    steal_arrays={steal_arrays_expr}, &
+    minimal_structs={minimal_structs_expr} &
+  )"""
     return f"""copy_in_{struct.name}( &
     fortran_obj={expr}, &
     steal_arrays={steal_arrays_expr}, &
@@ -650,7 +690,6 @@ def generate_copy_back_subroutine_struct(
     struct_ignore_list: Set[str],
     struct_members_use_null: Dict[str, Set[str]],
 ) -> str:
-    global unused_names
     copy_back_fields_src = ""
 
     if struct.name not in struct_ignore_list:
@@ -683,12 +722,11 @@ def generate_copy_back_subroutine_struct(
                 )
             )
 
-            if member_name not in unused_names:
-                copy_back_fields_src += generate_copy_back_stmts(
-                    member_type,
-                    f"fortran_obj%{member_name}",
-                    f"dace_rich_obj%{member_name}",
-                )
+            copy_back_fields_src += generate_copy_back_stmts(
+                member_type,
+                f"fortran_obj%{member_name}",
+                f"dace_rich_obj%{member_name}",
+            )
 
     return f"""\
   subroutine copy_back_{struct.name}(fortran_obj, dace_obj_ptr)
@@ -711,6 +749,65 @@ def generate_copy_back_subroutine_struct(
   end subroutine copy_back_{struct.name}
 """
 
+
+def generate_copy_back_subroutine_global_data(
+    struct: dace.data.Structure,
+    struct_ignore_list: Set[str],
+    struct_members_use_null: Dict[str, Set[str]],
+    imports_collector: ImportsCollector,
+) -> str:
+
+    copy_back_fields_src = ""
+
+    if struct.name not in struct_ignore_list:
+
+        members_use_null = struct_members_use_null.get(struct.name, set())
+        for member_name, member_type in struct.members.items():
+            member_name = fix_identifier(member_name)
+
+            if (
+                (
+                    # only copy back scalar, struct & struct arays
+                    isinstance(member_type, dace.data.Array)
+                    and not isinstance(member_type, dace.data.ContainerArray)
+                )
+                or member_type in _STRUCT_MEMBER_TYPES_IGNORE_LIST
+                or member_name in members_use_null
+                or member_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX)
+                or member_name.startswith(
+                    _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX
+                )
+            ):
+                continue
+
+            assert (
+                isinstance(member_type, dace.data.Scalar)
+                or isinstance(member_type, dace.data.Structure)
+                or (
+                    isinstance(member_type, dace.data.ContainerArray)
+                    and isinstance(member_type.stype, dace.data.Structure)
+                )
+            )
+
+            imports_collector.require_symbol(member_name)
+            copy_back_fields_src += generate_copy_back_stmts(
+                member_type,
+                f"{member_name}",
+                f"dace_rich_obj%{member_name}",
+            )
+
+    return f"""\
+  subroutine copy_back_{struct.name}(dace_obj_ptr)
+    type(c_ptr) :: dace_obj_ptr
+
+    type(dace_{struct.name}), pointer :: dace_rich_obj
+
+    call c_f_pointer(dace_obj_ptr, dace_rich_obj)
+
+{copy_back_fields_src}
+
+  end subroutine copy_back_{struct.name}
+"""
 
 def generate_copy_back_subroutine_struct_array(
     struct_array: dace.data.ContainerArray,
@@ -772,6 +869,10 @@ def generate_copy_back_stmts_scalar(
 def generate_copy_back_stmts_struct(
     struct: dace.data.Structure, fortran_expr: str, dace_expr: str
 ) -> str:
+    if struct.name == _STRUCT_GLOBAL_DATA_TYPE_NAME:
+        return f"""\
+    call copy_back_{struct.name}({dace_expr})
+"""
     return f"""\
     call copy_back_{struct.name}({fortran_expr}, {dace_expr})
 """
@@ -1106,6 +1207,75 @@ def generate_comparison_routine_dace_struct(
 """
 
 
+def generate_comparison_routine_global_data(
+    struct: dace.data.Structure,
+    struct_ignore_list: Set[str],
+    struct_members_use_null: Dict[str, Set[str]],
+    imports_collector: ImportsCollector,
+) -> str:
+
+    compare_fields_src = ""
+
+    members_use_null = struct_members_use_null.get(struct.name, set())
+    for member_name, member_type in struct.members.items():
+
+        # TODO: refactor `_COPY_IN_IGNORES_STRUCT_MEMBER_TYPE`
+        if member_type in _STRUCT_MEMBER_TYPES_IGNORE_LIST:
+            continue
+        if member_name in members_use_null:
+            continue
+
+        member_name = fix_identifier(member_name)
+
+        if member_name.startswith(
+            _F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX
+        ) or member_name.startswith(_F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX):
+            # we don't verify the helper fields
+            continue
+
+        compare_fields_src += f"""
+    write (member_expr, '(a,a)') &
+      trim(struct_expr), &
+      "%{member_name}"
+{generate_comparison_check_stmts(
+    member_type,
+    actual_expr=f"actual_rich%{member_name}",
+    ref_expr=f"{member_name}",
+    result_expr="local_result",
+    var_expr="member_expr",
+)}
+    result = result .and. local_result
+"""
+
+    if struct.name in struct_ignore_list:
+        compare_fields_src = ""
+
+    # FIXME: maybe structs need a `thresholds` argument
+    return f"""
+  subroutine compare_{struct.name}_struct( &
+    actual, &
+    result, &
+    struct_expr &
+  )
+    {dace_type_to_fortran_c_var_type_decl(struct)}, intent(in) :: actual
+    logical, intent(out) :: result
+    character(*), intent(in) :: struct_expr
+
+    CHARACTER(len=5000) :: member_expr = ''
+    type(dace_{struct.name}), pointer :: actual_rich
+    logical :: local_result
+    call c_f_pointer(actual, actual_rich)
+
+    result = .true.
+{compare_fields_src}
+
+    ! FIXME: should be separate
+    call free(actual)
+
+  end subroutine compare_{struct.name}_struct
+"""
+
+
 @generate_array_comparison_subroutine.register
 def _(struct_array: dace.data.ContainerArray) -> str:
     # FIXME: can we check sizes of Fortran & SDFG arrays?!
@@ -1277,6 +1447,15 @@ def _(
     var_expr: Optional[str] = None,
 ) -> str:
     assert var_expr is not None
+
+    if struct.name == _STRUCT_GLOBAL_DATA_TYPE_NAME:
+        return f"""
+    call compare_{struct.name}_struct( &
+        actual={actual_expr}, &
+        result={result_expr}, &
+        struct_expr={var_expr} &
+    )
+"""
     return f"""
     call compare_{struct.name}_struct( &
         actual={actual_expr}, &
@@ -1555,11 +1734,7 @@ def generate_initializations_check(
     elif (build_folder / "unsimplified.sdfgz").is_file():
         unsimplified = sdfg.from_file(str(build_folder / "unsimplified.sdfgz"))
 
-    if unsimplified is None:
-        logging.warning(
-            f"Could not find unsimplified sdfg for initialization ('{sdfg.name}')."
-        )
-    else:
+    if unsimplified is not None:
 
         initializations = extract_initializations(
             unsimplified, initializaion_checks_ignore_list
@@ -1596,8 +1771,6 @@ def generate_fortran_interface_source(
     module_name = f"mo_{sdfg_name}_bindings"
 
     imports_collector = ImportsCollector(initializaion_checks_ignore_list)
-    imports_collector.require_symbol("warning")
-    #imports_collector.require_symbol("MAX_CHAR_LENGTH") # Requires module from ICON cant be used in ECRAD
 
     # they are sorted according to the C interfaces of the relevant functions
     sdfg_parameters = {
@@ -1652,16 +1825,30 @@ def generate_fortran_interface_source(
     copy_in_functions_interface_str = ""
     copy_back_subroutines_src = ""
     for struct in structs:
-        copy_in_functions_str += generate_copy_in_function_struct(
-            struct,
-            struct_ignore_list,
-            struct_members_use_null,
-        )
-        copy_back_subroutines_src += generate_copy_back_subroutine_struct(
-            struct,
-            struct_ignore_list,
-            struct_members_use_null,
-        )
+        if struct.name == _STRUCT_GLOBAL_DATA_TYPE_NAME:
+            copy_in_functions_str += generate_copy_in_function_global_data(
+                struct,
+                struct_ignore_list,
+                struct_members_use_null,
+                imports_collector,
+            )
+            copy_back_subroutines_src += generate_copy_back_subroutine_global_data(
+                struct,
+                struct_ignore_list,
+                struct_members_use_null,
+                imports_collector,
+            )
+        else:
+            copy_in_functions_str += generate_copy_in_function_struct(
+                struct,
+                struct_ignore_list,
+                struct_members_use_null,
+            )
+            copy_back_subroutines_src += generate_copy_back_subroutine_struct(
+                struct,
+                struct_ignore_list,
+                struct_members_use_null,
+            )
     # we want to generate only one copy in procedure per base type & rank
     for array in array_translations.values():
         copy_in_str, copy_in_interface_str = generate_copy_in_function_array(array)
@@ -1685,11 +1872,19 @@ def generate_fortran_interface_source(
     comparison_subroutines_str = ""
     comparison_subroutines_str += _COMPARISON_PRIMITIVE_FUNCTIONS_STR
     for struct in structs:
-        comparison_subroutines_str += generate_comparison_routine_dace_struct(
-            struct,
-            struct_ignore_list,
-            struct_members_use_null,
-        )
+        if struct.name == _STRUCT_GLOBAL_DATA_TYPE_NAME:
+            comparison_subroutines_str += generate_comparison_routine_global_data(
+                struct,
+                struct_ignore_list,
+                struct_members_use_null,
+                imports_collector,
+            )
+        else:
+            comparison_subroutines_str += generate_comparison_routine_dace_struct(
+                struct,
+                struct_ignore_list,
+                struct_members_use_null,
+            )
     for array in array_translations.values():
         comparison_subroutines_str += generate_array_comparison_subroutine(array)
 
@@ -1847,6 +2042,7 @@ contains
             not name.startswith(_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX)
             and not name.startswith(_F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX)
             and not name.startswith(_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX)
+            and not (isinstance(desc, dace.data.Structure) and desc.name == _STRUCT_GLOBAL_DATA_TYPE_NAME)
         )
     }
     convinience_parameters_str = join_wrapped(
