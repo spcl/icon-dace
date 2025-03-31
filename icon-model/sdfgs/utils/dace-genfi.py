@@ -265,6 +265,36 @@ _STRUCT_GLOBAL_DATA_TYPE_NAME = "global_data_type"
 _STRUCT_GLOBAL_DATA_NAME = "global_data"
 
 
+def generate_array_literal_size_checks(display_name: str, array_expr: str, desc: dace.data.Array) -> str:
+    literal_sizes = [
+        (dim_num, int(dim_size))
+        for dim_num, dim_size in enumerate(desc.shape)
+        if not dace.symbolic.issymbolic(dim_size)
+    ]
+    if len(literal_sizes) == 0:
+        return ""
+
+    size_check_str = " .or. &\n      ".join(
+        f"{dim_size} /= size({array_expr}, dim={dim_num + 1})" for dim_num, dim_size in literal_sizes
+    )
+    if len(literal_sizes) > 1:
+        size_check_str = f" &\n      {size_check_str} &\n    "
+
+    actual_array_shape_str = ', ",", &\n        '.join(f"size({array_expr}, dim={i+1})" for i in range(len(desc.shape)))
+
+    return f"""\
+#if defined(DACE_SUBST_VERIFY)
+    if ({size_check_str}) then
+      print *, &
+        "Array size conflicts with config propagation for array '{display_name}'"//char(10), &
+        "    - actual = (", &
+        {actual_array_shape_str}, &
+        "), config propagated = ({", ".join(map(str, desc.shape))})"
+    end if
+#endif
+"""
+
+
 # TODO: better checks that ```malloc``` memory is suitable for DaCe data descriptors
 # e.g.,: alignment, padding, strides, etc
 # This is relevant for the generation of copy in functions, but also the generation of copy in expressions
@@ -331,6 +361,13 @@ def generate_copy_in_function_struct(
         )
 }
 """
+
+            if isinstance(member_type, dace.data.Array):
+                copy_fields_src += generate_array_literal_size_checks(
+                    f"{struct.name}.{member_name}",
+                    f"fortran_obj%{member_name}",
+                    member_type
+                )
 
     if struct.name in struct_ignore_list:
         logging.warning(
@@ -414,12 +451,19 @@ def generate_copy_in_function_global_data(
     dace_rich_obj%{member_name} = {
         generate_copy_in_fortran_expr(
             member_type,
-            expr=f"{member_name}",
+            expr=member_name,
             steal_arrays_expr="steal_arrays",
             minimal_structs_expr="minimal_structs",
         )
 }
 """
+            if isinstance(member_type, dace.data.Array):
+                copy_fields_src += generate_array_literal_size_checks(
+                f"global_data.{member_name}",
+                member_name,
+                member_type
+            )
+
 
     if struct.name in struct_ignore_list:
         logging.warning(
@@ -2084,10 +2128,19 @@ contains
         convenience_locals_decls_str += f"""\
     {dace_type_to_fortran_rich_var_type_decl(desc, is_local=True, enable_inout_hack=True)} :: {_OPTIONAL_PROXY_PREFIX + param_name}{default_initialization}
 """
+
+        array_literal_size_checks = ""
+        if isinstance(desc, dace.data.Array):
+            array_literal_size_checks = generate_array_literal_size_checks(
+                param_name,
+                param_name,
+                desc
+            )
         initialize_optionals_src += f"""
     if (present({param_name})) then
       {_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX + param_name} = 1
       {_OPTIONAL_PROXY_PREFIX + param_name} {assign_op} {param_name}
+      {array_literal_size_checks}
     else
       {_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX + param_name} = 0
     end if
@@ -2139,6 +2192,15 @@ contains
         enable_inout_hack=True,
     )}
 """
+            if isinstance(desc, dace.data.Array):
+                literal_size_checks = generate_array_literal_size_checks(
+                    f"{var_name}",
+                    f"{var_name}",
+                    desc
+                )
+                verification_shallow_copies_copy_ins_src += literal_size_checks
+                verification_deep_copies_copy_ins_src += literal_size_checks
+
             verification_copies_comparisons_src += f"""\
 {generate_comparison_check_stmts(
     desc,
