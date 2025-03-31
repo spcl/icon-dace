@@ -120,10 +120,15 @@ def process(
 
 
 def generate_imports_src(imports: Dict[str, Set[str]]) -> str:
-    return "\n".join(
+    imports_src = "\n".join(
         f"  USE {module}, ONLY: &\n    " + ", &\n    ".join(functions)
         for module, functions in imports.items()
     )
+    return f"""\
+#if defined({COMPILER_DEFINE_ENABLE})
+{imports_src}
+#endif
+"""
 
 
 def generate_start_substitution_src(name: str, arguments: Dict[str, str]) -> str:
@@ -136,13 +141,13 @@ def generate_start_substitution_src(name: str, arguments: Dict[str, str]) -> str
     return f"""\
 #if defined({COMPILER_DEFINE_ENABLE})
 #if defined({COMPILER_DEFINE_VERIFICATION_MODE})
-  PRINT *, "Enter velocity tendencies"
+  PRINT *, "Enter {name}"
   CALL run_{name}_verification({arguments_str})
-  PRINT *, "Exit velocity tendencies"
+  PRINT *, "Exit {name}"
 #else
-  PRINT *, "Enter velocity tendencies"
+  PRINT *, "Enter {name}"
   CALL run_{name}({arguments_str})
-  PRINT *, "Exit velocity tendencies"
+  PRINT *, "Exit {name}"
 #endif
 #endif
 

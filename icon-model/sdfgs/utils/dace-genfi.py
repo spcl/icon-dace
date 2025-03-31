@@ -262,7 +262,6 @@ _STRUCT_MEMBER_TYPES_IGNORE_LIST = {
     dace.data.Scalar(dace.int8),  # this likely was a string, so we ignore it
 }
 _STRUCT_GLOBAL_DATA_TYPE_NAME = "global_data_type"
-_STRUCT_GLOBAL_DATA_NAME = "global_data"
 
 
 def generate_array_literal_size_checks(display_name: str, array_expr: str, desc: dace.data.Array) -> str:
@@ -396,6 +395,7 @@ def generate_copy_in_function_global_data(
     struct_members_use_null: Dict[str, Set[str]],
     imports_collector: ImportsCollector,
 ) -> str:
+    # FIXME: mostly a code clone of `generate_copy_in_function_struct` :(
     dace_type_name = f"dace_{struct.name}"
 
     members_use_null = struct_members_use_null.get(struct.name, set())
@@ -800,6 +800,7 @@ def generate_copy_back_subroutine_global_data(
     struct_members_use_null: Dict[str, Set[str]],
     imports_collector: ImportsCollector,
 ) -> str:
+    # FIXME: mostly a code clone of `generate_copy_back_subroutine_struct` :(
 
     copy_back_fields_src = ""
 
@@ -1006,7 +1007,7 @@ _COMPARISON_PRIMITIVE_FUNCTIONS_STR = "".join(
           ", actual = ", &
           actual
         print *, "compare_{dtype.to_string()}_scalar"
-        print *, message_text
+        print *, trim(message_text)
 
     end if
 
@@ -1085,7 +1086,7 @@ def _(array: dace.data.Array) -> str:
     total_fails = 0
     total_indices = 0
     first_fail = -1
-    
+
     if (.not. c_associated(c_loc(ref))) then
       result = .not. c_associated(actual)
 
@@ -1095,7 +1096,7 @@ def _(array: dace.data.Array) -> str:
             trim(array_expr), &
           "':"//char(10)//"    - ref was NULL, but actual was not!"
         print *, "compare_{dtype.to_string()}_{rank}d_array"
-        print *, message_text
+        print *, trim(message_text)
       end if
 
       return
@@ -1163,14 +1164,14 @@ def _(array: dace.data.Array) -> str:
           error_ref, &
           ", actual = ", &
           error_actual, &
-          " first_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "first_fail_i")}, &
+          char(10)//"    - first_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "first_fail_i")}, &
           " last_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "last_fail_i")}, &
           " total_fails: ", total_fails, &
           " total_indices: ", total_indices, &
           " call_to_size: ", size(ref), &
           " shape: ", {ArrayLoopHelper.indices_expr(rank, "dim_i")}
       print *, "compare_{dtype.to_string()}_{rank}d_array"
-      print *, message_text
+      print *, trim(message_text)
 
     end if
 
@@ -1257,6 +1258,7 @@ def generate_comparison_routine_global_data(
     struct_members_use_null: Dict[str, Set[str]],
     imports_collector: ImportsCollector,
 ) -> str:
+    # FIXME: mostly a code clone of `generate_comparison_routine_dace_struct` :(
 
     compare_fields_src = ""
 
@@ -1362,7 +1364,7 @@ def _(struct_array: dace.data.ContainerArray) -> str:
             trim(struct_array_expr), &
           "':"//char(10)//"    - ref was NULL, but actual was not!"
         print *, "compare_{stype.name}_{rank}d_array"
-        print *, message_text
+        print *, trim(message_text)
       end if
 
       return
@@ -1723,7 +1725,7 @@ def _(value: bool, var_name: str, routine_name: str) -> str:
         {var_name}, &
         "' (in SDFG = '{value}')"
       print *, "{routine_name}"
-      print *, message_text
+      print *, trim(message_text)
     end if
 """
 
@@ -1739,7 +1741,7 @@ def _(value: Union[int, np.int32, np.int64], var_name: str, routine_name: str) -
         {var_name}, &
         "' (in SDFG = '{value}')"
       print *, "{routine_name}"
-      print *, message_text
+      print *, trim(message_text)
     end if
 """
 
@@ -1758,7 +1760,7 @@ def _(
         {var_name}, &
         "' (in SDFG = '{value:.20e}')"
       print *, "{routine_name}"
-      print *, message_text
+      print *, trim(message_text)
     end if
 """
 
@@ -2115,8 +2117,6 @@ contains
     !WARNING: HACKFIX, POSSIBLE EXPLOSION
     integer(kind=c_int) :: {_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX}{param_name}
 """
-        #{dace_type_to_fortran_rich_var_type_decl(desc, enable_inout_hack=True)} :: {_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX}{param_name}
-
 
         # FIXME(small): try to use _obvious wrong value_ if not present
         assign_op = "="
@@ -2229,6 +2229,7 @@ contains
     for array_helper_name, desc in array_helper_parameters.items():
         assert isinstance(desc, dace.data.Scalar)
 
+        # FIXME: Probably have to guard with Fortran ```present(...)``` in case of optionals
         if array_helper_name.startswith(_F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX):
             array_name, dim_num = extract_array_helper_information(
                 array_helper_name, _F2DACE_PARAM_ARRAY_SIZE_HELPER_PATTERN_STR
@@ -2273,15 +2274,12 @@ contains
         after=" &\n    ",
     )
 
-    # FIXME(small): decided whether initializations should be checked in production run -> no?...
     source += f"""
-    
+
   subroutine run_{sdfg_name}({convinience_parameters_str})
 {convenience_parameter_decls_str}
 {convenience_locals_decls_str}
 {initialize_optionals_src}
-
-    call check_initializations()
 
 {verification_shallow_copies_copy_ins_src}
 
