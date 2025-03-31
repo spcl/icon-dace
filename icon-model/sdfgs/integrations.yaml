@@ -1,13 +1,13 @@
-#./src/atm_dyn_iconam/mo_solve_nonhydro.f90:
-#  velocity_tendencies:
-#    - [465, 466]
-#    - [497, 498]
+./src/atm_dyn_iconam/mo_solve_nonhydro.f90:
+  velocity_tendencies:
+    - [434, 435]
+    - [440, 441]
 #./externals/ecrad/radiation/radiation_interface.f90:
 #  get_albedos:
 #    - [335, 338]
 #./src/atm_phy_nwp/mo_nwp_ecrad_interface.f90:
 #  radiation:
 #    - [432, 442]
-./externals/ecrad/radiation/radiation_interface.F90:
-  get_albedos:
-    - [335, 338]
+#./externals/ecrad/radiation/radiation_interface.F90:
+#  get_albedos:
+#    - [335, 338]
