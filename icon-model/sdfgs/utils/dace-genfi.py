@@ -2,7 +2,7 @@
 import os
 from typing import Any, Collection, Dict, List, Optional, Set, Tuple, Union
 
-from functools import singledispatch
+from functools import singledispatch, reduce
 from pathlib import Path
 import re
 import argparse
@@ -264,10 +264,33 @@ _STRUCT_MEMBER_TYPES_IGNORE_LIST = {
 _STRUCT_GLOBAL_DATA_TYPE_NAME = "global_data_type"
 
 
+def is_fortran_order(desc: dace.data.Data) -> bool:
+    expected_strides = tuple(
+        reduce(lambda a, b: a*b, desc.shape[:i], 1)
+        for i in range(len(desc.shape))
+    )
+    return expected_strides == desc.strides
+
+
+def is_c_order(desc: dace.data.Data) -> bool:
+    expected_strides = tuple(
+        reduce(lambda a, b: a*b, desc.shape[i+1:], 1)
+        for i in range(len(desc.shape))
+    )
+    return expected_strides == desc.strides
+
+
 def generate_array_literal_size_checks(display_name: str, array_expr: str, desc: dace.data.Array) -> str:
+    fixed_shape = desc.shape
+    if is_c_order(desc):
+        # the check is valid as long as we reverse the shape
+        fixed_shape = tuple(reversed(desc.shape))
+    elif not is_fortran_order(desc):
+        assert False, f"Unsupported memory layout for shape '{desc.shape}' with strides '{desc.strides}'!"
+
     literal_sizes = [
         (dim_num, int(dim_size))
-        for dim_num, dim_size in enumerate(desc.shape)
+        for dim_num, dim_size in enumerate(fixed_shape)
         if not dace.symbolic.issymbolic(dim_size)
     ]
     if len(literal_sizes) == 0:
@@ -279,7 +302,7 @@ def generate_array_literal_size_checks(display_name: str, array_expr: str, desc:
     if len(literal_sizes) > 1:
         size_check_str = f" &\n      {size_check_str} &\n    "
 
-    actual_array_shape_str = ', ",", &\n        '.join(f"size({array_expr}, dim={i+1})" for i in range(len(desc.shape)))
+    actual_array_shape_str = ', ",", &\n        '.join(f"size({array_expr}, dim={i+1})" for i in range(len(fixed_shape)))
 
     return f"""\
 #if defined(DACE_SUBST_VERIFY)
@@ -288,7 +311,7 @@ def generate_array_literal_size_checks(display_name: str, array_expr: str, desc:
         "Array size conflicts with config propagation for array '{display_name}'"//char(10), &
         "    - actual = (", &
         {actual_array_shape_str}, &
-        "), config propagated = ({", ".join(map(str, desc.shape))})"
+        "), config propagated = ({", ".join(map(str, fixed_shape))})"
     end if
 #endif
 """
