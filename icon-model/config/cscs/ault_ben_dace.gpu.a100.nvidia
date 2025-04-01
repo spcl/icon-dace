@@ -49,7 +49,7 @@ icon_dir=$(cd "${script_dir}/../.."; pwd)
   'CUDAFLAGS=-g -O3 -arch=sm_80 -ccbin=nvc++' \
   'ICON_LDFLAGS=-c++libs' \
   'CFLAGS=-g -O2' \
-  "FCFLAGS=-g -O2 -Mrecursive -Mallocatable=03 -Mstack_arrays -acc=gpu -gpu=cc80 $(pkg-config --cflags-only-I netcdf-fortran)" \
+  "FCFLAGS=${DACE_FCFLAGS:-} -g -O2 -Mrecursive -Mallocatable=03 -Mstack_arrays -acc=gpu -gpu=cc80 $(pkg-config --cflags-only-I netcdf-fortran)" \
   "LDFLAGS=${DACE_LDFLAGS:-}" \
   "LIBS=${DACE_LIBS:-} -lblas -llapack -lnvf -lnetcdff -lnetcdf -lcudart"
 

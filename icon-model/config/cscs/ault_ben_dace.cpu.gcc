@@ -45,7 +45,7 @@ icon_dir=$(cd "${script_dir}/../.."; pwd)
   'CFLAGS=-g' \
   'ICON_CFLAGS=-O3' \
   'ICON_BUNDLED_CFLAGS=-O2' \
-  "FCFLAGS=-g $(pkg-config --cflags-only-I netcdf-fortran)" \
+  "FCFLAGS=${DACE_FCFLAGS:-} -g $(pkg-config --cflags-only-I netcdf-fortran)" \
   'ICON_FCFLAGS=-O2 -std=legacy' \
   "LDFLAGS=${DACE_LDFLAGS:-}" \
   "LIBS=${DACE_LIBS:-} -lopenblas -lnetcdff -lnetcdf"
