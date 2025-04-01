@@ -813,6 +813,8 @@ def generate_copy_back_subroutine_struct(
 
 {copy_back_fields_src}
 
+    call free(dace_obj_ptr)
+
   end subroutine copy_back_{struct.name}
 """
 
@@ -874,6 +876,8 @@ def generate_copy_back_subroutine_global_data(
 
 {copy_back_fields_src}
 
+    call free(dace_obj_ptr)
+
   end subroutine copy_back_{struct.name}
 """
 
@@ -908,6 +912,9 @@ def generate_copy_back_subroutine_struct_array(
     f"dace_struct_array_rich({ArrayLoopHelper.indices_expr(rank)})",
 )}
 {ArrayLoopHelper.loop_ends(rank)}
+
+    call free(dace_struct_array_ptr)
+
   end subroutine copy_back_{stype.name}_{rank}d_array
 """
 
