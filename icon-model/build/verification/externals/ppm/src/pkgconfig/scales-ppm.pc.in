@@ -1,0 +1,19 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+fcflags=@FPP_INCOPT@@includedir@ @FC_MOD_FLAG@@includedir@
+fclibs=-L@libdir@ -lscalesppm
+fclibs.private=@PARMETIS_FC_LIB@ @METIS_FC_LIB@ @NETCDF_FC_LIB@ @MPI_FC_LIB@ @CRYPTO_FC_LIB@
+
+Name: scales-ppm
+Description: Partitioning and parallelization module originated in ScalES project.
+URL: http://www.dkrz.de/redmine/projects/scales-ppm
+Version: @VERSION@
+Requires: 
+Libs: ${fclibs}
+Libs.private: ${fclibs.private}
+Cflags: ${fcflags}
+FCflags: ${fcflags}
+FClibs: ${fclibs}
+FClibs.private: ${fclibs.private}

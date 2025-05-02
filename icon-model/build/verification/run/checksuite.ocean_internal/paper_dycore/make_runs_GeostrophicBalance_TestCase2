@@ -1,0 +1,122 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#==============================================================================
+# Creates the ICON run scripts
+# Leonidas Linardakis, MPI-M, 2011-25-1
+#==============================================================================
+set -x
+base_folder=$(pwd)
+. $base_folder/config/set-up.info
+input_folder=run
+use_shell=${use_shell:="/bin/bash"}
+make_runscript="$use_shell ./config/make_target_runscript"
+#==============================================================================
+
+
+#==============================================================================
+create_runscript()
+{
+grid_name=$1
+
+ocean_grids="${grid_name}.nc"
+exp_out_name=${exp_name}_${grid_name}
+out_script=exp.${exp_out_name}.run
+
+$make_runscript                  \
+  in_folder=$input_folder        \
+  in_script=exp.${exp_name}      \
+  in_script=exec.iconrun         \
+  out_script=${out_script}       \
+  EXPNAME=${exp_out_name}        \
+  nproma=$nproma                 \
+  no_of_nodes=$no_of_nodes       \
+  mpi_procs_pernode=$mpi_procs_pernode  \
+  openmp_threads=$openmp_threads \
+  cpu_time=$cpu_time \
+  grids_folder="${grids_folder}"   \
+  ocean_grids="${ocean_grids}" \
+  dtime=$dtime
+  # queue=develop      
+
+  cd run
+    $use_submit ./$out_script
+  cd -
+}
+#==============================================================================
+
+
+#==============================================================================
+echo "-----------------------------------------------------------"
+exp_name=ocean_GeostrophicBalance_TestCase2
+mpi_procs_pernode=4
+openmp_threads=4
+nproma=16
+
+grids_folder=/scratch/mpi/CC/mh0287/oes/grids/AquaPlanets
+
+cpu_time="00:10:00"
+no_of_nodes=2
+
+cd $grids_folder
+gridList=`ls -d AquaPlanet_Icos_0316km_*.nc`
+cd -
+dtime=1800
+for gridFile in $gridList ; do
+  create_runscript ${gridFile%.nc}
+done
+
+cpu_time="00:30:00"
+
+cd $grids_folder
+gridList=`ls -d AquaPlanet_Icos_0158km_*.nc`
+cd -
+dtime=900
+for gridFile in $gridList ; do
+  create_runscript ${gridFile%.nc}
+done
+
+no_of_nodes=8
+
+cpu_time="00:40:00"
+
+cd $grids_folder
+gridList=`ls -d AquaPlanet_Icos_0079km_*.nc`
+cd -
+dtime=480
+for gridFile in $gridList ; do
+  create_runscript ${gridFile%.nc}
+done
+
+cpu_time="01:30:00"
+
+cd $grids_folder
+gridList=`ls -d AquaPlanet_Icos_0039km_*.nc`
+cd -
+dtime=240
+for gridFile in $gridList ; do
+  create_runscript ${gridFile%.nc}
+done
+
+cpu_time="03:00:00"
+
+cd $grids_folder
+gridList=`ls -d AquaPlanet_Icos_0020km_*.nc`
+cd -
+dtime=120
+for gridFile in $gridList ; do
+  create_runscript ${gridFile%.nc}
+done
+
+
+echo "-----------------------------------------------------------"
+#==============================================================================

@@ -1,0 +1,113 @@
+# Parameter table
+#
+# TABLE_ID=250
+# TABLE_MODEL=COSMO
+# TABLE_INSTITUT=MCH
+#
+#-------------------------------------------------------------------------
+#!variable
+#
+# Variables
+#   (max number of entries = 256)
+#
+# The format of each record is:
+#   id | name | title | units
+#
+# id       = parameter ID
+# name     = variable name
+# title    = long name (description)
+# units    = variable units
+#
+#----+-------------+------------------------------------------+----------+
+# id | name        | title                                    | units    |
+#----+-------------+------------------------------------------+----------+
+ 1 | QNH | sea level air pressure | hPa  |
+ 11 | TSOIL | 2m temperature | K  |
+ 12 | TSOIL | 2m temperature | K  |
+ 13 | D_T_2M_K | kalman correction to 2m temperature | K  |
+ 14 | TSOIL | 2m temperature | K  |
+ 15 | TSOIL | 2m temperature | K  |
+ 16 | RH_ICE | relative humidity over ice | %  |
+ 17 | TD | dew point temperature | K  |
+ 18 | D_TD | dew point depression | K  |
+ 19 | THETAE | equivalent potential temperature | K  |
+ 20 | TD_2M_K | 2m dew point temperature | K  |
+ 21 | D_TD_2M_K | kalman correction to 2m dew point temperature | K  |
+ 22 | TD_2M_OLD | 2m dew point temperature | K  |
+ 23 | TD_2M_BUZ | 2m dew point temperature | K  |
+ 24 | HI | heat index | Fahrenheit  |
+ 25 | DURSUN_M | maximum duration of sunshine | s  |
+ 26 | DURSUN_R | relative duration of sunshine | %  |
+ 52 | RH_2M_K | 2m relative humidity | %  |
+ 53 | D_RH_2M_K | kalman correction to 2m relative humidity | %  |
+ 58 | CLI_RATIO | cloud ice ratio (Qi/Qc+Qi) | %  |
+ 61 | TOT_SNOW | total precipitation in snow | kg/m**2  |
+ 62 | TOT_RAIN | total precipitation in rain | kg/m**2  |
+ 63 | TOT_CON | total convective precipitation | kg/m**2  |
+ 64 | TOT_GSP | total large scale precipitation | kg/m**2  |
+ 65 | SNOW_% | percentage of precipitation in snow | %  |
+ 66 | CONV_% | percentage of convective precipitation | %  |
+ 67 | VORTP_ABS | absolute | VORTP_ABS 67 -1 absolute vorticity  |
+ 68 | VORTP_REL | relative | VORTP_REL 68 -1 relative vorticity  |
+ 70 | PDIFF_CON | pressure difference between cloud base and cloud top | Pa  |
+ 71 | TTOP_CON | temperature at cloud top | K  |
+ 80 | GEM | emissivity of the ground | %  |
+ 82 | Z0LOC | local surface roughness length | m  |
+ 110 | LUM | luminosity | klux  |
+ 111 | GLOB | global shortwave radiation at surface | W/m**2  |
+ 112 | LW_IN_TG | incoming longwave radiation at surface | W/m**2  |
+ 113 | LW_IN_TS | incoming longwave radiation at surface | W/m**2  |
+ 114 | LW_IN_T2M | incoming longwave radiation at surface | W/m**2  |
+ 115 | SWISS_WE | Swiss | SWISS_WE 115 1 Swiss coordinates  |
+ 116 | SWISS_SN | Swiss | SWISS_SN 116 1 Swiss coordinates  |
+ 150 | KOINDEX | KO index | K  |
+ 151 | TTINDEX | total-totals index | K  |
+ 152 | DCI | deep convection index | K  |
+ 153 | SWEAT | severe weather thread index | undefined  |
+ 154 | ADEDO2 | adedokun 2 index | K  |
+ 160 | C_TSTORM | thunderstorm index using AdaBoost classifier | undefined  |
+ 161 | CN_TSTORM | thunderstorm probabilty using AdaBoost classifier | %  |
+ 200 | WSHEARL | wind shear between surface and 3 km asl | 1/s  |
+ 201 | WSHEARM | wind shear between surface and 6 km asl | 1/s  |
+ 202 | WSHEARU | wind shear between 3 km (or surface) and 6 km asl | 1/s  |
+ 211 | VWIN | maximum OLD turbulent wind gust in 10m | m s-1  |
+ 212 | VW10M_20 | maximum 10m wind speed | m s-1  |
+ 213 | VW10M_25 | duration of VWIN_10M above 25 knots | s  |
+ 214 | VW10M_30 | duration of VWIN_10M above 30 knots | s  |
+ 215 | VW10M_35 | duration of VWIN_10M above 35 knots | s  |
+ 216 | VW10M_40 | duration of VWIN_10M above 40 knots | s  |
+ 217 | VW10M_45 | duration of VWIN_10M above 45 knots | s  |
+ 218 | VW10M_50 | duration of VWIN_10M above 50 knots | s  |
+ 219 | VOLD | maximum turbulent wind gust in 10m | m s-1  |
+ 220 | VJPS | maximum turbulent wind gust in 10m | m s-1  |
+ 221 | VBRA | maximum Brasseur turbulent wind gust in 10m | m s-1  |
+ 222 | VB10M_20 | duration of VBRA_10M above 20 knots | s  |
+ 223 | VB10M_25 | duration of VBRA_10M above 25 knots | s  |
+ 224 | VB10M_30 | duration of VBRA_10M above 30 knots | s  |
+ 225 | VB10M_35 | duration of VBRA_10M above 35 knots | s  |
+ 226 | VB10M_40 | duration of VBRA_10M above 40 knots | s  |
+ 227 | VB10M_45 | duration of VBRA_10M above 45 knots | s  |
+ 228 | VB10M_50 | duration of VBRA_10M above 50 knots | s  |
+ 231 | VCON | maximum convective wind gust in 10m | m s-1  |
+ 232 | VC10M_20 | duration of VCON_10M above 20 knots | s  |
+ 233 | VC10M_25 | duration of VCON_10M above 25 knots | s  |
+ 234 | VC10M_30 | duration of VCON_10M above 30 knots | s  |
+ 235 | VC10M_35 | duration of VCON_10M above 35 knots | s  |
+ 236 | VC10M_40 | duration of VCON_10M above 40 knots | s  |
+ 237 | VC10M_45 | duration of VCON_10M above 45 knots | s  |
+ 238 | VC10M_50 | duration of VCON_10M above 50 knots | s  |
+ 241 | FMAX | maximum wind speed at k=ke | m s-1  |
+ 242 | USTARMAX | maximal u*=SQRT(Drag_coef)*fmax_10m | m s-1  |
+ 243 | GLOB_DIF | global diffuse shortwave radiation at the surface | W/m**2  |
+ 244 | GLOB_DIR | global direct (beam) shortwave radiation at the surface | W/m**2  |
+ 245 | GLOB_vE | global shortwave radiation on a vertical surface facing east | W/m**2  |
+ 246 | GLOB_vS | global shortwave radiation on a vertical surface facing south | W/m**2  |
+ 247 | GLOB_vW | global shortwave radiation on a vertical surface facing west | W/m**2  |
+ 248 | GLOB_vN | global shortwave radiation on a vertical surface facing north | W/m**2  |
+ 249 | LW_TG_vS | incoming longwave radiation on a vertical surface facing south | W/m**2  |
+ 250 | ENTH | enthalpy | kJ/kg  |
+ 251 | ENTH | enthalpy | kJ/kg  |
+ 252 | MIXRAT | mixing ratio | g/kg  |
+ 253 | MIXRAT | mixing ratio | g/kg  |
+ 254 | TW | wet bulb temperature | degC  |
+ 255 | TW | wet bulb temperature | degC  |

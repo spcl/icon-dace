@@ -1,0 +1,31 @@
+Languages
+
+Currently all library source is in Fortran 95 or C99.
+
+Identifiers which are globally visible via their linker symbol should
+start with a prefix of "PPM_" or "ppm_".
+
+For Fortran, this means all symbols should preferrably be part of a
+module whose name starts with ppm_ and shall have a name starting with
+ppm_ otherwise[1].
+
+For C, all public identifiers shall be mixed case with upper case
+"PPM_" at the start.
+
+Licenses
+
+The library is composed of sources under BSD license and files available
+under a compatible license.
+
+Since every file must contain a license statement, it's preferred to use
+scripts/checklicense prior to committing.
+
+With git this can be ensured by:
+
+$ echo "REPOTOP="$(git-rev-parse --show-toplevel)"
+"${REPOTOP}/scripts/checklicense" >>.git/hooks/pre-commit.sample
+$ mv .git/hooks/pre-commit.sample .git/hooks/pre-commit
+$ chmod +x .git/hooks/pre-commit
+
+[1] Since Fortran name mangling cannot be controlled, the lower case
+    prefix is used.

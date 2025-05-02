@@ -1,0 +1,74 @@
+This chapter provides templates of common sequences of {\CDI} calls needed for common uses.
+For clarity only the names of routines are used. Declarations and error checking were omitted.
+Statements that are typically invoked multiple times were indented and ... is used to 
+represent arbitrary sequences of other statements. 
+Full parameter lists are described in later chapters.
+
+Complete examples for write, read and copy a dataset with {\CDI}
+can be found in \htmlref{Appendix B}{example}.
+
+\section{Creating a dataset}
+
+Here is a typical sequence of {\CDI} calls used to create a new dataset:
+
+\begin{lstlisting}[backgroundcolor=\color{pyellow}, basicstyle=\small]
+    gridCreate           ! create a horizontal Grid: from type and size
+       ...
+    zaxisCreate          ! create a vertical Z-axis: from type and size
+       ...
+    taxisCreate          ! create a Time axis: from type
+       ...
+    vlistCreate          ! create a variable list
+          ...
+       vlistDefVar       ! define variables: from Grid and Z-axis
+          ...
+    streamOpenWrite      ! create a dataset: from name and file type
+       ...
+    streamDefVlist       ! define variable list
+       ...
+    streamDefTimestep    ! define time step
+          ...   
+       streamWriteVar    ! write variable
+          ...
+    streamClose          ! close the dataset
+       ...
+    vlistDestroy         ! destroy the variable list
+       ...
+    taxisDestroy         ! destroy the Time axis
+       ...
+    zaxisDestroy         ! destroy the Z-axis
+       ...
+    gridDestroy          ! destroy the Grid
+\end{lstlisting}
+
+
+\section{Reading a dataset}
+
+Here is a typical sequence of {\CDI} calls used to read a dataset:
+
+\begin{lstlisting}[backgroundcolor=\color{pyellow}, basicstyle=\small]
+    streamOpenRead       ! open existing dataset
+       ...
+    streamInqVlist       ! find out what is in it
+          ...
+       vlistInqVarGrid   ! get an identifier to the Grid
+          ...
+       vlistInqVarZaxis  ! get an identifier to the Z-axis
+          ...
+       vlistInqTaxis     ! get an identifier to the T-axis
+          ...
+    streamInqTimestep    ! get time step
+          ...
+       streamReadVar     ! read varible
+          ...
+    streamClose          ! close the dataset
+\end{lstlisting}
+
+
+\section{Compiling and Linking with the CDI library}
+
+Details of how to compile and link a program that uses the {\CDI} C or FORTRAN
+interfaces differ, depending on the operating system, the available compilers,
+and where the {\CDI} library and include files are installed.
+Here are examples of how to compile and link a program that uses the {\CDI} library
+on a Unix platform, so that you can adjust these examples to fit your installation.

@@ -1,0 +1,69 @@
+# Copyright 2005-2007 ECMWF
+#
+# Licensed under the GNU Lesser General Public License which
+# incorporates the terms and conditions of version 3 of the GNU
+# General Public License.
+# See LICENSE and gpl-3.0.txt for details.
+transient timeRangeIndicator=0 : no_copy,hidden;
+
+position offsetSection4;
+length[4] section4Length ;
+meta section4Pointer section_pointer(offsetSection4,section4Length,4);
+
+unsigned[1] numberOfSection = 4:read_only;
+
+unsigned[2] NV  : dump ;
+alias numberOfVerticalCoordinateValues=NV ;
+alias numberOfCoordinatesValues=NV;
+# additional for table 4.5, code 150 
+alias numberOfVerticalGridDescriptors=NV ;
+
+#  Product Definition Template Number
+
+transient neitherPresent = 0;
+
+if (centre==7 || centre==46) {
+	alias disableGrib1LocalSection=one;
+}
+
+codetable[2] productDefinitionTemplateNumber('4.0.table',masterDir,localDir) : dump;
+
+if (section2Used == 1) {
+	when (new()) {
+		set_nofail productDefinitionTemplateNumber=productDefinitionTemplateNumberInternal;
+	}
+}
+
+template productDefinition "grib2/template.4.[productDefinitionTemplateNumber:l].def" ;
+
+if (defined(marsStream) && defined(marsType)) {
+	template_nofail marsKeywords1 "mars/grib1.[marsStream:s].[marsType:s].def";
+}
+
+template parameters "grib2/parameters.def";
+
+if(typeOfFirstFixedSurface == 150) {
+  #  Number of levels 			      
+  unsigned[4] nlev  : dump ;
+  alias numberOfVerticalCoordinateValues=nlev ;
+  #  Number of grid used 			      
+  codetable[4] numberOfVGridUsed('4.5.78.150.table',masterDir,localDir) : dump;   
+  meta vGridFile  codetable_title(numberOfVGridUsed) : dump;
+  # uuid of vertical grid
+  ascii[16] uuidOfVGrid : dump;
+
+} else {
+  if(NV  == 0){
+    transient PVPresent = 0;
+  } else {
+    transient PVPresent = 1;
+  }
+
+  if(PVPresent){
+    ieeefloat pv[numberOfCoordinatesValues] : dump;
+    alias vertical.pv=pv;
+  }
+}
+
+
+meta md5Section4 md5(offsetSection4,section4Length);

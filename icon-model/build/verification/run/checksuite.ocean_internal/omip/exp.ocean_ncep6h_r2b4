@@ -1,0 +1,346 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#-----------------------------------------------------------------------------
+# the namelist filename
+ocean_namelist=NAMELIST_${EXPNAME}
+#-----------------------------------------------------------------------------
+# global timing
+start_date="1948-01-01T00:00:00Z"
+  end_date="2018-01-01T00:00:00Z"  #  201 years to ensure write of restart at end
+  restart=".true."
+#-----------------------------------------------------------------------------
+# model timing
+restart_interval="P1Y"
+checkpoint_interval="P1Y"
+#
+#-----------------------------------------------------------------------------
+# calculate model timesteps using $days_data
+output_interval="P1M"                  # ocean model output interval in days
+daily="P1D"
+monthly="P1M"
+file_interval="P1Y"
+modelTimeStep="PT1H"
+autoPostProcessing="false"                         # submit postprocessing job
+#steps_per_file=610                               # assigned output intervals per file interval
+#-----------------------------------------------------------------------------
+# global resolution
+iforc=12
+init_relax=1
+ocean_vertical_levels=40
+grid_name="icon_grid_0036_R02B04_O"
+ocean_grids="R2B4_ocean-grid.nc"
+ocean_data_InputFolder="/pool/data/ICON/oes/input/r0004/${grid_name}"
+grids_folder=${ocean_data_InputFolder}
+
+YEAR="1948"
+if [ -f ../experiments/${EXPNAME}/${restartSemaphoreFilename} ]; then
+    YEAR_=$(cdo -s showyear ../experiments/${EXPNAME}/restart_oce_DOM01.nc)
+    YEAR=$(echo $YEAR_ | xargs echo -n )
+fi
+NCEP_FORCING=/work/mh0033/m211054/projects/icon/forcing_ncep/forcing_ncep6h_r2b4/${YEAR}_ncep_icon_OceanOnly_Icos_0158km_etopo40_forcing.nc
+FORCING_TIMESCALE=$(cdo -s ntime $NCEP_FORCING)
+
+forcing_timescale=$FORCING_TIMESCALE  # length of OMIP/NCEP dataset: 1 = annual; 12 = monthly data; 365/else = daily data
+#-----------------------------------------------------------------------------
+#icon_data_rootFolder=/pool/data/ICON
+#
+# write namelist parameters
+# -------------------------
+cat > ${ocean_namelist} << EOF
+!
+&parallel_nml
+ nproma         = $nproma
+ p_test_run     = .false.
+ l_fast_sum     = .true.
+ num_prefetch_proc = 0 
+ pio_type       = 0
+ num_io_procs   = 0
+/
+&grid_nml
+ dynamics_grid_filename = "${ocean_grids}",
+ use_dummy_cell_closure = .true.
+ use_duplicated_connectivity = .false.
+/
+&dynamics_nml
+/
+&run_nml
+ modelTimeStep        = "${modelTimeStep}"       ! model timestep in seconds
+ output               = 'nml'        ! namelist controlled output scheme
+ activate_sync_timers = .TRUE.
+ profiling_output     = 1
+ msg_timestamp        = .FALSE.
+ timers_level         = 10
+ debug_check_level    = 0
+ restart_filename     = "${EXPNAME}_restart_oce_<rsttime>.nc"
+/
+&output_nml
+  filetype         =  5 ! output format: 2=GRIB2, 4=NETCDFv2
+  output_filename  = "${EXPNAME}"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = "${monthly}"
+  filename_format  = "<output_filename>_<datetime2>"
+  operation        = "mean"
+  file_interval    = "${file_interval}"
+  mode             =  1                               ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+  include_last     = .false.
+  output_grid      = .TRUE.
+  filename_format  = "<output_filename>_<datetime2>"
+  ml_varlist       = 'group:oce_default','group:oce_essentials', 'group:ice_default','group:oce_physics'
+/
+&output_nml
+  output_start     = "${start_date}"
+  output_end       = "${end_date}"
+  output_interval  = "${monthly}"
+  filename_format  = "<output_filename>_<datetime2>"
+  output_grid      = .true.
+  operation        = "mean"
+  mode             =  1                               ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+  file_interval    = "${file_interval}"
+  output_filename  = "${EXPNAME}_oceanMonitor"
+  ml_varlist       =  'group:ocean_monitor'
+/
+&output_nml
+  output_start     = "${start_date}"
+  output_end       = "${end_date}"
+  output_interval  = "${monthly}"
+  filename_format  = "<output_filename>_<datetime2>"
+  output_grid      = .true.
+  operation        = "mean"
+  mode             =  1                               ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+  file_interval    = "${file_interval}"
+  output_filename  = "${EXPNAME}_MOC"
+  ml_varlist       =  'group:ocean_moc'
+/
+&output_nml
+  filetype         =  5                               ! output format: 2=GRIB2, 4=NETCDFv2
+  output_filename  = "${EXPNAME}_fx"
+  output_start     = "${start_date}"                  ! start date in ISO-format
+  output_end       = "${start_date}"                    ! end date in ISO-format
+  output_interval  = "${monthly}"         ! interval in ISO-format
+  filename_format  = "<output_filename>"
+  file_interval    = "${file_interval}"
+  output_grid      = .TRUE.
+  mode             =  1
+  include_last     = .false.
+  ml_varlist       =  'group:oce_geometry'
+/
+&output_nml
+  filetype         =  5 ! output format: 2=GRIB2, 4=NETCDFv2
+  output_filename  = "${EXPNAME}_tke"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = "${monthly}"
+  filename_format  = "<output_filename>_<datetime2>"
+  operation        = 'mean'
+  file_interval    = "${file_interval}"
+  mode             =  1                               ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+  include_last     = .false.
+  output_grid      = .TRUE.
+  filename_format  = "<output_filename>_<datetime2>"
+  ml_varlist       = 'group:oce_vmix_tke'
+/
+&dbg_index_nml
+  idbg_mxmn=0                     ! initialize MIN/MAX  debug output
+  idbg_val =0                     ! initialize one cell debug output
+  idbg_slev=1                     ! initialize start level for debug output
+  idbg_elev=5                     ! initialize end level for debug output
+  dbg_lat_in=   30.0              ! latitude location of one cell debug output
+  dbg_lon_in=  -30.0              ! longitude location of one cell debug output
+  str_mod_tst='all'               ! define modules to print out in debug mode
+/
+&ocean_dynamics_nml
+! 40 unevenly spaced levels used by MPIOM/GR30
+ n_zlev             =   $ocean_vertical_levels
+ dzlev_m(1:40)      =   12.0,   10.0,   10.0,   10.0,   10.0,   10.0,   13.0,   15.0,   20.0,   25.0,
+                        30.0,   35.0,   40.0,   45.0,   50.0,   55.0,   60.0,   70.0,   80.0,   90.0,
+                       100.0,  110.0,  120.0,  130.0,  140.0,  150.0,  170.0,  180.0,  190.0,  200.0,
+                       220.0,  250.0,  270.0,  300.0,  350.0,  400.0,  450.0,  500.0,  500.0,  600.0
+  l_edge_based                    = .FALSE.   ! edge- or cell-based mimetic discretization
+  l_partial_cells                 = .FALSE.   ! partial bottom cells=true: local varying bottom depth
+
+  select_solver                   = 4       ! 1=gmres_oce_old; 2=ocean_restart_gmres, 3=mixed precisison restart 
+                                            ! 4=CG (default) 5=CGJ 6=BiCG 7=GMRES restart (legacy) 8=MINRES
+  use_absolute_solver_tolerance   = .true.
+  solver_tolerance                = 1.0E-10 ! this may further be reduced
+  select_lhs                      = 2       ! 1=operator based (default) 2=matrix based
+  l_lhs_direct                    = .true. ! .true.= use lhs implementation directly  .false.= matrix scanner (default) 
+  solver_FirstGuess               = 2       ! 0=start from zeros 1=last timestep smoothed 2=last timestep (default) 
+
+  solver_max_iter_per_restart     =  14   
+  solver_max_restart_iterations   = 100       ! outer (restart solver)
+
+  fast_performance_level          = 200       ! performance level 12: for cell-based; 5: default
+  use_continuity_correction       = .TRUE.    ! height adjustment according to vertical velocity in dynamics
+  cfl_check                       = .FALSE.
+  cfl_write                       = .FALSE.
+
+  i_bc_veloc_top                  =   1
+  i_bc_veloc_bot                  =   1       ! 0: (def) bottom friction off, 1: on
+/
+&ocean_tracer_transport_nml
+  FLUX_CALCULATION_HORZ =  5 ! 5      ! 1=upwind, 2=central, 3=Lax-Friedrichs, 4=Miura, 5=FCT with Zalesak limiter (default)
+  FLUX_CALCULATION_VERT =  7 ! 7      ! 6=adpo; 7=upwind biased ppm (default); 8=FCT with zalesak limiter
+  ! define low and high order methods to be used in horizontal flux corrected transport methods (flux_calculation_horz=4,5)
+  fct_low_order_flux    = 1      ! horizontal low  order method: 1=upwind (def), no other implemented
+  fct_high_order_flux   = 5      ! horizontal high order method: 1=upwind, 2=central, 3=lax_friedrichs, 4=miura_order1
+  fct_limiter_horz      = 100    ! zalesak
+  threshold_min_T       = -2.0   ! to avoid abort
+/
+&ocean_horizontal_diffusion_nml
+  laplacian_form = 1                   ! 1=curlcurl-graddiv
+  VelocityDiffusion_order = 1          ! 21=biharmonic+laplacian (for the laplacian leith)
+
+  HarmonicViscosity_scaling     =  1
+  HarmonicViscosity_reference   =  3.0E+4  !  [m2/s] constant horizontal viscosity coefficient for velocity
+  HarmonicViscosity_background  =  0.0  
+
+  TracerHorizontalDiffusion_scaling          = 1
+  Temperature_HorizontalDiffusion_Background = 0.0
+  Temperature_HorizontalDiffusion_Reference  = 0 !  40
+  Salinity_HorizontalDiffusion_Background    = 0.0
+  Salinity_HorizontalDiffusion_Reference     = 0 !  40
+/
+&ocean_vertical_diffusion_nml
+  vert_mix_type                            = 2  ! 1: PP; 2: TKE; ; 4 TKE+IDEMIX
+  only_tke                                 = .true. ! .true. for TKE; .false. for TKE+IDEMIX
+  PPscheme_type                            = 0
+  !velocity_VerticalDiffusion_background    =   5.0E-5  ! [m2/s]  vertical background viscosity coefficient for velocity
+  !Temperature_VerticalDiffusion_background =   1.0E-5  ! [m2/s]  vertical background diffusion coefficient for temperature
+  !Salinity_VerticalDiffusion_background    =   1.0E-5  ! [m2/s]  vertical background diffusion coefficient for salinity
+  !tracer_convection_MixingCoefficient =   0.1 ! max vertical tracer diffusion for convection used in case of instability
+  !convection_InstabilityThreshold =  -1.0E-6  ! used in update_ho_params - default=-5e-8
+  !RichardsonDiffusion_threshold   =   0.0     ! used in update_ho_params - default=+5e-8
+  !tracer_RichardsonCoeff          =   2.0E-3  ! factor for vertical diffusion coefficient in PP scheme
+  !velocity_RichardsonCoeff        =   2.0E-3  ! factor for vertical viscosity coefficient in PP scheme
+  !bottom_drag_coeff               =   3.0E-3  ! default=2.5E-3; active for i_bc_veloc_bot=1
+  !use_wind_mixing                 = .true.    ! true: use wind mixing scheme in MPIOM-type pp-scheme
+  !lambda_wind                     = 0.03
+  !tracer_TopWindMixing            = 0.5E-3 ! [m2/s] windmixing diffusivity in MPIOM-type pp-scheme
+  !velocity_TopWindMixing          = 0.5E-3 ! [m2/s] windmixing viscosity in MPIOM-type pp-scheme
+  ! vmix/tke parameters
+  c_k        = 0.1
+  c_eps      = 0.7
+  alpha_tke  = 30.0
+  mxl_min    = 1.d-8
+  kappaM_min = 0.0
+  kappaM_max = 100.0
+  cd         = 3.75
+  tke_min    = 1.d-6
+  tke_mxl_choice = 2                                                              
+  tke_surf_min = 1.d-4
+  only_tke = .true.                                                               
+  use_ubound_dirichlet = .false.                                                  
+  use_lbound_dirichlet = .false. 
+/
+&ocean_GentMcWilliamsRedi_nml
+  GMRedi_configuration           =   1       ! 0=cartesian diffusion 1=GM-Redi: bolus advection + isopycnal diffusion
+  tapering_scheme=1
+  GMRedi_usesRelativeMaxSlopes = .false.
+  S_max=1.0e-3                               
+  S_d=0.0001                                 ! 1e-3 to 1e-4
+  k_tracer_GM_kappa_parameter     = 1000.0     !
+  k_tracer_isoneutral_parameter   = 1000.0     ! value for cell-based cartesian diffusion - mpiom: 1000/400km = 400/160km
+  k_tracer_dianeutral_parameter   = 0.0       !1.0E-5  !
+  SWITCH_OFF_DIAGONAL_VERT_EXPL          =.TRUE.
+  GMREDI_COMBINED_DIAGNOSTIC             =.FALSE.
+  SWITCH_ON_REDI_BALANCE_DIAGONSTIC      =.FALSE.
+  REVERT_VERTICAL_RECON_AND_TRANSPOSED   =.TRUE.
+  SLOPE_CALC_VIA_TEMPERTURE_SALINITY     =.TRUE.
+  INCLUDE_SLOPE_SQUARED_IMPLICIT         =.TRUE. !think of l_with_vert_tracer_diffusion
+  SWITCH_ON_TAPERING_HORIZONTAL_DIFFUSION=.TRUE.
+/
+&ocean_physics_nml
+  i_sea_ice                       =   1       ! 0 = no sea ice; 1 = sea ice model on; default=1
+/                                           
+&sea_ice_nml
+  i_ice_therm                     =   1       ! 1=zero-layer (default), 2=Winton, 0/2: not allowed
+  i_ice_dyn                       =   1       ! 1/0=switch on/off AWI ice dynamics
+! i_Qio_type                      =   3       ! 3 (default): energy of whole grid-area used for melting (MPIOM-type)
+! use_constant_tfreez             = .TRUE.    ! default: true
+! use_no_flux_gradients           = .FALSE.   ! default: true
+ leadclose_1                     =   0.25     ! default: 0.5 - value of MPIOM: 0.25
+ leadclose_2n                    =   0.666    ! default: 0.0 - value of MPIOM: 2/3
+ albedoW_sim  = 0.10         ! albedo of the ocean used in sea ice model
+ albs         = 0.85         ! Albedo of snow (not melting)
+ albsm        = 0.70         ! Albedo of snow (melting)
+ albi         = 0.75         ! Albedo of ice (not melting)
+ albim        = 0.70         ! Albedo of ice (melting)
+! Pstar        = 40000
+/
+&ocean_forcing_nml
+  iforc_oce                       = ${iforc}            ! ocean forcing
+  forcing_timescale               = $forcing_timescale  ! length of ocean forcing data set, see above
+  forcing_frequency               = 21600.0
+!  sw_scaling_factor               = 0.89              ! reduce sw in ncep forcing by 11%
+  init_oce_relax                  = $init_relax         ! read ocean surface relaxation file, see above
+  type_surfRelax_Temp             =   0       ! 0: no relaxation used
+                                              ! 1: relaxation switched on for reading (init_oce_relax=1) or some testcases only
+  para_surfRelax_Temp             =   1.0     ! strength of 2-dim relaxation for temperature (months)
+                                              ! this value is divided by number of seconds per month (=30*24*3600)
+  type_surfRelax_Salt             =   1       ! 2-dim relaxation of salinity - see temperature relaxation for type values
+  para_surfRelax_Salt             =   3.0     ! strength of 2-dim relaxation for salinity (months)
+  forcing_windstress_u_type       =   1       ! read from file
+  forcing_windstress_v_type       =   1       ! read from file
+  forcing_fluxes_type             =   1       ! read from file
+  bulk_wind_stress_type           =   0       ! 0: from file, 1: ocean at rest, 2: with ocean currents
+! forcing_enable_freshwater       = .TRUE.    ! apply freshwater forcing boundary condition (OMIP only)
+! forcing_set_runoff_to_zero      = .FALSE.   ! set runoff to zero for comparison to MPIOM; default: false
+! zero_freshwater_flux            = .FALSE.   ! set external freshwater flux to zero; default: false 
+                                              ! salt-change due to internal fluxes only
+  limit_seaice                    = .TRUE.    ! default: true
+  seaice_limit                    =   0.8     ! hard limit set to 80% of upper layer for sea ice
+  limit_elevation                 = .TRUE.
+  atm_pressure_included_in_ocedyn = .FALSE.   ! use atm. pressure in the ocean dynamics
+  atm_pressure_included_in_icedyn = .FALSE.   ! use atm. pressure in the ice dynamics
+
+  use_tides                       = .FALSE.
+  tides_mod                       =  1        ! 1 Default 2 MPIOM 
+  lswr_jerlov                     = .TRUE.    ! use jerlov water types for sw absorption
+  jerlov_atten                    = 0.08      ! jerlov water type IB
+  jerlov_bluefrac                 = 0.36      ! jerlov water type IB
+/
+&ocean_initialConditions_nml
+  initial_salinity_type           = 1         ! read from file
+  initial_temperature_type        = 1         ! read from file
+/                                    
+&ocean_diagnostics_nml
+   diagnostics_level            = 1
+  diagnose_for_horizontalvelocity = .false.
+  diagnose_for_heat_content = .true.
+  diagnose_for_tendencies = .true.
+/
+&io_nml
+  restart_file_type = 5
+  write_last_restart = .true.
+!  lkeep_in_sync = .true.          ! sync after each timestep
+!  restart_write_mode = "joint procs multifile"
+/
+EOF
+#-----------------------------------------------------------------------------
+
+
+
+#-----------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+#. ${thisdir}/add_required_ocean_files
+
+add_link_file $ocean_data_InputFolder/R2B4L40_initial_state.nc initial_state.nc
+add_link_file $NCEP_FORCING ocean-flux.nc
+add_link_file $ocean_data_InputFolder/R2B4_ocean-relax.nc ocean-relax.nc
+# IDEMIX forcing fields
+#add_link_file /home/mpim/m300602/work/proj_vmix/icon/idemix_forcing/fourier_smooth_2005_cfsr_inert_OceanOnly_Icos_0158km_etopo40.nc idemix_surface_forcing.nc
+#add_link_file /home/mpim/m300602/work/proj_vmix/icon/idemix_forcing/tidal_energy_gx1v6_20090205_OceanOnly_Icos_0158km_etopo40.nc idemix_bottom_forcing.nc
+
+#-----------------------------------------------------------------------------

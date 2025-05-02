@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE modes SYSTEM "modes.dtd">
+
+<modes>
+  <aerosol id="seasa" of="seasalt" type="2mom">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">0.100E-6</d_gn>
+    <d_gm type="real">0.433E-6</d_gm>
+    <sigma_g type="real">1.900E+0</sigma_g>
+    <rho type="real">2.200E+3</rho>
+  </aerosol>
+  <aerosol id="seasb" of="seasalt" type="2mom">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">3.000E-6</d_gn>
+    <d_gm type="real">1.268E-5</d_gm>
+    <sigma_g type="real">2.000E+0</sigma_g>
+    <rho type="real">2.200E+3</rho>
+  </aerosol>
+  <aerosol id="seasc" of="seasalt" type="2mom">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">3.000E-5</d_gn>
+    <d_gm type="real">6.982E-5</d_gm>
+    <sigma_g type="real">1.700E+0</sigma_g>
+    <rho type="real">2.200E+3</rho>
+  </aerosol>
+</modes>

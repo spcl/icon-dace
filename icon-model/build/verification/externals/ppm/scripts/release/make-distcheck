@@ -1,0 +1,115 @@
+#! /usr/bin/env bash
+#
+# make-distcheck --- build source from current directory in temporary
+#                    place, run 'make', 'make check' and 'make distcheck'
+#                    and create alternative compression scheme archives
+#
+# Copyright  (C)  2021  Thomas Jahns <jahns@dkrz.de>
+#
+# Author: Thomas Jahns <jahns@dkrz.de>
+# Keywords: distcheck automation
+# Maintainer: Thomas Jahns <jahns@dkrz.de>
+# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+set -e
+# shellcheck source=get-package-and-version.shinc
+. scripts/release/get-package-and-version.shinc
+if (( ${DEBUG:-0} )); then
+  set -x
+  MAKE_DEBUG_ARGS=(--debug 'SHELL=bash -x')
+else
+  MAKE_DEBUG_ARGS=()
+fi
+if [[ x${TMPDIR+set} = x ]]; then
+  if [[ -d /dev/shm && -w /dev/shm ]]; then
+    TMPDIR=/dev/shm
+  else
+    TMPDIR=/tmp
+  fi
+  TMPDIR=$(mktemp -d "${TMPDIR}/$(id -un)-XXXXXX")
+  export TMPDIR
+fi
+BUILD_DIR=$(mktemp -d "${TMPDIR}/${package}-distcheck.XXXXXX")
+if (( ${DEBUG:-0} == 0)) && [[ -z "${KEEP_BUILDDIR-}" ]] ; then
+  trap 'rm -rf "$BUILD_DIR"' EXIT
+fi
+SRC_DIR=$PWD
+cd "${BUILD_DIR}"
+for ((i=0; i < 2; ++i)); do
+  args=(--prefix="${BUILD_DIR}-install")
+  if ((i == 0)); then
+    args+=(--enable-maintainer-mode)
+  fi
+  "$SRC_DIR"/configure "${args[@]}"
+  mf_version=$(sed -n -e '/^PACKAGE_VERSION = /{
+s/^PACKAGE_VERSION =[ 	]*\(.*[^ ]\) *$/\1/; p ; q
+}' Makefile)
+  if [[ -z "${MAKE+set}" ]]; then
+    MAKE=$(sed -n -e '/^MAKE = /{
+s/^MAKE =[ 	]*\(.*[^ ]\) *$/\1/; p ; q
+}' Makefile)
+    [[ -n "${MAKE}" ]] || MAKE=make
+  fi
+  if [[ "$mf_version" != "$version" ]]; then
+    echo "error: versions from Makefile ($mf_version) and configure.ac" \
+         "($version) don't match" >&2
+    exit 1
+  fi
+  ${MAKE} "${MAKE_DEBUG_ARGS[@]}" -j
+  ${MAKE} "${MAKE_DEBUG_ARGS[@]}" -j check
+  case $i in
+    0)
+      ${MAKE} "${MAKE_DEBUG_ARGS[@]}" -j8 distcheck
+      ${MAKE} "${MAKE_DEBUG_ARGS[@]}" distclean
+      ls -lR
+      ;;
+    1)
+      ${MAKE} "${MAKE_DEBUG_ARGS[@]}" -j8 distcheck
+      ;;
+  esac
+done
+if [[ -x "$(command -v repack)" ]]; then
+  # creates xz and bzip2 versions of archive
+  repack --keep "$package-$version.tar.gz"
+fi
+archives=("$package-$version.tar."*)
+date=$(date '+%Y-%m-%d')
+unset gz_archive xz_archive
+if [[ -r "$package-$version.tar.gz" ]]; then
+  archive="$package-$version.tar.gz"
+  size=$(stat --format '%s' "$archive" 2>/dev/null || stat -f '%z' "$archive")
+  gz_archive="attachment:${archive} ($size bytes)|"
+else
+  gz_archive="|"
+fi
+if [[ -r "$package-$version.tar.xz" ]]; then
+  archive="$package-$version.tar.xz"
+  size=$(stat --format '%s' "$archive" 2>/dev/null || stat -f '%z' "$archive")
+  xz_archive="attachment:${archive} ($size bytes)|"
+else
+  xz_archive="|"
+fi
+echo "|$date|$version|${gz_archive}${xz_archive}"
+cp "${archives[@]}" /tmp
+echo 'Find archives in' /tmp/"$package-$version.tar."*
+#
+# Local Variables:
+# mode: sh
+# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-default: "bsd"
+# End:
+#

@@ -1,0 +1,5 @@
+rm -f *~
+rm -f cdi*.aux cdi*.cps cdi*.fn cdi*.html cdi*.ky cdi*.pdf cdi*.pgs cdi*.tp
+rm -f cdi*.cp cdi*.dvi cdi*.fns cdi*.info cdi*.log cdi*.pg cdi*.ps cdi*.toc cdi*.vr
+rm -f cdi*.out cdi*.idx cdi*.ilg cdi*.ind 
+rm -f cdi*.aux cdi*.tpt cdi*.ist

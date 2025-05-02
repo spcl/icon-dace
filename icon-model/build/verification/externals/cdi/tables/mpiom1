@@ -1,0 +1,112 @@
+# Parameter table
+#
+# TABLE_ID=128
+# TABLE_MODEL=MPIOM1
+# TABLE_INSTITUT=MPIMET
+#
+#-------------------------------------------------------------------------
+#!variable
+#
+# Variables
+#   (max number of entries = 256)
+#
+# The format of each record is:
+#   id | name | title | units
+#
+# id       = parameter ID
+# name     = variable name
+# title    = long name (description)
+# units    = variable units
+#
+#----+-------------+------------------------------------------+----------+
+# id | name        | title                                    | units    |
+#----+-------------+------------------------------------------+----------+
+   2 | THO         | temperature                              | C        
+   5 | SAO         | salinity                                 | psu      
+   3 | UKO         | zon. velocity                            | m/s      
+   4 | VKE         | mer. velocity                            | m/s      
+ 303 | UKOMFL      | zon. velocity (divergence free)          | m/s      
+ 304 | VKEMFL      | mer. velocity (divergence free)          | m/s      
+   7 | WO          | ver. velocity                            | m/s      
+   8 | RHO         | insitu density                           | kg/m**3  
+   6 | PO          | pressure                                 | Pa      
+  67 | EMINPO      | freshwaterflux by restoring              | m/s      
+  70 | FLUM        | total heatflux                           | W/m**2   
+  79 | PEM         | total freshwaterflux                     | m/s      
+  13 | SICTHO      | ice thickness                            | m        
+  15 | SICOMO      | ice compactness                          | frac.    
+  35 | SICUO       | zon. ice velocity                        | m/s      
+  36 | SICVE       | mer. ice velocity                        | m/s      
+  92 | TAFO        | surface air temperature                  | C        
+ 164 | FCLOU       | cloud cover                                     
+  52 | TXO         | surface u-stress                         | Pa/1025. 
+  53 | TYE         | surface v-stress                         | Pa/1025. 
+ 260 | FPREC       | prescr. precipitation                    | m/s      
+  80 | FSWR        | downward shortwave rad.                  | W/m**2   
+  81 | FTDEW       | dewpoint temperature                     | K        
+ 171 | FU10        | 10m windspeed                            | m/s      
+ 141 | SICSNO      | snow thickness                           | m        
+ 176 | QSWO        | heat flux shortwave                      | W/m**2   
+ 177 | QLWO        | heat flux longwave                       | W/m**2   
+ 147 | QLAO        | heat flux latent                         | W/m**2   
+ 146 | QSEO        | heat flux sensible                       | W/m**2   
+  65 | PRECO       | net freshwater flux + runoff             | m/s          
+   1 | ZO          | sealevel                                 | m        
+  82 | Z1O         | sealevel change                          | m        
+  69 | KCONDEP     | depth of convection                      | level    
+  27 | PSIUWE      | hor. bar. streamfunction                 | Sv       
+  83 | AMLD        | mixed layer depth                        | m        
+ 172 | WETO        | landseamask (pressure points)                   
+ 507 | AMSUE       | landseamask (vector points v)                       
+ 508 | AMSUO       | landseamask (vector points u)                   
+  84 | DEPTO       | depth at pressure points                 | m    
+ 484 | DEUTO       | depth at vector points (u)               | m        
+ 584 | DEUTE       | depth at vector points (v)               | m        
+ 184 | DDUO        | level thickness (vector u )              | m        
+ 284 | DDUE        | level thickness (vector v )              | m        
+ 384 | DDPO        | level thickness (pressure )              | m        
+  85 | DLXP        | grid distance x                          | m        
+  86 | DLYP        | grid distance y                          | m        
+ 185 | DLXU        | grid distance x  (vector u)              | m        
+ 186 | DLYU        | grid distance y  (vector u)              | m        
+ 285 | DLXV        | grid distance x  (vector v)              | m        
+ 286 | DLYV        | grid distance y  (vector v)              | m        
+  54 | GILA        | latitude in radiants                     | rad      
+  55 | GIPH        | longitude in radiants                    | rad      
+ 354 | ALAT        | latitude in degrees (pressure)           | deg      
+ 355 | ALON        | longitude in degrees (pressure)          | deg      
+ 154 | ALATU       | latitude in degrees (vector u)           | deg      
+ 155 | ALONU       | longitude in degrees (vector u)          | deg      
+ 254 | ALATV       | latitude in degrees (vector v)           | deg      
+ 255 | ALONV       | longitude in degrees (vector v)          | deg
+ 110 | AVO         | vertical impuls diffusion                | m**2/s   
+ 111 | DVO         | vertical T,S diffusion                   | m**2/s   
+ 142 | SICTRU      | seaice transport x                       | m**2/s   
+ 143 | SICTRV      | seaice transport y                       | m**2/s   
+ 612 | WTMIX       | wind mixing                              | m**2/s   
+ 183 | zmld        | mixed layer depth (SJ)                   | m       
+ 207 | WGO         | GM vertical velocity                     | m/s
+ 305 | rivrun      | RiverRunoff		              | m/s
+ 158 | TMCDO       | mon. mean depth of convection            | level   
+ 247 | DQSWO       | heatflux sw over water                   | W/m**2
+ 248 | DQLWO       | heatflux lw over water                   | W/m**2
+ 249 | DQSEO       | heatflux se over water                   | W/m**2
+ 250 | DQLAO       | heatflux la over water                   | W/m**2
+ 251 | DQTHO       | heatflux net over water                  | W/m**2
+ 252 | DQSWI       | heatflux sw over seaice                  | W/m**2
+ 253 | DQLWI       | heatflux lw over seaice                  | W/m**2
+ 254 | DQSEI       | heatflux se over seaice                  | W/m**2
+ 255 | DQLAI       | heatflux la over seaice                  | W/m**2
+ 256 | DQTHI       | heatflux net over seaice                 | W/m**2
+ 257 | DTICEO      | Equi. temp over seaice	              | K   
+ 270 | AOFLNHWO    | oasis net heat flux water                | W/m**2
+ 271 | AOFLSHWO    | oasis downward short wave                | W/m**2
+ 272 | AOFLRHIO    | oasis residual heat flux ice             | W/m**2
+ 273 | AOFLCHIO    | oasis conduct. heat flux ice             | W/m**2
+ 274 | AOFLFRWO    | oasis fluid fresh water flux             | m/s   
+ 275 | AOFLFRIO    | oasis solid fresh water flux             | m/s   
+ 276 | AOFLTXWO    | oasis wind stress water x                | Pa/102
+ 277 | AOFLTYWO    | oasis wind stress water y                | Pa/102
+ 278 | AOFLTXIO    | oasis wind stress ice x                  | Pa/102
+ 279 | AOFLTYIO    | oasis wind stress ice x                  | Pa/102
+ 280 | AOFLWSVO    | oasis wind speed                         | m/s   

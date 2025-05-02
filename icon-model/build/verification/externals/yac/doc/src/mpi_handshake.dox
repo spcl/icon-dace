@@ -1,0 +1,78 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+/**
+ * \page mpi_handshake_detail MPI handshake algorithm
+   \tableofcontents
+
+\section mpi_handshake_detail_intro Introduction
+
+In complex coupled run configurations with multiple different
+executables, a common problem is the initial MPI communicator
+splitting. At the start of the run multiple communicators have
+to be built, for example one for each executable or for groups
+of executables. These communicators are required by the models
+themselves and by libraries used by one or more of the models
+(e.g. coupler or IO).
+
+Each library and/or model can implement its own algorithm for
+splitting the initial MPI_COMM_WORLD. However, this can lead to
+conflicts and deadlocks between the different algorithms.
+
+YAC provides the routine \ref yac_cmpi_handshake, which implements
+a MPI handshake algorithm that can generate multiple different
+communicators in a single collective operation. If this algorithm
+is used by all processes in a coupled run, the communicators for
+all models and libraries can be generated without any conflicts.
+
+As long as all participating processes use a compatible
+implementation of the algorithm, process are not required to use
+or link against YAC.
+
+DKRZ has a dedicated repository containing a reference
+implemenation for this algorithm:\n
+<a href="https://gitlab.dkrz.de/dkrz-sw/mpi-handshake">MPI Handshake reference implementation</a>
+
+\section mpi_handshake_detail_interface MPI handshake interface
+
+\code {.c}
+
+void yac_cmpi_handshake(
+  MPI_Comm comm,
+  size_t n,
+  char const ** group_names,
+  MPI_Comm * group_comms);
+
+\endcode
+
+- `comm`
+  - communicator from which all new communicators are generated from
+- `n`
+  - number of communicators that have to generated
+- `group_names`
+  - array of names used to determine members for each communicator
+- `group_comms`
+  - array of generated communicators
+
+For each entry in `group_names` this algorithm will generate a new
+communicator that contains all processes in `comm` that provided the
+same name to this algorithm and store it at the respective position
+in `group_comms`.
+
+This algorithm is collective for all processes in `comm`. Each process
+can provide a different set of group names in an arbitrary order.
+
+\section mpi_handshake_detail_interoperability Language interoperability
+
+Interoperability between Fortran and C MPI datatypes is not portable
+(`MPI_INTEGER` is not necessary the same as `MPI_INT`).
+
+This makes the implementation of Fortran version of this algorithm, which
+is compatible with a C version, difficult. Therefore, it is advised to
+use a C implementation and provide a Fortran interface for this
+implementation.
+
+An example can be found \ref yac_fmpi_handshake "here".
+
+*/

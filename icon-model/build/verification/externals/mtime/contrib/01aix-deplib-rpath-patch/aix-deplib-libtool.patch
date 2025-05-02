@@ -1,0 +1,15 @@
+patching file /tmp/tmp.fUvdRDtWV1
+--- /tmp/tmp.fUvdRDtWV1	2012-11-16 13:56:40.799501409 +0100
++++ b/config/ltmain.sh	2012-11-16 13:27:39.657253614 +0100
+@@ -7171,7 +7171,10 @@
+ 	    # practice:
+ 	    case $deplib in
+ 	    -L*) new_libs="$deplib $new_libs" ;;
+-	    -R*) ;;
++	    -R*)
++                func_stripname '-R' '' "$deplib"
++                func_add2xrpath "$func_stripname_result"
++                ;;
+ 	    *)
+ 	      # And here is the reason: when a library appears more
+ 	      # than once as an explicit dependence of a library, or

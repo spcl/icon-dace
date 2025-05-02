@@ -1,0 +1,100 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+predef:
+  base_config: &base_config
+    src_component: comp_1
+    src_grid: grid1
+    tgt_component: comp_2
+    tgt_grid: grid2
+    coupling_period: 60
+    time_reduction: accumulate
+    src_lag: 60
+    tgt_lag: 60
+
+start_date: 2008-03-09T16:05:07
+end_date: 2008-03-10T16:05:07
+timestep_unit: second
+debug:
+  missing_definition_is_fatal: false
+coupling:
+  - <<: *base_config
+    interpolation:
+      - average:
+          weighted: arithmetic_average
+    field: AVG_ARITHMETIC
+  - <<: *base_config
+    interpolation:
+      - average:
+          weighted: distance_weighted
+    field: AVG_DIST
+  - <<: *base_config
+    interpolation:
+      - average:
+          weighted: barycentric_coordinate
+    field: AVG_BARY
+  - <<: *base_config
+    interpolation:
+      - nnn:
+          weighted: arithmetic_average
+    field: 4NN_ARITHMETIC
+  - <<: *base_config
+    interpolation:
+      - nnn:
+          weighted: distance_weighted
+    field: 4NN_DIST
+  - <<: *base_config
+    interpolation:
+      - nnn:
+          weighted: gauss_weighted
+    field: 4NN_GAUSS
+  - <<: *base_config
+    interpolation:
+      - bernstein_bezier
+    field: HCSBB
+  - <<: *base_config
+    interpolation:
+      - rbf:
+          n: 4
+          rbf_kernel: gauss_kernel
+    field: RBF_4_GAUSS
+  - <<: *base_config
+    interpolation:
+      - source_to_target_map:
+          weighted: distance_weighted
+    field: SPMAP
+  - <<: *base_config
+    interpolation:
+      - fixed:
+          user_value: -1.0
+    field: FIXED
+  - <<: *base_config
+    interpolation:
+      - conservative:
+          normalisation: fracarea
+    field: CONSERV_FRACAREA
+  - <<: *base_config
+    interpolation:
+      - conservative:
+          normalisation: destarea
+    field: CONSERV_DESTAREA
+  - <<: *base_config
+    interpolation:
+      - conservative:
+          order: 2
+    field: CONSERV2ND
+  - <<: *base_config
+    interpolation:
+      - user_file:
+          filename: "instance_test_1_9.nc"
+    field: USER_FILE
+  - <<: *base_config
+    interpolation:
+      - user_callback:
+          func_compute_weights: "compute_weights_callback"
+    field: USER_CALLBACK
+  - <<: *base_config
+    interpolation:
+      - creep
+    field: CREEP

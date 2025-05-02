@@ -1,0 +1,99 @@
+/** \example idxlist_examples.c
+ */
+
+/** \page idxlists How to generate an index list
+  \tableofcontents
+
+  \section idxlist_intro Introduction
+
+  Index lists are just lists that contain a number of indices. Identical indices can
+  occur multiple times in an index list. They have no notion 2D or 3D decompostions.
+
+  However, you are still able to describe any type of decompostion using such an
+  index list. The most general index list type is the index vector. The yaxt library
+  provides other index list types that ease the generation of an index list for most
+  decompostion types.
+
+  The presented examples can be found \ref idxlist_examples.c "here"
+
+  \section idxvec Index vector
+
+  \dontinclude xt_idxvec.h
+  \skip _new
+  \until ;
+
+  The index vector takes an array of indices as input and generates an index list from
+  that. It is most efficient for random decompostions. Since it stores a copy of the
+  input array within the index list, it is not recommand to be used for index list that
+  can be described more compact with other index list types.
+
+  \image html decomp_idxvec.png "index vector decomposition example"
+
+  \snippet idxlist_examples.c index list example
+
+  \section idxstripe Index stripes
+
+  \dontinclude xt_idxstripes.h
+  \skip _new
+  \until ;
+
+  If you have a number of indices that have identical strides, then it might be
+  more efficient to use the index stripes to describe your decomposition.
+
+  \image html decomp_idxstripes.png "index stripes decomposition example"
+
+  \snippet idxlist_examples.c index stripes example
+
+  \section idxsection Index section
+
+  \dontinclude xt_idxsection.h
+  \skip _new
+  \until ;
+
+  A very common decomposition is the partioning into n-dimensional blocks. For this
+  decomposition type the index section is recommanded. Some advanced features of index
+  sections are described in \ref idxsection_docu.
+
+  \image html decomp_idxsection.png "index section decomposition example"
+
+  \snippet idxlist_examples.c index section example
+
+  \section idxcollection Index list collection
+
+  \dontinclude xt_idxlist_collection.h
+  \skip _new
+  \until ;
+
+  Index list collections can be used to combine a number of index list of any
+  type into a new index list.
+
+  \image html decomp_idxlist_collection.png "index list collection decomposition example"
+
+  \snippet idxlist_examples.c index list collection example
+
+  \section idxmod Index modifier
+
+  The index modifier can be used to generate an index list based on an existing one. In
+  the new index list all occurences of indices listed in the first index list of
+  the modifier are replaces by the respective indices in the second list.
+
+  \dontinclude xt_idxmod.h
+  \skip Xt_idxlist xt_idxmod_new
+  \until ;
+
+  \image html decomp_idxmod.png "index modifier decomposition example"
+
+  \snippet idxlist_examples.c index list modifier example
+
+  \section idxempty Empty index list
+
+  \dontinclude xt_idxempty.h
+  \skip _new
+  \until ;
+
+  The empty index contains no indices. It handles the non-existing indices with
+  good performance.
+
+  \snippet idxlist_examples.c empty index list example
+
+ */

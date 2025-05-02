@@ -1,0 +1,3 @@
+src/parallel_infrastructure/mo_communication_yaxt.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/crayftn_ptr_fail.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/icon_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/parallel_infrastructure/mo_communication_yaxt.f90
+src/parallel_infrastructure/mo_communication_yaxt.pp-fpp.o src/parallel_infrastructure/mo_communication_yaxt.pp-fpp.f90.d: src/parallel_infrastructure/mo_communication_yaxt.pp-fpp.f90
+mod/mo_communication_yaxt.mod.proxy: src/parallel_infrastructure/mo_communication_yaxt.pp-fpp.o

@@ -1,0 +1,79 @@
+/** \example test_yaxt.f90
+ */
+/** \example ftest_common.f90
+ */
+/** \example unstruct_halo_exchange_f.f90
+ */
+
+/** \page concept The concept of yaxt
+
+  \tableofcontents
+
+  \section intro Introduction
+  \section sec_concept Concept
+
+  The usage of yaxt can be divided into several steps:
+
+    - define global indices
+    - describe local data using global indices (=> index list)
+    - use yaxt to generate a transition from one index list to another (=> xmap) 
+    - describe local data layout (offsets and mpi datatype) 
+    - use yaxt to combine xmap and data layout (=> redist)
+    - optionally aggregate multiple redists
+    - use yaxt to execute collective data exchange(s)
+    - clean up
+
+  \subsection gindex global indices
+
+  Global indices are used in yaxt as abstraction of global data
+  points, i.e., they are integer numbers that allow to identify any
+  data point. The concrete values of these indices have no meaning for
+  yaxt and can be choosen freely as long as the values are used
+  consistently when describing different sequences of data points.
+
+  \subsection decomp index list
+
+  An index list (\ref Xt_idxlist) is a sequence of global indices
+  describing local data points. E.g., data points calculated locally
+  ("owned by this process") or data points that are calculated on a
+  different process but are required locally (e.g., halo points). The
+  order of indices must be consistent with the order of offsets used
+  to describe the local data layout. Yaxt offers a variety of methods
+  to generate index lists (see \ref idxlists).
+
+  \subsection xmap xmap
+
+  Using two index lists - one representing source data points and one
+  representing target data points - given on all processes within a
+  mpi communicator, yaxt can calculate an abstract communication
+  pattern ("a pattern for indices") if such a pattern exists, i.e., if
+  for each given local target index there exists an equal source
+  index, local or remote. Yaxt stores this pattern in an exchange map
+  (\ref Xt_xmap). It is an user error if such a pattern does not exist.
+  There are multiple algorithms available to generate exchange maps
+  (see \ref xmaps).
+  It is not unusual that the same index list is used to construct
+  different xmaps where the role of souce and target data points
+  changes, e.g., for global transpositions.
+
+  \subsection redist redistribution object
+
+  An abstract communication pattern (xmap) together with data layout
+  information (offsets and MPI datatype of local data points) can
+  be used to create a redistribution object (\ref Xt_redist). It
+  contains all the information required to execute a collective
+  communication that establishes the target state (e.g., updated halo points).
+  It is possible to merge multiple redistribution objects into a single
+  one (see \ref redist_colls).
+
+  \subsection exchange data exchange
+
+  The exchange can be executed by a blocking call to \ref xt_redist_s_exchange or
+  \ref xt_redist_s_exchange1 (only possible for non-merged redistributions).
+
+  \subsection cleanup Clean up
+
+  If a yaxt object is not needed anymore then it can be deleted by the respective delete
+  calls (e.g. \ref xt_idxlist_delete).
+
+ */

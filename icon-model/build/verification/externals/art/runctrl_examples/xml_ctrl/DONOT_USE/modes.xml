@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE modes SYSTEM "modes.dtd">
+
+<modes>
+  <aerosol id="seasa">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">0.200E-6</d_gn>
+    <d_gm type="real">0.690E-6</d_gm>
+    <sigma_g type="real">1.900E+0</sigma_g>
+    <rho type="real">2.200E+3</rho>
+  </aerosol>
+  <aerosol id="seasb">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">2.000E-6</d_gn>
+    <d_gm type="real">0.850E-5</d_gm>
+    <sigma_g type="real">2.000E+0</sigma_g>
+    <rho type="real">2.200E+3</rho>
+  </aerosol>
+  <aerosol id="seasc">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">1.200E-5</d_gn>
+    <d_gm type="real">2.793E-5</d_gm>
+    <sigma_g type="real">1.700E+0</sigma_g>
+    <rho type="real">2.200E+3</rho>
+  </aerosol>
+  <aerosol id="dusta">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">6.445E-7</d_gn>
+    <d_gm type="real">1.500E-6</d_gm>
+    <sigma_g type="real">1.700E+0</sigma_g>
+    <rho type="real">2.650E+3</rho>
+  </aerosol>
+  <aerosol id="dustb">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">3.454E-6</d_gn>
+    <d_gm type="real">6.700E-6</d_gm>
+    <sigma_g type="real">1.600E+0</sigma_g>
+    <rho type="real">2.650E+3</rho>
+  </aerosol>
+  <aerosol id="dustc">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">8.672E-6</d_gn>
+    <d_gm type="real">1.420E-5</d_gm>
+    <sigma_g type="real">1.500E+0</sigma_g>
+    <rho type="real">2.650E+3</rho>
+  </aerosol>
+  <aerosol id="asha">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">1.190E-6</d_gn>
+    <d_gm type="real">1.702E-6</d_gm>
+    <sigma_g type="real">1.410E+0</sigma_g>
+    <rho type="real">2.600E+3</rho>
+  </aerosol>
+  <aerosol id="ashb">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">2.320E-6</d_gn>
+    <d_gm type="real">4.530E-6</d_gm>
+    <sigma_g type="real">1.600E+0</sigma_g>
+    <rho type="real">2.600E+3</rho>
+  </aerosol>
+  <aerosol id="ashc">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">3.920E-6</d_gn>
+    <d_gm type="real">1.015E-5</d_gm>
+    <sigma_g type="real">1.760E+0</sigma_g>
+    <rho type="real">2.600E+3</rho>
+  </aerosol>
+  <pollen id="pollbetu">
+    <kind type="char">poll</kind>
+    <diam type="real">2.30E-5</diam>
+    <rho type="real">810.0</rho>
+    <doy_start_season type="int">1</doy_start_season>
+    <doy_end_season type="int">146</doy_end_season>
+  </pollen>
+  <pollen id="pollalnu">
+    <kind type="char">poll</kind>
+    <diam type="real">2.38E-5</diam>
+    <rho type="real">860.0</rho>
+    <doy_start_season type="int">1</doy_start_season>
+    <doy_end_season type="int">146</doy_end_season>
+  </pollen>
+  <pollen id="pollcory">
+    <kind type="char">poll</kind>
+    <diam type="real">3.19E-5</diam>
+    <rho type="real">1000.0</rho>
+    <doy_start_season type="int">1</doy_start_season>
+    <doy_end_season type="int">146</doy_end_season>
+  </pollen>
+  <pollen id="pollambr">
+    <kind type="char">poll</kind>
+    <diam type="real">2.00E-5</diam>
+    <rho type="real">830.0</rho>
+    <doy_start_season type="int">213</doy_start_season>
+    <doy_end_season type="int">280</doy_end_season>
+  </pollen>
+  <pollen id="pollpoac">
+    <kind type="char">poll</kind>
+    <diam type="real">2.60E-5</diam>
+    <rho type="real">980.0</rho>
+    <doy_start_season type="int">60</doy_start_season>
+    <doy_end_season type="int">305</doy_end_season>
+  </pollen>
+  <radio id="Cs_137">
+    <kind type="char">radio</kind>
+    <imis type="int">373</imis>
+    <halflife type="real">0.0</halflife>
+    <vdep_const type="real">0.0015</vdep_const>
+    <fac_wetdep type="real">3.4E-5</fac_wetdep>
+    <exp_wetdep type="real">0.59</exp_wetdep>
+  </radio>
+  <radio id="I_131a">
+    <kind type="char">radio</kind>
+    <imis type="int">340</imis>
+    <halflife type="real">692928.0</halflife>
+    <vdep_const type="real">0.001</vdep_const>
+    <fac_wetdep type="real">7.0E-5</fac_wetdep>
+    <exp_wetdep type="real">0.80</exp_wetdep>
+  </radio>
+  <radio id="Te_132">
+    <kind type="char">radio</kind>
+    <imis type="int">325</imis>
+    <halflife type="real">274680.0</halflife>
+    <vdep_const type="real">0.0015</vdep_const>
+    <fac_wetdep type="real">1.8E-4</fac_wetdep>
+    <exp_wetdep type="real">0.71</exp_wetdep>
+  </radio>
+  <radio id="Zr_95">
+    <kind type="char">radio</kind>
+    <imis type="int">184</imis>
+    <halflife type="real">5529600.0</halflife>
+    <vdep_const type="real">0.0015</vdep_const>
+    <fac_wetdep type="real">7.0E-5</fac_wetdep>
+    <exp_wetdep type="real">0.80</exp_wetdep>
+  </radio>
+  <radio id="Xe_133">
+    <kind type="char">radio</kind>
+    <imis type="int">355</imis>
+    <halflife type="real">455419.0</halflife>
+    <vdep_const type="real">0.0</vdep_const>
+    <fac_wetdep type="real">0.0</fac_wetdep>
+    <exp_wetdep type="real">0.0</exp_wetdep>
+  </radio>
+  <radio id="I_131g">
+    <kind type="char">radio</kind>
+    <imis type="int">870</imis>
+    <halflife type="real">692928.0</halflife>
+    <vdep_const type="real">0.01</vdep_const>
+    <fac_wetdep type="real">7.0E-5</fac_wetdep>
+    <exp_wetdep type="real">0.80</exp_wetdep>
+  </radio>
+  <radio id="I_131o">
+    <kind type="char">radio</kind>
+    <imis type="int">880</imis>
+    <halflife type="real">692928.0</halflife>
+    <vdep_const type="real">0.0005</vdep_const>
+    <fac_wetdep type="real">7.0E-7</fac_wetdep>
+    <exp_wetdep type="real">0.80</exp_wetdep>
+  </radio>
+  <radio id="Ba_140">
+    <kind type="char">radio</kind>
+    <imis type="int">384</imis>
+    <halflife type="real">1105851.0</halflife>
+    <vdep_const type="real">0.001</vdep_const>
+    <fac_wetdep type="real">1.8E-4</fac_wetdep>
+    <exp_wetdep type="real">0.80</exp_wetdep>
+  </radio>
+  <radio id="Ru_103">
+    <kind type="char">radio</kind>
+    <imis type="int">220</imis>
+    <halflife type="real">3400013.0</halflife>
+    <vdep_const type="real">0.001</vdep_const>
+    <fac_wetdep type="real">7.0E-5</fac_wetdep>
+    <exp_wetdep type="real">0.80</exp_wetdep>
+  </radio>
+  <volcanic id="ash1">
+    <kind type="char">volc</kind>
+    <diam type="real">1.000E-6</diam>
+    <rho type="real">2600.0</rho>
+  </volcanic>
+  <volcanic id="ash2">
+    <kind type="char">volc</kind>
+    <diam type="real">3.000E-6</diam>
+    <rho type="real">2600.0</rho>
+  </volcanic>
+  <volcanic id="ash3">
+    <kind type="char">volc</kind>
+    <diam type="real">5.000E-6</diam>
+    <rho type="real">2600.0</rho>
+  </volcanic>
+  <volcanic id="ash4">
+    <kind type="char">volc</kind>
+    <diam type="real">1.000E-5</diam>
+    <rho type="real">2600.0</rho>
+  </volcanic>
+  <volcanic id="ash5">
+    <kind type="char">volc</kind>
+    <diam type="real">1.500E-5</diam>
+    <rho type="real">2600.0</rho>
+  </volcanic>
+  <volcanic id="ash6">
+    <kind type="char">volc</kind>
+    <diam type="real">3.000E-5</diam>
+    <rho type="real">2600.0</rho>
+  </volcanic>
+</modes>

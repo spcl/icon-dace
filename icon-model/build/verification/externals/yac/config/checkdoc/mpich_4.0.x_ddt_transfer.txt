@@ -1,0 +1,9 @@
+This test checks for a defect found in the 4.0-4.0.3 releases of MPICH built
+with the yaksa datatype engine.
+
+An incorrect element size is derived in some cases and leads to
+segmentation faults subsequently.
+
+The bug is tracked here:
+
+<https://github.com/pmodels/mpich/issues/6341>

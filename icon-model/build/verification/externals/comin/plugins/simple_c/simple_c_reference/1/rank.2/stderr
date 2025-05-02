@@ -1,0 +1,55 @@
+ Reading variables from ../../../replay_data/test_nwp_R02B04_R02B05_nest/vars_2.nc
+plugin libsimple_c_plugin.so(comin_main) has id 2
+n_dom: 2
+max_dom: 10
+nproma: 32
+min_rlcell_int: -4
+ComIn v0.2.0 simple_c_constructor called!
+found variable: pres on domain id 1
+found variable: temp on domain id 1
+found variable: u on domain id 1
+found variable: v on domain id 1
+found variable: rho on domain id 1
+found variable: pres_sfc on domain id 1
+found variable: qr on domain id 1
+found variable: qr on domain id 2
+found variable: qi on domain id 1
+found variable: qi on domain id 2
+found variable: qv on domain id 1
+found variable: qv on domain id 2
+found variable: qs on domain id 1
+found variable: qs on domain id 2
+found variable: qc on domain id 1
+found variable: qc on domain id 2
+found variable: pres on domain id 2
+found variable: temp on domain id 2
+found variable: u on domain id 2
+found variable: v on domain id 2
+found variable: rho on domain id 2
+found variable: pres_sfc on domain id 2
+found variable: simple_c_var on domain id 1
+found variable: simple_c_tracer on domain id 1
+found variable: simple_c_tracer on domain id 2
+Metadata:
+short_name type:2
+long_name type:2
+multi_timelevel type:3
+standard_name type:2
+units type:2
+hgrid_id type:0 value: 1
+tracer type:3
+zaxis_id type:0 value: 2
+restart type:3
+simple_c_diagfct called!
+currently on domain -1
+simple_c_diagfct called!
+currently on domain -1
+simple_c_diagfct called!
+currently on domain -1
+simple_c_diagfct called!
+currently on domain -1
+simple_c_diagfct called!
+currently on domain -1
+simple_c_diagfct called!
+currently on domain -1
+simple_c_destructor called!

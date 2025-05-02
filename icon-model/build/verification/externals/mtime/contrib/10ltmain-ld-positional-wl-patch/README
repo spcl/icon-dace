@@ -1,0 +1,11 @@
+This patch changes ltmain.sh to keep the relative order of the GNU ld library
+options --as-needed/--no-as-needed and --whole-archive/--no-whole-archive on the
+command line.
+
+The patch was originally taken from the Debian dh-autoreconf project
+(https://salsa.debian.org/debian/dh-autoreconf) and then combined with the
+existing 03ltmain-ld-groups-patch.
+
+To allow for multiple appearances of the options on the command line, the patch
+was further extended following (some of) the recommendations in
+https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=347650#65

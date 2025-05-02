@@ -1,0 +1,4 @@
+This patch allows having -Xlinker and -XCClinker command line options in
+libtool --mode=compile invocations.
+
+This is crucial because linker flags are different for nagfor and gcc.

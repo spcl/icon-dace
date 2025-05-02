@@ -1,0 +1,4 @@
+src/upper_atmosphere/mo_upatmo_flowevent_utils.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/upper_atmosphere/mo_upatmo_flowevent_utils.f90
+src/upper_atmosphere/mo_upatmo_flowevent_utils.pp-fpp.o src/upper_atmosphere/mo_upatmo_flowevent_utils.pp-fpp.f90.d: src/upper_atmosphere/mo_upatmo_flowevent_utils.pp-fpp.f90
+mod/mo_upatmo_flowevent_utils.mod.proxy: src/upper_atmosphere/mo_upatmo_flowevent_utils.pp-fpp.o
+src/upper_atmosphere/mo_upatmo_flowevent_utils.pp-fpp.o src/upper_atmosphere/mo_upatmo_flowevent_utils.pp-fpp.o: mod/mo_upatmo_types.mod.proxy mod/mo_restart_nml_and_att.mod.proxy mod/mo_kind.mod.proxy mod/mo_upatmo_impl_const.mod.proxy mod/mo_upatmo_config.mod.proxy mod/mo_packed_message.mod.proxy mod/mo_key_value_store.mod.proxy mod/mo_upatmo_utils.mod.proxy mod/mo_impl_constants.mod.proxy

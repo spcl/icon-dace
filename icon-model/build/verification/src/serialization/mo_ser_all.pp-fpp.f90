@@ -1,0 +1,42 @@
+# 1 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/serialization/mo_ser_all.f90"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/build/verification//"
+# 1 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/serialization/mo_ser_all.f90"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+MODULE mo_ser_all
+
+# 44 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/serialization/mo_ser_all.f90"
+
+  IMPLICIT NONE
+
+  PUBLIC :: serialize_all ! This is the only component that has to be available without SERIALIZE
+
+
+# 194 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/serialization/mo_ser_all.f90"
+
+  SUBROUTINE serialize_all(nproma, jg, savepoint_base, is_input, opt_id, opt_dt)
+
+    INTEGER, INTENT(IN) :: nproma, jg
+    CHARACTER(LEN=*), INTENT(IN) :: savepoint_base
+    LOGICAL, INTENT(IN) :: is_input
+
+    INTEGER, INTENT(IN), OPTIONAL :: opt_id
+    ! use this to pass a datetime that describes the exact current sub-timestep of a nested domain.
+    TYPE(datetime), INTENT(IN), OPTIONAL, POINTER :: opt_dt
+
+# 393 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/serialization/mo_ser_all.f90"
+
+  END SUBROUTINE serialize_all
+
+END MODULE mo_ser_all

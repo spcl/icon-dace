@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "aero_emiss.dtd">
+
+<emiss>
+  <routine id="seas_mode1">
+    <nmodes type="int">1</nmodes>
+    <d_g0_1 type="real">0.100E-6</d_g0_1>
+    <d_g3_1 type="real">0.433E-6</d_g3_1>
+    <sigma_g_1 type="real">1.900E+0</sigma_g_1>
+    <rho type="real">2.2E3</rho>
+    <substances type="char">seas</substances>
+  </routine>
+  <routine id="seas_mode2">
+    <nmodes type="int">1</nmodes>
+    <d_g0_1 type="real">3.000E-6</d_g0_1>
+    <d_g3_1 type="real">1.268E-5</d_g3_1>
+    <sigma_g_1 type="real">2.000E+0</sigma_g_1>
+    <rho type="real">2.2E3</rho>
+    <substances type="char">seas</substances>
+  </routine>
+  <routine id="seas_mode3">
+    <nmodes type="int">1</nmodes>
+    <d_g0_1 type="real">3.000E-5</d_g0_1>
+    <d_g3_1 type="real">6.982E-5</d_g3_1>
+    <sigma_g_1 type="real">1.700E+0</sigma_g_1>
+    <rho type="real">2.2E3</rho>
+    <substances type="char">seas</substances>
+  </routine>
+  <routine id="dust">
+    <nmodes type="int">3</nmodes>
+    <d_g0_1 type="real">6.445E-7</d_g0_1>
+    <d_g3_1 type="real">1.500E-6</d_g3_1>
+    <sigma_g_1 type="real">1.700E+0</sigma_g_1>
+    <d_g0_2 type="real">3.454E-6</d_g0_2>
+    <d_g3_2 type="real">6.700E-6</d_g3_2>
+    <sigma_g_2 type="real">1.600E+0</sigma_g_2>
+    <d_g0_3 type="real">8.672E-6</d_g0_3>
+    <d_g3_3 type="real">1.420E-5</d_g3_3>
+    <sigma_g_3 type="real">1.500E+0</sigma_g_3>
+    <rho type="real">2.650E3</rho>
+    <substances type="char">dust</substances>
+  </routine>
+  <routine id="soot">
+    <nmodes type="int">1</nmodes>
+    <d_g0_1 type="real">0.180E-6</d_g0_1>
+    <d_g3_1 type="real">0.349E-6</d_g3_1>
+    <sigma_g_1 type="real">1.600E+0</sigma_g_1>
+    <rho type="real">1.3E3</rho>
+    <substances type="char">soot</substances>
+  </routine>
+  <routine id="volc">
+    <nmodes type="int">3</nmodes>
+    <d_g0_1 type="real">1.190E-6</d_g0_1>
+    <d_g3_1 type="real">1.702E-6</d_g3_1>
+    <sigma_g_1 type="real">1.41</sigma_g_1>
+    <d_g0_2 type="real">2.320E-6</d_g0_2>
+    <d_g3_2 type="real">4.530E-6</d_g3_2>
+    <sigma_g_2 type="real">1.6</sigma_g_2>
+    <d_g0_3 type="real">3.920E-6</d_g0_3>
+    <d_g3_3 type="real">1.015E-5</d_g3_3>
+    <sigma_g_3 type="real">1.76</sigma_g_3>
+    <rho type="real">2.600E3</rho>
+    <substances type="char">ash</substances>
+  </routine>
+</emiss>
+

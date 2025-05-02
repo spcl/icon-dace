@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<emissions global_resolution="R2B04_0012">
+  <dataset id="CH3COCH3_BIO_MEGAN-MACC" species="CH3COCH3" type="emiss_BIO">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>2003-12-01T00:00:00Z</start_date>
+    <end_date>2004-02-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C3H8_BIO_MEGAN-MACC" species="C3H8" type="emiss_BIO">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>2003-12-01T00:00:00Z</start_date>
+    <end_date>2004-02-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">propane</var_name>
+    </var_names>
+  </dataset>
+</emissions>

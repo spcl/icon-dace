@@ -1,0 +1,4 @@
+src/sppt/mo_sppt_state.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/add_var_acc_macro.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/sppt/mo_sppt_state.f90
+src/sppt/mo_sppt_state.pp-fpp.o src/sppt/mo_sppt_state.pp-fpp.f90.d: src/sppt/mo_sppt_state.pp-fpp.f90
+mod/mo_sppt_state.mod.proxy: src/sppt/mo_sppt_state.pp-fpp.o
+src/sppt/mo_sppt_state.pp-fpp.o src/sppt/mo_sppt_state.pp-fpp.o: mod/mo_model_domain.mod.proxy mod/mo_zaxis_type.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_cdi_constants.mod.proxy mod/mo_cf_convention.mod.proxy mod/mo_master_control.mod.proxy mod/mo_sppt_types.mod.proxy mod/mo_sppt_config.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_var_list_register.mod.proxy mod/mo_run_config.mod.proxy mod/mo_var_list.mod.proxy mod/mo_grib2.mod.proxy mod/mo_var_metadata.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_gribout_config.mod.proxy

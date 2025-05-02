@@ -1,0 +1,9 @@
+#!@SHELL@
+
+set -e
+
+@ENABLE_RUBY_INTERFACE_FALSE@exit 77
+@ENABLE_NETCDF_FALSE@exit 77
+
+RUBYLIB="@abs_builddir@/ruby/.libs:${RUBYLIB}"; export RUBYLIB
+@RUBY@ '@srcdir@/ruby/test.rb' '@srcdir@/testdata/mulval.nc'

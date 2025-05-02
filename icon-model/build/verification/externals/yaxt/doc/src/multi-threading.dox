@@ -1,0 +1,78 @@
+/**
+\page yaxt_multi_threading Using Hybrid (OpenMP+MPI) parallelization via YAXT
+
+\tableofcontents
+
+\section limits Limitations
+
+Since most YAXT routines call into MPI internally, YAXT cannot
+provide for multi-threading beyond the guarantees of the MPI
+implementation. This means:
+* For multiple threads to call YAXT functions/routines
+simultaneously, MPI must have been initialized such that it provides
+MPI_THREAD_MULTIPLE.
+* Concurrent collective calls can only be issued on objects bound to
+different communicators or to constructors that take a communicator
+argument if each concurrent call is provided with a different
+communicator.
+
+If the above holds, any YAXT calls made after xt_initialize are meant
+to be thread-safe, i.e. if you find any data races in YAXT the
+authors would very much appreciate receiving word of this.
+
+Currently, only the usually repeating data exchange part of YAXT is
+parallelized with OpenMP, i.e. no xmap constructor is parallelized so
+far. Data exchange means one of the following redist methods:
+\a xt_redist_s_exchange, \a xt_redist_a_exchange, \a
+xt_redist_s_exchange1, and \a xt_redist_a_exchange1.
+
+\section opmodes Modes of operation in YAXT
+
+For every redist constructor kind there are two versions in YAXT one
+that uses the default run-time configuration parameters and one that
+accepts custom parameters as an extra argument/parameter.
+
+The default configuration is determined during xt_initialize and
+depends on compile-time presets and environment variables. By setting
+the XT_CONFIG_DEFAULT_MULTI_THREAD_MODE environment variable to a
+string matching one of the below constants case-insensitively, one
+can change the default.
+
+The multi-threading operation mode is fixed at constructor call time.
+Changing the configuration object used does not change the behaviour
+of redists previously constructed from the same configuration object.
+
+Currently the following two modes of operation are implemented:
+
+\li XT_MT_NONE
+
+For redists constructed with this mode, message passing happens of in
+single-threaded fashion. Different threads can still perform data
+exchanges for different redists concurrently, but the work needed for
+each exchange is not shared.
+
+\li XT_MT_OPENMP
+
+Each data exchange opens an OpenMP parallel region and uses work
+sharing to handle multiple transfers concurrently. Consequently, data
+exchange methods for redists configured this way are meant to be
+called by the master thread when outside a parallel region.
+
+Note: nested parallelism has not yet been explored.
+
+\section select_opmode Selecting operation mode in code
+
+To configure a redist for automatic OpenMP-parallel operation,
+independent of the default mode, create and modify a configuration
+object as follows:
+
+\code{.f90}
+  USE yaxt
+  TYPE(xt_config) :: my_config
+  my_config = xt_config_new()
+  CALL xt_config_set_redist_mthread_mode(XT_MT_OPENMP)
+  ! ...
+  CALL xt_redist_p2p_new(my_xmap, MPI_DOUBLE_PRECISION, my_config)
+\endcode
+
+*/

@@ -1,0 +1,6 @@
+*.x
+config
+user_config
+log
+*.o*
+preprocess_LUH2.bash

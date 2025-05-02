@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "tracers.dtd">
+
+<tracers>
+  <chemtracer id="TRN2O" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.401E-2</mol_weight>
+    <?source_lifetime Wypych, 2017, Atlas of Material Damage?>
+    <lifetime type="real">4730400000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <init_mode type="int"> 0 </init_mode>
+    <init_name type="char"> N2O </init_name>  
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRO3" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.800E-2</mol_weight>
+    <?source_lifetime Ehhalt et al., IPCC, 2001, Chapter 4 ?>
+    <lifetime type="real">1555200</lifetime>
+    <transport type="char"> hadv52aero </transport> 
+    <init_mode type="int"> 0 </init_mode>
+    <init_name type="char">O3</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRNOy" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.301E-1</mol_weight>
+    <?source_lifetime Ehhalt et al., IPCC, 2001, Chapter 4 ?>
+    <lifetime type="real">259200</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+</tracers>

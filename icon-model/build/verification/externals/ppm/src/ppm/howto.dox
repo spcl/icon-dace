@@ -1,0 +1,231 @@
+/**
+ * @copyright Copyright  (C)  2011  Thomas Jahns <jahns@dkrz.de>
+\page partition_howto Partition How-to
+@{
+<h1>Overview</h1>
+<p>
+  This document intends to show how to:
+  <ul>
+    <li>Describe distributed data.</li>
+    <li>Decompose a global domain by various partitioning
+    routines.</li>
+    <li>Repartition to adjust for changing work-load.</li>
+  </ul>
+<p>
+The partitioning modules provide the following functionality:
+<ul>
+<li>\link ppm_uniform_partition\endlink: simple straight-forward partitioning
+of n-dimensional contiguous ranges into even-sized parts</li>
+<li>\link ppm_m1d\endlink: hierarchical balanced partitions</li>
+<li>\link ppm_set_partition\endlink: greedy algorithm to distribute set
+elements into evenly weighted parts according to individual weight</li>
+<li>\link ppm_set_repartition\endlink: given a partition compute
+improved weight distribution</li>
+<li>\link ppm_graph_partition_mpi\endlink: provides a convenient
+  interface to the \link
+  http://glaros.dtc.umn.edu/gkhome/metis/parmetis/overview
+  Parmetis\endlink graph partitioning routines</li>
+<li>\link ppm_graph_partition_serial\endlink: provides a convenient
+  interface to the \link
+  http://glaros.dtc.umn.edu/gkhome/metis/metis/overview Metis\endlink
+  graph partitioning routines</li>
+<li>\link ppm_distributed \endlink: distributed graph data structure
+</ul>
+</p>
+
+Multiple data structures are available to represent a partition,
+addressing the different needs of the available algorithms.
+
+<ul>
+<li>\link ppm_set_partition_base::set_i4 set_i4\endlink: The most
+  simple representation is simply an array of integers denoting the
+  members of one part, an array of \link
+  ppm_set_partition_base::set_i4 set_i4\endlink consequently can
+  represent the partition</li>
+<li>\link ppm_set_partition_base::partition_assignment
+  partition_assignment\endlink denotes for each index (potentially
+  with an indirection map) the partition it's assigned to.</li>
+<li>\link ppm_set_partition_base::partition_vec partition_vec\endlink
+  is a concise representation of the same information an array of
+  type \link ppm_set_partition_base::set_i4 set_i4\endlink holds, but
+  only uses two allocatables, one to hold the elements of all sets and
+  another to note the division indices in this array.</li>
+<li>\link ppm_set_partition_base::block_decomposition
+  block_decomposition\endlink finally describes block decompositions
+  only, where each division of one dimension is described by one
+  instance of \link ppm_set_partition_base::block_decomposition
+  block_decomposition\endlink. Therefore, 2D block decomposition would
+  typically use a 2-element array of \link
+  ppm_set_partition_base::block_decomposition
+  block_decomposition\endlink.</li>
+</ul>
+
+<h1>Setting up for Partitioning</h1>
+
+<p>
+To decompose a data structure one first needs to describe the topology
+of the data structure in question. ScalES-PPM provides for several
+basic data types to make this step as simple as possible:
+<ul>
+<li><p>n-dimensional rectilinears like e.g. regular grids use use a
+  rank 1 n-dimensional \link ppm_extents::extent extent\endlink array
+  to describe the enumeration of indices in each dimension</p>
+  <p>i.e. to describe a 2-dimensional grid with indices 1..m in
+  x-direction and indices 1..n in y-direction the corresponding data
+  structure would be declared as:</p>
+\code
+USE ppm_extents, ONLY: extent
+...
+TYPE(extent) :: grid(2)
+INTEGER :: m, n
+...
+grid = (/ extent(1, m), extent(1, n) /)
+\endcode
+</li>
+<li>
+  <p>
+    For graph-structured data \link ppm_distributed\endlink contains
+    a distributed graph data structure \link
+    ppm_distributed::graph_csr_dist_i4 graph_csr_dist_i4\endlink. The
+    module also contains routines to construct such a graph from a
+    rectilinear partitioned into one rectilinear per process.
+  </p>
+</li>
+<li>
+  For repartitioning the input already is a partition. The following
+  types are therefore both input and output argument to some routines.
+
+  Given p parts over a set of n elements, arbitrary partitions vary
+  in requirements. To bridge the gap from succinct but rigid to
+  flexible but more redundant data structures the following types are
+  provided by \link ppm_set_partition_base\endlink:
+  <ul>
+    <li>
+      \link ppm_set_partition_base::partition_vec
+      partition_vec\endlink consists of two
+      tables <tt>start(1:p+1)</tt> tabulates the sub-array of the
+      second table \c elements which lists the elements sorted by
+      partition, i.e. <tt>elements(start(x):start(x+1)-1)</tt> lists
+      the elements of part x
+    </li>
+    <li>
+      \link ppm_set_partition_base::set_i4 set_i4\endlink lists in its
+      component array \c elem the elements for one (sub-)set. A vector
+      of \c set_i4 can accordingly describe a partition.
+    </li>
+    <li>
+      \link ppm_set_partition_base::partition_assignment
+      partition_assignment\endlink with component \c part_range =
+      [1,p], component array \c assigned tabulates for each element
+      \f$i \in [1,n]\f$ the assignment to partition <tt>elem(i)</tt>
+      where <tt>elem(i)\f$\in\f$part_range</tt>
+    </li>
+    <li>
+      \link ppm_set_partition_base::block_decomposition
+      block_decomposition\endlink In a block decomposition, each part
+      only contains one contiguous range of indices per
+      dimension. Each dimension having elements 1..n can therefore be
+      partitioned into parts where part i is <tt>partition(i)</tt>.
+    </li>
+  </ul>
+  \link ppm_set_partition_base\endlink also contains assignment and
+  equality operators and routines to handle conversions and other
+  basic operations on these types.
+</li>
+</ul>
+</p>
+<h1>Computing a partition</h1>
+<h2>Uniform partition of n-dimensional grids</h2>
+Extending the example from above, an m \f$\times\f$ n grid can be partitioned
+into \c k \f$\times\f$\c l even sized parts by calling the
+uniform_partition method of \link ppm_uniform_partition\endlink:
+\code
+USE ppm_extents, ONLY: extent
+USE ppm_rectilinear, ONLY: lidx2rlcoord
+USE ppm_uniform_partition, ONLY: uniform_partition
+...
+TYPE(extent) :: grid(2), part(2), deco(2)
+INTEGER :: m, n, k, l, comm_rank, ierror
+...
+CALL mpi_comm_rank(mpi_comm_world, comm_rank, ierror)
+deco = (/ extent(1, k), extent(1, l) /)
+grid = (/ extent(1, m), extent(1, n) /)
+part = uniform_partition(grid, deco, lidx2rlcoord(deco, comm_rank + 1))
+\endcode
+In the above example, the linear MPI rank is mapped to a
+cartesian coordinate with the help of the utility module \link
+ppm_rectilinear\endlink.
+
+Because the axes are divided separately, the partition thus obtained
+forms a block partition.
+<h2>Balanced hierarchical partition</h2>
+<h2>Graph partition</h2>
+
+The library provides convenience wrappers for both MeTiS and
+ParMeTiS. The following example code shows how to
+-# build a graph from a rectilinear grid
+-# call the MeTiS wrapper
+
+\code
+USE ppm_extents, ONLY: extent
+USE ppm_graph_csr, ONLY: build_graph, graph_csr
+USE ppm_set_partition_base, ONLY: partition_assignment
+USE ppm_graph_partition_serial, ONLY: graph_partition_metis
+...
+TYPE(extent) :: grid(2)
+INTEGER :: m, n, k, l, num_parts, ierror
+INTEGER :: 
+TYPE(graph_csr) :: grid_graph
+TYPE(partition_assignment) :: partition
+INTEGER, ALLOCATABLE :: grid_pt_weight(:)
+...
+grid = (/ extent(1, m), extent(1, n) /)
+CALL build_graph(grid_graph, grid)
+ALLOCATE(grid_pt_weight(m * n))
+! compute weights per grid point
+CALL graph_partition_metis(partition, grid_graph, num_parts, &
+                           vertex_weights=grid_pt_weights)
+\endcode
+<h2>Set partition</h2>
+If your data has no inherent connectivity, i.e. the problem is
+embarrassingly parallel, graphs or grids are improper
+models to use for partitioning. In this case partitioning by weight
+only is probably the most sensible solution. The library provides a
+greedy method to partition such data sets.
+
+\code
+USE ppm_set_partition_base, ONLY: set_i4
+USE ppm_set_partition, ONLY: greedy_partitioning
+...
+INTEGER, PARAMETER :: set_size=1000
+TYPE(set_i4), ALLOCATABLE :: partition(:)
+INTEGER :: weights(set_size)
+...
+CALL greedy_partitioning(partition, weights)
+\endcode
+<h1>Repartition</h1>
+<h2>Repartitioning for graphs</h2>
+<h2>Repartitioning sets</h2>
+For an already partitioned set the library offers a routine based on
+swapping elements such that memory reallocation can be avoided. The
+example is for the multi-process variant which has MPI collective call
+semantics.
+
+\code
+USE ppm_set_repartition, ONLY: repartition_swap_mp
+USE ppm_set_partition_base, ONLY: set_i4
+...
+INTEGER(i4), ALLOCATABLE :: weight(:)
+TYPE(set_i4) :: part, new_part
+...
+new_part = part
+CALL repartition_swap_mp(new_part%elem, weight, mpi_comm_world)
+\endcode
+
+Based on the \c part and \c new_part arrays of above example, the
+application can then reorganize the data decomposition. If a certain
+amount of imbalance among partitions is tolerable, it can be
+beneficial to add an efficiency_threshold argument to the call to
+repartition_swap_mp.
+
+@}**/

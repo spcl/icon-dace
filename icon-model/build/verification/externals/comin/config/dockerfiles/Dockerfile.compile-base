@@ -1,0 +1,74 @@
+# -------------------------------------------------------------------------
+# Build Docker Image for the ComIn CI/CD Pipeline
+#
+# @author 08/2022 :: F. Prill, DWD  <comin@icon-model.org>
+#
+# See LICENSES for license information.
+# Where software is supplied by third parties, it is indicated in the
+# headers of the routines.
+# -------------------------------------------------------------------------
+
+FROM debian:bookworm-slim
+LABEL maintainer="comin@icon-model.org"
+
+#Remove some warnings
+ENV DEBIAN_FRONTEND=noninteractive
+
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    cmake \
+    make \
+    gfortran \
+    libopenmpi-dev \
+    openmpi-bin \
+    g++ \
+    vim.tiny \
+    libnetcdff-dev \
+    liblapack-dev \
+    xxd \
+    python3-dev \
+    python3-numpy \
+    python3-mpi4py \
+    python3-matplotlib \
+    python3-pip \
+    git \
+    curl \
+    libfyaml-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN pip install --break-system-packages --upgrade fprettify cython
+
+# install yaxt
+RUN curl -s -L https://swprojects.dkrz.de/redmine/attachments/download/529/yaxt-0.10.0.tar.gz | \
+    tar xvz && \
+    cd yaxt-0.10.0 && \
+    ./configure --without-regard-for-quality --without-example-programs --without-perf-programs --with-pic && \
+    make -j 4 && \
+    make install
+
+RUN curl -s -L https://gitlab.dkrz.de/dkrz-sw/yac/-/archive/release-3.2.0/yac-release-3.2.0.tar.gz | \
+    tar xvz && \
+    cd yac-release-3.2.0 && \
+    ./configure CFLAGS="-fPIC" CC=mpicc FC=mpif90 LDFLAGS="-Wl,--export-dynamic-symbol=yac_*" --disable-mpi-checks --enable-python-bindings --enable-rpaths && \
+    make -j 4 && \
+    make install && \
+    cd python && \
+    pip install . --break-system-packages
+
+# fixes some warning in openmpi. See https://github.com/open-mpi/ompi/issues/4948
+ENV OMPI_MCA_btl_vader_single_copy_mechanism=none
+
+RUN ldconfig
+
+# create user "dwd"
+RUN useradd -ms /bin/bash dwd
+
+USER dwd
+
+WORKDIR /home/dwd
+ENV HOME /home/dwd
+
+RUN mkdir /home/dwd/.local \
+    && echo "set nocompatible" >> .exrc

@@ -1,0 +1,241 @@
+How to build yaxt
+
+This README is divided into the following topics of increasing specificity.
+
+1. After checkout
+2. General advice for running configure
+3. Requirements
+4. Specific machine setups
+4.1 Debian GNU/Linux Squeeze 6 x86_64 with OpenMPI 1.4.3
+4.2 IBM AIX 6.1, POWER archictecture
+4.3 Redhat RHEL6 x86_64 with Intel MPI 4.1.3.049 and compilers 14.0.3
+4.4 Cray CCE
+4.5 IBM BlueGene/Q with xlc/xlf
+
+
+1. After checkout
+
+To initialize the autotools, execute
+
+$ autoreconf -i
+
+This is not required if you have obtained a regular, packaged source
+distribution of yaxt, but only in case you have directly accessed the
+repository.
+
+
+2. General advice for running configure
+
+To adapt yaxt to your MPI system, yaxt needs to be given two to four pieces of
+information
+
+  a) how to invoke the C compiler and compile and link C programs
+  b) how to invoke the Fortran compiler and compile and link Fortran programs
+  c) how to run compiled MPI programs (mpirun and mpiexec will be
+     tried automatically)
+  d) how to produce C code for C<->Fortran interoperability, see cfortran.doc
+     for a number of compilers this will be found automatically
+
+For a) and b) respectively you can either
+
+- set CC and FC to the corresponding MPI compiler wrapper, or
+- set CC and FC to the compiler driver (e.g. CC=gcc FC=gfortran) and use
+  some of the arguments MPIROOT MPI_C_INCLUDE MPI_FC_MOD,
+  MPI_C_LIB and MPI_FC_LIB to set the necessary compiler flags to build
+  MPI programs.
+
+For c) the configure-argument MPI_LAUNCH needs to be set according to
+your MPI installation. For mpich/openmpi style environments, mpirun is
+fine and usually detected automatically. For IBM PE an adapter that's
+provided as util/mpi_launch_poe in the yaxt source must be used.
+
+For d) the following is used as an option in CPPFLAGS for different
+compilers automatically:
+
+* GCC gfortran, PGI pgfortran, Cray and Intel compilers: -DgFortran
+* NAG Fortran compiler: -DNAGf90Fortran
+* IBM xlc needs -Dappendus if -qextname is used for the Fortran part.
+
+Additionally the following considerations can be useful later on:
+
+* It is possible to build yaxt out-of-source, i.e. to call configure
+  from a directory different from the place the source was put in. If
+  one has e.g. unpacked yaxt in $HOME/src/yaxt and wants to do the
+  build in $HOME/build/yaxt, one would run the following commands:
+
+  $ cd $HOME/build/yaxt
+  $ ../../src/yaxt/configure [OPTIONS-NEEDED-FOR-PLATFORM]
+
+  See descriptions under 4. for the options most appropriate for the
+  system in question.
+
+* 
+
+
+3. Requirements
+
+Yaxt requires the following software environment to function
+
+- a C compiler with C99 language level support
+- a Fortran compiler with F2003 C interoperability and
+  set (by flags, wrappers or whatever) to preprocess .f90 files.
+- an MPI library working with both of the above compilers
+
+
+
+4. Specific machine setups
+
+The following system setups are regularly being tested:
+
+4.1 Debian GNU/Linux Squeeze 6 x86_64 with OpenMPI 1.4.3
+
+The following packages need to be installed:
+
+ libopenmpi-dev
+
+The following commands should produce a working install:
+
+$ ./configure CC=mpicc FC=mpif90 FCFLAGS=-cpp
+$ make
+$ make check
+$ make install
+
+equivalently one can use:
+
+$ ./configure CC=gcc FC=gfortran MPIROOT=/usr/lib/openmpi \
+  MPI_FC_LIB='-L/usr/lib/openmpi -lmpi_f90 -lmpi_f77' \
+  FCFLAGS=-cpp
+
+for the configure run.
+
+4.2 IBM AIX 6.1, POWER archictecture
+
+The following is used to build the library and test programs for blizzard,
+a POWER6 system running with AIX and Parallel Environment (PE).
+
+* Shared library compiler wrappers (smartmpcc_r and smartmpxlf_r) are used
+  (instead of mpcc_r and mpxlf_r), this requires users to
+  extend the PATH variable by /sw/aix61/smartmpxlf/bin
+  otherwise one has to use the --disable-shared option.
+  IBM PE compiler frontends would otherwise insert start-up code into the
+  shared libraries that make a program using the libraries fail.
+* The options --host=powerpc-ibm-aix6.1.0.0 and
+  host_alias=powerpc-ibm-aix6.1.0.0 put configure in cross-compilation
+  mode since PE executables cannot easily be directly executed.
+* The common optimization options (-O3 -q64 -qarch=pwr6 -qtune=pwr6
+  -qipa -qinline -qhot -qxflag=nvectver -qxflag=nsmine -qstrict) are typically
+  used to achieve a good optimization level but not strictly required and
+  should be changed to disable optimization when debugging
+  (Recommendation: -O0 -g -qfullpath -q64 -qarch=pwr6 -qtune=pwr6).
+* The archive must be given the -X32_64 option such that static library
+  archives can be created regardless of the setting of the OBJECT_MODE
+  environment variable.
+* TLS storage should be enabled for the C compiler via the
+  -qtls=initial-exec option (or -qtls=global-dynamic if plugins with TLS data
+  are needed).
+* A wrapper to make mpirun-style arguments compatible with the PE program
+  starter (poe) must be used to enable 'make check'.
+* It's recommended to use /bin/bash instead of /bin/sh for running configure
+  because of speed reasons.
+
+$ /bin/bash ./configure CC=smartmpcc_r \
+  CFLAGS='-O3 -q64 -qarch=pwr6 -qtune=pwr6 -qipa -qinline -qhot -qxflag=nvectver -qxflag=nsmine -qstrict -qlanglvl=extc99 -qtls=initial-exec' \
+  FC=smartmpxlf_r \
+  FCFLAGS='-O3 -q64 -qarch=pwr6 -qtune=pwr6 -qipa -qinline -qhot -qxflag=nvecvter -qxflag=nsmine -qstrict -qessl -qextname -qsuffix=cpp=f90 -qzerosize -qfloat=fltint -qhalt=w -Q' \
+  CPPFLAGS=-Dextname \
+  LDFLAGS="-O3 -q64 -qarch=pwr6 -qtune=pwr6 -qipa -qinline -qhot -qxflag=nvecvter -qxflag=nsmine -qstrict -Wl,-brtl" \
+  --host=powerpc-ibm-aix6.1.0.0 host_alias=powerpc-ibm-aix6.1.0.0 \
+  AR='ar -X32_64' \
+  MPI_LAUNCH="$(pwd)/util/mpi_launch_poe" \
+  CONFIG_SHELL=/bin/bash
+
+4.3 Redhat RHEL6 x86_64 with Intel MPI 4.1.3.049 and compilers 14.0.3
+
+To use the Intel compilers with Intel MPI, slightly differently named
+wrappers for the C and Fortran compilers can be used, namely mpiicc
+and mpiifort:
+
+$ ./configure CC=mpiicc \
+  CFLAGS='-O3 -fno-math-errno -march=native -mtune=native' \
+  FC=mpiifort \
+  FCFLAGS='-O3 -heap-arrays -fpp -march=native -mtune=native'
+
+4.4 Cray CCE
+
+The Cray compiler is a cross-compiler because it builds binaries that
+cannot (fully functionally) run on the interactively usable frontend
+machines. The aprun program starter is functionally similar to mpirun
+on more conventional platforms but requires that the requested
+resources are available to the user. For similar reasons the Cray
+compiler builds static executables/libraries only.
+
+Assuming the Cray system uses PBS, its MPI launcher aprun cannot be
+executed directly but must be started from a PBS job. We provide a
+wrapper for this purpose in util/pbs_aprun that acts like mpirun but
+creates a job in the background and forwards its output and error code
+to the frontend machine. On systems with a different batch scheduler,
+a different/adapted wrapper might be necessary. We would be interested
+to distribute such wrappers with yaxt.
+
+To build yaxt on a Cray system with PBS Pro the following configure
+was used successfully (note the --host/--build options to switch to
+cross compilation mode):
+
+$ ./configure CC=cc FC=ftn FCFLAGS= MPI_LAUNCH=$(pwd)/util/pbs_aprun \
+  --host=x86_64-cray-linux-gnu --build=x86_64-unknown-linux-gnu \
+  --disable-shared \
+  build_alias=x86_64-unknown-linux-gnu host_alias=x86_64-cray-linux-gnu
+
+
+4.5 IBM BlueGene/Q with xlc/xlf
+
+On BlueGene similar considerations as for aprun on Cray machines are
+true for the runjob starter program: one must have reserved
+corresponding node resources before starting the job. Also command
+syntax is slightly different from mpirun so that a wrapper must be
+used (to be found in the util directory of the yaxt source). On
+systems that use IBM Tivoli Load Leveler for this purpose, one can run
+the configure and make check in jobs. The following job files where
+used on one system for this purpose:
+
+For configure:
+
+#! /bin/bash
+# @ job_name = yaxt-bgq-configure
+# @ comment = "YAXT requires having a working MPI-starter for configure and tests"
+# @ error = LOG.$(job_name).$(jobid).out
+# @ output = LOG.$(job_name).$(jobid).out
+# @ environment = COPY_ALL
+# @ wall_clock_limit = 00:15:00
+# @ notification = error
+# @ notify_user = some@valid.address.org
+# @ job_type = bluegene
+# @ bg_size = 32
+# @ queue
+
+exec ./configure \
+  --disable-shared \
+  FC=mpixlf2003_r \
+  FCFLAGS='-O2 -g -qarch=qp' \
+  CC="mpixlc_r -qlanglvl=extc99" \
+  CFLAGS='-O2 -g -qarch=qp' \
+  MPI_LAUNCH="$(readlink -f ./util/mpi_launch_bgrunjob)" \
+  LDFLAGS='-g'
+
+For make check:
+
+#! /bin/bash
+# @ job_name = yaxt-bgq-make-check
+# @ comment = "YAXT requires having a working MPI-starter for configure and tests"
+# @ error = LOG.$(job_name).$(jobid).out
+# @ output = LOG.$(job_name).$(jobid).out
+# @ environment = COPY_ALL
+# @ wall_clock_limit = 00:15:00
+# @ notification = error
+# @ notify_user = some@valid.address.org
+# @ job_type = bluegene
+# @ bg_size = 32
+# @ queue
+
+make check
+

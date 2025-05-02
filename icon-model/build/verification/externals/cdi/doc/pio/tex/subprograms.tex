@@ -1,0 +1,357 @@
+\section{Initialize parallel I/O: {\tt pioInit}}
+\index{pioInit}
+\label{pioInit}
+The function {\tt pioInit} initializes the parallel I/O with {\CDI}, it launches 
+the {\htmlref{\tt STAGE\_DEFINITION}{STAGEDEFINITION}}. {\tt pioInit} defines 
+a control object for the {\tt MPI} communicators ( see 
+figure~\ref{communicators}) and triggers their 
+initialization. After starting the I/O server, {\tt pioInit} receives a message 
+from each I/O process, containing information about its location on a physical node 
+and its function as a collector of data or a backend server. The first information 
+is stored in the control object, the latter is used to construct the communicators 
+for the data transfer. Furthermore, {\tt pioInit} defines and initializes an 
+control object for the {\htmlref{namespace}{namespace}}s. The call {\tt pioInit} is 
+collective for all 
+{\tt MPI} processes using the {\CDI}. If the 
+model employs the {\CDI} serially, a  
+call to {\tt pioInit} has no effect. 
+
+\subsection*{Usage}
+\begin{verbatim}
+   INTEGER FUNCTION pioInit ( INTEGER commGlob, INTEGER nProcsIO, 
+                              INTEGER IOMode, INTEGER nNamespaces, 
+                              INTEGER hasLocalFile ( nNamespaces ));
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\tt IN  hasLocalFile\ }
+\item[{\tt IN  commGlob}]
+{\tt MPI} communicator (handle).
+\item[{\tt IN  nProcsIO}]
+The number of {\tt MPI} processes that shall be used for I/O.
+\item[{\tt IN  IOMode}]
+The mode for the I/O. Valid I/O modes are {\htmlref{\tt PIO\_NONE}{PIONONE}}, 
+{\htmlref{\tt PIO\_MPI}{PIOMPI}}, {\htmlref{\tt PIO\_WRITER}{PIOWRITER}}, 
+{\htmlref{\tt PIO\_ASYNCH}{PIOASYNCH}} and 
+{\htmlref{\tt PIO\_FPGUARD}{PIOFPGUARD}}.
+\item[{\tt IN  nNamespaces}]
+The number of used {\htmlref{namespace}{namespace}}s on the model side.
+\item[{\tt IN  hasLocalFile}]
+A logical array with size {\tt nNamespaces} indicating whether the model 
+processes write locally or let the I/O server write.
+\end{deflist}
+\end{minipage}
+
+\subsection*{Result}
+Upon successfull completion {\tt pioInit} returns a {\tt FORTRAN} handle to a 
+{\tt MPI} communicator including only the calculating model processes.
+
+\subsection*{Errors}
+If an error occurs, {\tt pioInit} cleans up, finalizes {\tt MPI} and exits the 
+whole program.
+
+\smallskip
+
+The arguments of {\tt pioInit} subject to some constraints. 
+\smallskip
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\tt nProcsIO\ }
+\item[{\tt commGlob}]
+\begin{itemize}
+\item[]
+has to be a valid handle to a {\tt MPI} communicator whose group 
+includes all processes that will work on the {\CDI} resources.
+\end{itemize}
+\item[{\tt nProcsIO}]
+\begin{itemize}
+\item[]$==1$ per physical node, if {\tt IOMode} $==$ 
+{\htmlref{\tt PIO\_NONE}{PIONONE}},
+\item[]$<=$ {\tt sizeGlob} $/ 2$ \ otherwise, with {\tt sizeGlob} $=$ number 
+of processes in {\tt commGlob},
+\item[]$>= 2$ per physical node, if {\tt IOMode} $\in \{$ 
+{\htmlref{\tt PIO\_WRITER}{PIOWRITER}}, 
+{\htmlref{\tt PIO\_ASYNCH}{PIOASYNCH}}, 
+{\htmlref{\tt PIO\_FPGUARD}{PIOFPGUARD}}$\}$.
+\end{itemize} 
+\end{deflist}
+\end{minipage} 
+
+\subsection*{Example}
+Here is an example using {\htmlref{\tt pioInit}{pioInit}} to start parallel I/O 
+in {\htmlref{\tt PIO\_NONE}{PIONONE}} mode.
+
+\begin{lstlisting}[language=Fortran, backgroundcolor=\color{zebg}, 
+basicstyle=\footnotesize, label=control]
+
+  INCLUDE 'cdi.inc'
+  INCLUDE 'mpif.h'
+       ...
+  INTEGER commModel, error
+	...
+  CALL MPI_INIT ( error )
+       ...
+  ! Initialize asynchronous I/O with CDI
+  ! Definition stage for CDI resources
+  commModel = pioInit ( MPI_COMM_WORLD, 1, PIO_NONE, 1, (/ 0 /))
+	...
+  CALL MODELRUN ( commModel )
+       ...
+  ! End cleanup stage for CDI resources
+  ! Finalize asynchronous I/O with CDI
+  CALL pioFinalize ()
+	...
+  CALL MPI_FINALIZE ( error )
+
+\end{lstlisting}
+
+\section{Finalize parallel I/O: {\tt pioFinalize}}
+\index{pioFinalize}
+\label{pioFinalize}
+The function {\tt pioFinalize} finalizes the parallel I/O. It cleans up the 
+{\htmlref{namespace}{namespace}}s and sends a message to the collector processes 
+to close down the I/O server. The buffers and windows which where needed for 
+{\tt MPI} RMA are deallocated. At last {\tt pioFinalize} frees the {\tt MPI} 
+communicators ( see figure~\ref{communicators} ) 
+ and destroys the control object. The call {\tt pioFinalize} is collective for all 
+model processes having invoked {\htmlref{\tt pioInit}{pioInit}}. If the 
+model employs the {\CDI} serially, a  
+call to {\tt pioFinalize} has no effect.   
+
+\subsection*{Usage}
+\begin{verbatim}
+   SUBROUTINE pioFinalize ();
+\end{verbatim}
+\section{Notify the end of the definition stage: {\tt pioEndDef}}
+\index{pioEndDef}
+\label{pioEndDef}
+The end of the definition stage for the {\CDI} resources in a 
+{\htmlref{namespace}{namespace}} is 
+marked with a call to {\tt pioEndDef}. {\tt pioEndDef} changes the state of 
+the active {\htmlref{namespace}{namespace}} to 
+{\htmlref{\tt STAGE\_TIMELOOP}{STAGETIMELOOP}}. 
+During this stage, a new 
+definition of a {\CDI} object as well as deletion or changing of members of 
+known objects in the active {\htmlref{namespace}{namespace}} will lead to an error 
+and shut the program down. There is one 
+exception: To write files for a defined variable list individually for 
+disjunct time intervalls the three calls
+\begin{itemize} 
+\item {\tt SUBROUTINE streamClose ( streamID\_1 )}, 
+\item {\tt INTEGER FUNCTION streamOpenWrite ( filename, filetype )} and 
+\item {\tt SUBROUTINE streamDefVlist ( streamID\_2, vlistID\_1 )} 
+\end{itemize}
+can be used once at the beginning of a timestep, one time for each stream. When 
+used with remote writing in this stage, these subprogram effect the local {\CDI} 
+resources but not 
+the local file system. The calls are encoded and buffered in the 
+{\tt MPI} window buffer to be fetched by the collector processes. You can find a 
+flowchart of a timestep on model and collecting I/O processes in figure~\ref{timestep}.
+\smallskip 
+
+{\tt pioEndDef} balances the load of the variable data among the data collecting 
+I/O server and stores a mapping 
+in the variables {\CDI} resource. Among the model processes {\tt pioEndDef} 
+decomposes the variable in rank order, laid-out in linear memory as needed 
+for the file output. An index 
+array with offset and chunk is also written to the variables resource. With this 
+result and the information about the decomposition for the model calculation 
+it defines I/O transposition templates that will be used while writing the data. 
+{\tt pioEndDef} copies the {\CDI} 
+object array to a buffer and sends it to the collecting I/O server for them to 
+possess the same resource handles. \smallskip
+
+{\tt pioEndDef} calculates the memory requirement for the {\tt MPI} windows and 
+buffers needed for RMA out of the dimensions stored in the {\CDI} resources. 
+As a last step it allocates the buffers and creates the {\tt MPI} windows.  If 
+the model uses the {\CDI} serially, a call to {\tt pioEndDef} has no effect. 
+
+\subsection*{Usage}
+\begin{verbatim}
+   SUBROUTINE pioEndDef ();
+\end{verbatim}
+
+\section{Notify the end of the timestepping stage: {\tt pioEndTimestepping}}
+\index{pioEndTimestepping}
+\label{pioEndTimestepping}
+With the function {\tt pioEndTimestepping} the end of the time integration 
+is notified. \\
+{\tt pioEndTimestepping} sets the state of the active 
+{\htmlref{namespace}{namespace}} 
+to {\htmlref{\tt STAGE\_CLEANUP}{STAGECLEANUP}}. In this stage it is possible 
+to clean up the {\CDI} 
+resources. There is no transfer of data or subprogram calls anymore, an attempt 
+will lead to an error and shuts the whole program down. If the model uses the 
+{\CDI} serially, a call to {\tt pioEndTimestepping} has no effect.
+
+\subsection*{Usage}
+\begin{verbatim}
+   SUBROUTINE pioEndTimestepping ();
+\end{verbatim}
+
+\section{Move data to the collecting I/O server: {\tt pioWriteTimestep}}
+The subroutine {\tt pioWriteTimestep} exposes the {\tt MPI} windows to the 
+data collecting I/O server. They start to move the data from the {\tt MPI} 
+window buffers of the calculating model processes to their own memory while 
+the model processes can go on doing their job. The buffers contain the encoded 
+subprogram calls and the variable data written by calls to {\tt streamClose}, 
+{\tt streamOpenWrite}, {\tt streamDefVlist} and {\tt streamWriteVar}. If the 
+model uses the {\CDI} serially, a call to\\
+ {\tt pioWriteTimestep} has no effect. 
+
+\subsection*{Usage}
+\begin{verbatim}
+SUBROUTINE pioWriteTimestep ( INTEGER tsID, INTEGER vdate, INTEGER vtime );
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\tt IN  vdate\ } 
+\item[{\tt IN  tsID}]
+Timestep identifier
+\item[{\tt IN  vdate}]    
+Verification date (YYYYMMDD)
+\item[{\tt IN  vtime}]
+Verification time (hhmmss)
+\end{deflist}
+\end{minipage}
+
+
+\subsection*{Example}
+\begin{lstlisting}[language=Fortran, backgroundcolor=\color{zebg}, 
+basicstyle=\footnotesize, label=model]
+
+  INCLUDE 'cdi.inc'
+  INCLUDE 'mpif.h'
+       ...
+  SUBROUTINE MODELRUN ( commModel )
+
+    INTEGER streamID, vlistID, varID, tfID, ntf, tsID, nts, vdate, vtime
+
+    ! Definition stage for CDI resources
+    streamID = streamOpenWrite ( filename, filetype )
+       ...
+    CALL streamDefVlist(streamID, vlistID)
+    
+    ! End definition stage for CDI resources,
+    CALL pioEndDef ()
+ 
+    ! Timestepping stage
+    DO tfID = 0, ntf-1
+      IF ( tfID ) THEN
+        CALL streamClose ( streamID )
+	streamID = streamOpenWrite ( filename[tfID], filetype )
+	CALL streamDefVlist ( streamID, vlistID )
+      ENDIF 
+
+      DO tsID = 0, nts-1
+          ...
+        CALL streamWriteVar(streamID, varID, varData, nmiss)
+      
+        ! Expose encoded and buffered subroutine calls and data 
+	! to remote memory access by collecting I/O server.
+        CALL pioWriteTimestep ( tsID, vdate, vtime )
+      END DO
+    END DO
+
+    ! End timestepping stage
+    CALL pioEndTimestepping ()
+
+    ! Cleanup stage
+    CALL streamClose(streamID)
+       ...
+    CALL vlistDestroy(vlistID)
+
+  END SUBROUTINE MODELRUN
+
+\end{lstlisting}
+
+\section{Switch between namespaces: {\tt pioNamespaceSetActive}}
+\index{pioNamespaceSetActive}
+\label{pioNamespaceSetActive}
+The subroutine {\tt pioNamespaceSetActive} sets the active 
+{\htmlref{namespace}{namespace}} to 
+the argument {\tt INTEGER IN nspID}.
+The {\htmlref{namespace}{namespace}} objects are defined with the call to 
+{\htmlref{\tt pioInit}{pioInit}}. A {\htmlref{namespace}{namespace}} 
+object has the entries
+\smallskip
+
+% TODO: use mathmode lbrace
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\tt INTEGER hasLocalFile\ } 
+\item[{\tt INTEGER nspID}] 
+\begin{itemize}
+\item[] Namespace identifier,
+\end{itemize}
+\item[{\tt INTEGER hasLocalFile}]
+\begin{itemize}
+\item[] indicating whether the {\htmlref{namespace}{namespace}} supports local 
+writing,
+\item[]$\in \{${\tt TRUE}, {\tt FALSE}$\}$, 
+\item[]$==$ {\tt TRUE} by default,
+\end{itemize}
+\item[{\tt INTEGER stageCode}]
+\begin{itemize}
+\item[] is set by calls to the subprograms {\htmlref{\tt pioEndDef}{pioEndDef}}
+ and {\htmlref{\tt pioEndTimestepping}{pioEndTimestepping}},
+\item[]$\in \{${\htmlref{\tt STAGE\_DEFINITION}{STAGEDEFINITION}},{\htmlref{\tt STAGE\_TIMELOOP}{STAGETIMELOOP}},{\htmlref{\tt STAGE\_CLEANUP}{STAGECLEANUP}}$\}$, 
+\item[]$==$ {\htmlref{\tt STAGE\_DEFINITION}{STAGEDEFINITION}} by default.
+\end{itemize}
+\end{deflist}
+\end{minipage}
+\smallskip
+
+ If the model uses the {\CDI} serially, a call to {\tt pioNamespaceSetActive} 
+has no effect.\\
+\smallskip 
+
+\subsection*{Usage}
+\begin{verbatim}
+SUBROUTINE pioNamespaceSetActive ( INTEGER nspID )
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\tt IN  nspID\ } 
+\item[{\tt IN  nspID}]
+Namespace identifier
+\end{deflist}
+\end{minipage}
+
+
+\section{Offset of the local I/O subvariable: {\tt pioInqVarDecoOff}}
+\index{pioInqVarDecoOff}
+\label{pioInqVarDecoOff}
+Obsolete. 
+
+\subsection*{Usage}
+\begin{verbatim}
+   INTEGER FUNCTION pioInqVarDecoOff ( INTEGER vlistID, INTEGER varID )
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\tt IN  vlistID\ } 
+\item[{\tt IN  vlistID}]
+Variable list identifier
+\item[{\tt IN  varID}]
+Variable identifier
+\end{deflist}
+\end{minipage}
+
+\section{Chunk of the local I/O subvariable: {\tt pioInqVarDecoChunk}}
+\index{pioInqVarDecoChunk}
+\label{pioInqVarDecoChunk}
+Obsolete.
+
+\subsection*{Usage}
+\begin{verbatim}
+   INTEGER FUNCTION pioInqVarDecoChunk ( INTEGER vlistID, INTEGER varID )
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\tt IN  vlistID\ } 
+\item[{\tt IN  vlistID}]
+Variable list identifier
+\item[{\tt IN  varID}]
+Variable identifier
+\end{deflist}
+\end{minipage}

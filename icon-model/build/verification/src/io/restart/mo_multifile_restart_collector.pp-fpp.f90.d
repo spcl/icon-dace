@@ -1,0 +1,4 @@
+src/io/restart/mo_multifile_restart_collector.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/handle_mpi_error.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/io/restart/mo_multifile_restart_collector.f90
+src/io/restart/mo_multifile_restart_collector.pp-fpp.o src/io/restart/mo_multifile_restart_collector.pp-fpp.f90.d: src/io/restart/mo_multifile_restart_collector.pp-fpp.f90
+mod/mo_multifile_restart_collector.mod.proxy: src/io/restart/mo_multifile_restart_collector.pp-fpp.o
+src/io/restart/mo_multifile_restart_collector.pp-fpp.o src/io/restart/mo_multifile_restart_collector.pp-fpp.o: mod/mo_communication.mod.proxy mod/mo_decomposition_tools.mod.proxy mod/mo_mpi.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_timer.mod.proxy mod/mo_kind.mod.proxy mod/mo_multifile_restart_util.mod.proxy

@@ -1,0 +1,137 @@
+--- a/config/ltmain.sh	2012-06-12 00:20:43.000000000 +0200
++++ b/config/ltmain.sh	2014-08-19 16:34:48.161235251 +0200
+@@ -3229,6 +3229,25 @@
+ 
+ test "$opt_mode" = install && func_mode_install ${1+"$@"}
+ 
++func_add2xrpath ()
++{
++  dir="$1"
++  # We need an absolute path.
++  case $dir in
++    [\\/]* | [A-Za-z]:[\\/]*) ;;
++    =*)
++    func_stripname '=' '' "$dir"
++    dir=$lt_sysroot$func_stripname_result
++      ;;
++    *)
++      func_fatal_error "only absolute run-paths are allowed"
++      ;;
++  esac
++  case "$xrpath " in
++    *" $dir "*) ;;
++    *) func_append xrpath " $dir" ;;
++  esac
++}
+ 
+ # func_generate_dlsyms outputname originator pic_p
+ # Extract symbols from dlprefiles and create ${outputname}S.o with
+@@ -5727,20 +5746,7 @@
+ 	func_stripname '-R' '' "$arg"
+ 	dir=$func_stripname_result
+ 	# We need an absolute path.
+-	case $dir in
+-	[\\/]* | [A-Za-z]:[\\/]*) ;;
+-	=*)
+-	  func_stripname '=' '' "$dir"
+-	  dir=$lt_sysroot$func_stripname_result
+-	  ;;
+-	*)
+-	  func_fatal_error "only absolute run-paths are allowed"
+-	  ;;
+-	esac
+-	case "$xrpath " in
+-	*" $dir "*) ;;
+-	*) func_append xrpath " $dir" ;;
+-	esac
++	func_add2xrpath "$dir"
+ 	continue
+ 	;;
+ 
+@@ -5801,18 +5807,58 @@
+ 	;;
+ 
+       -Wl,*)
++	wlprefix=`expr x"$wl" : '.*' - 1`
++	wlprefix=`expr x"$arg" : 'x\(.\{'"$wlprefix"'\}\)'`
++	if test x"$wlprefix" = x"$wl" -a x"$wl" != x"-Wl,"; then
++	  func_append compiler_flags " $arg"
++	  func_append compile_command " $arg"
++	  func_append finalize_command " $arg"
++	  if expr "x$arg" : '^x'"$wl"'-rpath,,' >/dev/null ; then
++	    func_stripname "$wl"'-rpath,,' '' "$arg"
++	    dir=$func_stripname_result
++	    func_add2xrpath "$dir"
++	  elif expr "x$arg" : '^x'"$wl"'-rpath$' >/dev/null ; then
++	    func_stripname "$wl" '' "$1"
++	    dir=$func_stripname_result
++	    if ! expr "x$1" : '^x'"$wl" >/dev/null \
++	    || ! test -d "$dir" ; then
++	    func_fatal_error "$wl"'-rpath must be followed by '"$wl"'-escaped directory'
++	    fi
++	    shift
++	    func_add2xrpath "$dir"
++	    continue
++	  else
++	    func_stripname "$wl" '' "$arg"
++	    func_append new_inherited_linker_flags " -Wl,$func_stripname_result"
++	  fi
++	  continue
++	elif expr "x$arg" : '^x-Wl,-rpath,' >/dev/null ; then
++	  func_stripname '-Wl,-rpath,' '' "$arg"
++	  dir=$func_stripname_result
++	  func_add2xrpath "$dir"
++	  continue
++	elif expr "x$arg" : '^x-Wl,-rpath$' >/dev/null ; then
++	  func_stripname '-Wl,' '' "$1"
++	  dir=$func_stripname_result
++	  if ! expr "x$1" : '^x-Wl,' >/dev/null \
++	    || ! test -d "$dir" ; then
++	    func_fatal_error '-Wl,-rpath must be followed by -Wl-escaped directory'
++	  fi
++	  func_quote_for_eval "$1"
++	  func_append libtool_args " $func_quote_for_eval_result"
++	  shift
++	  func_add2xrpath "$dir"
++	  continue
++	fi
+ 	func_stripname '-Wl,' '' "$arg"
+ 	args=$func_stripname_result
+ 	arg=
+-	save_ifs="$IFS"; IFS=','
++	save_ifs=$IFS; IFS=,
+ 	for flag in $args; do
+-	  IFS="$save_ifs"
++	  IFS=$save_ifs
+           func_quote_for_eval "$flag"
+ 	  func_append arg " $wl$func_quote_for_eval_result"
+ 	  func_append compiler_flags " $wl$func_quote_for_eval_result"
+ 	  func_append linker_flags " $func_quote_for_eval_result"
+ 	done
+-	IFS="$save_ifs"
++	IFS=$save_ifs
+ 	func_stripname ' ' '' "$arg"
+ 	arg=$func_stripname_result
+ 	;;
+@@ -9515,6 +9562,10 @@
+ 	  *) func_append new_libs " $deplib" ;;
+ 	  esac
+ 	  ;;
++	-Wl,*)
++	  func_stripname -Wl, '' "$deplib"
++	  func_append new_libs " $wl$func_stripname_result"
++	  ;;
+ 	*) func_append new_libs " $deplib" ;;
+ 	esac
+       done
+@@ -10247,6 +10298,10 @@
+ 	  *) func_append new_libs " $deplib" ;;
+ 	  esac
+ 	  ;;
++	-Wl,*)
++	  func_stripname -Wl, '' "$deplib"
++	  func_append new_libs " $wl$func_stripname_result"
++	  ;;
+ 	*) func_append new_libs " $deplib" ;;
+ 	esac
+       done

@@ -1,0 +1,13 @@
+WARNING: your MPI installation suffers from a known defect which was
+discovered in IBM PE versions 5.2.2.7 and before but newer than 4.x.
+
+For these systems MPI_Sendrecv transfers
+
+a) containing less than 232 bytes for which
+b) the data does not start at the beginning of the buffer
+
+the beginning part of the data may be sent when it is not supposed
+to be sent.
+
+This defect has been assigned APAR IV32584 by IBM and is fixed in
+PE versions after 5.2.2.8.

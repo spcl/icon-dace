@@ -1,0 +1,33 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+config: &config
+  coupling_period: 2
+  time_reduction: accumulate
+  interpolation:
+    - conservative:
+        order: 1
+        enforced_conservation: true
+        partial_coverage: false
+    - fixed:
+        user_value: -1.0
+
+start_date: 2008-03-09T16:05:07
+end_date: 2008-03-10T16:05:07
+timestep_unit: second
+calendar: proleptic-gregorian
+coupling:
+  - src_component: ICON
+    src_grid: icon_grid
+    tgt_component: CUBE
+    tgt_grid: cube_grid
+    field: icon_out
+    <<: *config
+  - src_component: CUBE
+    src_grid: cube_grid
+    tgt_component: ICON
+    tgt_grid: icon_grid
+    field: cube_out
+    <<: *config
+

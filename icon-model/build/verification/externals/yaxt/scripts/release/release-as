@@ -1,0 +1,119 @@
+#! /usr/bin/env bash
+#
+# release-as  -- gather files from current repo state and create
+#                release commit and archive with specified release
+#                version
+#
+# Copyright  (C)  2021  Thomas Jahns <jahns@dkrz.de>
+#
+# Keywords: create autotool configured release in git
+# Author: Thomas Jahns <jahns@dkrz.de>
+# Maintainer: Thomas Jahns <jahns@dkrz.de>
+# URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are  permitted provided that the following conditions are
+# met:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of the DKRZ GmbH nor the names of its contributors
+# may be used to endorse or promote products derived from this software
+# without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+#
+set -e
+new_version=$1
+script_dir=scripts/release
+if command -v shellcheck >/dev/null; then
+  ${MAKE-make} -C scripts/release shellcheck
+  ${MAKE-make} -C scripts/git-hooks shellcheck
+else
+  printf "%s\n" 'warning: cannot find shellcheck'
+fi
+# check the whole kit is there
+if [[ -w configure.ac && -r configure.ac && \
+        -x "${script_dir}/make-release" ]]; then
+  # 0. check no uncomitted modifications are in tree
+  git update-index -q --really-refresh
+  if ! git diff-index --exit-code HEAD -- >&2 ; then
+    echo 'error: modified files found!' >&2
+    exit 1
+  fi
+  source "${script_dir}/get-package-and-version.shinc"
+  if [[ ${tmpsrcdir+set} = '' ]]; then
+    if [[ -d /dev/shm && -w /dev/shm ]]; then
+      tmpsrcdir=/dev/shm
+    else
+      tmpsrcdir=/tmp
+    fi
+    origsrcdir=$PWD
+    tmpsrcdir=$(mktemp -d "${tmpsrcdir}/${package}-src-$(id -un)-XXXXXX")
+    if (( ${DEBUG:-0} == 0)) && [[ -z "${KEEP_BUILDDIR-}" ]] ; then
+      trap 'cp -rp "$tmpsrcdir"/*-release-logs "$origsrcdir"; rm -rf "$tmpsrcdir"' EXIT
+    fi
+  fi
+  if [[ -z "$commit_to_release" ]]; then
+    commit_to_release=$(git rev-parse --abbrev-ref HEAD)
+  fi
+  git clone -b "$commit_to_release" . "$tmpsrcdir"
+  pushd "$tmpsrcdir"
+  # shellcheck source=setup-sed.shinc
+  . "${script_dir}/setup-sed.shinc"
+  # 1. insert new version
+  ${SED} "${sed_inplace_options[@]}" \
+    -e '/^AC_INIT(/s/AC_INIT(\([^,]*\),[^,]*,/AC_INIT(\1,['"${new_version}],/" \
+    configure.ac
+  # 2. import common script settings
+  # shellcheck source=get-package-and-version.shinc
+  source "${script_dir}/get-package-and-version.shinc"
+  test -d "${log_dir}"
+  if [[ $version != "$new_version" ]]; then
+    echo 'Version mismatch after editing configure.ac:' \
+         "$version" 'vs.' "$new_version" >&2
+    exit 1
+  fi
+  # (Re-)create autotools files
+  echo 'Regenerating autotools scaffolding for '"$package $new_version"'.'
+  reconf_log="${log_dir}/reconf.log"
+  echo 'See '"$reconf_log"' for detailed log information.'
+  echo "running $reconfCmd"
+  if ! $reconfCmd >"$reconf_log" 2>&1; then
+    echo 'Regenerating autotools scaffolding for' \
+         "$package $version" 'failed.' >&2
+    exit 1
+  fi
+  # now that the tree is prepared, perform everything we need for the release
+  ${script_dir}/make-release
+  git push origin "v${new_version}" "release-${new_version}"
+  popd
+else
+  echo 'error: insufficient permissions for configure.ac or' \
+       "${script_dir}/make-release!" >&2
+  exit 1
+fi
+#
+# Local Variables:
+# mode: sh
+# coding: utf-8
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
+# license-default: "bsd"
+# End:
+#

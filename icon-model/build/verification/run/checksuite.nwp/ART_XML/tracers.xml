@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ICON
+
+Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+Contact information: icon-model.org
+See AUTHORS.TXT for a list of authors
+See LICENSES/ for license information
+SPDX-License-Identifier: BSD-3-Clause
+-->
+<!DOCTYPE tracers SYSTEM "tracers.dtd">
+
+<tracers>
+  <aerosol id="pollalnu" shortName="ALNUsnc">
+    <moment type="int">0</moment>
+    <mode type="char">pollalnu</mode>
+    <label type="char">pollalnu</label>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">20.00E-3</mol_weight>
+    <rho type="real">860.0</rho>
+    <unit type="char">kg-1</unit>
+    <transport type="char">stdaero</transport>
+    <htop_proc type="real">18000.0</htop_proc>
+    <lfeedback type="int">1</lfeedback>
+    <initc type="char">file</initc>
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">60</parameterNumber>
+    <bitsPerValue type="int">16</bitsPerValue>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="pollbetu" shortName="BETUsnc">
+    <moment type="int">0</moment>
+    <mode type="char">pollbetu</mode>
+    <label type="char">pollbetu</label>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">20.00E-3</mol_weight>
+    <rho type="real">810.0</rho>
+    <unit type="char">kg-1</unit>
+    <transport type="char">stdaero</transport>
+    <htop_proc type="real">18000.0</htop_proc>
+    <lfeedback type="int">1</lfeedback>
+    <initc type="char">file</initc>
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">60</parameterNumber>
+    <bitsPerValue type="int">16</bitsPerValue>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="pollpoac" shortName="POACsnc">
+    <moment type="int">0</moment>
+    <mode type="char">pollpoac</mode>
+    <label type="char">pollpoac</label>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">20.00E-3</mol_weight>
+    <rho type="real">980.0</rho>
+    <unit type="char">kg-1</unit>
+    <transport type="char">stdaero</transport>
+    <htop_proc type="real">18000.0</htop_proc>
+    <lfeedback type="int">1</lfeedback>
+    <initc type="char">file</initc>
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">60</parameterNumber>
+    <bitsPerValue type="int">16</bitsPerValue>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="Cs_137" case="true">
+    <moment type="int">3</moment>
+    <mode type="char">Cs_137</mode>
+    <label type="char">Cs_137</label>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">1.0</mol_weight>
+    <rho type="real">1.0E3</rho>
+    <unit type="char">Bq kg-1</unit>
+    <transport type="char">stdchem</transport>
+    <htop_proc type="real">18000.0</htop_proc>
+    <lfeedback type="int">1</lfeedback>
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">14</parameterNumber>
+    <bitsPerValue type="int">16</bitsPerValue>
+    <constituentType type="int">30172</constituentType>
+  </aerosol>
+</tracers>

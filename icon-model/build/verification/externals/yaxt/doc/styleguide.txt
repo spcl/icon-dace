@@ -1,0 +1,16 @@
+
+- language requirements: Fortran 2003, C99
+
+- no tabs in C- and Fortran-source code (untabify)
+
+- no trailing whitespace (whitespace-cleanup)
+
+- It is okay (but not required) to declare a variable in the control part of
+  a 'for' loop (C99 feature): "for(int i=0; i<n; i=++) {...}". Please do not
+  add noise to commits for the sole purpose of having a c89 look.
+
+- In C parts of the code, identifiers should be mixed case to conform
+  with reserved name policy. Implementors reserve identifiers with all
+  lower-case (plus digits and underscore) also identifiers starting
+  with an underscore are reserved.
+

@@ -1,0 +1,48 @@
+ STOFFTYP: RADIOAKTIV=1, SONSTIGES=2   :    1     :
+ STARTDATUM DER VERWENDETEN PROGNOSE   :2014102600:
+ NANF  IN EUROPA-MODELL-STUNDEN        :    0     :
+ NEND  IN EUROPA-MODELL-STUNDEN        :   72     :
+ NDEL  IN EUROPA-MODELL-STUNDEN        :    1     :
+(INPUT LINE PRESENTLY NOT USED)        :          :
+ ANZAHL DER QUELLSZENARIEN             :    1     :
+(INPUT LINE PRESENTLY NOT USED)        :          :
+ QUELLSTAERKE IN BQ/H                  :1.66667E14
+-------  POSITION AND EMISSION TIME OF NUCLIDES  -------------------------------------------------
+: LA :   6.25000: FI :   49.3300: H :-500.00000 - TA :   0:00:00- TE -   6:00:00 :KKW     :CATTENOM
+: QSTF(IS) :0.       :1.       :0.       :0.       :0.       :0.       :0.       :0.       :0.
+-------  End of Input Data  -----------------------------------------------------------------------
+: Nuclides : Cs-137  :I-131part: Te-132  : Zr-95   : Xe-133  :I-131elem:I-131-org: Ba-140  : Ru-103
+
+
+
+Erlaeuterungen:
+---------------
+ 1. Zeile:           1 = radioaktives Material
+ 2. Zeile:  2014102600 = Bezugsdatum der NWV-Daten
+ 3. Zeile:           0 = Startstunde der NWV-Daten
+ 4. Zeile:          72 = Endstunde der NWV-Daten
+ 5. Zeile:           1 = Einleseintervall der NWV-Daten
+ 6. Zeile:  Kommentarzeile z.Zt. nicht benutzt
+ 7. Zeile:           1 = Anzahl der Szenarien
+ 8. Zeile:  Kommentarzeile z.Zt. nicht benutzt
+ 9. Zeile:  1.66667E14 = Standard-Emissionsstaerke in Bq/h
+10. Zeile:  Kommentarzeile
+11. Zeile:  Geographische Koordinaten (Lamda, Phi), Emisionshoehe in Meter ueber Grund (H),
+            Start- und Endzeit (TA,TE) der Emission (hhhh:mm:ss) relativ zum Bezugsdatum der NWV-Daten (Zeile 2),
+            Ortsbezeichnung des Emmissionsortes (hier z.B. BIBLIS)
+12. Zeile:  relative nuklidspezifische Quellstaerkenfaktoren (QSTF)
+            (Wenn man diese Faktoren mit der Bezugs-(Standard-)Emissionsstaerke (Zeile 9) multipliziert
+            erhaelt man die absoluten Emissionswerte der einzelnen Nuklide)
+
+Die Zeilen 13 und 14 (bzw. 15 und 16) entsprechen den Zeilen 11 und 12. Sie werden nur gelesen, wenn die Anzahl der
+Emissionszenarien (Zeile 7) gleich 2 (bzw. 3) ist. Falls nur ein Freisetzungszeitraum benoetigt wird, muss
+in Zeile 7 (Anzahl der Szenarien) entsprechend eine 1 angeben werden.
+
+Die Zeilen 17 und 18 sind Kommentarzeilen, die nicht eingelesen werden.
+
+So dient die 18. Zeile mit den Nuklidkennungen ("Nuclides") nur zur Orientierung fuer die korrekte Position der
+nulidspezifischen Quellstaerkenfaktoren und wird selbst nicht eingelesen.
+
+Die Positionen der Doppelpunkte (":") in den Zeilen 1-16 duerfen nicht veraendert werden, da die Datei
+als formatiertes ASCII-File gelesen wird.
+

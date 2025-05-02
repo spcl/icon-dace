@@ -1,0 +1,4 @@
+src/atm_phy_bcs/mo_bc_ozone.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/atm_phy_bcs/mo_bc_ozone.f90
+src/atm_phy_bcs/mo_bc_ozone.pp-fpp.o src/atm_phy_bcs/mo_bc_ozone.pp-fpp.f90.d: src/atm_phy_bcs/mo_bc_ozone.pp-fpp.f90
+mod/mo_bc_ozone.mod.proxy: src/atm_phy_bcs/mo_bc_ozone.pp-fpp.o
+src/atm_phy_bcs/mo_bc_ozone.pp-fpp.o src/atm_phy_bcs/mo_bc_ozone.pp-fpp.o: mod/mo_netcdf.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_time_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_read_interface.mod.proxy mod/mo_netcdf_errhandler.mod.proxy mod/mo_timer.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_bcs_time_interpolation.mod.proxy mod/mo_mpi.mod.proxy mod/mo_atmo_o3_provider_coupling.mod.proxy mod/mo_aes_rad_config.mod.proxy mod/mo_io_config.mod.proxy

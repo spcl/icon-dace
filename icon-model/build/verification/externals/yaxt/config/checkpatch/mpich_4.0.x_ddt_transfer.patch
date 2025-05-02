@@ -1,0 +1,50 @@
+Copyright of this change: please lookup the copyright of MPICH 4.0.x releases.
+
+From b0cef14e7b25dba93992c7233113904084737dcf Mon Sep 17 00:00:00 2001
+From: Hui Zhou <hzhou321@anl.gov>
+Date: Wed, 9 Nov 2022 15:37:57 -0600
+Subject: [PATCH] datatype: fix builtin_element_size at MPIR_Typerep_unflatten
+
+The previous fix (commit a338d6a) contained type that gets the
+element_size from the datatype itself rather than its basic_type. This
+resulted all contig derived datatypes not to take the shortcut path.
+
+Since the original bug was due to MPIR_Typerep_unflatten does not set
+builtin_element_size, this patch fixes the issue at its source.
+---
+ src/mpi/datatype/typerep/src/typerep_flatten.c    | 5 +++++
+ src/mpi/datatype/typerep/src/typerep_yaksa_pack.c | 5 +----
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/src/mpi/datatype/typerep/src/typerep_flatten.c b/src/mpi/datatype/typerep/src/typerep_flatten.c
+index 8519d61c7bd..f4f36b2bb86 100644
+--- a/src/mpi/datatype/typerep/src/typerep_flatten.c
++++ b/src/mpi/datatype/typerep/src/typerep_flatten.c
+@@ -118,6 +118,11 @@ int MPIR_Typerep_unflatten(MPIR_Datatype * datatype_ptr, void *flattened_type)
+     datatype_ptr->true_lb = flatten_hdr->true_lb;
+     datatype_ptr->contents = NULL;
+     datatype_ptr->flattened = NULL;
++    if (datatype_ptr->basic_type != MPI_DATATYPE_NULL) {
++        datatype_ptr->builtin_element_size = MPIR_Datatype_get_basic_size(datatype_ptr->basic_type);
++    } else {
++        datatype_ptr->builtin_element_size = 0;
++    }
+ 
+ #if (MPICH_DATATYPE_ENGINE == MPICH_DATATYPE_ENGINE_YAKSA)
+     int rc = yaksa_unflatten(&datatype_ptr->typerep.handle, flattened_typerep);
+diff --git a/src/mpi/datatype/typerep/src/typerep_yaksa_pack.c b/src/mpi/datatype/typerep/src/typerep_yaksa_pack.c
+index eb857ab8e21..9a15bb91534 100644
+--- a/src/mpi/datatype/typerep/src/typerep_yaksa_pack.c
++++ b/src/mpi/datatype/typerep/src/typerep_yaksa_pack.c
+@@ -143,10 +143,7 @@ static int typerep_do_pack(const void *inbuf, MPI_Aint incount, MPI_Datatype dat
+         MPIR_Datatype *dtp;
+         MPIR_Datatype_get_ptr(datatype, dtp);
+         is_contig = dtp->is_contig;
+-        /* NOTE: dtp->element_size may not be set if dtp is from a flattened type */
+-        if (dtp->basic_type != MPI_DATATYPE_NULL) {
+-            element_size = MPIR_Datatype_get_basic_size(datatype);
+-        }
++        element_size = dtp->builtin_element_size;
+         inbuf_ptr = MPIR_get_contig_ptr(inbuf, dtp->true_lb);
+         total_size = incount * dtp->size;
+     }

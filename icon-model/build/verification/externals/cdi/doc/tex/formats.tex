@@ -1,0 +1,212 @@
+%Every input and output file is a collection of 2D or 3D variables
+%over an unlimited number of time steps.
+
+\section{GRIB}
+
+GRIB \cite{GRIB} (GRIdded Binary) is a standard format designed by the
+World Meteorological Organization (WMO) to support the efficient 
+transmission and storage of gridded meteorological data.
+
+A GRIB record consists of a series of header sections, followed by
+a bitstream of packed data representing one horizontal grid of data
+values. The header sections are intended to fully describe the data
+included in the bitstream, specifying information such as the
+parameter, units, and precision of the data, the grid system and
+level type on which the data is provided, and the date and time
+for which the data are valid.
+
+Non-numeric descriptors are enumerated in tables, such that a 1-byte
+code in a header section refers to a unique description.
+The WMO provides a standard set of enumerated parameter names and
+level types, but the standard also allows for the definition
+of locally used parameters and geometries. Any activity
+that generates and distributes GRIB records must also make
+their locally defined GRIB tables available to users.
+
+The GRIB records must be sorted by time to be able to read them correctly with {\CDI}.
+
+{\CDI} does not support the full GRIB standard. The following
+data representation and level types are implemented: \\
+
+\begin{tabular}{|r|r|l|l|}
+\hline
+\rowcolor[gray]{.9}
+GRIB1  & GRIB2 & & \\
+\rowcolor[gray]{.9}
+ grid type &  template & GRIB\_API name & description \\
+     0  & 3.0 & regular\_ll & Regular longitude/latitude grid \\
+     3  & -- & lambert & Lambert conformal grid \\
+     4  & 3.40 & regular\_gg & Regular Gaussian longitude/latitude grid \\
+     4  & 3.40 & reduced\_gg & Reduced Gaussian longitude/latitude grid \\
+   10  & 3.1 & rotated\_ll & Rotated  longitude/latitude grid \\
+   50  & 3.50 & sh & Spherical harmonic coefficients \\
+ 192  & 3.100 & -- & Icosahedral-hexagonal GME grid \\
+  --   & 3.101 & -- & General unstructured grid \\
+\hline
+\end{tabular}
+
+
+\begin{tabular}{|r|r|l|l|}
+\hline
+\rowcolor[gray]{.9}
+GRIB1  & GRIB2 & & \\
+\rowcolor[gray]{.9}
+ level type &  level type & GRIB\_API name & description \\
+     1  &    1 & surface                        & Surface level \\
+     2  &    2 & cloudBase                    & Cloud base level \\
+     3  &    3 & cloudTop                     & Level of cloud tops \\
+     4  &    4 & isothermZero               & Level of 0$^{\circ}$ C isotherm \\
+     8  &    8 & nominalTop                 & Norminal top of atmosphere \\
+     9  &    9 & seaBottom                   & Sea bottom \\
+   10  &  10 & entireAtmosphere        & Entire atmosphere \\
+ 100  & 100 & isobaricInhPa              & Isobaric level in hPa \\
+ 102  & 101 & meanSea                     & Mean sea level \\
+ 103  & 102 & heightAboveSea          & Altitude above mean sea level \\
+ 105  & 103 & heightAboveGround    & Height level above ground \\
+ 107  & 104 & sigma                          & Sigma level \\
+ 109  & 105 & hybrid                         & Hybrid level      \\
+ 110  & 105 & hybridLayer                 & Layer between two hybrid levels   \\
+ 111  & 106 & depthBelowLand          & Depth below land surface    \\
+ 112  & 106 & depthBelowLandLayer & Layer between two depths below land surface   \\   
+ 113  & 107 & theta                           & Isentropic (theta) level \\
+   --  & 114 & --                               & Snow level \\
+ 160  & 160 & depthBelowSea            & Depth below sea level    \\
+ 162  & 162 & --                               & Lake or River Bottom \\
+ 163  & 163 & --                               & Bottom Of Sediment Layer  \\
+ 164  & 164 & --                               & Bottom Of Thermally Active Sediment Layer  \\
+ 165  & 165 & --                               & Bottom Of Sediment Layer Penetrated By \\ 
+         &        &                                    & Thermal Wave  \\
+ 166  & 166 & --                               & Mixing Layer  \\
+ 210  & --   & isobaricInPa                & Isobaric level in Pa \\
+\hline
+\end{tabular}
+
+\subsection{GRIB edition 1}
+
+GRIB1 is implemented in {\CDI} as an internal library and enabled per default.
+The internal GRIB1 library is called CGRIBEX. This is a lightweight
+version of the ECMWF GRIBEX library. CGRIBEX is written in ANSI C with a portable Fortran interface. 
+The configure option \texttt{--disable-cgribex} will disable the encoding/decoding of GRIB1 records with CGRIBEX.
+
+\subsection{GRIB edition 2}
+
+GRIB2 is available in {\CDI} via the ECMWF ecCodes \cite{ecCodes} library.
+ecCodes is an external library and not part of {\CDI}. To use GRIB2 with
+{\CDI} the ecCodes library must be installed before the configuration
+of the {\CDI} library. Use the configure option \texttt{--with-eccodes} to
+enable GRIB2 support. 
+
+The ecCodes library is also used to encode/decode GRIB1 records if the support for the CGRIBEX library is disabled.
+This feature is not tested regulary and the status is experimental!
+
+A single GRIB2 message can contain multiple fields. This feature is not supported in {\CDI}!
+
+\section{NetCDF}
+
+NetCDF \cite{NetCDF} (Network Common Data Form) is an interface for array-oriented data
+access and a library that provides an implementation of the interface.
+The NetCDF library also defines a machine-independent format for 
+representing scientific data. Together, the interface, library, and 
+format support the creation, access, and sharing of scientific data.
+
+{\CDI} only supports the classic data model of NetCDF and arrays up to 4 dimensions.
+These dimensions should only be used by the horizontal and vertical grid and the time.
+The NetCDF attributes should follow the
+\href{http://ftp.unidata.ucar.edu/software/netcdf/docs/conventions.html}
+     {GDT, COARDS or CF Conventions}.
+
+NetCDF is an external library and not part of {\CDI}. To use NetCDF with
+{\CDI} the NetCDF library must be installed before the configuration
+of the {\CDI} library. Use the configure option \texttt{--with-netcdf} to
+enable NetCDF support (see \htmlref{Build}{build}).
+
+%\subsection{ncdap}
+
+
+\section{SERVICE}
+
+SERVICE is the binary exchange format of the atmospheric general circulation model ECHAM \cite{ECHAM}.
+It has a header section with 8 integer values followed by the data section.
+The header and the data section have the standard Fortran blocking for binary data records.
+A SERVICE record can have an accuracy of 4 or 8 bytes and the byteorder can be little or big endian.
+In {\CDI} the accuracy of the header and data section must be the same.
+The following Fortran code example can be used to read a SERVICE record with an accuracy of 4 bytes:
+
+\begin{lstlisting}[language=Fortran, backgroundcolor=\color{pyellow}, basicstyle=\small, columns=flexible]
+   INTEGER*4 icode,ilevel,idate,itime,nlon,nlat,idispo1,idispo2
+   REAL*4 field(mlon,mlat)
+      ...
+   READ(unit) icode,ilevel,idate,itime,nlon,nlat,idispo1,idispo2
+   READ(unit) ((field(ilon,ilat), ilon=1,nlon), ilat=1,nlat)
+\end{lstlisting}
+
+The constants \texttt{mlon} and \texttt{mlat} must be greater or equal than \texttt{nlon} and \texttt{nlat}.
+The meaning of the variables are:
+
+\vspace*{3mm}
+\hspace*{8mm}\begin{minipage}{10cm}
+\begin{deflist}{\texttt{idispo2 \ \ }}
+\item[\texttt{icode}]    The code number
+\item[\texttt{ilevel}]   The level
+\item[\texttt{idate}]    The date as YYYYMMDD
+\item[\texttt{itime}]    The time as hhmmss
+\item[\texttt{nlon}]     The number of longitudes
+\item[\texttt{nlat}]     The number of latitides
+\item[\texttt{idispo1}]  For the users disposal (Not used in {\CDI})
+\item[\texttt{idispo2}]  For the users disposal (Not used in {\CDI})
+\end{deflist}
+\end{minipage}
+\vspace*{3mm}
+
+SERVICE is implemented in {\CDI} as an internal library and enabled per default.
+The configure option \texttt{--disable-service} will disable the support for the SERVICE format.
+
+\section{EXTRA}
+
+EXTRA is the standard binary output format of the ocean model MPIOM \cite{MPIOM}.
+It has a header section with 4 integer values followed by the data section. 
+The header and the data section have the standard Fortran blocking for binary data records.
+An EXTRA record can have an accuracy of 4 or 8 bytes and the byteorder can be little or big endian.
+In {\CDI} the accuracy of the header and data section must be the same.
+The following Fortran code example can be used to read an EXTRA record with an accuracy of 4 bytes:
+
+\begin{lstlisting}[language=Fortran, backgroundcolor=\color{pyellow}, basicstyle=\small, columns=flexible]
+   INTEGER*4 idate,icode,ilevel,nsize
+   REAL*4 field(msize)
+      ...
+   READ(unit) idate,icode,ilevel,nsize
+   READ(unit) (field(isize),isize=1,nsize)
+\end{lstlisting}
+
+The constant \texttt{msize} must be greater or equal than \texttt{nsize}.
+The meaning of the variables are:
+
+\vspace*{3mm}
+\hspace*{8mm}\begin{minipage}{10cm}
+\begin{deflist}{\texttt{idispo2 \ \ }}
+\item[\texttt{idate}]    The date as YYYYMMDD
+\item[\texttt{icode}]    The code number
+\item[\texttt{ilevel}]   The level
+\item[\texttt{nsize}]    The size of the field
+\end{deflist}
+\end{minipage}
+\vspace*{3mm}
+
+EXTRA is implemented in {\CDI} as an internal library and enabled per default.
+The configure option \texttt{--disable-extra} will disable the support for the EXTRA format.
+
+
+\section{IEG}
+
+IEG is the standard binary output format of the regional model REMO \cite{REMO}.
+It is simple an unpacked GRIB edition 1 format. The product and grid
+description sections are coded with 4 byte integer values and the
+data section can have 4 or 8 byte IEEE floating point values.
+The header and the data section have the standard Fortran blocking
+for binary data records. The IEG format has a fixed size of 100 for the
+vertical coordinate table. That means it is not possible to store more
+than 50 model levels with this format.
+{\CDI} supports only data on Gaussian and LonLat grids for the IEG format.
+
+IEG is implemented in {\CDI} as an internal library and enabled per default.
+The configure option \texttt{--disable-ieg} will disable the support for the IEG format.

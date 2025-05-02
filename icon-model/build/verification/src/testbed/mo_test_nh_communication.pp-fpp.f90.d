@@ -1,0 +1,4 @@
+src/testbed/mo_test_nh_communication.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/testbed/mo_test_nh_communication.f90
+src/testbed/mo_test_nh_communication.pp-fpp.o src/testbed/mo_test_nh_communication.pp-fpp.f90.d: src/testbed/mo_test_nh_communication.pp-fpp.f90
+mod/mo_test_nh_communication.mod.proxy: src/testbed/mo_test_nh_communication.pp-fpp.o
+src/testbed/mo_test_nh_communication.pp-fpp.o src/testbed/mo_test_nh_communication.pp-fpp.o: mod/mo_grid_config.mod.proxy mod/mo_icon_comm_lib.mod.proxy mod/mo_mpi.mod.proxy mod/mo_kind.mod.proxy mod/mo_icon_testbed_config.mod.proxy mod/mo_atmo_nonhydrostatic.mod.proxy mod/mo_async_latbc_types.mod.proxy mod/mo_intp_data_strc.mod.proxy mod/mo_master_control.mod.proxy mod/mo_nonhydro_types.mod.proxy mod/mo_timer.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_grf_intp_data_strc.mod.proxy mod/mo_atmo_model.mod.proxy

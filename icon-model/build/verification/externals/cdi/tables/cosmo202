@@ -1,0 +1,84 @@
+# Parameter table
+#
+# TABLE_ID=202
+# TABLE_MODEL=COSMO
+# TABLE_INSTITUT=MCH
+#
+#-------------------------------------------------------------------------
+#!variable
+#
+# Variables
+#   (max number of entries = 256)
+#
+# The format of each record is:
+#   id | name | title | units
+#
+# id       = parameter ID
+# name     = variable name
+# title    = long name (description)
+# units    = variable units
+#
+#----+-------------+------------------------------------------+----------+
+# id | name        | title                                    | units    |
+#----+-------------+------------------------------------------+----------+
+ 46 | SSO_STDH | standard deviation of subgrid scale height | m  |
+ 47 | SSO_GAMMA | anisotropy of topography | -  |
+ 48 | SSO_THETA | angle between principal axis of orography and global east | -  |
+ 49 | SSO_SIGMA | mean slope of subgrid scale orography | -  |
+ 55 | FR_LAKE | fraction of inland lake water | 1  |
+ 57 | SOILTYP | soil type | 1  |
+ 61 | LAI | leaf area index | 1  |
+ 62 | ROOTDP | root depth | m  |
+ 64 | HMO3 | air pressure at ozone maximum | Pa  |
+ 65 | VIO3 | vertical integrated ozone amount | Pa  |
+ 67 | PLCOV_MX | vegetation area fraction maximum | 1  |
+ 68 | PLCOV_MN | vegetation area fraction minimum | 1  |
+ 69 | LAI_MX | leaf area index maximum | 1  |
+ 70 | LAI_MN | leaf area index minimum | 1  |
+ 75 | FOR_E | ground fraction covered by evergreen forest | -  |
+ 76 | FOR_D | ground fraction covered by deciduous forest | -  |
+ 104 | DQVDT | tendency of water vapor | s-1  |
+ 105 | QVSFLX | surface flux of water vapour | s-1m-2  |
+ 113 | FC | coriolis parameter | s-1  |
+ 114 | RLAT | latitude | radian  |
+ 115 | RLON | longitude | radian  |
+ 121 | ZTD | integrated total atmospheric refractivity | undefined  |
+ 122 | ZWD | integrated wet atmospheric refractivity | undefined  |
+ 123 | ZHD | integrated dry atmospheric refractivity | undefined  |
+ 180 | O3 | ozone mass mixing ratio | kg kg-1  |
+ 200 | I131a | undefined | undefined  |
+ 201 | I131a_DD | undefined | undefined  |
+ 202 | I131a_WD | undefined | undefined  |
+ 203 | Cs137 | undefined | undefined  |
+ 204 | Cs137_DD | undefined | undefined  |
+ 205 | Cs137_WD | undefined | undefined  |
+ 206 | Te132 | undefined | undefined  |
+ 207 | Te132_DD | undefined | undefined  |
+ 208 | Te132_WD | undefined | undefined  |
+ 209 | Zr95 | undefined | undefined  |
+ 210 | Zr95_DD | undefined | undefined  |
+ 211 | Zr95_WD | undefined | undefined  |
+ 212 | Kr85 | undefined | undefined  |
+ 213 | Kr85_DD | undefined | undefined  |
+ 214 | Kr85_WD | undefined | undefined  |
+ 215 | TRACER | undefined | undefined  |
+ 216 | TRACER_DD | undefined | undefined  |
+ 217 | TRACER_WD | undefined | undefined  |
+ 218 | Xe133 | undefined | undefined  |
+ 219 | Xe133_DD | undefined | undefined  |
+ 220 | Xe133_WD | undefined | undefined  |
+ 221 | I131g | undefined | undefined  |
+ 222 | I131g_DD | undefined | undefined  |
+ 223 | I131g_WD | undefined | undefined  |
+ 224 | I131o | undefined | undefined  |
+ 225 | I131o_DD | undefined | undefined  |
+ 226 | I131o_WD | undefined | undefined  |
+ 227 | Ba140 | undefined | undefined  |
+ 228 | Ba140_DD | undefined | undefined  |
+ 229 | Ba140_WD | undefined | undefined  |
+ 230 | Sr90 | undefined | undefined  |
+ 231 | Sr90_DD | undefined | undefined  |
+ 232 | Sr90_WD | undefined | undefined  |
+ 233 | Ru103 | undefined | undefined  |
+ 234 | Ru103_DD | undefined | undefined  |
+ 235 | Ru103_WD | undefined | undefined  |

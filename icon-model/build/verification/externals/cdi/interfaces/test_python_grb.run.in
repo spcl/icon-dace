@@ -1,0 +1,10 @@
+#!@SHELL@
+
+set -e
+
+@ENABLE_PYTHON_INTERFACE_FALSE@exit 77
+test 'x@ENABLE_GRIB@' = xyes || exit 77
+
+PYTHONDONTWRITEBYTECODE=1; export PYTHONDONTWRITEBYTECODE
+PYTHONPATH="@abs_builddir@/python:@abs_builddir@/python/.libs:${PYTHONPATH}"; export PYTHONPATH
+@PYTHON@ '@srcdir@/python/test.py' '@srcdir@/testdata/mulval.grb'

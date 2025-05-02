@@ -1,0 +1,4 @@
+src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_interface.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_interface.f90
+src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_interface.pp-fpp.o src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_interface.pp-fpp.f90.d: src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_interface.pp-fpp.f90
+mod/mo_rte_rrtmgp_interface.mod.proxy: src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_interface.pp-fpp.o
+src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_interface.pp-fpp.o src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_interface.pp-fpp.o: mod/mo_aes_rad_config.mod.proxy mod/mo_bc_aeropt_kinne.mod.proxy mod/mo_rte_rrtmgp_setup.mod.proxy mod/mo_kind.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_rad_diag.mod.proxy mod/mo_icon_fluxes_sw.mod.proxy mod/mo_bc_aeropt_splumes.mod.proxy mod/mo_radiation_general.mod.proxy mod/mo_timer.mod.proxy

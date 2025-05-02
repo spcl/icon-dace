@@ -1,0 +1,32 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+#
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: CC0-1.0
+# ---------------------------------------------------------------
+
+[files]
+extend-exclude = [
+	# Ragel generated files
+	"src/nml_annotate.c",
+	"src/util_arithmetic_expr.c",
+	"src/util_string_parse.c"
+]
+
+[default]
+extend-ignore-re = [
+	# 2nd is detected as typo in the current version
+	".*_2nd_.*",
+]
+
+[default.extend-words]
+inout = "inout" # in and out
+nin = "nin" # number of inputs
+ans = "ans" # short for answer
+
+[default.extend-identifiers]
+lowcase = "lowcase" # ICON legacy subroutine name

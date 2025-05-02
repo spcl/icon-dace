@@ -1,0 +1,177 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#-----------------------------------------------------------------------------
+# the namelist filename
+ocean_namelist=NAMELIST_${EXPNAME}
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2001-01-01T00:00:00Z"
+  end_date="2003-09-28T00:00:00Z"
+#
+#-----------------------------------------------------------------------------
+# model timing
+(( days_checkp   = 250 ))    # write restart file interval [days]
+(( days_restart  =  50))    # stop model for restart [days]
+(( days_data     =   1 ))    # ocean model output interval in days
+(( hour          = 3600       ))
+(( day           = 24  * hour ))
+(( year          = 365 *  day ))
+#
+#-----------------------------------------------------------------------------
+# calculate model timesteps using $days_data
+leading_zero=""
+if [[ $days_data -lt 10 ]] ; then leading_zero="0"; fi
+nout_interv="P$leading_zero${days_data}D"     # ocean model output interval in days
+(( dt_data        = days_data    * day ))     # used for output_bounds and buildbot
+(( dt_checkpoint  = days_checkp  * day ))
+(( dt_restart     = days_restart * day ))
+(( steps_per_file = dt_restart / dt_data ))   # output intervals per file
+#
+LOC='POOL'
+#grids_folder="/pool/data/ICON/ocean_data/ocean_grid/"
+ocean_grids="Ocean_SmallBoxACC_0010km_20kmBoundedLand.nc"
+#-----------------------------------------------------------------------------
+#
+# write namelist parameters
+# -------------------------
+# For a complete list see Namelist_overview.pdf
+#
+cat > ${ocean_namelist} << EOF
+!
+&parallel_nml
+ nproma       = ${nproma}
+ l_fast_sum   = .true.
+ p_test_run   = .false.
+/
+&grid_nml
+ dynamics_grid_filename = "${ocean_grids}",
+ use_dummy_cell_closure = .true.
+ use_duplicated_connectivity = .false.
+/
+&dynamics_nml
+/
+&run_nml
+ dtime       =  600         ! model timestep in seconds
+ output      = 'nml'        ! namelist controlled output scheme
+ activate_sync_timers = .TRUE.
+ profiling_output     = 2
+ debug_check_level    = 6
+ msg_timestamp        = .FALSE.
+/
+&output_nml
+  output_filename  = "${EXPNAME}"
+  filename_format  = "<output_filename>_<datetime2>"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = "${nout_interv}"
+  steps_per_file   = ${steps_per_file}                ! error with ""
+  output_grid      = .true.
+  ml_varlist       =  'group:oce_essentials','topBoundCond_windStress_u'
+/
+&dbg_index_nml
+  idbg_mxmn=4                     ! initialize MIN/MAX  debug output
+  idbg_val =0                     ! initialize one cell debug output
+  idbg_slev=1                     ! initialize start level for debug output
+  idbg_elev=5                      ! initialize end level for debug output
+  dbg_lat_in=  -45.0              ! latitude location of one cell debug output
+  dbg_lon_in=    5.0              ! longitude location of one cell debug output
+  str_mod_tst='all'               ! define modules to print out in debug mode
+/
+&ocean_dynamics_nml
+!n_zlev             =   20
+!dzlev_m(1:20)      =   14.0,   12.0,   15.0,   18.0,   21.0,   25.0,   30.0,   40.0,   60.0,   80.0,
+!                      100.0,  120.0,  150.0,  180.0,  210.0,  240.0,  270.0,  300.0,  350.0,  400.0
+ n_zlev             =   29
+ dzlev_m(1:29)      =   12.0,   10.0,   10.0,   10.0,   10.0,   10.0,   13.0,   15.0,   20.0,   25.0,
+                        30.0,   35.0,   40.0,   45.0,   50.0,   55.0,   60.0,   70.0,   80.0,   90.0,
+                       100.0,  120.0,  150.0,  200.0,  250.0,  300.0,  350.0,  400.0,  440.0
+  l_edge_based    = .FALSE.           ! edge- or cell-based mimetic discretization
+  l_partial_cells = .FALSE.           ! partial bottom cells=true: local varying bottom depth
+  i_bc_veloc_bot     = 1              !  0/1=bottom friction off/on
+  i_bc_veloc_top     = 1              ! 2 and 3 must be checked
+  select_solver      = 2              !  1=gmres_oce_old; 2=ocean_restart_gmres
+  solver_tolerance   = 1.0E-15        !  absolute (new) or relative (gmres_oce_old) - to be checked
+  solver_max_iter_per_restart   = 25  !  inner solver loop without syncing (default: 200)
+  solver_max_restart_iterations = 50  !  outer (restart solver) loop with syncing (default: 100)
+  fast_performance_level        = 12
+! use_continuity_correction     = .true.
+  basin_center_lat   = -55.0          !  latitude of basin center (used in wind stress forcing)
+  basin_height_deg   =  10.0          !  meridional length of basin in degrees
+  veloc_diffusion_order = 2          !order of friction/diffusion in velocity eq.: 1=laplacian, 2=biharmonic
+  veloc_diffusion_form  = 2          !form of friction/diffusion operator
+/
+&ocean_tracer_transport_nml
+! no_tracer             = 2      ! tracer-transport: 0=no transport, 1=temperature, 2=temp. and salinity
+! FLUX_CALCULATION_HORZ = 5      ! 1=upwind, 2=central, 3=Lax-Friedrichs, 4=Miura, 5=FCT with Zalesak limiter (default)
+! FLUX_CALCULATION_VERT = 7      ! 6=adpo; 7=upwind biased ppm (default); 8=FCT with zalesak limiter
+  ! define low and high order methods to be used in horizontal flux corrected transport methods (flux_calculation_horz=4,5)
+  threshold_min_T       = -1.0   ! abort due to temperature minimum threshold
+  threshold_max_T       =  6.0   ! abort due to temperature maximum threshold
+/
+&ocean_diffusion_nml
+! HorizontalViscosity_type = 1        ! 3: calculate varying horizontal viscosity coefficient according to Munk criterion
+  HorizontalViscosity_type = 1        ! 1: use constant horizontal viscosity coefficient according to namelist
+  HorizontalViscosityBackground_Biharmonic = 1.0E10   ! [m2/s] constant horizontal viscosity coefficient for velocity
+  k_veloc_v            = 5.0E-4   ! [m/s]  vertical background viscosity coefficient for velocity
+  MAX_VERT_DIFF_VELOC  =    0.0   ! max vertical velocity viscosity for convection used in case of instability
+  k_pot_temp_h         =  100.0   ! [m2/s] constant horizontal diffusion coefficient for temperature
+  k_pot_temp_v         = 1.0E-5   ! [m/s]  vertical background diffusion coefficient for temperature
+  k_sal_h              =  100.0   ! [m2/s] constant horizontal diffusion coefficient for temperature
+  k_sal_v              = 1.0E-5   ! [m/s]  vertical background diffusion coefficient for temperature
+  MAX_VERT_DIFF_TRAC   = 0.1      ! max vertical tracer diffusion for convection used in case of instability
+  !convection_InstabilityThreshold = -1.0e-11 ! default: -5.0e-8
+/
+&ocean_physics_nml
+  i_sea_ice          =    0      ! 0 = no sea ice; 1 = Winton; 2 = Semtner
+  richardson_veloc   = 2.0e-3    ! factor for vertical viscosity coefficient in PP scheme
+  richardson_tracer  = 2.0e-3    ! factor for vertical diffusion coefficient in PP scheme
+  ! use_constant_mixing  = .true.
+  bottom_drag_coeff  = 2.5E-3
+! use_mpiom_pp_form  = .true.
+! use_wind_mixing    = .false.   ! not yet ready
+/
+&ocean_forcing_nml
+  iforc_oce = 11
+  forcing_windstress_u_type        = 112   ! 112: following Abernathey (2011)
+  forcing_windstress_v_type        = 0
+  forcing_windStress_u_amplitude   = 0.2
+  forcing_windstress_zonal_waveno  = 1.0
+  forcing_smooth_steps             = 1     ! increase forcing to max within steps
+  init_oce_relax                   = 2     ! 2: do not read relaxation data
+  type_surfRelax_Temp              = 3     ! 3: relaxation=initialization temperature
+  para_surfRelax_Temp              = 1.0   ! time scale of surface relaxation in months
+! relax_temperature_max            = 0.0   ! equator temperature
+! relax_temperature_min            = 0.0   ! poleward temperature
+! forcing_temperature_poleLat      = 45.0  ! location of poleward minimum relaxation and init temperature
+/                                  
+&ocean_initialConditions_nml       
+  initial_salinity_type            = 200    !  horizontally homogeneous
+  initial_salinity_top             = 35.0   
+  initial_salinity_bottom          = 35.0   
+  initial_temperature_type         = 214    !  214: Abernathey temperature initialization
+  initial_temperature_bottom       = 0.0    !  bottom and poleward temperature
+! initial_temperature_top          = 0.0    !  equator temperature
+! initial_temperature_north        = 5.0    !     5C default for Abernathey
+! initial_temperature_south        = 0.0    !     0C default for Abernathey
+! initial_temperature_scale_depth  = 1000.  !  1000m default for Abernathey
+/
+&ocean_diagnostics_nml
+  diagnostics_level              = 1
+/
+&io_nml
+  dt_checkpoint = ${dt_checkpoint}
+  lkeep_in_sync = .TRUE.          ! sync after each timestep
+  ! use_set_event_to_simstep = .false. 
+/
+EOF
+#-----------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+. ${thisdir}/add_required_ocean_files

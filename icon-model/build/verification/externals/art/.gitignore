@@ -1,0 +1,31 @@
+# Configure stage files:
+*.clw.d
+*.f90.d
+.dirstamp
+
+# Build stage files:
+*.i
+*.lst
+*.o
+*.pp-*.f90
+*.xmodstamp
+
+# Mac OS files:
+*.dSYM
+.DS_Store
+
+# Other files:
+*#
+*.settings
+*~
+.cproject
+.history
+.project
+.status.file
+/Rakefile
+/tempList
+cdo_diffn*.out
+experiments*
+src/lnd_phy_jsbach
+tags
+

@@ -1,0 +1,4 @@
+src/ocean/config/mo_ocean_read_namelists.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/ocean/config/mo_ocean_read_namelists.f90
+src/ocean/config/mo_ocean_read_namelists.pp-fpp.o src/ocean/config/mo_ocean_read_namelists.pp-fpp.f90.d: src/ocean/config/mo_ocean_read_namelists.pp-fpp.f90
+mod/mo_ocean_read_namelists.mod.proxy: src/ocean/config/mo_ocean_read_namelists.pp-fpp.o
+src/ocean/config/mo_ocean_read_namelists.pp-fpp.o src/ocean/config/mo_ocean_read_namelists.pp-fpp.o: mod/mo_io_nml.mod.proxy mod/mo_parallel_nml.mod.proxy mod/mo_grid_nml.mod.proxy mod/mo_name_list_output_init.mod.proxy mod/mo_run_nml.mod.proxy mod/mo_ocean_nml.mod.proxy mod/mo_coupling_nml.mod.proxy mod/mo_nml_annotate.mod.proxy mod/mo_dbg_nml.mod.proxy mod/mo_hamocc_nml.mod.proxy mod/mo_dynamics_nml.mod.proxy mod/mo_gribout_nml.mod.proxy mod/mo_time_nml.mod.proxy mod/mo_sea_ice_nml.mod.proxy mod/mo_mpi.mod.proxy

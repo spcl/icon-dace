@@ -1,0 +1,4 @@
+src/ocean/boundary/mo_ocean_tides.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/icon_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/ocean/boundary/mo_ocean_tides.f90 /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/iconfor_dsl_definitions.inc
+src/ocean/boundary/mo_ocean_tides.pp-fpp.o src/ocean/boundary/mo_ocean_tides.pp-fpp.f90.d: src/ocean/boundary/mo_ocean_tides.pp-fpp.f90
+mod/mo_ocean_tides.mod.proxy: src/ocean/boundary/mo_ocean_tides.pp-fpp.o
+src/ocean/boundary/mo_ocean_tides.pp-fpp.o src/ocean/boundary/mo_ocean_tides.pp-fpp.o: mod/mo_kind.mod.proxy mod/mo_ocean_nml.mod.proxy mod/mo_grid_subset.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_util_dbg_prnt.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_ocean_math_operators.mod.proxy

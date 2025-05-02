@@ -1,0 +1,4 @@
+src/ocean/physics/mo_ocean_thermodyn.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/iconfor_dsl_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/ocean/physics/mo_ocean_thermodyn.f90
+src/ocean/physics/mo_ocean_thermodyn.pp-fpp.o src/ocean/physics/mo_ocean_thermodyn.pp-fpp.f90.d: src/ocean/physics/mo_ocean_thermodyn.pp-fpp.f90
+mod/mo_ocean_thermodyn.mod.proxy: src/ocean/physics/mo_ocean_thermodyn.pp-fpp.o
+src/ocean/physics/mo_ocean_thermodyn.pp-fpp.o src/ocean/physics/mo_ocean_thermodyn.pp-fpp.o: mod/mo_ocean_nml.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_util_dbg_prnt.mod.proxy mod/mo_grid_subset.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_kind.mod.proxy

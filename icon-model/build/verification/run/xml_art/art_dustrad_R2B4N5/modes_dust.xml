@@ -1,0 +1,40 @@
+<?xml-stylesheet type="text/xsl" href="modes_aerodyn.xsl" ?>
+<!--
+ICON
+
+Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+Contact information: icon-model.org
+See AUTHORS.TXT for a list of authors
+See LICENSES/ for license information
+SPDX-License-Identifier: BSD-3-Clause
+-->
+
+<modes>
+  <aerosol id="dusta">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">6.445E-7</d_gn>
+    <d_gm type="real">1.500E-6</d_gm>
+    <sigma_g type="real">1.700E+0</sigma_g>
+    <rho type="real">2.650E+3</rho>
+    <condensation type="int">0</condensation>
+    <icoag type="int">0</icoag>
+  </aerosol>
+  <aerosol id="dustb">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">3.454E-6</d_gn>
+    <d_gm type="real">6.700E-6</d_gm>
+    <sigma_g type="real">1.600E+0</sigma_g>
+    <rho type="real">2.650E+3</rho>
+    <condensation type="int">0</condensation>
+    <icoag type="int">0</icoag>
+  </aerosol>
+  <aerosol id="dustc">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">8.672E-6</d_gn>
+    <d_gm type="real">1.420E-5</d_gm>
+    <sigma_g type="real">1.500E+0</sigma_g>
+    <rho type="real">2.650E+3</rho>
+    <condensation type="int">0</condensation>
+    <icoag type="int">0</icoag>
+  </aerosol>
+</modes>

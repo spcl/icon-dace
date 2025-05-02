@@ -1,0 +1,4 @@
+src/upper_atmosphere/mo_upatmo_extdat_utils.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/upper_atmosphere/mo_upatmo_extdat_utils.f90 /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc
+src/upper_atmosphere/mo_upatmo_extdat_utils.pp-fpp.o src/upper_atmosphere/mo_upatmo_extdat_utils.pp-fpp.f90.d: src/upper_atmosphere/mo_upatmo_extdat_utils.pp-fpp.f90
+mod/mo_upatmo_extdat_utils.mod.proxy: src/upper_atmosphere/mo_upatmo_extdat_utils.pp-fpp.o
+src/upper_atmosphere/mo_upatmo_extdat_utils.pp-fpp.o src/upper_atmosphere/mo_upatmo_extdat_utils.pp-fpp.o: mod/mo_impl_constants_grf.mod.proxy mod/mo_netcdf_errhandler.mod.proxy mod/mo_upatmo_phy_chemheat.mod.proxy mod/mo_mpi.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_upatmo_impl_const.mod.proxy mod/mo_upatmo_types.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_netcdf.mod.proxy mod/mo_kind.mod.proxy mod/mo_model_domain.mod.proxy

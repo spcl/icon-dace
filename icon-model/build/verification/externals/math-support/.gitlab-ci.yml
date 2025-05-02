@@ -1,0 +1,229 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+#
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+include:
+  - project: 'anw_dienste/ci-templates'
+    file: '.slurm-ci.yml'
+
+stages:
+  - lint
+  - build_and_test
+  - prepare
+  - release
+
+.colorized:
+  variables:
+    DEFAULT: '\033[0m'
+    RED: '\033[0;31m'
+
+variables: 
+  ACCOUNT: "ka1125"
+  SCHEDULER_PARAMETERS: "--account=$ACCOUNT --partition=shared"
+  GIT_CONFIG_COUNT: 1
+  GIT_CONFIG_KEY_0: url.https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.dkrz.de/.insteadOf
+  GIT_CONFIG_VALUE_0: "git@gitlab.dkrz.de:"
+
+gcc11:
+  stage: build_and_test
+  extends: 
+    - .default
+  script:
+    - module load git gcc/11.2.0-gcc-11.2.0
+    - mkdir gcc112
+    - cd gcc112
+    - /sw/spack-levante/cmake-3.23.1-q5kzz6/bin/cmake ..  -DCMAKE_C_COMPILER=gcc -DCMAKE_Fortran_COMPILER=gfortran
+    - make VERBOSE=1
+    - make test
+  needs: ["Check License", "Check Typo", "Check Style", "Check OpenACC Style", "Check CMake Style"]
+
+intel22:
+  stage: build_and_test
+  extends: 
+    - .default
+  script:
+    - module load git gcc/11.2.0-gcc-11.2.0 intel-oneapi-compilers/2022.0.1-gcc-11.2.0
+    - mkdir intel22
+    - cd intel22
+    - /sw/spack-levante/cmake-3.23.1-q5kzz6/bin/cmake ..  -DCMAKE_C_COMPILER=icc -DCMAKE_Fortran_COMPILER=ifort
+    - make VERBOSE=1
+    - make test
+  needs: ["Check License", "Check Typo", "Check Style", "Check OpenACC Style", "Check CMake Style"]
+
+nvhpc_cpu:
+  stage: build_and_test
+  extends: 
+    - .default
+  script:
+    - module load git gcc/11.2.0-gcc-11.2.0 nvhpc/22.5-gcc-11.2.0
+    - mkdir nvhpc_cpu
+    - cd nvhpc_cpu
+    - /sw/spack-levante/cmake-3.23.1-q5kzz6/bin/cmake ..  -DCMAKE_C_COMPILER=nvc -DCMAKE_Fortran_COMPILER=nvfortran
+    - make VERBOSE=1
+    - make test
+  needs: ["Check License", "Check Typo", "Check Style", "Check OpenACC Style", "Check CMake Style"]
+
+nvhpc_gpu:
+  stage: build_and_test
+  extends: 
+    - .default
+  script:
+    - module load git gcc/11.2.0-gcc-11.2.0 nvhpc/22.5-gcc-11.2.0
+    - mkdir nvhpc_gpu
+    - cd nvhpc_gpu
+    - /sw/spack-levante/cmake-3.23.1-q5kzz6/bin/cmake ..  -DCMAKE_C_COMPILER=nvc -DCMAKE_Fortran_COMPILER=nvfortran -DMS_ENABLE_OPENACC=ON
+    - make VERBOSE=1
+    - make test
+  needs: ["Check License", "Check Typo", "Check Style", "Check OpenACC Style", "Check CMake Style"]
+
+Check License:
+  stage: lint
+  before_script:
+    # install reuse tool
+    - pip install --user reuse
+    - export PATH="/root/.local/bin:$PATH"
+  script:
+    # check license
+    - reuse lint
+  tags:
+    # choose runner
+    - sphinx
+  needs: []
+
+Check Typo:
+  stage: lint
+  before_script:
+    # install typo check package
+    - conda install typos
+  script: typos
+  tags:
+    # choose conda available runner
+    - conda
+  needs: []
+
+Check CMake Style:
+  stage: lint
+  before_script:
+    #install the formatting tool
+    - pip install cmake-format
+  script:
+    # check style for CMake files.
+    - cmake-lint CMakeLists.txt src/CMakeLists.txt test/CMakeLists.txt test/fortran/CMakeLists.txt cmake/check_macro.cmake cmake/list_sources.cmake
+  tags:
+    # choose runner
+    - sphinx
+  needs: []
+
+Check Style:
+  stage: lint
+  before_script:
+    # install the formatting tools
+    - pip install fprettify
+    - apk add --no-cache clang-extra-tools
+    # install packages to configure the project
+    - apk add --no-cache cmake gfortran
+  script:
+    # configure the project
+    - mkdir build
+    - cd build
+    - cmake ..
+    # lint the code
+    - make format
+    - cd ..
+    # build git patch
+    - git diff --patch-with-raw > style.patch
+    # test if patching is necessary
+    - test ! -s style.patch || { echo "There are style errors. Please check
+      your code. You might want to run \`make format\` or \`git apply style.patch\`." && false; }
+  tags:
+    # choose runner
+    - sphinx
+  artifacts:
+    paths:
+      - style.patch
+    expire_in: 1 week
+    expose_as: 'Style Git Patch'
+    when: on_failure
+  needs: []
+
+Check OpenACC Style:
+  extends: .colorized
+  stage: lint
+  variables:
+    BEAUTIFIER_TAG: "v0.3.0"
+    BEAUTIFIER_REPO: "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.dkrz.de/dwd-sw/icon-openacc-beautifier.git"
+    GIT_SUBMODULE_STRATEGY: none
+  before_script:
+    - git clone --branch "${BEAUTIFIER_TAG}" --depth 1 "${BEAUTIFIER_REPO}"
+  script:
+    # apply beautifier:
+    - python3 icon-openacc-beautifier/main.py src/
+    # build git patch:
+    - git diff --ignore-submodules --patch-with-raw > acc_style.patch
+    - |
+      # Test if patching is necessary:
+      test ! -s acc_style.patch || {
+        printf "${RED}ERROR: There are ACC style errors. Please check your \
+      code. You might want to run the ACC beautifier or \`git apply acc_style.patch\` \
+      (see artifacts).${DEFAULT}\n" >&2
+        exit 1
+      }
+  tags:
+    # choose python capable runner:
+    - sphinx
+  artifacts:
+    paths:
+      - acc_style.patch
+    expire_in: 1 week
+    expose_as: 'OpenACC Style Git Patch'
+    when: on_failure
+  needs: []
+
+Prepare Changelog:
+  stage: prepare
+  rules:
+  - if: '$CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+$/'
+  script:
+    - apk add curl jq
+    # generate release note
+    - 'curl -H "PRIVATE-TOKEN: $CI_API_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/repository/changelog?version=$CI_COMMIT_TAG" | jq -r .notes > release_notes.md'
+  tags:
+    # choose runner
+    - alpine
+  artifacts:
+    paths:
+    - release_notes.md
+  needs: ["gcc11", "intel22", "nvhpc_cpu", "nvhpc_gpu"]
+
+Release:
+  stage: release
+  rules:
+  - if: '$CI_COMMIT_TAG =~ /^v?\d+\.\d+\.\d+$/'
+  script:
+    # install GitLab Release CLI tool
+    - curl --location --output /usr/local/bin/release-cli "https://gitlab.com/api/v4/projects/gitlab-org%2Frelease-cli/packages/generic/release-cli/latest/release-cli-linux-amd64"
+    - chmod +x /usr/local/bin/release-cli
+    - echo "Creating release"
+  # create release
+  release:
+    name: 'Release $CI_COMMIT_TAG'
+    description: release_notes.md
+    tag_name: '$CI_COMMIT_TAG'
+    ref: '$CI_COMMIT_SHA'
+    assets:
+      links:
+        - name: 'Container Image $CI_COMMIT_TAG'
+          url: "https://$CI_REGISTRY_IMAGE/$CI_COMMIT_REF_SLUG:$CI_COMMIT_SHA"
+  tags:
+    # choose runner
+    - sphinx
+  needs:
+    - job: "Prepare Changelog"
+      artifacts: true

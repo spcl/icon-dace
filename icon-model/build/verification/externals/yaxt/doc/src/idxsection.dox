@@ -1,0 +1,88 @@
+/** \example idxsection_examples.c
+ */
+
+/** \page idxsection_docu Features of index sections
+
+  \tableofcontents
+
+  \section idxsection_docu_neg_size Negative global and local sizes
+
+  Using negative sizes inverts the order of indices in the respective dimension. The following
+  example illustrate this. The code for the examples can be found in \ref idxsection_examples.c.
+
+  <table border=0 cellpadding=11px>
+    <tr>
+      <td>
+        \image html neg_size_idxsection_pppp.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_ppnp.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_pppn.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_ppnn.png
+      </td>
+    </tr>
+    <tr>
+      <td>
+        \image html neg_size_idxsection_nppp.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_npnp.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_nppn.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_npnn.png
+      </td>
+    </tr>
+    <tr>
+      <td>
+        \image html neg_size_idxsection_pnpp.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_pnnp.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_pnpn.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_pnnn.png
+      </td>
+    </tr>
+    <tr>
+      <td>
+        \image html neg_size_idxsection_nnpp.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_nnnp.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_nnpn.png
+      </td>
+      <td>
+        \image html neg_size_idxsection_nnnn.png
+      </td>
+    </tr>
+  </table>
+
+  \section idxsection_docu_custom_stride Custom strides
+
+  With some limitations you can define index sections with custom strides. This is achieved
+  by introducing additional dimensions (see following examples).
+
+  \subsection idxsection_docu_custom_stride_x Custom stride in x
+
+  \snippet idxsection_examples.c custom stride in x
+
+  \image html stride_idxsection_x.png
+
+  \subsection idxsection_docu_custom_stride_xy Custom stride in x and y
+
+  \snippet idxsection_examples.c custom stride in x and y
+
+  \image html stride_idxsection_xy.png
+ */

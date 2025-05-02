@@ -1,0 +1,4 @@
+src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_radiation.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_radiation.f90
+src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_radiation.pp-fpp.o src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_radiation.pp-fpp.f90.d: src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_radiation.pp-fpp.f90
+mod/mo_rte_rrtmgp_radiation.mod.proxy: src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_radiation.pp-fpp.o
+src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_radiation.pp-fpp.o src/atm_phy_rte_rrtmgp/mo_rte_rrtmgp_radiation.pp-fpp.o: mod/mo_radiation_solar_data.mod.proxy mod/mo_radiation_general.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_timer.mod.proxy mod/mo_kind.mod.proxy mod/mo_cloud_gas_profiles.mod.proxy mod/mo_aes_rad_config.mod.proxy mod/mo_orbit.mod.proxy mod/mo_solar_parameters.mod.proxy mod/mo_aes_phy_config.mod.proxy mod/mo_rte_rrtmgp_interface.mod.proxy mod/mo_coupling_config.mod.proxy

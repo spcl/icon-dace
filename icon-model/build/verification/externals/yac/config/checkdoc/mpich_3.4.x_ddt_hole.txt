@@ -1,0 +1,8 @@
+This test checks for a defect found in the 3.4-3.4.3 releases of MPICH built
+with the yaksa datatype engine.
+
+Derived MPI datatypes with a certain structure are not handled correctly.
+
+The bug is tracked here:
+
+<https://github.com/pmodels/mpich/issues/6297>

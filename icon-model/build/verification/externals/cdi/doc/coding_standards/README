@@ -1,0 +1,17 @@
+All CDI C files (.h/.c) should obey the formatting shown in
+ref-example.c:
+
+* Only use spaces for indentation, i.e. no tabs.
+* Indent by 2 spaces per level.
+* Indent the braces of blocks following an operator such as for,if,while.
+  (but not those following the function signature).
+* Opening and closing braces should be placed on a line of their own.
+
+To ensure the corresponding settings are automatically in place, in case
+you are using
+
+* Emacs: use the appended local variables or set your Emacs environment
+  accordingly.
+
+* vi: ?
+

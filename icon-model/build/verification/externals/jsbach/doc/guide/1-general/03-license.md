@@ -1,0 +1,6 @@
+---
+title: License
+---
+
+{!LICENSE.md!}
+

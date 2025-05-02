@@ -1,0 +1,4 @@
+src/ocean/math/mo_ocean_solve_transfer_trivial.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/ocean/math/mo_ocean_solve_transfer_trivial.f90
+src/ocean/math/mo_ocean_solve_transfer_trivial.pp-fpp.o src/ocean/math/mo_ocean_solve_transfer_trivial.pp-fpp.f90.d: src/ocean/math/mo_ocean_solve_transfer_trivial.pp-fpp.f90
+mod/mo_ocean_solve_trivial_transfer.mod.proxy: src/ocean/math/mo_ocean_solve_transfer_trivial.pp-fpp.o
+src/ocean/math/mo_ocean_solve_transfer_trivial.pp-fpp.o src/ocean/math/mo_ocean_solve_transfer_trivial.pp-fpp.o: mod/mo_ocean_solve_transfer.mod.proxy mod/mo_kind.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_run_config.mod.proxy mod/mo_communication.mod.proxy mod/mo_ocean_solve_aux.mod.proxy mod/mo_mpi.mod.proxy mod/mo_timer.mod.proxy mod/mo_model_domain.mod.proxy

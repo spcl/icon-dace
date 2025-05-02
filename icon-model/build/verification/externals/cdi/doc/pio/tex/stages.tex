@@ -1,0 +1,88 @@
+With the concept of I/O stages in the model program flow {\pio} meets two of the 
+main requirements for asynchronous I/O with the {\CDI}: The consistency of the 
+resources on {\tt MPI} processes in different groups and the minimization of the 
+communication. The program flow is divided in three stages:
+\smallskip
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\tt STAGE\_DEFINITION \ } 
+\item[{\htmlref{\tt STAGE\_DEFINITION}{STAGEDEFINITION}}]
+The {\CDI} resources have to be defined.
+\item[{\htmlref{\tt STAGE\_TIMELOOP}{STAGETIMELOOP}}]
+Data can be moved from the model to the collecting I/O server.
+\item[{\htmlref{\tt STAGE\_CLEANUP}{STAGECLEANUP}}]
+The {\CDI} resources can be cleaned up.
+\end{deflist}
+\end{minipage}
+\bigskip
+
+A listing of an example program built up of control (\ref{control}) and 
+model run (\ref{model}) in chapter \nameref{modules} clearifies the program flow.
+
+\section{Define {\CDI} resources: {\tt STAGE\_DEFINITION}}
+\index{STAGEDEFINITION@{\tt STAGE\_DEFINITION}}
+\label{STAGEDEFINITION}
+{\tt STAGE\_DEFINITION} is the default stage and starts with a call to 
+{\htmlref{pioInit}{pioInit}}. During this stage, the {\CDI} resources have to 
+be defined. Trying to write data with {\CDI} {\tt streamWriteVar} will lead to an 
+error and abort the program. The stage is left by a call to 
+{\htmlref{pioEndDef}{pioEndDef}}. After leaving, any call to a {\CDI} 
+subprogramm XXX{\tt def}YYY will lead to an error and abort the program. 
+
+\section{Writing in parallel: {\tt STAGE\_TIMELOOP}}
+\index{STAGETIMELOOP@{\tt STAGE\_TIMELOOP}}
+\label{STAGETIMELOOP}
+{\tt STAGE\_TIMELOOP} starts with a call to {\htmlref{pioEndDef}{pioEndDef}}. 
+Invocations to {\CDI} {\tt streamClose},\\
+ {\tt streamOpenWrite}, 
+{\tt streamDefVlist} and {\tt streamWriteVar} effect the local {\CDI} resources 
+but not the local file system. The 
+calls are encoded and copied to a {\tt MPI} window buffer. 
+You can find a flowchart of one timestep in figure~\ref{timestep}. 
+{\tt streamClose}, {\tt streamOpenWrite} and {\tt streamDefVlist} have 
+to be called 
+\begin{itemize}
+\item only for an already defined stream/vlist combination,
+\item in the suggested order, 
+\item at most once for each stream during one timestep and 
+\item before any call to {\tt streamWriteVar} in that timestep. 
+\end{itemize}
+% todo stream calls collective?
+All four {\CDI} stream calls require that the model root process participates. 
+Disregards to this rules will lead to an error and abort the program. The 
+implication also holds for attempts to define, change or delete {\CDI} resources 
+during {\tt STAGE\_TIMELOOP}. Therefor it is necessary to switch stages before 
+cleaning up the resources. A call to 
+{\htmlref{pioEndTimestepping}{pioEndTimestepping}} closes 
+{\tt STAGE\_TIMELOOP}. 
+
+\section{Cleanup {\CDI} resources: {\tt STAGE\_CLEANUP}}
+\index{STAGECLEANUP@{\tt STAGE\_CLEANUP}}
+\label{STAGECLEANUP}
+{\tt STAGE\_CLEANUP} is launched by invoking 
+{\htmlref{pioEndTimestepping}{pioEndTimestepping}}. In this stage, the {\CDI}
+resources can be cleaned up. Trying to write data with {\CDI} 
+{\tt streamWriteVar} will now lead to an error and abort the program. 
+
+\section{The namespace object}
+\index{namespace}
+\label{namespace}
+For some models the concept of stages is to narrow. In order to meet this 
+requirement we introduce namespaces. A namespace 
+\begin{itemize}
+\item has an identifier,
+\item is mapped to a {\CDI} resource array,
+\item indicates, if the model processes write locally or remote,
+\item has an I/O stage and
+\item is the active namespace or not.
+\end{itemize}
+A call to {\htmlref{pioInit}{pioInit}} initializes the namespace objects with two 
+of the arguments given by the model processes, the number of namespaces to be 
+used and an array 
+indicating if they obtain local or remote I/O. Invoking 
+{\htmlref{pioNamespaceSetActive}{pioNamespaceSetActive}} switches the namespace 
+so that subsequent {\CDI} calls operate on the resource array mapped to the 
+chosen namespace. The namespaces are destroyed by 
+{\htmlref{pioFinalize}{pioFinalize}}. If the model uses the {\CDI} serially, 
+exactly one namespace supporting local writing is a matter of course. To save 
+overhead, it is preferable to work with one namespace.

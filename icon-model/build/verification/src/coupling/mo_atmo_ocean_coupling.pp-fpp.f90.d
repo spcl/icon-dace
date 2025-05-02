@@ -1,0 +1,4 @@
+src/coupling/mo_atmo_ocean_coupling.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/coupling/mo_atmo_ocean_coupling.f90
+src/coupling/mo_atmo_ocean_coupling.pp-fpp.o src/coupling/mo_atmo_ocean_coupling.pp-fpp.f90.d: src/coupling/mo_atmo_ocean_coupling.pp-fpp.f90
+mod/mo_atmo_ocean_coupling.mod.proxy: src/coupling/mo_atmo_ocean_coupling.pp-fpp.o
+src/coupling/mo_atmo_ocean_coupling.pp-fpp.o src/coupling/mo_atmo_ocean_coupling.pp-fpp.o: mod/mo_impl_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_mpi.mod.proxy mod/mo_run_config.mod.proxy mod/mo_ext_data_types.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_util_dbg_prnt.mod.proxy mod/mo_coupling_utils.mod.proxy mod/mo_model_domain.mod.proxy

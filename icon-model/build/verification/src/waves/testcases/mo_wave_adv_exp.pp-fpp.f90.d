@@ -1,0 +1,4 @@
+src/waves/testcases/mo_wave_adv_exp.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/waves/testcases/mo_wave_adv_exp.f90
+src/waves/testcases/mo_wave_adv_exp.pp-fpp.o src/waves/testcases/mo_wave_adv_exp.pp-fpp.f90.d: src/waves/testcases/mo_wave_adv_exp.pp-fpp.f90
+mod/mo_wave_adv_exp.mod.proxy: src/waves/testcases/mo_wave_adv_exp.pp-fpp.o
+src/waves/testcases/mo_wave_adv_exp.pp-fpp.o src/waves/testcases/mo_wave_adv_exp.pp-fpp.o: mod/mo_kind.mod.proxy mod/mo_wave_forcing_types.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_wave_config.mod.proxy

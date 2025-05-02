@@ -1,0 +1,4 @@
+src/parallel_infrastructure/mo_communication_factory.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/parallel_infrastructure/mo_communication_factory.f90 /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/icon_definitions.inc
+src/parallel_infrastructure/mo_communication_factory.pp-fpp.o src/parallel_infrastructure/mo_communication_factory.pp-fpp.f90.d: src/parallel_infrastructure/mo_communication_factory.pp-fpp.f90
+mod/mo_communication_factory.mod.proxy: src/parallel_infrastructure/mo_communication_factory.pp-fpp.o
+src/parallel_infrastructure/mo_communication_factory.pp-fpp.o src/parallel_infrastructure/mo_communication_factory.pp-fpp.o: mod/mo_communication_types.mod.proxy mod/mo_decomposition_tools.mod.proxy mod/mo_communication_orig.mod.proxy mod/mo_parallel_config.mod.proxy

@@ -1,0 +1,4 @@
+src/io/shared/mo_read_netcdf_distributed.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/io/shared/mo_read_netcdf_distributed.f90 /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc
+src/io/shared/mo_read_netcdf_distributed.pp-fpp.o src/io/shared/mo_read_netcdf_distributed.pp-fpp.f90.d: src/io/shared/mo_read_netcdf_distributed.pp-fpp.f90
+mod/mo_read_netcdf_distributed.mod.proxy: src/io/shared/mo_read_netcdf_distributed.pp-fpp.o
+src/io/shared/mo_read_netcdf_distributed.pp-fpp.o src/io/shared/mo_read_netcdf_distributed.pp-fpp.o: mod/mo_read_netcdf_types.mod.proxy mod/mo_mpi.mod.proxy mod/mo_decomposition_tools.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_netcdf_errhandler.mod.proxy mod/mo_communication.mod.proxy mod/mo_netcdf.mod.proxy mod/ppm_extents.mod.proxy mod/mo_communication_factory.mod.proxy mod/mo_kind.mod.proxy

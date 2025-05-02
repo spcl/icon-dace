@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE modes SYSTEM "modes.dtd">
+
+<modes>
+  <aerosol id="insol_ait">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">0.01E-6</d_gn>
+    <sigma_g type="real">1.7</sigma_g>
+    <condensation type="int">0</condensation>
+    <icoag type="int">0</icoag>
+  </aerosol>
+  <aerosol id="sol_acc">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">0.2E-6</d_gn>
+    <sigma_g type="real">2.0</sigma_g>
+    <condensation type="int">0</condensation>
+    <icoag type="int">0</icoag>
+  </aerosol>
+  <aerosol id="insol_acc">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">6.445E-7</d_gn>
+    <sigma_g type="real">1.700E+0</sigma_g>
+    <condensation type="int">0</condensation>
+    <icoag type="int">0</icoag>
+  </aerosol>
+  <aerosol id="sol_coa">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">2.0E-6</d_gn>
+    <sigma_g type="real">2.2</sigma_g>
+    <condensation type="int">0</condensation>
+    <icoag type="int">0</icoag>
+  </aerosol>
+  <aerosol id="insol_coa">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">2.0E-6</d_gn>
+    <sigma_g type="real">2.2</sigma_g>
+    <condensation type="int">0</condensation>
+    <icoag type="int">0</icoag>
+  </aerosol>
+</modes>

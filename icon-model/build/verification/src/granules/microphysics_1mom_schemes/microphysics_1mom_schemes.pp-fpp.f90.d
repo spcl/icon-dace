@@ -1,0 +1,4 @@
+src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.f90
+src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.pp-fpp.o src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.pp-fpp.f90.d: src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.pp-fpp.f90
+mod/microphysics_1mom_schemes.mod.proxy: src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.pp-fpp.o
+src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.pp-fpp.o src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.pp-fpp.o: mod/gscp_cloudice.mod.proxy mod/gscp_ice.mod.proxy mod/gscp_kessler.mod.proxy mod/gscp_graupel.mod.proxy mod/gscp_data.mod.proxy

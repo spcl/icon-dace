@@ -1,0 +1,28 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+start_date: 2000-01-01T00:00:00
+end_date: 2000-01-01T00:00:12
+timestep_unit: second
+coupling:
+  - src_component: main_comp
+    src_grid: source_grid
+    tgt_component: main_comp
+    tgt_grid: target_grid
+    coupling_period: 6
+    time_reduction: accumulate
+    interpolation:
+      - nnn:
+          n: 1
+    field: field_a
+  - src_component: main_comp
+    src_grid: source_grid
+    tgt_component: main_comp
+    tgt_grid: target_grid
+    coupling_period: 6
+    time_reduction: none
+    interpolation:
+      - nnn:
+          n: 1
+    field: field_b

@@ -1,0 +1,17 @@
+.idea*
+.vscode/*
+!.vscode/settings.json
+*pycache*
+*.swp
+*.pdf
+*.png
+*.log
+*.nc
+.coverage
+coverage.xml
+
+# output from unittest
+test_stats.csv
+test_stats_csv.csv
+test_stats_csv.dat
+random_tolerance.csv

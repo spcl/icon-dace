@@ -1,0 +1,2 @@
+Your system failed a test that simple RMA operations give the expected
+results. Unfortunately there's a number of reasons for which this can fail.

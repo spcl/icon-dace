@@ -1,0 +1,332 @@
+
+ln -sf ${INDIR}/${EXP}/icon_grid_0011_R02B03_R.nc iconR2B03-grid.nc
+ln -sf ${INDIR}/${EXP}/icon_grid_0012_R02B04_G.nc iconR2B04-grid.nc
+ln -sf ${INDIR}/${EXP}/icon_extpar_0012_R02B04_G_20131001.nc extpar_iconR2B04-grid.nc
+ln -sf ${INDIR}/${EXP}/uc1_ei_t255_nc_remap_rev832_0012_R02B04_2004010100.nc ifs2icon_R2B04_DOM01.nc
+
+ln -sf ${ARTFOLDER}/runctrl_examples/init_ctrl/mozart_coord.nc ${OUTDIR}/mozart_coord.nc
+ln -sf ${ARTFOLDER}/runctrl_examples/init_ctrl/Linoz2004Br.dat ${OUTDIR}/Linoz2004Br.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/init_ctrl/Simnoy2002.dat ${OUTDIR}/Simnoy2002.dat
+
+ln -sf $ICONFOLDER/data/rrtmg_lw.nc rrtmg_lw.nc
+ln -sf $ICONFOLDER/data/ECHAM6_CldOptProps.nc ECHAM6_CldOptProps.nc
+
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_scat-aer.dat      ${OUTDIR}/FJX_scat-aer.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_j2j.dat           ${OUTDIR}/FJX_j2j.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_scat-cld.dat      ${OUTDIR}/FJX_scat-cld.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_scat-ssa.dat      ${OUTDIR}/FJX_scat-ssa.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_scat-UMa.dat      ${OUTDIR}/FJX_scat-UMa.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_spec_extended.dat ${OUTDIR}/FJX_spec_extended.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_spec.dat          ${OUTDIR}/FJX_spec.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/atmos_std.dat         ${OUTDIR}/atmos_std.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/atmos_h2och4.dat      ${OUTDIR}/atmos_h2och4.dat
+
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_j2j_extended.dat          ${OUTDIR}/FJX_j2j_extended.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_spec_extended.dat ${OUTDIR}/FJX_spec_extended.dat
+ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_spec_extended_lyman.dat ${OUTDIR}/FJX_spec_extended_lyman.dat
+
+
+# this if condition is necessary because otherwise
+# a new link in ${INDIR}/${EXP}/emiss_minimal is generated
+# linking to itself
+if [ ! -L ${OUTDIR}/emissions ]; then
+ln -sd ${INDIR}/${EXP}/emiss_minimal       ${OUTDIR}/emissions
+fi
+
+if [ ! -L ${OUTDIR}/PFT ]; then
+ln -sd ${INDIR}/${EXP}                     ${OUTDIR}/PFT
+fi
+
+if [ ! -L ${OUTDIR}/datasets ]; then
+ln -sd ${INDIR}/${EXP}/datasets              ${OUTDIR}/datasets
+fi
+
+if [ ! -L ${OUTDIR}/DMS ]; then
+# ln -sd does not work with this path so just copy it for the moment
+ln -sd ${INDIR}/${EXP}  ${OUTDIR}/DMS
+fi
+
+
+
+# the namelist filename
+atmo_namelist=NAMELIST_${EXP}
+#
+#-----------------------------------------------------------------------------
+# global timing
+ndays_restart=60
+dt_restart=`expr ${ndays_restart} \* 86400`
+#
+#-----------------------------------------------------------------------------
+# model timing
+STARTDATE="2004-01-01T00:00:00Z"
+dtime=360  # 360 sec for R2B6, 120 sec for R3B7
+nsteps=10
+LEADTIME="PT1H"
+
+((dt_checkpoint= 10 * 3600 * 24 ))
+checkpoint_interval="P10D"
+#
+#-----------------------------------------------------------------------------
+# model parameters
+model_equations=3             # equation system
+#                     1=hydrost. atm. T
+#                     1=hydrost. atm. theta dp
+#                     3=non-hydrost. atm.,
+#                     0=shallow water model
+#                    -1=hydrost. ocean
+#-----------------------------------------------------------------------------
+# the grid parameters
+atmo_dyn_grids="iconR2B04-grid.nc"
+atmo_rad_grids="iconR2B03-grid.nc"
+#-----------------------------------------------------------------------------
+
+
+# create ICON master namelist
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+
+
+cat > icon_master.namelist << EOF
+&master_nml
+ lRestart               = .false.
+/
+&master_time_control_nml
+ experimentStartDate = "$STARTDATE"
+ forecastLeadTime = "$LEADTIME"
+ checkpointTimeIntval = "$checkpoint_interval"
+/
+&master_model_nml
+  model_type=1
+  model_name="ATMO"
+  model_namelist_filename="$atmo_namelist"
+  model_min_rank=1
+  model_max_rank=65536
+  model_inc_rank=1
+/
+&time_nml
+ ini_datetime_string = "$STARTDATE"
+ dt_restart          = $dt_restart
+/
+EOF
+
+#-----------------------------------------------------------------------------
+#
+
+#-----------------------------------------------------------------------------
+#
+# write ICON namelist parameters
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+#
+# ------------------------
+# reconstrcuct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+
+
+# ------------------------
+
+cat > ${atmo_namelist} << EOF
+&parallel_nml
+ nproma         = 8  ! optimal setting 8 for CRAY; use 16 or 24 for IBM
+ p_test_run     = .false.
+ l_test_openmp  = .false.
+ l_log_checks   = .false.
+ num_io_procs   = 1  ! up to one PE per output stream is possible
+ iorder_sendrecv = 3  ! best value for CRAY (slightly faster than option 1)
+/
+&grid_nml
+ dynamics_grid_filename  = ${dynamics_grid_filename}
+ dynamics_parent_grid_id = 0,1
+!lredgrid_phys           = .false.
+ radiation_grid_filename = ${radiation_grid_filename}
+ lredgrid_phys           = .true.
+/
+&initicon_nml
+ init_mode   = 2           ! operation mode 2: IFS
+ zpbl1       = 500. 
+ zpbl2       = 1000. 
+/
+&run_nml
+ num_lev        = 90
+ lvert_nest     = .true.       ! use vertical nesting if a nest is active
+ nsteps         = ${nsteps}    ! 50 ! 1200 ! 7200 !
+ dtime          = ${dtime}     ! timestep in seconds
+ ldynamics      = .TRUE.       ! dynamics
+ ltransport     = .true.
+ iforcing       = 3            ! NWP forcing
+ ltestcase      = .false.      ! false: run with real data
+ msg_level      = 7            ! print maximum wind speeds every 5 time steps
+ ltimer         = .false.      ! set .TRUE. for timer output
+ timers_level   = 10           ! can be increased up to 10 for detailed timer output
+ output         = "nml"
+ lart           = .true.
+/
+&nwp_phy_nml
+ inwp_gscp       = 1
+ inwp_convection = 1
+ inwp_radiation  = 1
+ inwp_cldcover   = 1
+ inwp_turb       = 1
+ inwp_satad      = 1
+ inwp_sso        = 1
+ inwp_gwd        = 1
+ inwp_surface    = 1
+ icapdcycl       = 3 ! apply CAPE modification to improve diurnalcycle over tropical land (optimizes NWP scores)
+ latm_above_top  = .false., .true.  ! the second entry refers to the nested domain (if present)
+ efdt_min_raylfric = 7200.
+ itype_z0         = 2
+ icpl_aero_conv   = 1
+ icpl_aero_gscp   = 1
+ ! resolution-dependent settings - please choose the appropriate one
+ dt_rad    = 2160.
+ dt_conv   = 720.
+ dt_sso    = 1440.
+ dt_gwd    = 1440.
+/
+&nwp_tuning_nml
+ tune_zceff_min = 0.075 ! ** default value to be used for R3B7; use 0.05 for R2B6 in order to get similar temperature biases in upper troposphere **
+ itune_albedo   = 1     ! somewhat reduced albedo (w.r.t. MODIS data) over Sahara in order to reduce cold bias
+/
+&turbdiff_nml
+ tkhmin  = 0.75  ! new default since rev. 16527
+ tkmmin  = 0.75  !           " 
+ pat_len = 100.
+ c_diff  = 0.2
+ ltkesso = .true.
+ frcsmot = 0.2      ! these 2 switches together apply vertical smoothing of the TKE source terms
+ imode_frcsmot = 2  ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+ ! use horizontal shear production terms with 1/SQRT(Ri) scaling to prevent unwanted side effects:
+ itype_sher = 3    
+ ltkeshs    = .true.
+ a_hshr     = 2.0
+/
+&lnd_nml
+ ntiles         = 3      !!! 1 for assimilation cycle and forecast
+ nlev_snow      = 3      !!! 1 for assimilation cycle and forecast
+ lmulti_snow    = .true. !!! .false. for assimilation cycle and forecast
+ itype_heatcond = 2
+ idiag_snowfrac = 2
+ lsnowtile      = .false.  !! later on .true. if GRIB encoding issues are solved
+ lseaice        = .true.
+ llake          = .false.
+ itype_lndtbl   = 3  ! minimizes moist/cold bias in lower tropical troposphere
+ itype_root     = 2
+/
+&radiation_nml
+ irad_o3       = 7
+ irad_aero     = 6
+ albedo_type   = 2 ! Modis albedo
+ vmr_co2       = 390.e-06 ! values representative for 2012
+ vmr_ch4       = 1800.e-09
+ vmr_n2o       = 322.0e-09
+ vmr_o2        = 0.20946
+ vmr_cfc11     = 240.e-12
+ vmr_cfc12     = 532.e-12
+/
+&nonhydrostatic_nml
+ iadv_rhotheta  = 2
+ ivctype        = 2
+ itime_scheme   = 4
+ exner_expol    = 0.333
+ vwind_offctr   = 0.2
+ damp_height    = 50000.
+ rayleigh_coeff = 0.10
+ divdamp_order  = 24    ! for data assimilation runs, '2' provides extra-strong filtering of gravity waves 
+ divdamp_type   = 32    !!! optional: 2 for assimilation cycle if very strong gravity-wave filtering is desired
+ divdamp_fac    = 0.004
+ igradp_method  = 3
+ l_zdiffu_t     = .true.
+ thslp_zdiffu   = 0.02
+ thhgtd_zdiffu  = 125.
+ htop_moist_proc= 22500.
+ hbot_qvsubstep = 22500. ! use 19000. with R3B7
+/
+&sleve_nml
+ min_lay_thckn   = 20.
+ max_lay_thckn   = 400.   ! maximum layer thickness below htop_thcknlimit
+ htop_thcknlimit = 14000. ! this implies that the upcoming COSMO-EU nest will have 60 levels
+ top_height      = 75000.
+ stretch_fac     = 0.9
+ decay_scale_1   = 4000.
+ decay_scale_2   = 2500.
+ decay_exp       = 1.2
+ flat_height     = 16000.
+/
+&dynamics_nml
+ iequations     = 3
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .TRUE.
+/
+&transport_nml
+!                qv, qc, qi, qr, qs
+ itype_vlimit  = 1,1,1,1,1
+ ivadv_tracer = 3, 3, 3, 3, 3
+ itype_hlimit = 3, 4, 4, 4 , 4
+ ihadv_tracer = 52, 2,2,2,2
+ iadv_tke      = 0
+/
+&diffusion_nml
+ hdiff_order      = 5
+ itype_vn_diffu   = 1
+ itype_t_diffu    = 2
+ hdiff_efdt_ratio = 24.0
+ hdiff_smag_fac   = 0.025
+ lhdiff_vn        = .TRUE.
+ lhdiff_temp      = .TRUE.
+/
+&interpol_nml
+ nudge_zone_width  = 8
+ lsq_high_ord      = 3
+ l_intp_c2l        = .true.
+ l_mono_c2l        = .true.
+ support_baryctr_intp = .false.
+/
+&extpar_nml
+ itopo          = 1
+ n_iter_smooth_topo = 1
+ heightdiff_threshold = 3000.
+/
+&io_nml
+ itype_pres_msl = 4  ! IFS method with bug fix for self-consistency between SLP and geopotential
+ itype_rh       = 1  ! RH w.r.t. water
+/
+&output_nml
+ filetype                     =  ${FILETYPE}         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          =  -1                  ! write all domains
+ output_bounds                =  0., 864000., 360. ! start, end, increment
+ steps_per_file               = 1
+ include_last                 =  .TRUE.
+ steps_per_file_inclfirst     = .FALSE.
+ output_filename              = 'icon-art-${EXP}-chem'                ! file name base
+ ml_varlist                   = 'temp','pres','group:ART_CHEMISTRY'
+ output_grid                  =  .TRUE.
+ remap                        = 1
+ reg_lon_def                  = -180.,0.5,180.
+ reg_lat_def                  = -90.,0.5,90.
+/
+&art_nml
+ lart_diag_out   = .TRUE.
+ lart_aerosol    = .FALSE.
+ lart_chem       = .TRUE.
+ lart_chemtracer = .TRUE.
+ cart_emiss_xml_file   = '${ARTFOLDER}/runctrl_examples/emiss_ctrl/emissions_R2B04_fortestsuite.xml'
+ cart_chemtracer_xml   = '${ARTFOLDER}/runctrl_examples/xml_ctrl/tracers_chemtracer_ext_data.xml'
+ cart_input_folder     = '${OUTDIR}'
+ iart_init_gas         = 4
+ cart_cheminit_coord='${ARTFOLDER}/runctrl_examples/init_ctrl/emac_T42L47_coord.nc'
+ cart_cheminit_file = '${INDIR}/${EXP}/ART_EMAC_H2SO4_iconR2B04-grid-2004-01-01-08_0012.nc'
+ cart_cheminit_type = 'EMAC'
+ cart_ext_data_xml = '${ARTFOLDER}/runctrl_examples/xml_ctrl/ext_dataset_minimal.xml'
+/
+EOF
+
+

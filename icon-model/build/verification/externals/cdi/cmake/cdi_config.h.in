@@ -1,0 +1,20 @@
+#ifndef cdi_config_h
+#define cdi_config_h
+
+#define PACKAGE_NAME      "@PROJECT_NAME@"
+
+#define VERSION           "@PROJECT_VERSION@"
+
+#define CDI               1
+
+#define HAVE_LIBGRIB      1
+#define HAVE_LIBCGRIBEX   1
+#define HAVE_LIBEXTRA     1
+#define HAVE_LIBSERVICE   1
+#define HAVE_LIBIEG       1
+
+#define HAVE_NETCDF       @HAVE_NETCDF@
+#define HAVE_NETCDF_NC4   @netCDF_HAS_NC4@
+#define NETCDF_FOUND      @NetCDF_FOUND@
+
+#endif /* cdi_config_h */

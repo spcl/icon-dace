@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "tracers.dtd">
+
+<tracers>
+  <aerosol id="soot" shortName="BCARB">
+    <moment type="int">3</moment>
+    <mode type="char">soot</mode>
+    <label type="char">soot</label>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">1300.0</rho>
+    <aeroemiss type="char">biomass_burn</aeroemiss>
+    <scale_factor type="real">1.0E-9</scale_factor>
+    <unit type="char">kg kg-1</unit>
+    <transport type="char">hadv52aero</transport>
+    <lfeedback type="int">1</lfeedback>
+    <initc type="char">file</initc>
+    <productDefinitionTemplate type="int">57</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">2</parameterNumber>
+    <bitsPerValue type="int">16</bitsPerValue>
+    <constituentType type="int">62009</constituentType>
+    <typeOfDistributionFunction type="int">7</typeOfDistributionFunction>
+    <numberOfModeOfDistribution type="int">1</numberOfModeOfDistribution>
+    <modeNumber type="int">1</modeNumber>
+    <numberOfDistributionFunctionParameters type="int">2</numberOfDistributionFunctionParameters>
+  </aerosol>
+  <aerosol id="soot0" shortName="BCARB0">
+    <moment type="int">0</moment>
+    <mode type="char">soot</mode>
+    <label type="char">soot0</label>
+    <unit type="char">kg-1</unit>
+    <transport type="char">hadv52aero</transport>
+    <lfeedback type="int">1</lfeedback>
+    <initc type="char">file</initc>
+    <productDefinitionTemplate type="int">57</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">60</parameterNumber>
+    <bitsPerValue type="int">16</bitsPerValue>
+    <constituentType type="int">62009</constituentType>
+    <typeOfDistributionFunction type="int">7</typeOfDistributionFunction>
+    <numberOfModeOfDistribution type="int">1</numberOfModeOfDistribution>
+    <modeNumber type="int">1</modeNumber>
+    <numberOfDistributionFunctionParameters type="int">2</numberOfDistributionFunctionParameters>
+  </aerosol>
+</tracers>

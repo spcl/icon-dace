@@ -1,0 +1,36 @@
+Information file for ICON-ART Testsuite (Version 0.2)
+Tested by                        ali.hoshyaripour
+Date:                            20231116
+----------------------------
+--- Library Information  ---
+----------------------------
+Using compiler version:          
+----------------------------
+--- Checkout Information ---
+----------------------------
+Config for the icon_branch:      icon-kit/icon-kit-clean_opso
+Config for the art branch:       clean_opso
+----------------------------
+--- I/O Information      ---
+----------------------------
+Using input folder:              /../testcases/
+Writing output to:               /TESTSUITE_OUTPUT
+Filetype (2: GRIB2 / 4: NetCDF): 4
+----------------------------
+--- Testing Information  ---
+----------------------------
+** base_script ** | ** experiment_name **
+-----------------------------------------
+- exp.testsuite.nwp_lifetime_base  |  NWP_LIFETIME -
+- exp.testsuite.nwp_oh_chemistry_base  |  NWP_OH_CHEMISTRY -
+- exp.testsuite.nwp_gasphase_base  |  NWP_GASPHASE -
+- exp.testsuite.nwp_wwoART_base  |  NWP_LIFETIME_lart -
+- exp.testsuite.allaero_norad_base  |  ALLERO_NORAD -
+- exp.testsuite.volaero_rad_base  |  VOLAERO_RAD -
+- exp.testsuite.dust_rad_base  |  DUST_RAD -
+---------------------------------------------------
+------END OF INFORMATION / STARTING TESTSUITE------
+---------------------------------------------------
+-------------------------------------------------
+---  All specified runs performed - exiting   ---
+-------------------------------------------------

@@ -1,0 +1,4 @@
+src/shared/mo_time_management.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/shared/mo_time_management.f90
+src/shared/mo_time_management.pp-fpp.o src/shared/mo_time_management.pp-fpp.f90.d: src/shared/mo_time_management.pp-fpp.f90
+mod/mo_time_management.mod.proxy: src/shared/mo_time_management.pp-fpp.o
+src/shared/mo_time_management.pp-fpp.o src/shared/mo_time_management.pp-fpp.o: mod/mo_grid_config.mod.proxy mod/mo_restart_nml_and_att.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_nonhydrostatic_config.mod.proxy mod/mo_master_control.mod.proxy mod/mo_initicon_config.mod.proxy mod/mo_io_config.mod.proxy mod/mo_time_config.mod.proxy mod/mo_master_config.mod.proxy mod/mo_atm_phy_nwp_config.mod.proxy mod/mo_key_value_store.mod.proxy mod/mo_run_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_impl_constants.mod.proxy

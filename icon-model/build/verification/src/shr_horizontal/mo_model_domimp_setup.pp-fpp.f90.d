@@ -1,0 +1,4 @@
+src/shr_horizontal/mo_model_domimp_setup.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/shr_horizontal/mo_model_domimp_setup.f90 /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc
+src/shr_horizontal/mo_model_domimp_setup.pp-fpp.o src/shr_horizontal/mo_model_domimp_setup.pp-fpp.f90.d: src/shr_horizontal/mo_model_domimp_setup.pp-fpp.f90
+mod/mo_model_domimp_setup.mod.proxy: src/shr_horizontal/mo_model_domimp_setup.pp-fpp.o
+src/shr_horizontal/mo_model_domimp_setup.pp-fpp.o src/shr_horizontal/mo_model_domimp_setup.pp-fpp.o: mod/mo_impl_constants.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_sync.mod.proxy mod/mo_grid_subset.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_impl_constants_grf.mod.proxy mod/mo_master_control.mod.proxy mod/mo_run_config.mod.proxy

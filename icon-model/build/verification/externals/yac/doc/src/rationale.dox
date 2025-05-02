@@ -1,0 +1,37 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+/*! \page rationale Rationale
+
+<p>\"A complete rewrite of legacy science software, with a specific
+focus on clarity, can prove useful. It uncovers bugs, provide a
+definitive statement of the underlying algorithm, lets scientists
+easily pose and answer new research questions, makes it easier to
+develop new visualizations and other interfaces, and makes the code
+considerably more accessible to interested third parties and the
+public.\"</p>
+
+<p>[N. Barnes and D. Jones, 2011: Clear Climate Code: Rewriting Legacy
+Science Software for Clarity. IEEE Software, Nov/Dec 2011, 36 - 42.]</p>
+
+<p>The YAC development started as a pilot study to investigate the
+coupling between unstructured meshes which gradually turned into a mature
+fully parallelised coupling software. Rather than implementing all
+required functionality directly into an existing coupler like OASIS4
+we decided to ground our effort on a light weight software
+infrastructure. YAC2 is a redesign of YAC1. All interpolation methods
+available in YAC1 are supported with YAC2. In contrast to YAC1 halo
+information is no longr required. In order to keep the software light
+we still stick to:</p>
+
+<dl>
+        <dt />
+        <dd>
+        Only unstructured and fully regular grids are supported directly.<br />
+        Internally, grid information and exchange fields are handled as double.<br />
+        Fortran reals are converted to double precision before delivering it to the C world.<br />
+        </dd>
+</dl>
+
+*/

@@ -1,0 +1,341 @@
+#!/bin/ksh
+#=============================================================================
+# 
+# exp.art.trng15.case3.radio
+# 
+# Runscript prepared for the ICON-ART training course 2015
+# ART Case 3: Accidental release of radioactive substances
+#=============================================================================
+
+dir=$(pwd -P)
+basedir=${dir}/../../..
+#
+arch=x86_64-unknown-linux-gnu
+#
+#
+EXP="art.trng15.case3"  # experiment identifier
+# output directory
+EXPDIR=$SCRATCH/TRAINING/2015/${EXP}
+#
+# absolute path to input directory
+INDIR=$SCRATCH/TRAINING/2015/INPUT/CASE3-RADIO
+#
+# absolute path to model binary, including the executable
+MODEL=${basedir}/build/${arch}/bin/icon
+
+# Create output directory and go to this directory
+if [ ! -d $EXPDIR ]; then
+    mkdir -p $EXPDIR
+fi
+#
+cd $EXPDIR
+#
+# Link input files in experiment directory
+ln -sf $INDIR/icon_grid_0007_R02B04_R.nc iconR2B04-grid.nc
+ln -sf $INDIR/icon_grid_0008_R02B05_G.nc iconR2B05-grid.nc
+ln -sf $INDIR/icon_extpar_0008_R02B05_G.nc extpar_iconR2B05-grid.nc
+ln -sf $INDIR/ifs2icon_2012010100_0008_R2B5.nc ifs2icon_R2B05_DOM01.nc
+# Link files needed for physics
+ln -sf ${basedir}/data/ECHAM6_CldOptProps.nc ECHAM6_CldOptProps.nc
+ln -sf ${basedir}/data/rrtmg_lw.nc rrtmg_lw.nc
+#
+# the namelist filename
+atmo_namelist=NAMELIST_${EXP}
+#
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2012-01-01T00:00:00Z"
+#
+#-----------------------------------------------------------------------------
+# model timing
+dtime=360  # 360 sec for R2B6, 120 sec for R3B7
+ndays=5
+nsteps=`expr ${ndays} \* 86400 / ${dtime}`
+
+#
+#-----------------------------------------------------------------------------
+# model parameters
+model_equations=3             # equation system
+#                     1=hydrost. atm. T
+#                     1=hydrost. atm. theta dp
+#                     3=non-hydrost. atm.,
+#                     0=shallow water model
+#                    -1=hydrost. ocean
+#-----------------------------------------------------------------------------
+# the grid parameters
+atmo_dyn_grids="iconR2B05-grid.nc"
+atmo_rad_grids="iconR2B04-grid.nc"
+#-----------------------------------------------------------------------------
+
+
+# create ICON master namelist
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+cat > icon_master.namelist << EOF
+&master_nml
+ lRestart               = .false.
+/
+&master_time_control_nml
+ experimentStartDate = "$start_date"
+/
+&master_model_nml
+  modelType=1
+  modelName="ATMO"
+  modelNamelistFilename="$atmo_namelist"
+  modelMinRank=1
+  modelMaxRank=65536
+  modelIncRank=1
+/
+&time_nml
+ ini_datetime_string = "$start_date"
+/
+EOF
+
+#-----------------------------------------------------------------------------
+#
+
+#-----------------------------------------------------------------------------
+#
+# write ICON namelist parameters
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+#
+# ------------------------
+# reconstrcuct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+
+
+# ------------------------
+
+cat > ${atmo_namelist} << EOF
+&parallel_nml
+ nproma         = 8  ! optimal setting 8 for CRAY; use 16 or 24 for IBM
+ p_test_run     = .false.
+ l_test_openmp  = .false.
+ l_log_checks   = .false.
+ num_io_procs   = 1   ! up to one PE per output stream is possible
+ itype_comm     = 1
+ iorder_sendrecv = 3  ! best value for CRAY (slightly faster than option 1)
+/
+&grid_nml
+ dynamics_grid_filename  = ${dynamics_grid_filename}
+ dynamics_parent_grid_id = 0
+ radiation_grid_filename = ${radiation_grid_filename}
+ lredgrid_phys           = .true.
+/
+&initicon_nml
+ init_mode   = 2           ! operation mode 2: IFS
+ zpbl1       = 500. 
+ zpbl2       = 1000. 
+ l_sst_in    = .true.
+/
+&run_nml
+ num_lev        = 90
+ lvert_nest     = .true.       ! use vertical nesting if a nest is active
+ nsteps         = ${nsteps}    ! 50 ! 1200 ! 7200 !
+ dtime          = ${dtime}     ! timestep in seconds
+ ldynamics      = .TRUE.       ! dynamics
+ ltransport     = .true.
+ iforcing       = 3            ! NWP forcing
+ ltestcase      = .false.      ! false: run with real data
+ msg_level      = 7            ! print maximum wind speeds every 5 time steps
+ ltimer         = .false.      ! set .TRUE. for timer output
+ timers_level   = 1            ! can be increased up to 10 for detailed timer output
+ output         = "nml"
+ lart           = .true.
+/
+&nwp_phy_nml
+ inwp_gscp       = 1
+ inwp_convection = 1
+ inwp_radiation  = 1
+ inwp_cldcover   = 1
+ inwp_turb       = 1
+ inwp_satad      = 1
+ inwp_sso        = 1
+ inwp_gwd        = 1
+ inwp_surface    = 1
+ icapdcycl       = 3 ! apply CAPE modification to improve diurnalcycle over tropical land (optimizes NWP scores)
+ latm_above_top  = .false., .true.  ! the second entry refers to the nested domain (if present)
+ efdt_min_raylfric = 7200.
+ itype_z0         = 2
+ icpl_aero_conv   = 1
+ icpl_aero_gscp   = 1
+ ! resolution-dependent settings - please choose the appropriate one
+ dt_rad    = 2160.
+ dt_conv   = 720.
+ dt_sso    = 1440.
+ dt_gwd    = 1440.
+/
+&nwp_tuning_nml
+ tune_zceff_min = 0.075 ! ** default value to be used for R3B7; use 0.05 for R2B6 in order to get similar temperature biases in upper troposphere **
+ itune_albedo   = 1     ! somewhat reduced albedo (w.r.t. MODIS data) over Sahara in order to reduce cold bias
+/
+&turbdiff_nml
+ tkhmin  = 0.75  ! new default since rev. 16527
+ tkmmin  = 0.75  !           " 
+ pat_len = 100.
+ c_diff  = 0.2
+ rat_sea = 8.5  ! ** new since r20191: 8.5 for R3B7, 8.0 for R2B6 in order to get similar temperature biases in the tropics **
+ ltkesso = .true.
+ frcsmot = 0.2      ! these 2 switches together apply vertical smoothing of the TKE source terms
+ imode_frcsmot = 2  ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+ ! use horizontal shear production terms with 1/SQRT(Ri) scaling to prevent unwanted side effects:
+ itype_sher = 3    
+ ltkeshs    = .true.
+ a_hshr     = 2.0
+/
+&lnd_nml
+ ntiles         = 3      !!! 1 for assimilation cycle and forecast
+ nlev_snow      = 3      !!! 1 for assimilation cycle and forecast
+ lmulti_snow    = .true. !!! .false. for assimilation cycle and forecast
+ itype_heatcond = 2
+ idiag_snowfrac = 2
+ lsnowtile      = .false.  !! later on .true. if GRIB encoding issues are solved
+ lseaice        = .true.
+ llake          = .false.
+ itype_lndtbl   = 3  ! minimizes moist/cold bias in lower tropical troposphere
+ itype_root     = 2
+/
+&radiation_nml
+ irad_o3       = 7
+ irad_aero     = 6
+ albedo_type   = 2 ! Modis albedo
+ vmr_co2       = 390.e-06 ! values representative for 2012
+ vmr_ch4       = 1800.e-09
+ vmr_n2o       = 322.0e-09
+ vmr_o2        = 0.20946
+ vmr_cfc11     = 240.e-12
+ vmr_cfc12     = 532.e-12
+/
+&nonhydrostatic_nml
+ iadv_rhotheta  = 2
+ ivctype        = 2
+ itime_scheme   = 4
+ exner_expol    = 0.333
+ vwind_offctr   = 0.2
+ damp_height    = 50000.
+ rayleigh_coeff = 0.10
+ lhdiff_rcf     = .true.
+ divdamp_order  = 24    ! for data assimilation runs, '2' provides extra-strong filtering of gravity waves 
+ divdamp_type   = 32    !!! optional: 2 for assimilation cycle if very strong gravity-wave filtering is desired
+ divdamp_fac    = 0.004
+ l_open_ubc     = .false.
+ igradp_method  = 3
+ l_zdiffu_t     = .true.
+ thslp_zdiffu   = 0.02
+ thhgtd_zdiffu  = 125.
+ htop_moist_proc= 22500.
+ hbot_qvsubstep = 22500. ! use 19000. with R3B7
+/
+&sleve_nml
+ min_lay_thckn   = 20.
+ max_lay_thckn   = 400.   ! maximum layer thickness below htop_thcknlimit
+ htop_thcknlimit = 14000. ! this implies that the upcoming COSMO-EU nest will have 60 levels
+ top_height      = 75000.
+ stretch_fac     = 0.9
+ decay_scale_1   = 4000.
+ decay_scale_2   = 2500.
+ decay_exp       = 1.2
+ flat_height     = 16000.
+/
+&dynamics_nml
+ iequations     = 3
+ idiv_method    = 1
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .TRUE.
+/
+&transport_nml
+ ctracer_list  = '12345'
+ ivadv_tracer  = 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
+ itype_hlimit  = 3,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
+ ihadv_tracer  = 52,2,2,2,2,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22
+ iadv_tke      = 0
+/
+&diffusion_nml
+ hdiff_order      = 5
+ itype_vn_diffu   = 1
+ itype_t_diffu    = 2
+ hdiff_efdt_ratio = 24.0
+ hdiff_smag_fac   = 0.025
+ lhdiff_vn        = .TRUE.
+ lhdiff_temp      = .TRUE.
+/
+&interpol_nml
+ nudge_zone_width  = 8
+ lsq_high_ord      = 3
+ l_intp_c2l        = .true.
+ l_mono_c2l        = .true.
+/
+&extpar_nml
+ itopo          = 1
+ n_iter_smooth_topo = 1
+ heightdiff_threshold = 3000.
+/
+&io_nml
+ itype_pres_msl = 4  ! IFS method with bug fix for self-consistency between SLP and geopotential
+ itype_rh       = 1  ! RH w.r.t. water
+/
+! OUTPUT: Regular grid, model levels, all domains
+&output_nml
+ filetype                     =  4                        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          =  -1                        ! write all domains
+ output_bounds                =  0., 86400., 3600.  ! start, end, increment
+ steps_per_file               = 1
+ include_last                 =  .TRUE.
+ output_filename              = '${EXP}-remap'                ! file name base
+ ml_varlist                   = 'group:ART_AERO_RADIO'
+ remap                        = 1
+ reg_lon_def                  = -180.,0.5,179.5
+ reg_lat_def                  = 90.,-0.5, -90.
+/
+&art_nml
+ lart_diag_out   = .FALSE.
+ lart_aerosol    = .TRUE.
+ iart_radioact   = 1
+ cart_folder     = '$HOME/Training2015/icon-training-2015/src/ART1.1'
+ cart_radioact_file = '$INDIR/input_file.txt'
+/
+EOF
+
+##
+cp -p $MODEL ./icon.exe
+##
+cat > icon.job <<%---
+#!/bin/ksh
+#-----------------------------------------------------------------------------
+#PBS -q xc_norm_h
+#PBS -l select=6:ompthreads=4
+#PBS -l place=scatter
+#PBS -l walltime=00:60:00
+#PBS -j oe
+# ----------------------------------------------------------------------
+set -x
+
+ export OMP_SCHEDULE="static"
+ export OMP_DYNAMIC="false"
+#export OMP_STACKSIZE=256M
+ export ATP_ENABLED=1
+ export MPICH_RMA_OVER_DMAPP=1
+
+# for PBS change to directory where job was submitted
+# (without this job is started in HOME)
+ if [[ -n \${PBS_O_WORKDIR} ]] ; then
+    cd \${PBS_O_WORKDIR}
+ fi
+
+# run ICON
+ aprun  -n 72 -N 12 -j 2 -d 4 -m 3g icon.exe
+
+%---
+
+# submit the job
+qsub icon.job

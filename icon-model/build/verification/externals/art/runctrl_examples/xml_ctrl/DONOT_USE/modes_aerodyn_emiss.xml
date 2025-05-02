@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE modes SYSTEM "modes.dtd">
+
+<modes>
+  <aerosol id="sol_ait">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">0.01E-6</d_gn>
+    <sigma_g type="real">1.7</sigma_g>
+    <shift2larger type="char">sol_acc</shift2larger>
+    <shift_diam type="real">0.03E-6</shift_diam>
+    <condensation type="int">1</condensation>
+    <icoag type="int">1</icoag>
+  </aerosol>
+  <aerosol id="sol_acc">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">0.2E-6</d_gn>
+    <sigma_g type="real">2.0</sigma_g>
+    <condensation type="int">1</condensation>
+    <icoag type="int">1</icoag>
+  </aerosol>
+  <aerosol id="sol_coa">
+    <kind type="char">2mom</kind>
+    <d_gn type="real">2.0E-6</d_gn>
+    <sigma_g type="real">2.2</sigma_g>
+    <condensation type="int">1</condensation>
+    <icoag type="int">1</icoag>
+  </aerosol>
+</modes>

@@ -1,0 +1,4 @@
+src/ocean/dynamics/mo_ocean_patch_setup.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/ocean/dynamics/mo_ocean_patch_setup.f90
+src/ocean/dynamics/mo_ocean_patch_setup.pp-fpp.o src/ocean/dynamics/mo_ocean_patch_setup.pp-fpp.f90.d: src/ocean/dynamics/mo_ocean_patch_setup.pp-fpp.f90
+mod/mo_ocean_patch_setup.mod.proxy: src/ocean/dynamics/mo_ocean_patch_setup.pp-fpp.o
+src/ocean/dynamics/mo_ocean_patch_setup.pp-fpp.o src/ocean/dynamics/mo_ocean_patch_setup.pp-fpp.o: mod/mo_model_domain.mod.proxy mod/mo_sync.mod.proxy mod/mo_grid_tools.mod.proxy mod/mo_grid_subset.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_dynamics_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_mpi.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_model_domimp_setup.mod.proxy

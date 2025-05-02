@@ -1,0 +1,8 @@
+Since CDI version 2.0.0 access to FDB5 is supported.
+This support has the status experimental, because the error handling is still very limited.
+Furthermore, the user interface currently allows only limited access to the FDB.
+For FDB access a fdb5 and ecCodes library is required.
+FDB5 support is enabled with the configure option:
+
+     --with-fdb5=<fdb5 root directory>
+

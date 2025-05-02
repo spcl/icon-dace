@@ -1,0 +1,4 @@
+src/io/icon_output_model/mo_icon_output_tools.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/io/icon_output_model/mo_icon_output_tools.f90
+src/io/icon_output_model/mo_icon_output_tools.pp-fpp.o src/io/icon_output_model/mo_icon_output_tools.pp-fpp.f90.d: src/io/icon_output_model/mo_icon_output_tools.pp-fpp.f90
+mod/mo_icon_output_tools.mod.proxy: src/io/icon_output_model/mo_icon_output_tools.pp-fpp.o
+src/io/icon_output_model/mo_icon_output_tools.pp-fpp.o src/io/icon_output_model/mo_icon_output_tools.pp-fpp.o: mod/mo_run_config.mod.proxy mod/mo_key_value_store.mod.proxy mod/mo_name_list_output_config.mod.proxy mod/mo_level_selection.mod.proxy mod/mo_time_config.mod.proxy mod/mo_timer.mod.proxy mod/mo_output_event_types.mod.proxy mod/mo_name_list_output_init.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_mpi.mod.proxy mod/mo_restart_nml_and_att.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_name_list_output.mod.proxy

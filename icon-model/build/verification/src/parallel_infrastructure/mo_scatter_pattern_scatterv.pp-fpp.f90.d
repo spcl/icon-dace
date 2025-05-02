@@ -1,0 +1,4 @@
+src/parallel_infrastructure/mo_scatter_pattern_scatterv.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/parallel_infrastructure/mo_scatter_pattern_scatterv.f90
+src/parallel_infrastructure/mo_scatter_pattern_scatterv.pp-fpp.o src/parallel_infrastructure/mo_scatter_pattern_scatterv.pp-fpp.f90.d: src/parallel_infrastructure/mo_scatter_pattern_scatterv.pp-fpp.f90
+mod/mo_scatter_pattern_scatterv.mod.proxy: src/parallel_infrastructure/mo_scatter_pattern_scatterv.pp-fpp.o
+src/parallel_infrastructure/mo_scatter_pattern_scatterv.pp-fpp.o src/parallel_infrastructure/mo_scatter_pattern_scatterv.pp-fpp.o: mod/mo_mpi.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_scatter_pattern_base.mod.proxy mod/mo_parallel_config.mod.proxy

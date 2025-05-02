@@ -1,0 +1,267 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# ----------------------------------------------------------------------
+# path definitions
+# ----------------------------------------------------------------------
+
+make_and_change_to_experiment_dir # function in ../add_run_routines
+
+# Combine START and MODEL if START_MODEL is not already set.
+# START_MODEL is used to ease the execution of a machine that uses a complex 
+# mpirun command with multiple binaries
+START_MODEL="${START_MODEL:=$START $MODEL}"
+
+# set icon_data_poolFolder
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/buildbot_data/nwp"
+
+# base directory for ICON sources, binary and auxilary data:
+ICONDIR="${basedir}" # basedir can be set with create_target_header
+
+# experiment identifier for output files
+EXP="NWP"    # experiment identifier
+
+# root directory for input data
+DATAROOT="${icon_data_poolFolder}/Checksuite_data"
+
+# ----------------------------------------------------------------------
+# copy input data: grids, external parameters
+# ----------------------------------------------------------------------
+
+ln -sf ${DATAROOT}/GRF_R2B13lim/iconR2B13_DOM01.nc .
+
+
+
+
+# ----------------------------------------------------------------------
+# global namelist settings
+# ----------------------------------------------------------------------
+
+# the namelist filename
+atmo_namelist=NAMELIST_${EXP}
+
+# global timing
+start_date="2012-06-20T00:00:00Z"
+ndays_restart=60
+dt_restart=$((${ndays_restart}*86400))
+
+
+
+# the grid parameters
+atmo_dyn_grids="iconR2B13_DOM01.nc" 
+
+
+# ----------------------------------------------------------------------
+# create ICON master namelist
+# ----------------------------------------------------------------------
+
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+cat > icon_master.namelist << EOF
+&master_nml
+ lrestart               = .false.
+/
+&time_nml
+ ini_datetime_string = "$start_date"
+ dt_restart          = $dt_restart
+/
+&master_model_nml
+  model_type=1
+  model_name="ATMO"
+  model_namelist_filename="$atmo_namelist"
+  model_min_rank=1
+  model_max_rank=65536
+  model_inc_rank=1
+/
+EOF
+
+
+# ----------------------------------------------------------------------
+# model namelists
+# ----------------------------------------------------------------------
+
+# reconstrcuct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+# Variables to configure the mpirun command on the RCL
+num_io_procs=0 # 1
+num_restart_procs=0
+num_prefetch_proc=0
+num_io_procs_radar=0
+
+cat > ${atmo_namelist} << EOF
+&parallel_nml
+ nproma                  =  ${nproma}
+ nproma_sub              =  ${nproma_sub} ! loop chunk length for radiation
+ p_test_run              = .false.
+ l_test_openmp           = .true.
+ l_log_checks            = .true.
+ num_io_procs            = ${num_io_procs}
+ num_restart_procs       = ${num_restart_procs}
+ num_prefetch_proc       = ${num_prefetch_proc}
+ num_io_procs_radar      = ${num_io_procs_radar}
+ proc0_shift             = ${proc0_shift}
+/
+&grid_nml
+ dynamics_grid_filename  = ${dynamics_grid_filename}
+ radiation_grid_filename = ' '
+ dynamics_parent_grid_id = 0,1
+ lredgrid_phys           = .false.,.false.
+ lfeedback               = .true.
+ l_limited_area = .true.
+/
+&nh_testcase_nml
+ nh_test_name  = 'mrw_nh'    ! test case identifier
+ u0_mrw       = 20 
+ mount_height_mrw = 5000. ! max. 7750m with 25 m/s
+ mount_half_width = 2000.
+ mount_latctr_mrw_deg = 0.
+ bruntvais_u_mwbr_const = 0.0075 ! 0.018228
+ p_int_mwbr_const = 80000.
+ rh_at_1000hpa  = 0.01
+ qv_max         = 1.e-5
+/
+&output_nml
+ filetype           = 4                    ! output format: 2=GRIB2, 4=NETCDFv2
+ mode               = 1
+ dom                = -1                   ! output for all subdomains
+ output_bounds      = 0., 36000., 1800. ! start, end, increment
+ steps_per_file     = 21
+ include_last       = .TRUE.
+ output_filename    = 'MRW_R2B13_ll'               ! file name base
+ ml_varlist         =     'w','pres','pres_sfc', 'u', 'v', 'temp', 'topography_c','theta_v', 'z_mc','z_ifc'
+! ml_varlist         =     'pres_sfc'
+ remap              = 1
+ reg_lon_def        =  89.,0.005,91.
+ reg_lat_def        = -1.,0.005, 1.
+ output_grid        = .TRUE.
+/
+&run_nml
+ num_lev  = 50
+ lvert_nest = .true.
+ nsteps         = 200
+ dtime          = 3.6
+ ldynamics      = .TRUE.       ! dynamics
+ ltransport     = .false.
+ ntracer        = 0            ! default: 0
+ iforcing       = 3            ! NWP forcing
+ ltestcase      = .true.      ! false: run with real data
+ msg_level      = 7           ! detailed report during integration
+ ltimer         = .true.
+ timers_level   = 10
+ output         = "nml" ! "nml"
+/
+&nwp_phy_nml
+inwp_gscp       = 0
+inwp_convection = 0
+inwp_radiation  = 0
+inwp_cldcover   = 0
+inwp_turb       = 1
+inwp_satad      = 0
+inwp_surface    = 0
+/
+&turbdiff_nml
+pat_len = 100.
+c_diff  = 0.2
+tkhmin  = 0.75
+tkmmin  = 0.75
+lconst_z0 = .true.
+const_z0 = 0.000001
+icldm_tran=-1
+icldm_turb=-1
+lfreeslip=.true.
+/
+&nonhydrostatic_nml
+ iadv_rhotheta = 1
+ ivctype       = 2
+ itime_scheme   = 6
+ ndyn_substeps = 6
+ damp_height  = 27500.
+ rayleigh_coeff = 0.75
+ exner_expol = 0.333
+ vwind_offctr = 0.20
+ igradp_method = 5
+ l_zdiffu_t    = .true.
+ thslp_zdiffu   = 0.05
+ thhgtd_zdiffu  = 125.
+ divdamp_fac   = 0.004
+ divdamp_order = 4
+/
+&sleve_nml
+ min_lay_thckn   = 20.
+ top_height      = 40000.
+ decay_scale_1   = 5500.
+ decay_scale_2   = 3500.
+ decay_exp       = 1.2
+ flat_height     = 19000.
+ stretch_fac     = 0.85
+/
+&dynamics_nml
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .TRUE.
+/
+&transport_nml
+  ctracer_list  = '12345'
+! ivadv_tracer  = 3,3,3,3,3
+! itype_hlimit = 3,4,4,4,4,0
+! ihadv_tracer  = 3,2,2,2,2,0
+ ihadv_tracer = 0,0,0,0,0,0,0
+ ivadv_tracer = 0,0,0,0,0,0,0
+/
+&diffusion_nml
+ hdiff_order      = 5
+ hdiff_efdt_ratio = 25.0 
+ hdiff_smag_fac   = 0.025
+ lhdiff_vn        = .TRUE.
+ lhdiff_temp      = .TRUE.
+ itype_t_diffu    = 1
+ lsmag_3d         = .TRUE.
+ lhdiff_smag_w    = .TRUE.
+/
+&interpol_nml
+ nudge_zone_width  = 8
+ rbf_vec_scale_c =  0.02 
+ rbf_vec_scale_v =  0.05 
+ rbf_vec_scale_e =  0.25 
+ rbf_scale_mode_ll = 1
+/
+&gridref_nml
+ grf_intmethod_ct = 2
+ grf_tracfbk      = 2
+ denom_diffu_v    = 150.
+/
+&extpar_nml
+ itopo          = 0
+ n_iter_smooth_topo = 2
+ heightdiff_threshold = 2000.
+/
+EOF
+
+#
+# configure START_MODEL_function
+#
+ICON_COMPONENT1_VH_procs=$((num_restart_procs + num_io_procs + num_prefetch_proc + num_io_procs_radar))
+
+# ----------------------------------------------------------------------
+# run the model!
+# ----------------------------------------------------------------------
+
+$START_MODEL
+EXIT_STATUS=$?
+
+echo "EXIT_STATUS: $EXIT_STATUS"
+exit $EXIT_STATUS

@@ -1,0 +1,53 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# ================================================================================
+# technical stuff
+basePath=${basedir}
+dataPath="${baseBath}../experiments/"
+# ================================================================================
+function myDiff {
+  ifile=$1
+  varName=$2
+  maskName=$3
+  ofile=`mktemp`
+
+  cdo -s diffv -div -selname,$varName $ifile -selname,$maskName $ifile -div -selname,${varName}_acc $ifile -selname,$maskName $ifile > $ofile
+
+  nDiff=$(wc -l < $ofile)
+
+  if (( $nDiff > 0 )); then
+    cat $ofile;
+  fi
+
+  rm -f $ofile
+  return $nDiff
+}
+
+# ================================================================================
+if [ -a  /sw/share/Modules/init/bash ] ; then
+  source /sw/share/Modules/init/bash
+  module load python
+fi
+# ================================================================================
+# get last experiment logfile
+lastLogFile=$(ls -crt1 LOG.exp.${EXPNAME}.run.*.o | tail -n 1)
+
+# grep timeer
+echo 'import sys
+import numpy as np
+
+data = np.genfromtxt(sys.stdin, delimiter=" ")
+print(1/(data.mean()/(24*3600)))
+' >_mean.py
+
+speed=$(grep -F 'L total' $lastLogFile | rev | cut -d ' ' -f 1 | rev | python _mean.py)
+
+echo "OMIP runs with $speed years per day!"

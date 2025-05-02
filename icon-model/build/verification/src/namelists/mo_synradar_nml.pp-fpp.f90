@@ -1,0 +1,49 @@
+# 1 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/namelists/mo_synradar_nml.f90"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/build/verification//"
+# 1 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/namelists/mo_synradar_nml.f90"
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+! Namelist reading for synthetic radar data on the model grid
+
+MODULE mo_synradar_nml
+
+# 34 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/namelists/mo_synradar_nml.f90"
+
+  IMPLICIT NONE
+  PUBLIC :: read_synradar_namelist
+
+  ! module name
+  CHARACTER(*), PARAMETER :: modname = "mo_synradar_nml"
+  
+CONTAINS
+  !! Read Namelist for I/O.
+  !!
+  !! This subroutine
+  !! - reads the Namelist for I/O
+  !! - sets default values
+  !! - potentially overwrites the defaults by values used in a
+  !!   previous integration (if this is a resumed run)
+  !! - reads the user's (new) specifications
+  !! - stores the Namelist for restart
+  !! - fills the configuration state (partly)
+  !!
+  SUBROUTINE read_synradar_namelist( filename )
+
+    CHARACTER(LEN=*), INTENT(IN)   :: filename
+
+# 152 "/home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/namelists/mo_synradar_nml.f90"
+    
+  END SUBROUTINE read_synradar_namelist
+
+END MODULE mo_synradar_nml

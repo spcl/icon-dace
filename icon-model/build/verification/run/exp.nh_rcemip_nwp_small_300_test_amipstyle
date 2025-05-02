@@ -1,0 +1,318 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+# 
+# Run script for RCEMIP ICON-LEM / NWP experiments. See Wing et al. (2018,
+# Geosci Mod Dev) for details. See also readme_icon-lem-nwp_rcemip.
+# 
+# James Ruppert
+# james.ruppert@mpimet.mpg.de
+# 8 July 2018
+#
+# ... slightly modified by 
+# Nicolas Rochetin
+# nicolas.rochetin@mpimet.mpg.de
+# 30 August 2018
+#=============================================================================
+#
+atmo_dyn_grids=Torus_Triangles_100x116_1000m.nc
+#
+#-----------------------------------------------------------------------------
+# model time step
+modelTimeStep="PT05S"
+radiationTimeStep="PT1M"
+#
+#-----------------------------------------------------------------------------
+# start and end date+time
+ start_date=${start_date:="2008-08-01T00:00:00Z"}
+     end_date=${end_date:="2008-08-01T00:08:00Z"}  # 100 days in full run
+
+grid='100x116_1000m' # 100 km square
+testcase_name='RCEMIP_analytical'
+
+# restart intervals
+# checkpoint_interval="P2Y"
+# restart_interval="P1M"
+checkpoint_interval="P20D" # frequency for writing restart file
+restart_interval="P20D" # stop the simulation at this interval
+
+# output intervals
+ output_interval_2d="PT1H"
+ output_interval_3d="PT1H"
+ file_interval_2d="PT8H"
+ file_interval_3d="PT8H"
+#
+ output_atm_cgrid="no" # 1 file
+ output_atm_2d="yes"   # 1 file 
+ output_atm_3d="yes"   # 1 file
+ output_phy_3d="no"   # 1 file
+#
+# determine the number of io processes
+#
+num_io_procs=0
+
+if [[ "$output_atm_cgrid" == "yes" ]]; then
+  num_io_procs=`expr ${num_io_procs} + 1`
+fi
+if [[ "$output_atm_2d" == "yes" ]]; then
+  num_io_procs=`expr ${num_io_procs} + 1`
+fi
+if [[ "$output_atm_3d" == "yes" ]]; then
+  num_io_procs=`expr ${num_io_procs} + 1`
+fi
+if [[ "$output_phy_3d" == "yes" ]]; then
+  num_io_procs=`expr ${num_io_procs} + 1`
+fi
+
+# namelist files
+atmo_namelist=NAMELIST_${EXPNAME}_atm
+
+#-----------------------------------------------------------------------------
+#
+# write icon namelist parameters
+# ------------------------
+# for a complete list see namelist_overview and namelist_overview.pdf
+#
+cat >> ${atmo_namelist} << EOF
+&parallel_nml
+ nproma            = ${nproma}
+ num_io_procs      = ${num_io_procs}
+ !num_restart_procs = 1
+/
+&grid_nml
+ dynamics_grid_filename = "${atmo_dyn_grids}",
+/
+&run_nml
+ num_lev        = 75,     ! number of full levels of vertical grid
+ modelTimeStep  = "$modelTimeStep"
+ ltestcase      = .TRUE.       ! run testcase
+ ltransport     = .TRUE.
+ ntracer        = 0            ! the model updates this for the microphysics vars
+ iforcing       = 3  ! 3: NWP forcing; 6:inhecham forcing
+ ltimer         = .true.       ! 
+ output         = 'nml'
+ msg_level      = 12           ! detailed report during integration
+ restart_filename = "${EXPNAME}_restart_atm_<rsttime>.nc"
+ activate_sync_timers = .TRUE.
+ profiling_output = 1           ! aggregated: 1; detailed: 2; in files: 3
+/
+&nh_testcase_nml
+ nh_test_name   = 'RCEMIP_analytical'     ! test case identifier
+ ape_sst_case   = 'sst_const'
+ ape_sst_val    = 26.85 ! fixed SST in degree Celsius
+ tpe_temp       = 300.0 ! fixed SST in degree Celsius
+ w_perturb      = 0.1        ! m/s, default=0.05
+ th_perturb     = 0.3        ! K, default=0.2
+ zenithang      = 42.05 ! degrees
+ sol_const      = 551.58
+ albedo_set     = 0.07 ! fixed surface albedo; default is 0.07
+/
+&io_nml                 ! special for NWP?
+ lkeep_in_sync  = .true.
+ lflux_avg      = .FALSE. ! default is true. True = time-ave, False = accumulated.
+/
+&nonhydrostatic_nml
+ ivctype        = 2       ! sleve vertical coordinate
+ damp_height    = 19000.  ! top_height-damp_height should be about 15km
+ rayleigh_type  = 1       ! 1 = Classical (all vars), 2 = w only
+! rayleigh_coeff = 0.25    ! default: 0.05 /s (with rayleigh_type = 2)
+ rayleigh_coeff = 0.003    ! default: 0.05 /s (with rayleigh_type = 2)
+/
+&sleve_nml
+ top_height = 48000.0 ! these settings yield an actual model top of about 34 km
+ min_lay_thckn = 75. ! thickness of lowest model layer
+ max_lay_thckn   = 500.    ! max thickness
+ htop_thcknlimit = 40000.0 ! dont exceed max_lay_thckn below this height
+ stretch_fac     = 1.2     ! values > 1 increase dz near model top
+/
+&dynamics_nml
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .FALSE.
+/
+&nwp_phy_nml
+ inwp_gscp       = 4 ! 4:Seifert microphysics
+ inwp_convection = 0 ! 1:Tiedtke/Bechtold
+ inwp_radiation  = 1 ! 1:RRTM radiation, 3:PSRAD
+ inwp_cldcover   = 1 ! 5: all or nothing
+ inwp_turb       = 1 ! 5: Smagorinsky diffusion (Dipankar et al.)
+ inwp_gwd        = 0 ! gravity wave drag
+ inwp_sso        = 0 ! orographic drag
+ inwp_satad      = 1 ! saturation adjustment  (on/off)
+ inwp_surface    = 0 ! 0: none; 1: TERRA
+ latm_above_top  = .true.
+ dt_conv         = 300. ! Time step of cu param AND cloud cover call [s]
+ dt_rad          = 300. ! check with "$radiationTimeStep" ! ... of radiation call
+/
+&les_nml
+ sst               = 300.0
+ isrfc_type        = 5  ! 2=Fixed flux, 5=fixed SST, 3=fixed bflux
+ expname           = '${EXPNAME}'
+ avg_interval_sec = 3600.
+ sampl_freq_sec   = 300.
+ ldiag_les_out    = .TRUE.
+ km_min           = 0.0
+ min_sfc_wind     = 0.0 ! minimum wind speed (m/s) assumed for flux calculation
+/
+&turbdiff_nml
+ lconst_z0 = .TRUE.  ! horizontally homogeneous roughness length
+ const_z0  = 0.0001  ! roughness length
+/
+&diffusion_nml
+ lhdiff_temp      = .TRUE.
+ lhdiff_vn        = .TRUE.
+ lhdiff_w         = .TRUE.
+ hdiff_order      = 5
+/
+&radiation_nml
+ irad_o3    = 4 ! read in external ozone file
+ izenith    = 5 ! 5: prescribed zenith angle; 6: equinox diurnal cycle
+ irad_aero  = 0 ! switch off aerosols
+ irad_cfc11 = 0 
+ irad_cfc12 = 0
+ irad_co2   = 2
+ irad_ch4   = 2
+ irad_n2o   = 2
+ vmr_co2    =  348.e-06 ! RCEMIP values; modern-day values
+ vmr_ch4    = 1650.e-09
+ vmr_n2o    =  306.e-09
+/
+&extpar_nml
+ itopo          = 0 ! 0: analytical topo; 1: topography/ext. data read from file
+/
+EOF
+#
+#----------------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+add_link_file ${basedir}/data/rrtmg_lw.nc                 rrtmg_lw.nc 
+add_link_file ${basedir}/data/ECHAM6_CldOptProps.nc       ECHAM6_CldOptProps.nc
+add_link_file ${basedir}/data/dmin_wetgrowth_lookup.nc    dmin_wetgrowth_lookup.nc    #for inwp_gscp==4
+
+# boundary conditions
+#
+# range of years for yearly files
+# assume start_date and end_date have the format yyyy-...
+start_year=$(( ${start_date%%-*} - 1 ))
+end_year=$(( ${end_date%%-*} + 1 ))
+#
+# - ozone
+datadir=${basedir}/data/external
+add_link_file ${datadir}/rcemip_analytical_o3_${grid}_nwp.nc            ./o3_icon_DOM01.nc
+# namelist files
+#
+add_required_file ${basedir}/run/${atmo_namelist}                       ./
+
+# dictionary file for output variable names
+#
+dict_file="dict.${EXPNAME}"
+cat dict.iconam.mpim_fuernwp  > ${dict_file}
+add_required_file ${basedir}/run/${dict_file}                           ./
+
+#----------------------------------------------------------------------------------
+#
+# 
+# End of namelist settings, automatic settings below.
+# Model output directory is set below.
+# 
+#----------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+
+# (5) Define the output
+
+# Parameters for all output files
+# -------------------------------
+cat >> ${atmo_namelist} << EOF
+&io_nml
+ output_nml_dict  = "${dict_file}"
+ netcdf_dict      = "${dict_file}"
+ lnetcdf_flt64_output = .TRUE.
+ itype_pres_msl   = 4
+ restart_file_type= 5
+ !restart_write_mode = "joint procs multifile"    !not necessary/useful in default r2b4 setup
+/
+EOF
+
+# Define output files
+# -------------------
+#
+# output_<xyz>=yes : yes --> output files for <xyz>, any other value --> no files for <xyz>
+#
+# 3-dimensional files include 'ps' and 'pfull' to allow the vertical
+# interpolation to pressure levels by cdo ap2pl.
+
+#
+if [[ "$output_atm_cgrid" == "yes" ]]; then
+  #
+  cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_atm_cgrid"
+ filename_format  = "<output_filename>_<levtype_l>"
+ filetype         = 5
+ remap            = 0
+ output_grid      = .TRUE.
+ output_start     = "${start_date}"          ! output_start = output_end
+ output_end       = "${start_date}"          ! --> write once only irrespective of
+ output_interval  = "${output_interval_2d}"  !     the output interval and
+ file_interval    = "${file_interval_2d}"    !     the file interval
+  ml_varlist       = 'clon'   , 'clat' , 'areacella',
+                    'z_ifc'  , 'z_mc'
+/
+EOF
+fi
+
+
+#
+if [[ "$output_atm_3d" == "yes" ]]; then
+  #
+  cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_atm_3d"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ output_grid      = .FALSE.
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${output_interval_2d}"
+ file_interval    = "${file_interval_2d}"
+ include_last     = .FALSE.
+  ml_varlist       = 'ps'      , 'pfull'   , 'zg'      ,
+                    'rho'     , 'ta'      , 'theta_v' ,
+                    'ua'      , 'va'      , 'wa'     ,
+                    'hus'     , 'clw'     , 'cli'     ,
+/
+EOF
+fi
+
+
+#
+if [[ "$output_atm_2d" == "yes" ]]; then
+  #
+  cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_atm_2d"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ output_grid      = .FALSE.
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${output_interval_2d}"
+ file_interval    = "${file_interval_2d}"
+ include_last     = .FALSE.
+ ml_varlist       = 'pres_sfc'      ,
+                    't_g'     ,
+                    'tqv_dia'     , 'tqc_dia'   , 'tqi_dia'   ,
+                    'lhfl_s'     , 'shfl_s'   , 'clct'   ,
+                    'sod_t'     , 'sou_t'   , 'qhfl_s'   ,
+/
+EOF
+fi
+

@@ -1,0 +1,15 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+/**
+ * \page supp_info Supplemental information on YAC internals
+
+Here you can find some supplemental information on various topics related to
+YAC internal stuff.
+
+- \subpage clipping
+- \subpage sphere_part_docu
+- \subpage weight_files
+
+ */

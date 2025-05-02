@@ -1,0 +1,4 @@
+src/ocean/boundary/mo_swr_absorption.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/ocean/boundary/mo_swr_absorption.f90
+src/ocean/boundary/mo_swr_absorption.pp-fpp.o src/ocean/boundary/mo_swr_absorption.pp-fpp.f90.d: src/ocean/boundary/mo_swr_absorption.pp-fpp.f90
+mod/mo_swr_absorption.mod.proxy: src/ocean/boundary/mo_swr_absorption.pp-fpp.o
+src/ocean/boundary/mo_swr_absorption.pp-fpp.o src/ocean/boundary/mo_swr_absorption.pp-fpp.o: mod/mo_ocean_types.mod.proxy mod/mo_dynamics_config.mod.proxy mod/mo_ocean_surface_types.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_sync.mod.proxy mod/mo_kind.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_run_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_ocean_nml.mod.proxy mod/mo_grid_subset.mod.proxy mod/mo_impl_constants.mod.proxy

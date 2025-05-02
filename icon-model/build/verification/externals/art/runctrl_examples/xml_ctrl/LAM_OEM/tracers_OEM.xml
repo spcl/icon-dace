@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "tracers.dtd">
+
+<tracers>
+  <chemtracer id="CH4_A">
+    <transport type="char">hadv52aero</transport>
+    <oem_type type="char">emis</oem_type>
+    <oem_cat type="char">CH4_A,CH4_B,CH4_C,CH4_D,CH4_E,CH4_F1,CH4_F2,CH4_F3,CH4_G,CH4_H,CH4_I,CH4_J,CH4_K,CH4_L</oem_cat>
+    <oem_vp type="char">GNFR_A,GNFR_B,GNFR_C,GNFR_D,GNFR_E,GNFR_F1,GNFR_F2,GNFR_F3,GNFR_G,GNFR_H,GNFR_I,GNFR_J,GNFR_K,GNFR_L</oem_vp>
+    <oem_tp type="char">GNFR_A,GNFR_B,GNFR_C,GNFR_D,GNFR_E,GNFR_F1,GNFR_F2,GNFR_F3,GNFR_G,GNFR_H,GNFR_I,GNFR_J,GNFR_K,GNFR_L</oem_tp>
+    <oem_tscale type="int">1</oem_tscale>
+    <unit type="char">none</unit>
+    <init_mode type="int">0</init_mode>
+    <c_solve type="char">passive</c_solve>
+  </chemtracer>
+  <chemtracer id="CO2_BF">
+    <transport type="char">hadv52aero</transport>
+    <oem_type type="char">emis</oem_type>
+    <oem_cat type="char">co2_bf_A,co2_bf_B,co2_bf_C,co2_bf_D,co2_bf_E,co2_bf_F1,co2_bf_F2,co2_bf_F3,co2_bf_G,co2_bf_H,co2_bf_I,co2_bf_J,co2_bf_K,co2_bf_L</oem_cat>
+    <oem_vp type="char">GNFR_A,GNFR_B,GNFR_C,GNFR_D,GNFR_E,GNFR_F1,GNFR_F2,GNFR_F3,GNFR_G,GNFR_H,GNFR_I,GNFR_J,GNFR_K,GNFR_L</oem_vp>
+    <oem_tp type="char">GNFR_A,GNFR_B,GNFR_C,GNFR_D,GNFR_E,GNFR_F1,GNFR_F2,GNFR_F3,GNFR_G,GNFR_H,GNFR_I,GNFR_J,GNFR_K,GNFR_L</oem_tp>
+    <oem_tscale type="int">1</oem_tscale>
+    <unit type="char">none</unit>
+    <init_mode type="int">0</init_mode>
+    <c_solve type="char">passive</c_solve>
+  </chemtracer>
+  <chemtracer id="CO2_FF">
+    <transport type="char">hadv52aero</transport>
+    <oem_type type="char">emis</oem_type>
+    <oem_cat type="char">co2_ff_A,co2_ff_B,co2_ff_C,co2_ff_D,co2_ff_E,co2_ff_F1,co2_ff_F2,co2_ff_F3,co2_ff_G,co2_ff_H,co2_ff_I,co2_ff_J,co2_ff_K,co2_ff_L</oem_cat>
+    <oem_vp type="char">GNFR_A,GNFR_B,GNFR_C,GNFR_D,GNFR_E,GNFR_F1,GNFR_F2,GNFR_F3,GNFR_G,GNFR_H,GNFR_I,GNFR_J,GNFR_K,GNFR_L</oem_vp>
+    <oem_tp type="char">GNFR_A,GNFR_B,GNFR_C,GNFR_D,GNFR_E,GNFR_F1,GNFR_F2,GNFR_F3,GNFR_G,GNFR_H,GNFR_I,GNFR_J,GNFR_K,GNFR_L</oem_tp>
+    <oem_tscale type="int">1</oem_tscale>
+    <unit type="char">none</unit>
+    <init_mode type="int">0</init_mode>
+    <c_solve type="char">passive</c_solve>
+  </chemtracer>
+  <chemtracer id="CO_BF">
+    <transport type="char">hadv52aero</transport>
+    <oem_type type="char">emis</oem_type>
+    <oem_cat type="char">co_bf_A,co_bf_B,co_bf_C,co_bf_D,co_bf_E,co_bf_F1,co_bf_F2,co_bf_F3,co_bf_G,co_bf_H,co_bf_I,co_bf_J,co_bf_K,co_bf_L</oem_cat>
+    <oem_vp type="char">GNFR_A,GNFR_B,GNFR_C,GNFR_D,GNFR_E,GNFR_F1,GNFR_F2,GNFR_F3,GNFR_G,GNFR_H,GNFR_I,GNFR_J,GNFR_K,GNFR_L</oem_vp>
+    <oem_tp type="char">GNFR_A,GNFR_B,GNFR_C,GNFR_D,GNFR_E,GNFR_F1,GNFR_F2,GNFR_F3,GNFR_G,GNFR_H,GNFR_I,GNFR_J,GNFR_K,GNFR_L</oem_tp>
+    <oem_tscale type="int">1</oem_tscale>
+    <unit type="char">none</unit>
+    <init_mode type="int">0</init_mode>
+    <c_solve type="char">passive</c_solve>
+  </chemtracer>
+  <chemtracer id="CO_FF">
+    <transport type="char">hadv52aero</transport>
+    <oem_type type="char">emis</oem_type>
+    <oem_cat type="char">co_ff_A,co_ff_B,co_ff_C,co_ff_D,co_ff_E,co_ff_F1,co_ff_F2,co_ff_F3,co_ff_G,co_ff_H,co_ff_I,co_ff_J,co_ff_K,co_ff_L</oem_cat>
+    <oem_vp type="char">GNFR_A,GNFR_B,GNFR_C,GNFR_D,GNFR_E,GNFR_F1,GNFR_F2,GNFR_F3,GNFR_G,GNFR_H,GNFR_I,GNFR_J,GNFR_K,GNFR_L</oem_vp>
+    <oem_tp type="char">GNFR_A,GNFR_B,GNFR_C,GNFR_D,GNFR_E,GNFR_F1,GNFR_F2,GNFR_F3,GNFR_G,GNFR_H,GNFR_I,GNFR_J,GNFR_K,GNFR_L</oem_tp>
+    <oem_tscale type="int">1</oem_tscale>
+    <unit type="char">none</unit>
+    <init_mode type="int">0</init_mode>
+    <c_solve type="char">passive</c_solve>
+  </chemtracer>
+  <chemtracer id="CH4_BG">
+    <transport type="char">hadv52aero</transport>
+    <unit type="char">none</unit>
+    <c_solve type="char">passive</c_solve>
+    <latbc type="char">file</latbc>
+    <initc type="char">file</initc>
+    <init_mode type="int">1</init_mode>
+    <init_name type="char">CH4_BG</init_name>
+  </chemtracer>
+  <chemtracer id="CO2_BG">
+    <transport type="char">hadv52aero</transport>
+    <unit type="char">none</unit>
+    <c_solve type="char">passive</c_solve>
+    <latbc type="char">file</latbc>
+    <initc type="char">file</initc>
+    <init_mode type="int">1</init_mode>
+    <init_name type="char">CO2_BG</init_name>
+  </chemtracer>
+  <chemtracer id="CO_BG">
+    <transport type="char">hadv52aero</transport>
+    <unit type="char">none</unit>
+    <c_solve type="char">passive</c_solve>
+    <latbc type="char">file</latbc>
+    <initc type="char">file</initc>
+    <init_mode type="int">1</init_mode>
+    <init_name type="char">CO_BG</init_name>
+  </chemtracer>
+</tracers>

@@ -1,0 +1,749 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "tracers_gp.dtd">
+
+<tracers checksum="2694499ec2483582cf797af7b416d89d">
+  <meccatracer id="CF3Br" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">148.91E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 1 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CF3Br</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CF2ClBr" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">115.93E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 2 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CF2ClBr</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="Hg" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">1gE-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 3 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">Hg</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HgO" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">17E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 4 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HgO</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HgCl" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">13.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 5 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HgCl</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HgCl2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">25.02E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 6 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HgCl2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HgBr" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">80.9E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 7 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HgBr</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HgBr2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">160.8E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 8 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HgBr2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="ClHgBr" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">92.91E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 9 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">ClHgBr</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="BrHgOBr" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">176.8E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 10 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">BrHgOBr</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="ClHgOBr" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">108.91E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 11 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">ClHgOBr</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CH3OH" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">32.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 12 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CH3OH</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="ClNO2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">58.02E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 13 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">ClNO2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="H2SO4" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">98.07E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 14 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">H2SO4</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="RGM_cs" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 15 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">RGM_cs</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="Cl2O2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">56.02E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 16 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">Cl2O2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="SO2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">64.07E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 17 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">SO2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CCl4" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">60.05E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 18 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CCl4</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CF2Cl2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">74.03E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 19 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CF2Cl2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CFCl3" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">67.04E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 20 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CFCl3</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="OClO" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">44.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 21 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">OClO</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CH3Br" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">94.91E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 22 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CH3Br</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="Cl2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">24.02E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 23 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">Cl2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="N2O" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">44.02E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 24 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">N2O</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CH3CCl3" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">63.05E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 25 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CH3CCl3</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="N" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">14.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 26 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">N</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CO" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">28.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 27 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CO</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CH3Cl" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">27.02E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 28 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CH3Cl</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="Br2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">159.8E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 29 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">Br2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HNO4" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">79.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 30 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HNO4</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="H2O2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">34E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 31 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">H2O2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="BrCl" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">91.91E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 32 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">BrCl</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CH4" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">16.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 33 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CH4</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CH3OOH" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">48.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 34 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CH3OOH</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="N2O5" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">108.02E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 35 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">N2O5</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HNO3" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">63.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 36 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HNO3</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="BrNO3" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">141.91E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 37 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">BrNO3</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="H2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">2E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 38 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">H2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HOCl" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">29.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 39 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HOCl</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CH3O2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">47.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 40 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CH3O2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HCHO" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">30.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 41 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HCHO</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HOBr" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">96.9E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 42 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HOBr</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="ClNO3" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">74.02E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 43 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">ClNO3</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="NO3" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">62.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 44 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">NO3</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="H" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">1E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 45 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">H</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HBr" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">80.9E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 46 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HBr</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="BrO" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">95.9E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 47 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">BrO</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="O3P" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">16E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 48 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">O3P</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="O3" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">48E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 49 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">O3</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="OH" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">17E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 50 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">OH</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HO2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">33E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 51 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HO2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="H2O" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">18E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 52 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">H2O</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="Br" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">79.90E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 53 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">Br</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="HCl" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">13.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 54 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">HCl</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="Cl" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">12.01lE-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 55 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">Cl</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="NO" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">30.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 56 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">NO</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="NO2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">46.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 57 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">NO2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="O1D" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">16E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 58 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">O1D</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="ClO" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">28.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 59 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">ClO</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="O2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">32E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 60 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">O2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="N2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">28.02E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 61 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">N2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+  <meccatracer id="CO2" full="TRUE" chemtr="FALSE">
+    <tag001 type="char">full</tag001>
+    <mol_weight type="real">44.01E-3</mol_weight>
+    <transport type="char">stdchem</transport>
+    <number type="int"> 62 </number>
+    <iconv type="int">1</iconv>
+    <iturb type="int">1</iturb>
+    <init_mode type="int">0</init_mode>
+    <init_name type="char">CO2</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve>mecca</c_solve>
+  </meccatracer>
+</tracers>

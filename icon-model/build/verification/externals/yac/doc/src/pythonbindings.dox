@@ -1,0 +1,133 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+/**
+ * \page pythonbindings The Python bindings (yac.pyx)
+   \tableofcontents
+
+For a module reference see @ref yac.
+
+This package provides Python bindings for the YAC coupler. They are
+generated using cython and can be enabled with the
+`--enable-python-bindings` configure flag. This enables the configure checks,
+the compilation of the Python extension module (.so file) and the
+corresponding tests.
+Hard dependencies for the Python bindings are the packages
+- `cython`
+- `numpy`
+
+For the test suite also `matplotlib` are recommended.
+For the function `Component.comp_comm` and `get_comps_comm` the module
+`mpi4py` is required. `mpi4py` must be compiled with the same MPI version
+as YAC to function properly. To convert the iso8601 date/time strings
+returned by YAC functions, e.g. `YAC.start_datetime` to a Python datetime
+format we recommend [isodate](https://github.com/gweis/isodate/) or the
+Python bindings of [mtime](https://gitlab.dkrz.de/icon-libraries/libmtime).
+All packages (except for mtime) can be installed by `pip`.
+
+To use the Python bindings in a Python program, add the path
+containing the Python extension module file to the `PYTHONPATH`
+environment variable.  Alternatively, you can install the extension
+module by executing `pip install .` in the `python` sub-directory of
+your build directory. This can also be used to install yac into a
+virtual environment. (In some cases it might be necessary to install the `wheel` package before executing the before mentioned command.)
+
+The bindings are designed to build a thin layer between Python and
+YAC. I.e. methods are directly forwarded to the corresponding YAC
+functions with a few exceptions: 
+
+- For all data structures for that YAC returns an id, Python creates an
+object that holds this id and provides member functions that use this
+id.
+- Whenever a c-pointer to memory is expected by the YAC function,
+the argument of the Python function is converted to a contiguous numpy
+array using `numpy.ascontiguousarray` (involving a copy if it is not already
+contiguous) and converted to a cython memory view to extract the size
+and pointer.
+- MPI communicators are converted into `mpi4py.MPI.Comm` and vice-versa.
+
+\section python_async Coroutines
+
+The Python interface provides the coroutines \ref yac.Field.get_coro
+and \ref yac.Field.put_coro that can be used to write asynchronous
+code. This is in particular useful if multiple fields with different
+timesteps need to be handled.  The following example shows how to use
+the coroutines assuming a source field `field_source` and
+target field `field_target` are defined.
+
+\code{.py}
+import asyncio
+
+async def recv_loop(field):
+    while True:
+        buf, info = await field.get_coro()
+        print(f"recv (field_id={field.field_id}):", buf, info)
+        if info == yac.Action.GET_FOR_RESTART:
+           break
+
+
+async def send_loop(field):
+    while True:
+        info = await field.put_coro(np.random.rand(4))
+        print(f"send (field_id={field.field_id}):", info)
+        if info == yac.Action.PUT_FOR_RESTART:
+            break
+
+
+# asyncio entry point
+async def main():
+    # create task group
+    await asyncio.gather(
+        send_loop(field_source),
+        recv_loop(field_target),
+    )
+
+# entry point
+asyncio.run(main())
+\endcode
+
+Note that the code does not need to know anything about the
+timestepping. Both fields are processed independendly from each
+other. Effectively the event loop of ayncio spinns between the two
+coroutines and proceeds where possible.
+
+Note: The Python binding coroutines do not depend on `asyncio` and can
+also be used with other coroutine frameworks.
+
+\section python_logging Logging
+built-in the python `logging` package into the python bindings.
+Most log records are triggered on the level `DEBUG`.
+Note that due to a limitation in `cython` the stack information that is passed to the logger is wrong (i.e. filename, module, etc.)
+
+\section python_examples Python Examples
+In the examples directory a framework of classes can be found that
+act as model component. To start a configuration with different
+components the \ref driver.py can be used. It allows sequential
+coupling as well as parallel coupling.
+
+The framework contains the following example components:
+- \ref noisegenerator.py
+- \ref plotter.py
+- \ref netcdf_writer.py
+- \ref netcdf_reader.py
+
+\example driver.py
+The driver to use the different component classes
+
+\example noisegenerator.py
+This class provides a 'as-simple-as' possible component, which just creates
+one source field, that is filled with random values in each timestep.
+
+\example plotter.py
+This component plots the configured fields on a regular grid using matplotlib.
+
+\example netcdf_writer.py
+Similar to the plotter, this component receives configured fields and
+write the data into a NetCDF file using the netCDF4 Python package. A
+grid for output can be specified. Also parallel output is possible.
+
+\example netcdf_reader.py
+This component reads data from a netcdf file and provides the data as YAC fields.
+
+*/

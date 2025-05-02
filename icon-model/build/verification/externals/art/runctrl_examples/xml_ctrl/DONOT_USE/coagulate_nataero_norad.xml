@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE coagulate SYSTEM "coagulate.dtd">
+
+<coagulate>
+  <smallmode id="sol_acc">
+    <nmodes type="int">6</nmodes>
+    <bigmode id="sol_acc" type="char">sol_acc</bigmode>
+    <bigmode id="insol_acc" type="char">insol_acc</bigmode>
+    <bigmode id="mixed_acc" type="char">mixed_acc</bigmode>
+    <bigmode id="sol_coa" type="char">sol_coa</bigmode>
+    <bigmode id="insol_coa" type="char">insol_coa</bigmode>
+    <bigmode id="mixed_coa" type="char">mixed_coa</bigmode>
+  </smallmode>
+  <smallmode id="insol_acc">
+    <nmodes type="int">5</nmodes>
+    <bigmode id="insol_acc" type="char">insol_acc</bigmode>
+    <bigmode id="mixed_acc" type="char">mixed_acc</bigmode>
+    <bigmode id="sol_coa" type="char">mixed_coa</bigmode>
+    <bigmode id="insol_coa" type="char">insol_coa</bigmode>
+    <bigmode id="mixed_coa" type="char">mixed_coa</bigmode>
+  </smallmode>
+  <smallmode id="mixed_acc">
+    <nmodes type="int">4</nmodes>
+    <bigmode id="mixed_acc" type="char">mixed_acc</bigmode>
+    <bigmode id="sol_coa" type="char">mixed_coa</bigmode>
+    <bigmode id="insol_coa" type="char">insol_coa</bigmode>
+    <bigmode id="mixed_coa" type="char">mixed_coa</bigmode>
+  </smallmode>
+  <smallmode id="sol_coa">
+    <nmodes type="int">3</nmodes>
+    <bigmode id="sol_coa" type="char">sol_coa</bigmode>
+    <bigmode id="insol_coa" type="char">insol_coa</bigmode>
+    <bigmode id="mixed_coa" type="char">mixed_coa</bigmode>
+  </smallmode>
+  <smallmode id="insol_coa">
+    <nmodes type="int">2</nmodes>
+    <bigmode id="insol_coa" type="char">insol_coa</bigmode>
+    <bigmode id="mixed_coa" type="char">mixed_coa</bigmode>
+  </smallmode>
+  <smallmode id="mixed_coa">
+    <nmodes type="int">1</nmodes>
+    <bigmode id="mixed_coa" type="char">mixed_coa</bigmode>
+  </smallmode>
+</coagulate>

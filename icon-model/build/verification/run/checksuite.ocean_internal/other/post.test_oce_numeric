@@ -1,0 +1,67 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+EXP="test_oce_numeric"
+varNames2D="h_acc"
+varNames3D="t_acc s_acc rhopot_acc"
+varNames="${varNames2D} ${varNames3D}"
+maskName="wet_c"
+oType="eps"
+# ================================================================================
+# technical stuff
+basePath=${basedir}
+dataPath="${baseBath}../experiments/${EXP}/"
+scriptPath="/pool/data/ICON/tools"
+nclCaller="nclsh"
+plotCmd="${scriptPath}/icon_plot.ncl"
+# set the CDO path for the dwd to a local installation
+case "$(hostname -d)" in
+  dwd.de)
+    CDO="/e/uhome/extrmuel/local/bin/cdo"
+    ;;
+  *)
+    CDO="cdo"
+esac
+# ================================================================================
+# plotting
+## find the last input file
+cd ${dataPath}
+iFile=$(ls ${EXP}*.nc | tail -n 1)
+if [[ ! -f ${iFile} ]]; then
+  echo "Could not find the input file '${iFile}'"
+  echo "Give up!"
+  exit 1
+fi
+## get the index of the last timestamp
+nTimesteps=$(cdo ntime ${iFile})
+tOutput=$((nTimesteps - 1))
+# perform the ploting
+mkdir -p plots
+for varname in ${varNames}; do 
+  oFile=${varname}_${iFile}
+  ${nclCaller} ${plotCmd} -altLibDir=${scriptPath} -oType=${oType} -cdo=${CDO} -isIcon \
+    -varName=$varname -maskName=${maskName} -noConfig \
+    -iFile=${iFile} -oFile=${oFile} -timeStep=${tOutput}
+  mv ${oFile}.${oType} plots/.
+done
+for varname in ${varNames3D}; do 
+  oFile=${varname}_transection_${iFile}
+  ${nclCaller} ${plotCmd} -altLibDir=${scriptPath} -oType=${oType} -cdo=${CDO} -isIcon \
+    -varName=$varname -maskName=${maskName} -noConfig -secLC=-45,-70 -secRC=30,80 -secPoints=100 -resolution=r360x180 -secMode=circle -rStrg=' '\
+    -iFile=${iFile} -oFile=${oFile} -timeStep=${tOutput}
+  mv ${oFile}.${oType} plots/.
+done
+
+# $nclCaller does not reveal an error code
+# check error needed for buildbot
+check_error $? "oce_numeric: $nclCaller"
+
+exit
+

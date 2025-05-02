@@ -1,0 +1,12 @@
+WARNING: your MPI installation suffers from a known defect in some
+OpenMPI versions.
+
+The problem can be tracked down to an interaction of
+MPI_Type_create_struct with a previous MPI_Type_dup. When MPI_Type_dup
+on line 67 of the example is replaced with a straight assignment of
+MPI_INT to sends[0], the problem goes away.
+
+The exact scope of affected version is not fully known but supposed
+to be fixed in 1.6.5[1].
+
+[1] http://www.open-mpi.org/community/lists/devel/2013/06/12488.php

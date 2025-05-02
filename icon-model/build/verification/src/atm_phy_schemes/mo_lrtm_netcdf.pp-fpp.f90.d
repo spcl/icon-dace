@@ -1,0 +1,4 @@
+src/atm_phy_schemes/mo_lrtm_netcdf.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/atm_phy_schemes/mo_lrtm_netcdf.f90
+src/atm_phy_schemes/mo_lrtm_netcdf.pp-fpp.o src/atm_phy_schemes/mo_lrtm_netcdf.pp-fpp.f90.d: src/atm_phy_schemes/mo_lrtm_netcdf.pp-fpp.f90
+mod/mo_lrtm_netcdf.mod.proxy: src/atm_phy_schemes/mo_lrtm_netcdf.pp-fpp.o
+src/atm_phy_schemes/mo_lrtm_netcdf.pp-fpp.o src/atm_phy_schemes/mo_lrtm_netcdf.pp-fpp.o: mod/mo_rrlw_kg16.mod.proxy mod/mo_rrlw_kg07.mod.proxy mod/mo_rrlw_kg14.mod.proxy mod/mo_rrlw_kg01.mod.proxy mod/mo_rrlw_kg06.mod.proxy mod/mo_rrlw_kg13.mod.proxy mod/mo_netcdf.mod.proxy mod/mo_rrlw_kg04.mod.proxy mod/mo_rrlw_kg11.mod.proxy mod/mo_rrlw_kg15.mod.proxy mod/mo_rrlw_kg02.mod.proxy mod/mo_netcdf_parallel.mod.proxy mod/mo_rrlw_kg03.mod.proxy mod/mo_rrlw_kg12.mod.proxy mod/mo_rrlw_kg10.mod.proxy mod/mo_rrlw_kg05.mod.proxy mod/mo_rrlw_kg09.mod.proxy mod/mo_rrlw_kg08.mod.proxy

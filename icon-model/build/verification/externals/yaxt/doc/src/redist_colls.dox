@@ -1,0 +1,7 @@
+/** \page redist_colls How to merge multiple redistributions
+  \section redist_colls_intro Introduction
+  \subsection redist_colls_why Why should you merge redistributions
+  \section redist_colls_types Types of redistribution collections
+  \subsection redist_colls_dynamic Dynamic collection
+  \subsection redist_colls_static Static collection
+ */

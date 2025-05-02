@@ -1,0 +1,150 @@
+# Parameter table
+#
+# TABLE_ID=001
+# TABLE_MODEL=
+# TABLE_INSTITUT=WMO
+#
+#-------------------------------------------------------------------------
+#!variable
+#
+# Variables
+#   (max number of entries = 256)
+#
+# The format of each record is:
+#   id | name | title | units
+#
+# id       = parameter ID
+# name     = variable name
+# title    = long name (description)
+# units    = variable units
+#
+#----+-------------+------------------------------------------+----------+
+# id | name        | title                                    | units    |
+#----+-------------+------------------------------------------+----------+
+ 001 | P           | Pressure                                 | Pa
+ 002 | MSL         | Mean sea level pressure                  | Pa
+ 003 | DPSDT       | Pressure tendency                        | Pa/s
+ 004 | PV          | Potential vorticity                      | K m**2 kg**-1 s**-1
+ 005 | var5        | ICAO Standard Atmosphere reference height| m
+ 006 | Z           | Geopotential                             | m**2 s**-2
+ 007 | GH          | Geopotential height                      | gpm
+ 008 | H           | Geometrical height                       | m
+ 009 | var9        | Standard deviation of height             | m
+ 010 | TCO3        | Total column ozone                       | Dobson (kg m**-2)
+ 011 | T           | Temperature                              | K
+ 012 | var12       | Virtual temperature                      | K
+ 013 | var13       | Potential temperature                    | K
+ 014 | var14       | Pseudo-adiabatic potential temperature   | K
+ 015 | TMAX        | Maximum temperature                      | K
+ 016 | TMIN        | Minimum temperature                      | K
+ 017 | TD          | Dewpoint temperature                     | K
+ 018 | var18       | Dewpoint depression (or deficit)         | K
+ 019 | var19       | Lapse rate                               | K/s**-1
+ 020 | var20       | Visibility                               | m
+ 021 | var21       | Radar spectra (1)                        | 
+ 022 | var22       | Radar spectra (2)                        |
+ 023 | var23       | Radar spectra (3)                        |
+ 024 | var24       | Parcel lifted index (to 500 hPa)         | K
+ 025 | var25       | Temperature anomaly                      | K
+ 026 | var26       | Pressure anomaly                         | Pa
+ 027 | var27       | Geopotential height anomaly              | gpm
+ 028 | var28       | Wave spectra (1)                         |
+ 029 | var29       | Wave spectra (2)                         |
+ 030 | var30       | Wave spectra (3)                         |
+ 031 | var31       | Wind direction                           | Degree true
+ 032 | var32       | Wind speed                               | m/s
+ 033 | U           | U component of wind                      | m/s
+ 034 | V           | V component of wind                      | m/s
+ 035 | var35       | Stream function                          | m**2 s**-1
+ 036 | var36       | Velocity potential                       | m**2 s**-1
+ 037 | var37       | Montgomery stream function               | m**2 s**-1
+ 038 | var38       | Sigma coordinate vertical velocity       | s**-1
+ 039 | OMEGA       | Vertical velocity                        | Pa s**-1
+ 040 | W           | Vertical velocity                        | m/s
+ 041 | var41       | Absolute vorticity                       | s**-1
+ 042 | var42       | Absolute divergence                      | s**-1
+ 043 | VO          | Relative vorticity                       | s**-1
+ 044 | D           | Relative divergence                      | s**-1
+ 045 | var45       | Vertical U component shear               | s**-1
+ 046 | var46       | Vertical V component shear               | s**-1
+ 047 | var47       | Direction of current                     | Degree true
+ 048 | var48       | Speed of current                         | m/s
+ 049 | var49       | U component of current                   | m/s
+ 050 | var50       | V component of current                   | m/s
+ 051 | Q           | Specific humidity                        | kg kg**-1
+ 052 | R           | Relative humidity                        | %
+ 053 | var53       | Humidity mixing ratio                    | kg m**-2
+ 054 | var45       | Precipitable water content               | kg m**-2
+ 055 | var55       | Vapour pressure                          | Pa
+ 056 | var56       | Saturation deficit                       | Pa
+ 057 | E           | Evaporation                              | kg m**-2
+ 058 | CIWC        | Cloud ice                                | kg m**-2
+ 059 | vat59       | Precipitation rate                       | kg m**-2 s**-1
+ 060 | var60       | Thunderstorm probability                 | %
+ 061 | TP          | Total precipitation                      | kg m**-2
+ 062 | var62       | Large-scale precipitation                | kg m**-2
+ 063 | var63       | Convective precipitation                 | kg m**-2
+ 064 | var64       | Snowfall rate water equivalent           | kg m**-2 s**-1
+ 065 | SF          | Water equivalent of accumulated snow depth | kg m**-2
+ 066 | SD          | Snow depth                               | m (of water equivalent)
+ 067 | var67       | Mixed layer depth                        | m
+ 068 | var68       | Transient thermocline depth              | m
+ 069 | var69       | Main thermocline depth                   | m
+ 070 | var70       | Main thermocline anomaly                 | m
+ 071 | TCC         | Total cloud cover                        | %
+ 072 | CCC         | Convective cloud cover                   | %
+ 073 | LCC         | Low cloud cover                          | %
+ 074 | MCC         | Medium cloud cover                       | %
+ 075 | HCC         | High cloud cover                         | %
+ 076 | CLWC        | Cloud liquid water content               | kg kg**-1 
+ 077 | var77       | Best lifted index (to 500 hPa)           | K
+ 078 | CSF         | Convective snowfall                      | kg m**-2
+ 079 | LSF         | Large-scale snowfall                     | kg m**-2
+ 080 | var80       | Water temperature                        | K
+ 081 | LSM         | Land cover (1=land, 0=sea)               | (0 - 1)
+ 082 | var82       | Deviation of sea level from mean         | m
+ 083 | SR          | Surface roughness                        | m
+ 084 | AL          | Albedo                                   | 
+ 085 | ST          | Surface temperature of soil              | K
+ 086 | SSW         | Soil moisture content                    | kg m**-2
+ 087 | VEG         | Percentage of vegetation                 | %
+ 088 | var88       | Salinity                                 | kg kg**-1
+ 089 | var89       | Density                                  | kg m**-3 ??? kg kg**-1
+ 090 | RO          | Water run-off                            | kg m**-2
+ 091 | var91       | Ice cover (1=land, 0=sea)                | (0 - 1)
+ 092 | var92       | Ice thickness                            | m
+ 093 | var93       | Direction of ice drift                   | Degree true
+ 094 | var94       | Speed of ice drift                       | m s*-1
+ 095 | var95       | U component of ice drift                 | m/s
+ 096 | var96       | V component of ice drift                 | m/s
+ 097 | var97       | Ice growth rate                          | m/s
+ 098 | var98       | Ice divergence                           | s**-1
+ 099 | var99       | Snowmelt                                 | kg m**-2
+ 100 | SWH         | Significant height, combined wind waves and swell | m
+ 101 | MDWW        | Mean direction of wind waves             | Degree true
+ 102 | SHWW        | Significant height of wind waves         | m
+ 103 | MPWW        | Mean period of wind waves                | s
+ 104 | var104      | Direction of swell waves                 | Degree true
+ 105 | var105      | Significant height of swell waves        | m
+ 106 | var106      | Mean period of swell waves               | s
+ 107 | MDPS        | Mean direction of primary swell          | Degree true
+ 108 | MPPS        | Mean period of primary swell             | s
+ 109 | var109      | Secondary wave direction                 | Degree true
+ 110 | var110      | Secondary wave period                    | s
+ 111 | var111      | Net short-wave radiation flux (surface)  | W m**-2
+ 112 | var112      | Net long-wave radiation flux (surface)   | W m**-2
+ 113 | var113      | Net short-wave radiation flux(atmosphere top) | W m**-2
+ 114 | var114      | Net long-wave radiation flux(atmosphere top) | W m**-2
+ 115 | var115      | Long-wave radiation flux                 | W m**-2
+ 116 | var116      | Short-wave radiation flux                | W m**-2
+ 117 | var117      | Global radiation flux                    | W m**-2
+ 118 | var118      | Brightness temperature                   | K
+ 119 | var119      | Radiance (with respect to wave number)   | W m**-1 sr**-1
+ 120 | var120      | Radiance (with respect to wave length)   | W m**-1 sr**-1
+ 121 | SLHF        | Surface latent heat flux                 | W m**-2
+ 122 | SSHF        | Surface sensible heat flux               | W m**-2
+ 123 | BLD         | Boundary layer dissipation               | W m**-2
+ 124 | var124      | Momentum flux, U component               | N m**-2
+ 125 | var125      | Momentum flux, V component               | N m**-2
+ 126 | var126      | Wind mixing energy                       | J
+ 127 | var127      | Image data                               |

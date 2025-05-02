@@ -1,0 +1,129 @@
+#! /usr/bin/env bash
+#
+# scripts/release/check-gitignore --- script for yaxt release checks
+#
+# Copyright  (C)  2022 Jörg Behrens <behrens@dkrz.de>
+#                      Moritz Hanke <hanke@dkrz.de>
+#                      Thomas Jahns <jahns@dkrz.de>
+#
+# Author: Jörg Behrens <behrens@dkrz.de>
+#         Moritz Hanke <hanke@dkrz.de>
+#         Thomas Jahns <jahns@dkrz.de>
+#
+# Maintainer: Jörg Behrens <behrens@dkrz.de>
+#             Moritz Hanke <hanke@dkrz.de>
+#             Thomas Jahns <jahns@dkrz.de>
+# URL: http://https://swprojects.dkrz.de/redmine/projects/scales-ppm
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are  permitted provided that the following conditions are
+# met:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of the DKRZ GmbH nor the names of its contributors
+# may be used to endorse or promote products derived from this software
+# without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+set -e
+
+# shellcheck source=get-package-and-version.shinc
+. scripts/release/get-package-and-version.shinc
+
+trap errMsg ERR
+
+setupMakeDebugging
+addOverrides
+setTMPDIR
+tmpsrc=$(mktemp -d "${TMPDIR-/tmp}/tmp.XXXXXXXXXX")
+log=$(mktemp "${TMPDIR-/tmp}/tmp.XXXXXXXXXX")
+exec 6>"${log}"
+echo "creating temporary source directory in ${tmpsrc}"
+if (( ${DEBUG:-0} == 0)) && [[ -z "${KEEP_BUILDDIR-}" ]] ; then
+  trap 'rm -rf "${tmpsrc}" "${log}"' EXIT
+fi
+repo=$PWD
+cd "${tmpsrc}"
+if command -v rsync >/dev/null ; then
+  opts="-aHS"
+  rsync_options=$(rsync --help)
+  case $rsync_options in
+    (*\ -A,\ --acls\ *)
+      opts+=A
+      ;;
+  esac
+  case $rsync_options in
+    (*\ -X,\ --xattrs\ *)
+      opts+=X
+      ;;
+  esac
+  case $rsync_options in
+    (*\ -E,\ --extended-attributes\ *)
+      opts+=E
+      ;;
+  esac
+  rsync ${opts} "${repo}"/. .
+else
+  cp -a "${repo}"/. .
+fi
+bash -x "${reconfCmd}" >&6 2>&6
+set +e
+git update-index -q --ignore-submodules --refresh
+set -e
+git status --short | sed -n -e '/^??/{' -e 's/^?? //;p;}' | xargs rm -rf
+set -e
+echo "performing in-place build"
+echo "  configure"
+./configure CFLAGS='-O2 -pipe' FCFLAGS='-O2 -pipe' \
+            --enable-maintainer-mode >&6 2>&6
+if [[ -z "${MAKE+set}" ]]; then
+  MAKE=$(sed -n -e '/^MAKE = /{
+s/^MAKE =[ 	]*\(.*[^ ]\) *$/\1/; p ; q
+}' Makefile)
+  [[ -n "${MAKE}" ]] || MAKE='make'
+fi
+echo "  ${MAKE}"
+${MAKE} "${MAKE_DEBUG_ARGS[@]}" -j >&6 2>&6
+echo "  make check"
+${MAKE} "${MAKE_DEBUG_ARGS[@]}" -j8 check >&6 2>&6
+git update-index -q --really-refresh
+if git diff-index --exit-code HEAD -- >&6 ; then
+  echo 'success: no unexpected files were created/modified.' >&2
+  exit 0
+else
+  echo "error: untracked/modified files found!" >&2
+  git status >&6 2>&6
+  if [[ -t /dev/stdin && -t /dev/stdout ]]; then
+    ${PAGER-less} "${log}"
+  else
+    printf "detailed log output in %s" "${log}" >&2
+  fi
+  trap '' EXIT
+  exit 1
+fi
+
+#
+# Local Variables:
+# mode: sh
+# coding: utf-8
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
+# license-default: "bsd"
+# End:
+#

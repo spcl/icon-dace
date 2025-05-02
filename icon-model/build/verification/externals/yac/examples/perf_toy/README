@@ -1,0 +1,12 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+This toy can be used to measure performance. The setup can be launched with
+an arbitrary number of processes for each component. The two components are:
+
+  a) perf_toy_cube.c
+  b) perf_toy_icon.c
+
+The script perf_toy.sh contains an example launch configuration. The coupling
+configuration can be found in perf_toy.yaml.

@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "tracers.dtd">
+
+<tracers>
+  <chemtracer id="TRCHBr3" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">2.527E-1</mol_weight>
+    <?source_lifetime Rieger et al., GMD, 2015 ?>
+    <lifetime type="real">2073600</lifetime>
+    <transport type="char"> stdchem </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRCH2Br2"  full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">1.738E-1</mol_weight>
+    <?source_lifetime Rieger et al., GMD, 2015 ?>
+    <lifetime type="real">10627200</lifetime>
+    <transport type="char"> stdchem </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRCH4" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">1.604E-2</mol_weight>
+    <?source_lifetime Hayman et al., ACP, 2017 ?>
+    <lifetime type="real">286977600</lifetime>
+    <transport type="char"> stdchem </transport>
+    <init_mode type="int"> 0	</init_mode>
+    <init_name type="char"> CH4 </init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <products type="char">TRCO;2.*TRH2O</products>
+  </chemtracer>
+  <chemtracer id="TRC2H6" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">3.006E-2</mol_weight>
+    <?source_lifetime Hodnebrog et al, Atmos. Sci. Lett., 2018 ?>
+    <lifetime type="real">5011200</lifetime>
+    <transport type="char"> stdchem </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRC3H8" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.40956E-2</mol_weight>
+    <?source_lifetime Hodnebrog et al, Atmos. Sci. Lett., 2018 ?>
+    <lifetime type="real">1123200</lifetime>
+    <transport type="char"> stdchem </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <products type="char">0.736*TRCH3COCH3</products>
+  </chemtracer>
+  <chemtracer id="TRC5H8"  full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.812E-2</mol_weight>
+    <?source_lifetime Weimer (2015), p. 16 ?>
+    <lifetime type="real">8640</lifetime>
+    <transport type="char"> stdchem </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRCH3COCH3" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">5.808E-2</mol_weight>
+    <?source_lifetime Weimer (2015), p. 9 ?>
+    <lifetime type="real">1728000</lifetime>
+    <transport type="char"> stdchem </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRCO" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">2.801E-2</mol_weight>
+    <?source_lifetime Ehhalt et al., IPCC, 2001, Chapter 4 ?>
+    <lifetime type="real">5184000</lifetime>
+    <transport type="char"> stdchem </transport>
+    <init_mode type="int"> 0 </init_mode>
+    <init_name type="char"> CO </init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <products type="char">TRCO2</products>
+  </chemtracer>
+  <chemtracer id="TRCO2" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.401E-2</mol_weight>
+    <?source_lifetime Houghton et al., IPCC, Cambridge University Press, 2001 ?>
+    <lifetime type="real">3153600000</lifetime>
+    <transport type="char"> stdchem </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <products type="char">TRCO</products>
+  </chemtracer>
+  <chemtracer id="TRH2O" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">1.802E-2</mol_weight>
+    <?source_lifetime Just a placeholder (not used in the code) ?>
+    <lifetime type="real">2592000000</lifetime>
+    <transport type="char"> stdchem </transport>
+    <init_mode type="int"> 0 </init_mode>
+    <init_name type="char"> H2O </init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TR_cold">
+    <mol_weight type="real">1.000E+0</mol_weight>
+    <transport type="char"> stdchem </transport>
+    <lifetime type="real"> 432000 </lifetime>
+    <unit type="char">none</unit>
+    <c_solve type="char">cold</c_solve>
+  </chemtracer>
+  <chemtracer id="TRO3" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.800E-2</mol_weight>
+    <?source_lifetime Ehhalt et al., IPCC, 2001, Chapter 4 ?>
+    <lifetime type="real">1555200</lifetime>
+    <transport type="char"> stdchem </transport> 
+    <init_mode type="int"> 0 </init_mode>
+    <init_name type="char">O3</init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">linoz</c_solve>
+  </chemtracer>
+  <chemtracer id="TRNOy" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.301E-1</mol_weight>
+    <?source_lifetime Ehhalt et al., IPCC, 2001, Chapter 4 ?>
+    <lifetime type="real">259200</lifetime>
+    <transport type="char"> stdchem </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">simnoy</c_solve>
+  </chemtracer>
+  <chemtracer id="TRN2O" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.401E-2</mol_weight>
+    <?source_lifetime Wypych, 2017, Atlas of Material Damage?>
+    <lifetime type="real">4730400000</lifetime>
+    <transport type="char"> stdchem </transport>
+    <init_mode type="int"> 0 </init_mode>
+    <init_name type="char"> N2O </init_name>  
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">simnoy</c_solve>
+  </chemtracer>
+  <chemtracer id="TRNH3" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">1.70E-2</mol_weight>
+    <?source_lifetime Pinder et al., GRL, 2008?>
+    <lifetime type="real">86400</lifetime>
+    <transport type="char"> stdchem </transport>
+    <init_mode type="int"> 0 </init_mode>
+    <init_name type="char"> NH3 </init_name> 
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <products type="char">TRNO2</products>
+  </chemtracer>
+  <chemtracer id="TRH2SO4" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">9.80E-2</mol_weight>
+    <?source_lifetime Fiedler et al., ACP, 2005?>
+    <lifetime type="real">1800</lifetime>
+    <transport type="char"> stdchem </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRNO2" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.601E-2</mol_weight>
+    <?source_lifetime Ehhalt et al., IPCC, 2001, Chapter 4 ?>
+    <lifetime type="real">259200</lifetime>
+    <transport type="char"> ccmi </transport>
+    <init_name type="char"> NO2 </init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <products type="char">TRHNO3</products>
+  </chemtracer>
+  <chemtracer id="TRHNO3" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.30E-2</mol_weight>
+    <?source_lifetime Day et al., ACP, 2008?>
+    <lifetime type="real">21600</lifetime>
+    <transport type="char"> stdchem </transport>
+    <init_mode type="int"> 0 </init_mode>
+    <init_name type="char"> HNO3 </init_name> 
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRAGE" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">1.000E+0</mol_weight>
+    <?source_lifetime Just a placeholder, not used in the code?>
+    <lifetime type="real">25920000</lifetime>
+    <transport type="char"> stdchem </transport>
+    <unit type="char">none</unit>
+    <c_solve type="char">passive</c_solve>
+  </chemtracer>
+  <chemtracer id="TRSO2" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.40E-2</mol_weight>
+    <?source_lifetime Von Glasow, Chemical Geology, 2009 ?>
+    <lifetime type="real">1209600</lifetime>
+    <transport type="char"> stdchem </transport>
+    <init_mode type="int">  0 </init_mode>
+    <init_name type="char"> SO2 </init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <products type="char">TRH2SO4</products>
+  </chemtracer>
+  <chemtracer id="TROCS" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.01E-2</mol_weight>
+    <?source_lifetime Ullwer (2017) ?>
+    <lifetime type="real">504576000</lifetime>
+    <transport type="char"> stdchem </transport>
+    <init_mode type="int">  0 </init_mode>
+    <init_name type="char"> OCS </init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <products type="char">TRSO2</products>
+  </chemtracer>
+  <chemtracer id="TRDMS" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.21E-2</mol_weight>
+    <?source_lifetime Ullwer (2017) ?>
+    <lifetime type="real">216000</lifetime>
+    <transport type="char"> stdchem </transport>
+    <init_mode type="int">  0 </init_mode>
+    <init_name type="char"> DMS </init_name>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <products type="char">0.993*TRSO2;0.007*TROCS</products>
+  </chemtracer>
+  <chemtracer id="testtr">
+    <transport type="char">stdaero</transport>
+    <unit type="char">none</unit>
+    <c_solve type="char">passive</c_solve>
+  <chemtracer>
+</tracers>

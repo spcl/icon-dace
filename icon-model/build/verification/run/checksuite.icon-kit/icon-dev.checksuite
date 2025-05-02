@@ -1,0 +1,979 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set +x
+#################### functions ##########################################
+function copy_experiment
+{
+    typeset MODEL_DIR EXP_ORI EXP_NEW
+    MODEL_DIR=$1
+    EXP_ORI=$2
+    EXP_NEW=$3
+    cd ${MODEL_DIR}/experiments
+    if [ ! -d "${EXP_ORI}" ]; then
+        echo 'no experiment '${EXP_ORI}' found'
+        exit 1
+    fi
+
+    rm -rf ${EXP_NEW}
+    mkdir ${EXP_NEW}
+
+    # check for the existence of either
+    #   - a restart file, or
+    #   - a (multifile) "*.nc"-restart directory
+    #
+    COMPS=''
+    if [ -f ${EXP_ORI}/${EXP_ORI}_restart_*${RESTART_DATE}.nc ]; then
+
+        # CASE 1: (Standard) Single-file restart
+
+        echo "(Standard) Single-file restart"
+        if [ -f ${EXP_ORI}/${EXP_ORI}_restart_atm_*${RESTART_DATE}.nc ]; then
+            COMPS=${COMPS}' atm'
+        fi
+        if [ -f ${EXP_ORI}/${EXP_ORI}_restart_oce_*${RESTART_DATE}.nc ]; then
+            COMPS=${COMPS}' oce'
+        fi
+        if [ -f ${EXP_ORI}/${EXP_ORI}_restart_lnd_*${RESTART_DATE}.nc ]; then
+            COMPS=${COMPS}' lnd'
+        fi
+
+	cd ${EXP_NEW}
+
+        for COMP in ${COMPS}; do
+            cp ../${EXP_ORI}/${EXP_ORI}_restart_${COMP}_*${RESTART_DATE}.nc .
+            NDOM=`ls ../${EXP_ORI}/${EXP_ORI}_restart_${COMP}_*${RESTART_DATE}.nc | wc -w`
+            DOM=01
+            while [ "${DOM}" -le "${NDOM}" ]; do
+                if [ ${#DOM} -lt 2 ]; then
+                    DOM=0${DOM}
+                fi 
+                if [ ${NDOM} -eq 1 ]; then
+                    ln -sf ${EXP_ORI}_restart_${COMP}_${RESTART_DATE}.nc restart_${COMP}_DOM${DOM}.nc
+                else
+                    ln -sf ${EXP_ORI}_restart_${COMP}_DOM${DOM}_${RESTART_DATE}.nc restart_${COMP}_DOM${DOM}.nc
+                fi
+                DOM=$(( DOM + 1 ))
+            done
+        done
+
+    else
+        if [ -d ${EXP_ORI}/${EXP_ORI}_restart_*${RESTART_DATE}.nc ]; then
+
+            # CASE 2: Multifile restart
+
+            echo "Multifile restart"
+            if [ -d ${EXP_ORI}/${EXP_ORI}_restart_atm_*${RESTART_DATE}.nc ]; then
+                COMPS=${COMPS}' atm'
+            fi
+            if [ -d ${EXP_ORI}/${EXP_ORI}_restart_oce_*${RESTART_DATE}.nc ]; then
+                COMPS=${COMPS}' oce'
+            fi
+            if [ -d ${EXP_ORI}/${EXP_ORI}_restart_lnd_*${RESTART_DATE}.nc ]; then
+                COMPS=${COMPS}' lnd'
+            fi
+
+	    cd ${EXP_NEW}
+
+            for COMP in ${COMPS}; do
+                cp -r ../${EXP_ORI}/${EXP_ORI}_restart_${COMP}_*${RESTART_DATE}.nc .
+                ln -sf ${EXP_ORI}_restart_${COMP}_DOM00_${RESTART_DATE}.nc multifile_restart_${COMP}.mfr
+            done
+
+        else
+
+            echo "Cannot find restart file: ${EXP_ORI}/${EXP_ORI}_restart_*${RESTART_DATE}.nc "
+            echo "and no multifile restart directory ../${EXP_ORI}/${EXP_ORI}_restart_atm_*${RESTART_DATE}.nc, too! "
+            echo "The run ${EXP_ORI} did not write any restart at ${RESTART_DATE}"
+            exit 1
+        fi
+    fi
+}
+#------------------------------------------------------------------------
+function print_mode
+{
+    typeset MOD
+    MOD=$1
+    case $MOD in  
+        'b') PRINT_MD='b(ase)';;
+        'u') PRINT_MD='u(pdate)';;
+        'r') PRINT_MD='r(estart)';;
+        'n') PRINT_MD='n(proma)';;
+        'm') PRINT_MD='m(pi)';;
+        'o') PRINT_MD='o(mp)';;
+        *) PRINT_MD=$MOD;;
+    esac
+    echo "- test mode    = $PRINT_MD"
+}
+#------------------------------------------------------------------------
+function print_usage
+{
+    typeset COMMAND MOD_ARG
+    COMMAND=$1
+    MOD_ARG=""
+
+    for MOD in $MODES; do
+        case $MOD in  
+            'b') MD='b(ase)';;
+            'u') MD='u(pdate)';;
+            'r') MD='r(estart)';;
+            'n') MD='n(proma)';;
+            'm') MD='m(pi)';;
+            'o') MD='o(mp)';;
+            *) MD=$MOD;;
+        esac
+        MOD_ARG=$MOD_ARG'|'$MD
+    done 
+    echo "usage: ${COMMAND} [-c] [-d <dates>] [-e <experiment>] [-f yes|no] [-h] [-m $MOD_ARG] [-o yes|no] [-r <reference model path>] [-s <restart_date>] [-t <files>] [-u]"
+    echo '-c : colour output'
+    echo '-d : string containing the dates of the output files of the respective '
+    echo '     experiment, default depends on experiment' 
+    echo '-e : name of the experiment to be checked, default = atm_amip_test'
+    echo '-f : '"'yes'"': force make_runscripts even if base runscript exists (default)'
+    echo '     '"'no'"': perform make_runscripts only if no runscripts are available'
+    echo '-h : display help'
+    echo '-m : test mode, either single tests like base, update, restart,'
+    echo '     nproma, mpi or omp test'
+    echo '     or combined tests like ur (update and restart) possible'
+    echo '     Default mode: rnmo'
+    echo '-o : '"'yes'"': overwrite existing experiments (default)'
+    echo '     '"'no'"': use existing experiments'
+    echo '-r : reference model path'
+    echo '-s : Date in file name of restart file of respective experiment,'
+    echo '     the default depends on the respective experiment default'
+    echo '-t : Types of output files, the default depends on the respective'
+    echo '     experiment'
+    echo '-u : if files of the experiments differ, '
+    echo '     calculate the difference between these files with cdo sub'
+}
+#------------------------------------------------------------------------
+function diff_results
+{
+    typeset MODEL_DIR1 DEXP1 MODEL_DIR2 DEXP2 TEST FILES FILE1 FILE2 STATUS
+    MODEL_DIR1=$1
+    DEXP1=$2
+    MODEL_DIR2=$3
+    DEXP2=$4
+    TEST=$5
+    DISTRO=$(lsb_release -cs)
+    case $DISTRO in
+        squeeze)
+            module load cdo/1.6.5.1
+            ;;
+        wheezy)
+            module load cdo/1.6.5.1
+            ;;
+		Maipo)
+			module load cdo/1.8.2
+			;;
+	jessie)
+	    eval `/usr/bin/tclsh /sw/share/Modules/modulecmd.tcl bash load cdo/1.8.0-gccsys`
+	    ;;
+    esac
+    #TYPES: defined in main script and used from main script 
+    #DATES: defined in main script and used from main script 
+
+    # status variable that is evaluated after the function call
+    DIFF_STATUS=0
+
+    # create more beautiful output for variables MODEL_DIR[12]
+    cd $MODEL_DIR1; MODEL_DIR1=`pwd`
+    cd $MODEL_DIR2; MODEL_DIR2=`pwd`
+
+    # dump output of "cdo diffn", if differences exist, only for the first date
+    CAT_CDO_DIFFN='yes'
+
+    # if this is the restart test, then compare only for dates after the restart date
+    DIFF_DATES=""
+    if [ "$TEST" == "restart" ]; then
+        for DATE in $DATES; do
+            if [ $DATE \> $RESTART_DATE ]; then
+                DIFF_DATES="$DIFF_DATES $DATE"
+            fi
+        done
+    else
+        DIFF_DATES=$DATES
+    fi
+
+    if [ "x$TYPES" == "x" ]; then
+        echo "There are no file types to compare"
+        exit 1
+    fi
+
+    if [ "x$TYPES" == "xmaxwinds.log" ]; then
+
+        echo "=================================================================="
+        echo "Comparing maxwinds.log files"
+        echo " "
+        FILE1="${MODEL_DIR1}/experiments/${DEXP1}/maxwinds.log"
+        FILE2="${MODEL_DIR2}/experiments/${DEXP2}/maxwinds.log"
+	# test if the maxwinds.log file of the restarted run is a
+	# subset of the non-restarted run:
+	subset_cmp=$(diff --unchanged-line-format= --old-line-format= --new-line-format='%L' ${FILE1} ${FILE2} | wc -l)
+        echo " "
+	if [ "$subset_cmp" -eq "0" ]
+	then
+	    echo "File maxwinds.log of the second run is a subset of the first run."
+            DIFF_STATUS=0
+            STATUS=0
+	else
+	    echo "File maxwinds.log of the second run is NOT a subset of the first run."
+            DIFF_STATUS=1
+            STATUS=1
+	fi
+        echo " "
+
+    else
+
+        if [ "x$DIFF_DATES" == "x" ]; then
+            echo "There are no dates to compare"
+            exit 1
+        fi
+    
+        echo "=================================================================="
+        echo "Compare these experiments:"
+        echo "- ${MODEL_DIR1}/experiments/${DEXP1}"
+        echo "- ${MODEL_DIR2}/experiments/${DEXP2}"
+        echo " "
+    
+        for DATE in $DIFF_DATES; do
+    
+            echo "----------------------------------------------------------------"
+            echo "Compare for DATE=$DATE"
+            DIFFERENT_TYPES=''
+    
+            for TYPE in $TYPES; do
+    
+                FILE1="${MODEL_DIR1}/experiments/${DEXP1}/${DEXP1}_${TYPE}_${DATE}.nc"
+                FILE2="${MODEL_DIR2}/experiments/${DEXP2}/${DEXP2}_${TYPE}_${DATE}.nc"
+                TEMP_SUFFIX=$(cat /dev/urandom | env LC_CTYPE=C tr -cd 'a-f0-9' | head -c 16)
+                DIFF_FILE="cdo_diffn_${DEXP1}_${DEXP2}_${TYPE}_${DATE}_${TEMP_SUFFIX}.out"
+
+                echo "Compare for TYPE=$TYPE"
+				cdo=/pfs/imk/ICON/modules/cdo/1.8.2/bin/cdo
+                cdo diffn ${FILE1} ${FILE2} > ${DIFF_FILE}
+    
+                STATUS=`echo $?`
+                if [ "$STATUS" -ne 0 ]; then
+                    echo " File 1 and file 2 cannot be compared"
+                    echo " - file 1: ${FILE1}"
+                    echo " - file 2: ${FILE2}"
+                    DIFFERENT_TYPES="$DIFFERENT_TYPES $TYPE"
+                fi
+                if [ -s ${DIFF_FILE} ]; then
+                    echo " File 1 and file 2 differ"
+                    echo " - file 1: ${FILE1}"
+                    echo " - file 2: ${FILE2}"
+                    if [ "$CAT_CDO_DIFFN" == 'yes' ]; then
+                        cat ${DIFF_FILE}
+                        rm  ${DIFF_FILE}
+                    fi
+                    IS_DIFFERENT='yes'
+                    DIFFERENT_TYPES="$DIFFERENT_TYPES $TYPE"
+                    if [ "$SUB_FILES" == 'yes' ]; then
+                        BFILE1=`basename $FILE1`
+                        BFILE2=`basename $FILE2`
+                        WDIR=`dirname $FILE2`
+                        cdo sub ${FILE2} ${FILE1} ${WDIR}/diff_${BFILE2%.nc}-${BFILE1}
+                    fi
+                fi
+    
+            done
+    
+            if [ "x$DIFFERENT_TYPES" != 'x' -a $CAT_CDO_DIFFN == 'yes' ]; then
+                DIFF_STATUS=1
+                DIFF_DATE=$DATE
+                DIFF_TYPES=$DIFFERENT_TYPES
+                CAT_CDO_DIFFN='no'
+            fi
+    
+        done
+    
+        if [ $DIFF_STATUS == 0 ]; then
+            echo " "
+            echo "The experiments are equal"
+            echo " "
+        else
+            echo " "
+            echo "The experiments differ:"
+            echo "- first at date/time $DIFF_DATE"
+            echo "- for the file types $DIFF_TYPES"
+            echo " "
+        fi
+    fi
+}
+#------------------------------------------------------------------------
+function string_in_list
+{
+    typeset STR_IN_LIST STR
+    STR_IN_LIST=false
+    STR=$1
+    N=$#
+    M=2
+    LIST=""
+    while [ $M -le $N ]; do
+        ARG=$(eval echo \${$M})
+        LIST=$LIST" "$ARG
+        M=$(( M + 1 ))
+    done
+    for ELEMENT in $LIST; do
+        if [ "$STR" == $ELEMENT ]; then
+            STR_IN_LIST=true
+        fi
+    done 
+    if [ "$STR_IN_LIST" == 'true' ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+#################### main script ########################################
+
+date
+
+# assume this script is started in run/checksuite.icon-dev
+cd ..
+
+# get paths standardized by pwd
+SCRIPT_DIR=`pwd`
+cd ..
+MODEL_DIR=`pwd`
+cd $SCRIPT_DIR
+
+# possible test modes
+MODES="b u r n m o ur un um uo rn rm ro nm no mo urn urm uro unm uno umo rnm rno rmo nmo urnm urno urmo unmo rnmo urnmo"
+
+while getopts ":cd:e:f:hm:o:r:s:t:u" OPT; do
+    case $OPT in
+        c  ) COLOUR='yes'
+            ;;
+        d  ) DATES=$OPTARG
+            ;;
+        e  ) EXPERIMENT=$OPTARG
+            ;;
+        f  ) FORCE_MRS=$OPTARG
+            if [ "$FORCE_MRS" != 'yes' -a "$FORCE_MRS" != 'no' ]; then
+                print_usage $0
+                exit 1
+            fi
+            ;;
+        h  ) print_usage $0
+            exit 1
+            ;;
+        m  ) MODE=$OPTARG 
+            case $MODE in
+                'base')     MD='b';;
+                'update')   MD='u';;
+                'restart')  MD='r';;
+                'nproma')   MD='n';;
+                'mpi')      MD='m';;
+                'omp')      MD='o';;
+                *)      MD=$MODE;;
+            esac
+            if ! string_in_list $MD $MODES; then
+                print_usage $0
+                exit 1
+            fi 
+            ;;
+        o  ) OVERWRITE=$OPTARG
+            if [ "$OVERWRITE" != 'yes' -a "$OVERWRITE" != 'no' ]; then
+                print_usage $0
+                exit 1
+            fi
+            ;;
+        r  ) REFERENCE=$OPTARG
+            CMODES="u ur un um uo urn urm uro unm uno umo urnm urno urmo unmo urnmo"
+            if string_in_list $MD $CMODES; then
+                if [ ! -d ${REFERENCE}/run ]; then
+	            echo 'you asked for an update test, but no reference model found'
+	            echo "reference model ${REFERENCE} does not exist"
+	            exit 1
+	        fi
+            fi
+            ;;
+        s  ) RESTART_DATE=$OPTARG
+            ;;
+        t  ) TYPES=$OPTARG
+            ;;
+        u  ) SUB_FILES='yes'
+            ;;
+        \? ) print_usage $0
+            exit ;;
+    esac
+done
+
+# Default values:
+# The following variables are set to a default value if these variables
+# are not set by an option argument yet or an environment variable.
+# A calling script can set these variables exporting their values.
+
+# Ouput in colour
+COLOUR=${COLOUR='no'}
+# Experiment
+EXPERIMENT=${EXPERIMENT='atm_amip_test_kit'}
+# Force to run "make_runscripts" for the specified experiment even
+# if the respective runscript is present 
+FORCE_MRS=${FORCE_MRS='yes'}
+# Test mode
+MD=${MD='rnmo'}
+# Force to overwrite existing experiments even if they are present
+OVERWRITE=${OVERWRITE='yes'}
+# Specify a reference model
+REFERENCE=${REFERENCE=''}
+# Do not calculate differences between differing files
+SUB_FILES=${SUB_FILES='no'}
+
+# Set defaults for file types, dates, and the restart date for the 
+# checks depending on the experiment.
+if [ "${EXPERIMENT}" == 'atm_amip_test_kit' ]; then
+    TYPES=${TYPES='atm_2d_ml atm_3d_ml phy_3d_ml trc_3d_ml lnd_ml'}
+#    TYPES=${TYPES='atm_2d_ml atm_3d_ml phy_3d_ml lnd_ml'}
+    DATES=${DATES='19790101T000000Z 19790101T000400Z 19790101T000800Z 19790101T001200Z 19790101T001600Z'}
+    RESTART_DATE=${RESTART_DATE='19790101T000800Z'}
+fi
+if [ "${EXPERIMENT}" == 'atm_amip_les_test' ]; then
+    TYPES=${TYPES='atm_2d_ml atm_3d_ml lnd_basic_ml'}
+    DATES=${DATES='19790101T000000Z 19790101T000400Z 19790101T000800Z 19790101T001200Z 19790101T001600Z'}
+    RESTART_DATE=${RESTART_DATE='19790101T000800Z'}
+fi
+if [ "${EXPERIMENT}" == 'oce_omip_0160km' ]; then
+    TYPES=${TYPES='oceDefault oceDiag'}
+    DATES=${DATES='20010101T000000Z 20010101T120000Z 20010101T180000Z 20010102T000000Z 20010102T120000Z 20010102T180000Z 20010103T000000Z'}
+    RESTART_DATE=${RESTART_DATE='20010102T000000Z'}
+fi
+if [ "${EXPERIMENT}" == 'atm_icoles_nested' ]; then
+    TYPES=${TYPES='prog_vars_DOM01_ML prog_vars_DOM02_ML pbl_vars_DOM01_ML pbl_vars_DOM02_ML cloud_diag_DOM01_ML cloud_diag_DOM02_ML'}
+    DATES=${DATES='20130424T000500Z 20130424T001000Z 20130424T001500Z 20130424T002000Z'}
+    RESTART_DATE=${RESTART_DATE='20130424T001000Z'}
+fi
+if [ "${EXPERIMENT}" == 'atm_jww_hs_test' ]; then
+    TYPES=${TYPES='ml'}
+    DATES=${DATES='20080901T001000Z 20080901T002000Z 20080901T003000Z 20080901T005000Z 20080901T010000Z'}
+    RESTART_DATE=${RESTART_DATE='20080901T003000Z'}
+fi
+if [ "${EXPERIMENT}" == 'atm_ape_test' ]; then
+    TYPES=${TYPES='atm_2d_ml atm_3d_ml phy_3d_ml trc_3d_ml'}
+    DATES=${DATES='19790101T000000Z 19790101T000400Z 19790101T000800Z 19790101T001200Z 19790101T001600Z'}
+    RESTART_DATE=${RESTART_DATE='19790101T000800Z'}
+fi
+if [ "${EXPERIMENT}" == 'atm_rce_test' ]; then
+    TYPES=${TYPES='atm_2d_ml atm_2d_rmb_ml phy_3d_ml phy_3d_rmb_ml'}
+    DATES=${DATES='19790101T000000Z 19790101T000400Z 19790101T000800Z 19790101T001200Z 19790101T001600Z'}
+    RESTART_DATE=${RESTART_DATE='19790101T000800Z'}
+fi
+
+echo " "
+echo "=============================================================="
+echo " "
+echo "Run the checksuite for:"
+echo "- EXPERIMENT   = ${EXPERIMENT:?   is not defined --> ERROR}"
+echo "- TYPES        = ${TYPES:?        is not defined --> ERROR}"
+echo "- DATES        = ${DATES:?        is not defined --> ERROR}"
+echo "- RESTART_DATE = ${RESTART_DATE:? is not defined --> ERROR}"
+echo "- CHECK MODE   = ${MD:?           is not defined --> ERROR}"
+echo "--------------------------------------------------------------"
+echo " "
+
+# check if REFERENCE is defined if an update test is requested
+CMODES="u ur un um uo urn urm uro unm uno umo urnm urno urmo unmo urnmo"
+if string_in_list $MD $CMODES; then
+    echo "- REFERENCE    = ${REFERENCE:?  is not defined --> ERROR}"
+
+    # get reference path standardized by pwd
+    cd ${REFERENCE}; REFERENCE=`pwd`
+    if [ "${REFERENCE}" == "${MODEL_DIR}" ]; then
+        if [ "$COLOUR" == 'no' ]; then
+            echo 'reference model and test model are the same'
+        else
+            echo -e "\033[31mreference model and test model are the same\033[00m"
+        fi
+        exit 1
+    fi
+fi
+
+SCRIPT=${EXPERIMENT}
+
+cd ${MODEL_DIR}
+
+if [ ! -f ${SCRIPT_DIR}/exp.${SCRIPT}.run -o "$FORCE_MRS" == 'yes' ]; then
+    ./make_runscripts ${SCRIPT}
+fi
+
+if [ ! -d experiments ]; then
+    mkdir experiments
+fi
+
+# check if the test runscript exists
+if [ ! -f ${SCRIPT_DIR}/exp.${SCRIPT}.run ]; then
+    if [ "$COLOUR" == 'no' ]; then
+        echo "did not find base runscript ${SCRIPT_DIR}/exp.${SCRIPT}.run"
+    else
+        echo "\033[31mdid not find base runscript ${SCRIPT_DIR}/exp.${SCRIPT}.run\033[00m"
+    fi
+    exit 1
+else
+    echo "found runscript ${SCRIPT_DIR}/exp.${SCRIPT}.run"
+fi
+
+# find out on which system we are
+TARGET_MACHINE=`grep "# target machine is " ${SCRIPT_DIR}/exp.${SCRIPT}.run`
+TARGET_MACHINE=${TARGET_MACHINE#'# target machine is '}
+
+# variables to track the test results
+PASSED_TESTS="PASSED_TESTS: "
+FAILED_TESTS="FAILED_TESTS: "
+EXIT_STATUS=0
+
+# now start with the tests
+
+TEST='base'
+echo ' '
+echo "#################### perform $TEST test            ####################"
+echo ' '
+EXP_BASE=${EXPERIMENT}_${TEST}
+EXP_TEST=${EXPERIMENT}_${TEST}
+if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_BASE} ]; then
+    cd ${SCRIPT_DIR}
+    RUN_SCRIPT=exp.${EXP_BASE}.run
+    sed s/${SCRIPT}/${EXP_BASE}/g < exp.${SCRIPT}.run > ${RUN_SCRIPT}
+
+    echo "Perform $TEST run"
+    chmod 755 ${RUN_SCRIPT}
+    ${SCRIPT_DIR}/${RUN_SCRIPT}
+    
+
+    STATUS=$?
+    if [ "$STATUS" -eq 0 ]; then
+        PASSED_TESTS="$PASSED_TESTS $TEST"
+        EXIT_STATUS=$(($EXIT_STATUS + 0))
+    else
+        FAILED_TESTS="$FAILED_TESTS $TEST"
+        EXIT_STATUS=$((EXIT_STATUS + 1))
+        if [ "$COLOUR" == 'no' ]; then
+            echo "ERROR: Base run FAILED --> no further testing possible"
+        else
+            echo -e "\033[31mERROR: Base run FAILED --> no further testing possible\033[00m"
+        fi
+        exit 1
+    fi
+else
+    echo "Found $TEST run"
+fi # OVERWRITE
+
+
+CMODES="u ur un um uo urn urm uro unm uno umo urnm urno urmo unmo urnmo"
+if string_in_list $MD $CMODES; then
+    TEST='update'
+    echo ' '
+    echo "#################### perform $TEST test          ####################"
+    echo ' '
+    cd ${REFERENCE} 
+    RUN_STATUS=-1
+    if [ ! -d experiments/${EXP_BASE} ] ;then 
+        if [ ! -f run/exp.${SCRIPT}.run -o "$FORCE_MRS" == 'yes' ]; then
+            ${MODEL_DIR}/make_runscripts ${SCRIPT}
+        fi
+        if [ ! -d experiments ]; then
+            mkdir experiments
+        fi
+        cd run
+        if [ ! -f exp.${SCRIPT}.run ]; then
+            if [ "$COLOUR" == 'no' ]; then
+                echo 'reference model: '$REFERENCE
+                echo "did not find base runscript for reference model exp.${SCRIPT}.run"
+            else
+                echo -e "\033[31mreference model: $REFERENCE\033[00m"
+                echo -e "\033[31mdid not find base runscript for reference model exp.${SCRIPT}.run\033[00m"
+            fi
+            exit 1
+        else
+            echo "found base runscript exp.${SCRIPT}.run"
+        fi
+
+        RUN_SCRIPT=exp.${EXP_BASE}.run
+        sed s/${SCRIPT}/${EXP_BASE}/g < exp.${SCRIPT}.run > ${RUN_SCRIPT}
+
+        echo "Perform $TEST run"
+        chmod 755 ${RUN_SCRIPT}
+        ${REFERENCE}/run/${RUN_SCRIPT}
+        RUN_STATUS=$?
+
+    else
+        echo "Found $TEST run"
+        RUN_STATUS=0
+    fi # OVERWRITE
+
+    if [ "$RUN_STATUS" == 0 ]; then
+    # compare base run with test run
+        diff_results $MODEL_DIR $EXP_BASE $REFERENCE $EXP_BASE $TEST
+        if [ "$DIFF_STATUS" == 0 ]; then
+            PASSED_TESTS="$PASSED_TESTS $TEST"
+            EXIT_STATUS=$(($EXIT_STATUS + 0))
+        else
+            FAILED_TESTS="$FAILED_TESTS $TEST"
+            EXIT_STATUS=$(($EXIT_STATUS + 1))
+        fi
+    else
+        if [ "$COLOUR" == 'no' ]; then
+            echo "ERROR: The $TEST test run aborted --> no comparison with the base run"
+        else
+            echo -e "\033[31mERROR: The $TEST test run aborted --> no comparison with the base run\033[00m"
+        fi
+        FAILED_TESTS="$FAILED_TESTS $TEST"
+        EXIT_STATUS=$(($EXIT_STATUS + 1))
+    fi # RUN_STATUS
+fi # MODE
+
+
+CMODES="r ur rn rm ro urn urm uro rnm rno rmo urnm urno urmo rnmo urnmo"
+if string_in_list $MD $CMODES; then
+    TEST='restart'
+    echo ' '
+    echo "#################### perform $TEST test          ####################"
+    echo ' '
+    RUN_STATUS=-1
+    EXP_TEST=${EXPERIMENT}_${TEST}
+    if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_TEST} ]; then
+
+        copy_experiment ${MODEL_DIR} ${EXP_BASE} ${EXP_TEST}
+        if [ $? -ne 0 ]; then
+            if [ "$CLOLUR" == 'no' ]; then
+                echo "could not get base experiment ${EXP_BASE} or create new experiment ${EXP_TEST}"
+            else
+	        echo -e "\033[31mcould not get base experiment ${EXP_BASE} or create new experiment ${EXP_TEST}\033[00m"
+            fi
+            exit 1
+        fi
+
+        RUN_SCRIPT=exp.${EXP_TEST}.run
+        cd ${SCRIPT_DIR}
+        sed s/${SCRIPT}/${EXP_TEST}/g < exp.${SCRIPT}.run > ${RUN_SCRIPT}
+
+        sed s/restart:=\".false.\"/restart:=\".true.\"/g < ${RUN_SCRIPT} > ${RUN_SCRIPT}.out
+        mv ${RUN_SCRIPT}.out ${RUN_SCRIPT}
+
+        echo "Perform $TEST run"
+        chmod 755 ${RUN_SCRIPT}
+        ${SCRIPT_DIR}/${RUN_SCRIPT}
+        RUN_STATUS=$?
+
+    else
+        echo "Found $TEST run"
+        RUN_STATUS=0
+    fi # OVERWRITE
+
+    if [ "$RUN_STATUS" == 0 ]; then
+        # compare base run with test run
+        diff_results $MODEL_DIR $EXP_BASE $MODEL_DIR $EXP_TEST $TEST
+        if [ "$DIFF_STATUS" == 0 ]; then
+            PASSED_TESTS="$PASSED_TESTS $TEST"
+            EXIT_STATUS=$(($EXIT_STATUS + 0))
+        else
+            FAILED_TESTS="$FAILED_TESTS $TEST"
+            EXIT_STATUS=$(($EXIT_STATUS + 1))
+        fi
+    else
+        if [ "$COLOUR" == 'no' ]; then
+            echo "ERROR: The $TEST test run aborted --> no comparison with the base run"
+        else
+            echo -e "\033[31mERROR: The $TEST test run aborted --> no comparison with the base run\033[00m"
+        fi
+        FAILED_TESTS="$FAILED_TESTS $TEST"
+        EXIT_STATUS=$(($EXIT_STATUS + 1))
+    fi # RUN_STATUS
+fi # MODE
+
+
+CMODES="n un rn nm no urn unm uno rnm rno nmo urnm urno unmo rnmo urnmo"
+if string_in_list $MD $CMODES; then
+    TEST='nproma'
+    echo ' '
+    echo "#################### perform $TEST test         ####################"
+    echo ' '
+    RUN_STATUS=-1
+    EXP_TEST=${EXPERIMENT}_${TEST}
+    if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_TEST} ]; then
+
+        RUN_SCRIPT=exp.${EXP_TEST}.run
+        cd ${SCRIPT_DIR}
+        sed s/${SCRIPT}/${EXP_TEST}/g < exp.${SCRIPT}.run > ${RUN_SCRIPT}
+
+        N_NPROMA=`grep "nproma=" ${RUN_SCRIPT}`
+        N_NPROMA_NEW="nproma=17"
+        if [ "${N_NPROMA#nproma=}" == "${N_NPROMA_NEW#nproma=}" ]; then
+            N_NPROMA_NEW='nproma=19'
+        fi
+        sed s/$N_NPROMA/$N_NPROMA_NEW/g < ${RUN_SCRIPT} > ${RUN_SCRIPT}.out
+        mv ${RUN_SCRIPT}.out ${RUN_SCRIPT}
+
+        echo "Perform $TEST run"
+        chmod 755 ${RUN_SCRIPT}
+        ${SCRIPT_DIR}/${RUN_SCRIPT}
+        RUN_STATUS=$?
+
+    else
+        echo "Found $TEST run"
+        RUN_STATUS=0
+    fi # OVERWRITE
+
+    if [ "$RUN_STATUS" == 0 ]; then
+        # compare base run with test run
+        diff_results $MODEL_DIR $EXP_BASE $MODEL_DIR $EXP_TEST $TEST
+        if [ "$DIFF_STATUS" == 0 ]; then
+            PASSED_TESTS="$PASSED_TESTS $TEST"
+            EXIT_STATUS=$(($EXIT_STATUS + 0))
+        else
+            FAILED_TESTS="$FAILED_TESTS $TEST"
+            EXIT_STATUS=$(($EXIT_STATUS + 1))
+        fi
+    else
+        if [ "$COLOUR" == 'no' ]; then
+            echo "ERROR: The $TEST test run aborted --> no comparison with the base run"
+        else
+            echo -e "\033[31mERROR: The $TEST test run aborted --> no comparison with the base run\033[00m"
+        fi
+        FAILED_TESTS="$FAILED_TESTS $TEST"
+        EXIT_STATUS=$(($EXIT_STATUS + 1))
+    fi # RUN_STATUS
+fi # MODE
+
+
+CMODES="m um rm nm mo urm unm umo rnm rmo nmo urnm urmo unmo rnmo urnmo"
+if string_in_list $MD $CMODES; then
+    TEST='mpi'
+    echo ' '
+    echo "#################### perform $TEST test         ####################"
+    echo ' '
+    TEST_POSSIBLE='no'
+    RUN_STATUS=-1
+    EXP_TEST=${EXPERIMENT}_${TEST}
+    if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_TEST} ]; then
+        cd ${SCRIPT_DIR}
+        MPI=`grep with_mpi exp.${SCRIPT}.run`
+        MPIYES='with_mpi="yes"'
+        if [ "$MPI" == "$MPIYES" ]; then
+
+            # find out how many nodes and processes per node are in use
+
+            N_NODES=`grep "no_of_nodes=" exp.${SCRIPT}.run`
+            eval N_NODES=\""${N_NODES#'no_of_nodes='}"\"
+            N_PPNODE=`grep "mpi_procs_pernode=" exp.${SCRIPT}.run`
+            eval N_PPNODE=\""${N_PPNODE#'mpi_procs_pernode='}"\"
+            N_PROCS=$(( N_NODES * N_PPNODE ))
+
+            if [ $N_PROCS -gt 1 ]; then
+
+	        TEST_POSSIBLE='yes'
+
+                RUN_SCRIPT=exp.${EXP_TEST}.run
+                cd ${SCRIPT_DIR}
+                sed "s/${SCRIPT}/${EXP_TEST}/g" exp.${SCRIPT}.run \
+                    > ${RUN_SCRIPT}
+
+
+                if [ $N_PPNODE -gt 1 ]; then
+
+                    # keep number of nodes, and use one process less per node
+
+	            N_NODES_NEW=$N_NODES
+                    N_PPNODE_NEW=$(( N_PPNODE - 1 ))
+
+                    # change script variables
+                    sed -i \
+                      's/\b\(mpi_procs_pernode\)=.*/\1='"$N_PPNODE_NEW"'/g' \
+                      ${RUN_SCRIPT}
+
+	        else
+
+                    # use one node less and keep one process per node
+
+	            N_NODES_NEW=$(( N_NODES - 1 ))
+	            N_PPNODE_NEW=$N_PPNODE
+
+                    # change script variables
+	            sed -i \
+                      's/\b\(no_of_nodes\)=.*/\1='"$N_NODES_NEW"'/g' \
+                      ${RUN_SCRIPT}
+
+	        fi # N_PPNODE>1
+
+                N_PROCS_NEW=$(( N_NODES_NEW * N_PPNODE_NEW ))
+                sed -i \
+                  's/((\(mpi_total_procs=\).*/\1'"$N_PROCS_NEW"'/g' \
+                  ${RUN_SCRIPT}
+
+                echo "Perform $TEST run"
+                chmod 755 ${RUN_SCRIPT}
+                ${SCRIPT_DIR}/${RUN_SCRIPT}
+                RUN_STATUS=$?
+
+            else
+                if [ "$COLOUR" == 'no' ]; then
+                    echo "No MPI parallelization test because total number of MPI processors is : $N_PROCS"
+	        else
+                    echo -e "\033[31mNo MPI parallelization test because total number of MPI processors is : $N_PROCS\033[00m"
+	        fi
+            fi # total number of procs > 1
+
+        else
+            if [ "$COLOUR" == 'no' ]; then
+                echo "No MPI parallelization test is peformed because: $MPI"
+            else
+                echo -e "\033[31mNo MPI parallelization test is peformed because: $MPI\033[00m"
+            fi
+        fi # MPI = yes
+
+    else
+        echo "Found $TEST run"
+        TEST_POSSIBLE='yes'
+        RUN_STATUS=0
+    fi # OVERWRITE
+
+    if [ "${TEST_POSSIBLE}" == 'yes' ]; then
+        if [ "$RUN_STATUS" == 0 ]; then
+      # compare base run with test run
+            diff_results $MODEL_DIR $EXP_BASE $MODEL_DIR $EXP_TEST $TEST
+            if [ "$DIFF_STATUS" == 0 ]; then
+                PASSED_TESTS="$PASSED_TESTS $TEST"
+                EXIT_STATUS=$(($EXIT_STATUS + 0))
+            else
+                FAILED_TESTS="$FAILED_TESTS $TEST"
+                EXIT_STATUS=$(($EXIT_STATUS + 1))
+            fi
+        else
+            if [ "$COLOUR" == 'no' ]; then
+                echo "ERROR: The $TEST test run aborted --> no comparison with the base run"
+            else
+                echo -e "\033[31mERROR: The $TEST test run aborted --> no comparison with the base run\033[00m"
+            fi
+            FAILED_TESTS="$FAILED_TESTS $TEST"
+            EXIT_STATUS=$(($EXIT_STATUS + 1))
+        fi # RUN_STATUS
+    fi # TEST_POSSIBLE
+fi # MODE
+
+
+CMODES="o uo ro no mo uro uno umo rno rmo nmo urno urmo unmo rnmo urnmo"
+if string_in_list $MD $CMODES; then
+    TEST='omp'
+    echo ' '
+    echo "#################### perform $TEST test         ####################"
+    echo ' '
+    TEST_POSSIBLE='no'
+    RUN_STATUS=-1
+    EXP_TEST=${EXPERIMENT}_${TEST}
+    if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_TEST} ]; then
+        cd ${SCRIPT_DIR}
+        OMP=`grep with_openmp exp.${SCRIPT}.run`
+        OMPYES='with_openmp="yes"'
+        if [ "$OMP" == "$OMPYES" ]; then
+
+            # find out how many omp threads are in use
+
+            N_OMP_NUM_THREADS=`grep "export OMP_NUM_THREADS=" exp.${SCRIPT}.run`
+            eval N_OMP_NUM_THREADS=\""${N_OMP_NUM_THREADS#'export OMP_NUM_THREADS='}"\"
+            N_ICON_THREADS=`grep "export ICON_THREADS=" exp.${SCRIPT}.run`
+            eval N_ICON_THREADS=\""${N_ICON_THREADS#'export ICON_THREADS='}"\"
+
+            if [ $N_OMP_NUM_THREADS -gt 1 ]; then
+
+	        TEST_POSSIBLE='yes'
+
+                RUN_SCRIPT=exp.${EXP_TEST}.run
+                sed "s/${SCRIPT}/${EXP_TEST}/g" exp.${SCRIPT}.run \
+                    > ${RUN_SCRIPT}
+
+                N_OMP_NUM_THREADS_NEW=$(( N_OMP_NUM_THREADS - 1 ))
+	        N_ICON_THREADS_NEW=$(( N_ICON_THREADS - 1 ))
+
+                # since the mistral script dynamically adapts the
+                # number of tasks to the number of threads, these need
+                # to be fixed too
+                N_PPNODE=`grep "mpi_procs_pernode=" exp.${SCRIPT}.run`
+                eval N_PPNODE=\""${N_PPNODE#'mpi_procs_pernode='}"\"
+
+                # change script variables
+                sed -i \
+                  -e 's/\b\(OMP_NUM_THREADS\)=.*/\1='"$N_OMP_NUM_THREADS_NEW"'/g' \
+                  -e 's/\b\(ICON_THREADS\)=.*/\1='"$N_ICON_THREADS_NEW"'/g' \
+                  -e 's/\b\(mpi_procs_pernode\)=.*/\1='"$N_PPNODE"'/g' \
+                      ${RUN_SCRIPT}
+
+                echo "Perform $TEST run"
+                chmod 755 ${RUN_SCRIPT}
+                ${SCRIPT_DIR}/${RUN_SCRIPT}
+                RUN_STATUS=$?
+
+            else
+	        if [ "$COLOUR" == 'no' ]; then
+                    echo "No OMP parallelization test because number of OMP threads = $N_OMP_NUM_THREADS"
+	        else
+                    echo -e "\033[31mNo OMP parallelization test because number of OMP threads = $N_OMP_NUM_THREADS\033[00m"
+	        fi
+            fi # total number of omp threads > 1
+
+        else
+            if [ "$COLOUR" == 'no' ]; then
+                echo "No OMP parallelization test is peformed because: $OMP"
+            else
+                echo -e "\033[31mNo OMP parallelization test is peformed because: $OMP\033[00m"
+            fi
+        fi # OMP = yes
+
+    else
+        echo "Found $TEST run"
+        TEST_POSSIBLE='yes'
+        RUN_STATUS=0
+    fi # OVERWRITE
+
+    if [ "${TEST_POSSIBLE}" == 'yes' ]; then
+        if [ "$RUN_STATUS" == 0 ]; then
+            # compare base run with test run
+            diff_results $MODEL_DIR $EXP_BASE $MODEL_DIR $EXP_TEST $TEST
+            if [ "$DIFF_STATUS" == 0 ]; then
+                PASSED_TESTS="$PASSED_TESTS $TEST"
+                EXIT_STATUS=$(($EXIT_STATUS + 0))
+            else
+                FAILED_TESTS="$FAILED_TESTS $TEST"
+                EXIT_STATUS=$(($EXIT_STATUS + 1))
+            fi
+        else
+            if [ "$COLOUR" == 'no' ]; then
+                echo "ERROR: The $TEST test run aborted --> no comparison with the base run"
+            else
+                echo -e "\033[31mERROR: The $TEST test run aborted --> no comparison with the base run\033[00m"
+            fi
+            FAILED_TESTS="$FAILED_TESTS $TEST"
+            EXIT_STATUS=$(($EXIT_STATUS + 1))
+        fi # RUN_STATUS
+    fi # TEST_POSSIBLE
+fi # MODE
+
+
+echo ' '
+echo ' '
+echo '#################### test summary             ########################'
+echo ' '
+if [ "$COLOUR" == 'no' ]; then
+    echo $PASSED_TESTS
+    echo $FAILED_TESTS
+else
+    echo -e "\033[32m$PASSED_TESTS\033[00m"
+    echo -e "\033[31m$FAILED_TESTS\033[00m"
+fi
+echo ' '
+echo 'EXIT_STATUS: '$EXIT_STATUS
+echo ' '
+echo '======================================================================'
+date
+exit $EXIT_STATUS

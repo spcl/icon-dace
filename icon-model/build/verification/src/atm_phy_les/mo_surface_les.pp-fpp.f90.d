@@ -1,0 +1,4 @@
+src/atm_phy_les/mo_surface_les.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/atm_phy_les/mo_surface_les.f90
+src/atm_phy_les/mo_surface_les.pp-fpp.o src/atm_phy_les/mo_surface_les.pp-fpp.f90.d: src/atm_phy_les/mo_surface_les.pp-fpp.f90
+mod/mo_surface_les.mod.proxy: src/atm_phy_les/mo_surface_les.pp-fpp.o
+src/atm_phy_les/mo_surface_les.pp-fpp.o src/atm_phy_les/mo_surface_les.pp-fpp.o: mod/mo_physical_constants.mod.proxy mod/mo_run_config.mod.proxy mod/mo_nwp_lnd_types.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_sync.mod.proxy mod/mo_satad.mod.proxy mod/mo_nonhydro_types.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_les_config.mod.proxy mod/mo_kind.mod.proxy mod/turb_data.mod.proxy mod/mo_impl_constants_grf.mod.proxy mod/mo_nwp_phy_types.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_turbdiff_config.mod.proxy

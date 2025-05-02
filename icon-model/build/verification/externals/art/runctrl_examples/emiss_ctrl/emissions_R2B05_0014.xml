@@ -1,0 +1,684 @@
+<?xml version="1.0" encoding="utf-8"?>
+<emissions global_resolution="R2B05_0014">
+  <dataset id="CFCl3_ANT_GEIA" species="CFCl3" type="emiss_ANT">
+    <inventory>GEIA</inventory>
+    <start_date>1986-01-15T00:00:00Z</start_date>
+    <end_date>1986-01-15T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="1">clon</var_name>
+      <var_name num_dims="2">clon_bnds</var_name>
+      <var_name num_dims="1">clat</var_name>
+      <var_name num_dims="2">clat_bnds</var_name>
+      <var_name num_dims="1">CFCl3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="SF6_ANT_EDGARLevin" species="SF6" type="emiss_ANT">
+    <inventory>EDGARLevin</inventory>
+    <start_date>1994-07-02T12:00:00Z</start_date>
+    <end_date>2012-06-27T12:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">sf6</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_ANT_POET" species="CO" type="emiss_ANT">
+    <inventory>POET</inventory>
+    <start_date>1990-01-01T00:00:00Z</start_date>
+    <end_date>2000-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_ANT_MACCity" species="CO" type="emiss_ANT">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_BIO_MEGANv2" species="CO" type="emiss_BIO">
+    <inventory>MEGANv2</inventory>
+    <start_date>2000-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_BIO_MEGAN-MACC" species="CO" type="emiss_BIO">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_BBE_GUESS-ES" species="CO" type="emiss_BBE">
+    <inventory>GUESS-ES</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2009-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_BBE_GICC" species="CO" type="emiss_BBE">
+    <inventory>GICC</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2005-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_BBE_GFED3" species="CO" type="emiss_BBE">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_BBE_RETRO" species="CO" type="emiss_BBE">
+    <inventory>RETRO</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="NH3_ANT_MACCity" species="NH3" type="emiss_ANT">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">NH3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="NH3_BBE_GFED3" species="NH3" type="emiss_BBE">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">NH3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="DMS_BBE_GFED3" species="DMS" type="emiss_BBE">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">DMS</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="DMS_BBE_MACCity" species="DMS" type="emiss_BBE">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2008-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">DMS</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="SO2_ANT_MACCity" species="SO2" type="emiss_ANT">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">SO2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="SO2_BBE_GFED3" species="SO2" type="emiss_BBE">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">SO2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH2Br2_BIO_ordonez" species="CH2Br2" type="emiss_BIO">
+    <inventory>ordonez</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">ch2br2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH2Br2_BIO_ziska" species="CH2Br2" type="emiss_BIO">
+    <inventory>ziska</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">ch2br2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH2Br2_BIO_liang" species="CH2Br2" type="emiss_BIO">
+    <inventory>liang</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">ch2br2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C5H8_BIO_MEGAN-MACC" species="C5H8" type="emiss_BIO">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">isoprene</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C5H8_BBE_MACCity" species="C5H8" type="emiss_BBE">
+    <inventory>MACCity</inventory>
+    <start_date>1990-01-01T00:00:00Z</start_date>
+    <end_date>2008-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">isoprene</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_ANT_POET" species="CH3COCH3" type="emiss_ANT">
+    <inventory>POET</inventory>
+    <start_date>1990-01-01T00:00:00Z</start_date>
+    <end_date>2000-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_ANT_MACCity" species="CH3COCH3" type="emiss_ANT">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_BIO_MEGANv2" species="CH3COCH3" type="emiss_BIO">
+    <inventory>MEGANv2</inventory>
+    <start_date>2000-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_BIO_MEGAN-MACC" species="CH3COCH3" type="emiss_BIO">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_BBE_GUESS-ES" species="CH3COCH3" type="emiss_BBE">
+    <inventory>GUESS-ES</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2009-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_BBE_GICC" species="CH3COCH3" type="emiss_BBE">
+    <inventory>GICC</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2005-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_BBE_GFED3" species="CH3COCH3" type="emiss_BBE">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_BBE_POET" species="CH3COCH3" type="emiss_BBE">
+    <inventory>POET</inventory>
+    <start_date>1990-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_BBE_RETRO" species="CH3COCH3" type="emiss_BBE">
+    <inventory>RETRO</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="N2O_ANT_EDGARv4.2" species="N2O" type="emiss_ANT">
+    <inventory>EDGARv4.2</inventory>
+    <start_date>1970-01-01T00:00:00Z</start_date>
+    <end_date>2008-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">N2O</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="N2O_BBE_GFED3" species="N2O" type="emiss_BBE">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">N2O</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO2_ANT_EDGARv4.2" species="CO2" type="emiss_ANT">
+    <inventory>EDGARv4.2</inventory>
+    <start_date>1970-01-01T00:00:00Z</start_date>
+    <end_date>2008-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO2_BBE_GFED3" species="CO2" type="emiss_BBE">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH4_ANT_EDGARv4.2" species="CH4" type="emiss_ANT">
+    <inventory>EDGARv4.2</inventory>
+    <start_date>1970-01-01T00:00:00Z</start_date>
+    <end_date>2008-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CH4</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH4_BIO_MEGAN-MACC" species="CH4" type="emiss_BIO">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CH4</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH4_BBE_GFED3" species="CH4" type="emiss_BBE">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CH4</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C2H6_ANT_MACCity" species="C2H6" type="emiss_ANT">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">c2h6</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C2H6_BIO_MEGAN-MACC" species="C2H6" type="emiss_BIO">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">c2h6</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C2H6_BBE_GFED3" species="C2H6" type="emiss_BBE">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">c2h6</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3CN_BBE_MACCity" species="CH3CN" type="emiss_BBE">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2008-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3I_BIO_ziska" species="CH3I" type="emiss_BIO">
+    <inventory>ziska</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">ch3i</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3I_BIO_bell" species="CH3I" type="emiss_BIO">
+    <inventory>bell</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">ch3i</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C3H8_ANT_MACCity" species="C3H8" type="emiss_ANT">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">propane</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C3H8_BIO_MEGAN-MACC" species="C3H8" type="emiss_BIO">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">propane</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C3H8_BBE_GFED3" species="C3H8" type="emiss_BBE">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">propane</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CHBr3_BIO_ordonez" species="CHBr3" type="emiss_BIO">
+    <inventory>ordonez</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">chbr3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CHBr3_BIO_ziska" species="CHBr3" type="emiss_BIO">
+    <inventory>ziska</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">chbr3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CHBr3_BIO_liang" species="CHBr3" type="emiss_BIO">
+    <inventory>liang</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">chbr3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_ANT_hist_ACCMIP" species="ACCMIP/CO" type="emiss_ANT">
+    <inventory>hist</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_slv</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_ANT_hist_ships_ACCMIP" species="ACCMIP/CO" type="emiss_ANT">
+    <inventory>hist_ships</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_ANT_RCP26_ACCMIP" species="ACCMIP/CO" type="emiss_ANT">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_slv</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_ANT_RCP26_ships_ACCMIP" species="ACCMIP/CO" type="emiss_ANT">
+    <inventory>RCP26_ships</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_BBE_hist_ACCMIP" species="ACCMIP/CO" type="emiss_BBE">
+    <inventory>hist</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CO_BBE_RCP26_ACCMIP" species="ACCMIP/CO" type="emiss_BBE">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_BBE_hist_ACCMIP" species="ACCMIP/CH3COCH3" type="emiss_BBE">
+    <inventory>hist</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH3COCH3_BBE_RCP26_ACCMIP" species="ACCMIP/CH3COCH3" type="emiss_BBE">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH4_ANT_hist_ACCMIP" species="ACCMIP/CH4" type="emiss_ANT">
+    <inventory>hist</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH4_ANT_hist_ships_ACCMIP" species="ACCMIP/CH4" type="emiss_ANT">
+    <inventory>hist_ships</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH4_ANT_RCP26_ACCMIP" species="ACCMIP/CH4" type="emiss_ANT">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH4_ANT_RCP26_ships_ACCMIP" species="ACCMIP/CH4" type="emiss_ANT">
+    <inventory>RCP26_ships</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH4_BBE_hist_ACCMIP" species="ACCMIP/CH4" type="emiss_BBE">
+    <inventory>hist</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="CH4_BBE_RCP26_ACCMIP" species="ACCMIP/CH4" type="emiss_BBE">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C2H6_ANT_hist_ACCMIP" species="ACCMIP/C2H6" type="emiss_ANT">
+    <inventory>hist</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C2H6_ANT_hist_ships_ACCMIP" species="ACCMIP/C2H6" type="emiss_ANT">
+    <inventory>hist_ships</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C2H6_ANT_RCP26_ACCMIP" species="ACCMIP/C2H6" type="emiss_ANT">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C2H6_ANT_RCP26_ships_ACCMIP" species="ACCMIP/C2H6" type="emiss_ANT">
+    <inventory>RCP26_ships</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C2H6_BBE_hist_ACCMIP" species="ACCMIP/C2H6" type="emiss_BBE">
+    <inventory>hist</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="C2H6_BBE_RCP26_ACCMIP" species="ACCMIP/C2H6" type="emiss_BBE">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="NOx_ANT_hist_ACCMIP" species="ACCMIP/NOx" type="emiss_ANT">
+    <inventory>hist</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="NOx_ANT_RCP26_aircraft_ACCMIP" species="ACCMIP/NOx" type="emiss_ANT">
+    <inventory>RCP26_aircraft</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="3">emiss_air</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="NOx_ANT_hist_ships_ACCMIP" species="ACCMIP/NOx" type="emiss_ANT">
+    <inventory>hist_ships</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="NOx_ANT_hist_aircraft_ACCMIP" species="ACCMIP/NOx" type="emiss_ANT">
+    <inventory>hist_aircraft</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="3">emiss_air</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="NOx_ANT_RCP26_ACCMIP" species="ACCMIP/NOx" type="emiss_ANT">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="NOx_ANT_RCP26_ships_ACCMIP" species="ACCMIP/NOx" type="emiss_ANT">
+    <inventory>RCP26_ships</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="NOx_BBE_hist_ACCMIP" species="ACCMIP/NOx" type="emiss_BBE">
+    <inventory>hist</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="NOx_BBE_RCP26_ACCMIP" species="ACCMIP/NOx" type="emiss_BBE">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+</emissions>

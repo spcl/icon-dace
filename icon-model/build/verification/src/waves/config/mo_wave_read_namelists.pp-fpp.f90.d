@@ -1,0 +1,4 @@
+src/waves/config/mo_wave_read_namelists.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/waves/config/mo_wave_read_namelists.f90
+src/waves/config/mo_wave_read_namelists.pp-fpp.o src/waves/config/mo_wave_read_namelists.pp-fpp.f90.d: src/waves/config/mo_wave_read_namelists.pp-fpp.f90
+mod/mo_wave_read_namelists.mod.proxy: src/waves/config/mo_wave_read_namelists.pp-fpp.o
+src/waves/config/mo_wave_read_namelists.pp-fpp.o src/waves/config/mo_wave_read_namelists.pp-fpp.o: mod/mo_nml_annotate.mod.proxy mod/mo_gribout_nml.mod.proxy mod/mo_run_nml.mod.proxy mod/mo_coupling_nml.mod.proxy mod/mo_io_nml.mod.proxy mod/mo_mpi.mod.proxy mod/mo_name_list_output_init.mod.proxy mod/mo_interpol_nml.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_advection_nml.mod.proxy mod/mo_parallel_nml.mod.proxy mod/mo_energy_propagation_nml.mod.proxy mod/mo_time_nml.mod.proxy mod/mo_extpar_nml.mod.proxy mod/mo_wave_nml.mod.proxy mod/mo_grid_nml.mod.proxy

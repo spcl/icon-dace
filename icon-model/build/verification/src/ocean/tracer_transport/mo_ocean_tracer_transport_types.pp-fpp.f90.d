@@ -1,0 +1,4 @@
+src/ocean/tracer_transport/mo_ocean_tracer_transport_types.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/iconfor_dsl_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/ocean/tracer_transport/mo_ocean_tracer_transport_types.f90
+src/ocean/tracer_transport/mo_ocean_tracer_transport_types.pp-fpp.o src/ocean/tracer_transport/mo_ocean_tracer_transport_types.pp-fpp.f90.d: src/ocean/tracer_transport/mo_ocean_tracer_transport_types.pp-fpp.f90
+mod/mo_ocean_tracer_transport_types.mod.proxy: src/ocean/tracer_transport/mo_ocean_tracer_transport_types.pp-fpp.o
+src/ocean/tracer_transport/mo_ocean_tracer_transport_types.pp-fpp.o src/ocean/tracer_transport/mo_ocean_tracer_transport_types.pp-fpp.o: mod/mo_kind.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_impl_constants.mod.proxy

@@ -1,0 +1,3 @@
+src/io/restart/mo_async_restart_comm_data.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/icon_contiguous_defines.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/handle_mpi_error.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/io/restart/mo_async_restart_comm_data.f90 /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc
+src/io/restart/mo_async_restart_comm_data.pp-fpp.o src/io/restart/mo_async_restart_comm_data.pp-fpp.f90.d: src/io/restart/mo_async_restart_comm_data.pp-fpp.f90
+mod/mo_async_restart_comm_data.mod.proxy: src/io/restart/mo_async_restart_comm_data.pp-fpp.o

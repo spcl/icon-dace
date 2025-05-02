@@ -1,0 +1,140 @@
+# Parameter table
+#
+# TABLE_ID=128
+# TABLE_MODEL=ECHAM4
+# TABLE_INSTITUT=MPIMET
+# TABLE_CENTER=98
+# TABLE_SUBCENTER=255
+#
+#-------------------------------------------------------------------------
+#!variable
+#
+# Variables
+#   (max number of entries = 256)
+#
+# The format of each record is:
+#   id | name | title | units
+#
+# id       = parameter ID
+# name     = variable name
+# title    = long name (description)
+# units    = variable units
+#
+#----+-------------+------------------------------------------+----------+
+# id | name        | title                                    | units    |
+#----+-------------+------------------------------------------+----------+
+   4 | precip      | total precipitation                      | m/s      |
+  34 | low_cld     | low cloud
+  35 | mid_cld     | mid cloud
+  36 | hih_cld     | high cloud
+ 129 | geosp       | surface geopotential (orography)         | m^2/s^2  |
+ 130 | t           | temperature                              | K        |
+ 131 | u           | u-velocity                               | m/s      |
+ 132 | v           | v-velocity                               | m/s      |
+ 133 | sq          | specific humidity                        | kg/kg    |
+ 134 | aps         | Surface pressure                         | Pa       |
+ 135 | omega       | vertical velocity                        | Pa/s     |
+ 138 | svo         | vorticity                                | 1/s      |
+ 139 | ts          | surface temperature                      | K        |
+ 140 | ws          | soil wetness                             | m        |
+ 141 | sn          | snow depth                               | m        |
+ 142 | aprl        | large scale precipitation                | m/s      |
+ 143 | aprc        | convective  precipitation                | m/s      |
+ 144 | aprs        | snow fall                                | m/s      |
+ 145 | vdis        | boundary layer dissipation               | W/m^2    |
+ 146 | ahfs        | surface sensible heat flux               | W/m^2    |
+ 147 | ahfl        | surface latent heat flux                 | W/m^2    |
+ 148 | stream      | streamfunction                           | m^2/s    |
+ 149 | velopot     | velocity potential                       | m^2/s    |
+ 151 | slp         | mean sea level pressure                  | Pa       |
+ 152 | lsp         | log surface pressure                     |          |
+ 153 | sx          | liquid water content                     | kg/kg    |
+ 155 | sd          | divergence                               | 1/s      |
+ 156 | geopoth     | geopotential height                      | m        |
+ 157 | rhumidity   | relative humidity                        | fraction |
+ 158 |             | tendency of surface pressure             | Pa/s     |
+ 159 | ustar3      | ustar3                                   | m^3/s^3  |
+ 160 | runoff      | surface runoff                           | m/s      |
+ 161 | alwc        | liquid water content                     | kg/kg    |
+ 162 | aclc        | cloud cover                              | fraction |
+ 163 | aclcv       | total cloud cover                        | fraction |
+ 164 | aclcov      | total cloud cover                        | fraction |
+ 165 | u10         | 10m u-velocity                           | m/s      |
+ 166 | v10         | 10m v-velocity                           | m/s      |
+ 167 | temp2       | 2m temperature                           | K        |
+ 168 | dew2        | 2m dew point temperature                 | K        |
+ 169 | tsurf       | surface temperature                      | K        |
+ 170 | td          | deep soil temperature                    | K        |
+ 171 | wind10      | 10m windspeed                            | m/s      |
+ 172 | slm         | land sea mask                            | fraction |
+ 173 | az0         | surface roughness length                 | m        |
+ 174 | alb         | surface background albedo                | fraction |
+ 175 | albedo      | surface albedo                           | fraction |
+ 176 | srads       | net surface solar radiation              | W/m^2    |
+ 177 | trads       | net surface thermal radiation            | W/m^2    |
+ 178 | srad0       | net top solar radiation                  | W/m^2    |
+ 179 | trad0       | top thermal radiation (OLR)              | W/m^2    |
+ 180 | ustr        | surface u-stress                         | Pa       |
+ 181 | vstr        | surface v-stress                         | Pa       |
+ 182 | evap        | surface evaporation                      | m/s      |
+ 183 | tdcl        | soil temperature                         | K        |
+ 185 | srafs       | net surf. solar radiation   (clear sky)  | W/m^2    |
+ 186 | trafs       | net surf. thermal radiation (clear sky)  | W/m^2    |
+ 187 | sraf0       | net top solar radiation     (clear sky)  | W/m^2    |
+ 188 | traf0       | net top thermal radiation   (clear sky)  | W/m^2    |
+ 189 | sclfs       | surface solar cloud forcing              | W/m^2    |
+ 190 | tclfs       | surface thermal cloud forcing            | W/m^2    |
+ 191 | sclf0       | top solar cloud forcing                  | W/m^2    |
+ 192 | tclf0       | top thermal cloud forcing                | W/m^2    |
+ 193 | wl          | skin reservoir content                   | m        |
+ 194 | wlm1        | skin reservoir content of plants         | m        |
+ 195 | ustrgw      | u-gravity wave stress                    | Pa       |
+ 196 | vstrgw      | v-gravity wave stress                    | Pa       |
+ 197 | vdisgw      | gravity wave dissipation                 | W/m^2    |
+ 198 | vgrat       | vegetation ratio                         | fraction |
+ 199 | varor       | orographic variance                      | m^2      |
+ 200 | vlt         | leaf area index 
+ 201 | t2max       | maximum 2m-temperature                   | K        |
+ 202 | t2min       | minimum 2m-temperature                   | K        |
+ 203 | srad0u      | top solar radiation upward               | W/m^2    |
+ 204 | sradsu      | surface solar radiation upward           | W/m^2    |
+ 205 | tradsu      | surface thermal radiation upward         | W/m^2    |
+ 206 | tsn         | snow temperature                         | K        |
+ 207 | td3         | soil temperature 3                       | K        |
+ 208 | td4         | soil temperature 4                       | K        |
+ 209 | td5         | soil temperature 5                       | K        |
+ 210 | seaice      | sea ice cover                            | fraction |
+ 211 | siced       | sea ice depth                            | m        |
+ 212 | forest      | vegetation type                          | fraction |
+ 213 | teff        | (effective) sea-ice skin temperature     | K        |
+ 214 | tsmax       | maximum surface temperature              | K        |
+ 215 | tsmin       | minimum surface temperature              | K        |
+ 216 | wimax       | maximum 10m-wind speed                   | m/s      |
+ 217 | topmax      | maximum height of convective cloud tops  | Pa       |
+ 218 | snmel       | snow melt                                | m/s      |
+ 219 | runtoc      | surface runoff into ocean
+ 220 | tslin       | land: residual surface heat budget       | W/m^2    |
+ 221 | dsnac       | snow depth change                        | m/s      |
+ 222 | alwcac      | liquid water content                     | kg/kg    |
+ 223 | aclcac      | cloud cover                              | fraction |
+ 224 | tke         | turbulent kinetic energy                 |          |
+ 225 | tkem1       | turbulent kinetic energy (t-1)           |          |
+ 226 | fao         | FAO data set (soil data flags)           |          |
+ 227 | rgcgn       | heat capacity of soil                    |          |
+ 228 | sodif       | soil diffusivity                         |          |
+ 229 | wsmx        | field capacity of soil                   | m        |
+ 230 | qvi         | vertically integrated specific humidity  | kg/m^2   |
+ 231 | alwcvi      | vertically integrated liquid water cont. | kg/m^2   |
+ 232 | glac        | glacier mask                             | fraction |
+ 233 | runlnd      | surface runoff not running into ocean
+ 259 | windspeed   | windspeed (sqrt(u^2+v^2))                |          |
+ 260 | precip      | total precipitation                      | m/s      |
+ 261 | net_top     | total top radiation                      |          |
+ 262 | net_bot     | total surface radiation                  |          |
+ 263 | net_heat    | net surface heat flux                    |          |
+ 264 | net_water   | total surface water                      |          |
+ 268 | sw_atm
+ 269 | lw_atm
+ 270 | net_atm
+ 271 | surf_runoff | surface runoff
+ 275 | fresh_water

@@ -1,0 +1,4 @@
+src/atm_phy_les/mo_ls_forcing.pp-fpp.f90: /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/include/omp_definitions.inc /home/primrose/Work/IconGrounds/icon-dace2/icon-model/src/atm_phy_les/mo_ls_forcing.f90
+src/atm_phy_les/mo_ls_forcing.pp-fpp.o src/atm_phy_les/mo_ls_forcing.pp-fpp.f90.d: src/atm_phy_les/mo_ls_forcing.pp-fpp.f90
+mod/mo_ls_forcing.mod.proxy: src/atm_phy_les/mo_ls_forcing.pp-fpp.o
+src/atm_phy_les/mo_ls_forcing.pp-fpp.o src/atm_phy_les/mo_ls_forcing.pp-fpp.o: mod/mo_nonhydro_types.mod.proxy mod/mo_mpi.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_ls_forcing_nml.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_scm_nml.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_read_interface.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_netcdf.mod.proxy mod/mo_nh_vert_interp_les.mod.proxy

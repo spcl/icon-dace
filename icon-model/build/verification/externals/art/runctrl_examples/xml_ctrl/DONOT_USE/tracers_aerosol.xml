@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "tracers.dtd">
+
+<tracers>
+  <aerosol id="seasa">
+    <moment type="int">3</moment>
+    <mode type="char">seasa</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">58.44E-3</mol_weight>
+    <rho type="real">2.2E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="seasa0">
+    <moment type="int">0</moment>
+    <mode type="char">seasa</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">58.44E-3</mol_weight>
+    <rho type="real">2.2E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="seasb">
+    <moment type="int">3</moment>
+    <mode type="char">seasb</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">58.44E-3</mol_weight>
+    <rho type="real">2.2E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="seasb0">
+    <moment type="int">0</moment>
+    <mode type="char">seasb</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">58.44E-3</mol_weight>
+    <rho type="real">2.2E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="seasc">
+    <moment type="int">3</moment>
+    <mode type="char">seasc</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">58.44E-3</mol_weight>
+    <rho type="real">2.2E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="seasc0">
+    <moment type="int">0</moment>
+    <mode type="char">seasc</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">58.44E-3</mol_weight>
+    <rho type="real">2.2E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="dusta">
+    <moment type="int">3</moment>
+    <mode type="char">dusta</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="dusta0">
+    <moment type="int">0</moment>
+    <mode type="char">dusta</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="dustb">
+    <moment type="int">3</moment>
+    <mode type="char">dustb</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="dustb0">
+    <moment type="int">0</moment>
+    <mode type="char">dustb</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="dustc">
+    <moment type="int">3</moment>
+    <mode type="char">dustc</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="dustc0">
+    <moment type="int">0</moment>
+    <mode type="char">dustc</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="ash1">
+    <moment type="int">3</moment>
+    <mode type="char">ash1</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="ash2">
+    <moment type="int">3</moment>
+    <mode type="char">ash2</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="ash3">
+    <moment type="int">3</moment>
+    <mode type="char">ash3</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="ash4">
+    <moment type="int">3</moment>
+    <mode type="char">ash4</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="ash5">
+    <moment type="int">3</moment>
+    <mode type="char">ash5</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="ash6">
+    <moment type="int">3</moment>
+    <mode type="char">ash6</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="asha">
+    <moment type="int">3</moment>
+    <mode type="char">asha</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="asha0">
+    <moment type="int">0</moment>
+    <mode type="char">asha</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="ashb">
+    <moment type="int">3</moment>
+    <mode type="char">ashb</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="ashb0">
+    <moment type="int">0</moment>
+    <mode type="char">ashb</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="ashc">
+    <moment type="int">3</moment>
+    <mode type="char">ashc</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="ashc0">
+    <moment type="int">0</moment>
+    <mode type="char">ashc</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.600E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="Cs_137">
+    <moment type="int">3</moment>
+    <mode type="char">Cs_137</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">1.0</mol_weight>
+    <rho type="real">1.0E3</rho>
+    <unit type="char">Bq kg-1</unit>
+  </aerosol>
+  <aerosol id="I_131a">
+    <moment type="int">3</moment>
+    <mode type="char">I_131a</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">1.0</mol_weight>
+    <rho type="real">1.0E3</rho>
+    <unit type="char">Bq kg-1</unit>
+  </aerosol>
+  <aerosol id="Te_132">
+    <moment type="int">3</moment>
+    <mode type="char">Te_132</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">1.0</mol_weight>
+    <rho type="real">1.0E3</rho>
+    <unit type="char">Bq kg-1</unit>
+  </aerosol>
+  <aerosol id="Zr_95">
+    <moment type="int">3</moment>
+    <mode type="char">Zr_95</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">1.0</mol_weight>
+    <rho type="real">1.0E3</rho>
+    <unit type="char">Bq kg-1</unit>
+  </aerosol>
+  <aerosol id="Xe_133">
+    <moment type="int">3</moment>
+    <mode type="char">Xe_133</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">1.0</mol_weight>
+    <rho type="real">1.0E3</rho>
+    <unit type="char">Bq kg-1</unit>
+  </aerosol>
+  <aerosol id="I_131g">
+    <moment type="int">3</moment>
+    <mode type="char">I_131g</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">1.0</mol_weight>
+    <rho type="real">1.0E3</rho>
+    <unit type="char">Bq kg-1</unit>
+  </aerosol>
+  <aerosol id="I_131o">
+    <moment type="int">3</moment>
+    <mode type="char">I_131o</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">1.0</mol_weight>
+    <rho type="real">1.0E3</rho>
+    <unit type="char">Bq kg-1</unit>
+  </aerosol>
+  <aerosol id="Ba_140">
+    <moment type="int">3</moment>
+    <mode type="char">Ba_140</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">1.0</mol_weight>
+    <rho type="real">1.0E3</rho>
+    <unit type="char">Bq kg-1</unit>
+  </aerosol>
+  <aerosol id="Ru_103">
+    <moment type="int">3</moment>
+    <mode type="char">Ru_103</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">1.0</mol_weight>
+    <rho type="real">1.0E3</rho>
+    <unit type="char">Bq kg-1</unit>
+  </aerosol>
+  <aerosol id="pollbetu">
+    <moment type="int">0</moment>
+    <mode type="char">pollbetu</mode>
+    <sol type="real">0.0</sol>
+    <mol_weight type="real">20.00E-3</mol_weight>
+    <rho type="real">810.</rho>
+    <transport type="char">stdaero</transport>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+</tracers>

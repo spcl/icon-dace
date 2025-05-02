@@ -1,0 +1,599 @@
+{
+  "schema":{
+    "fields":[
+      {
+        "name":"level_0",
+        "type":"string"
+      },
+      {
+        "name":"level_1",
+        "type":"string"
+      },
+      {
+        "name":"# calls",
+        "type":"number"
+      },
+      {
+        "name":"t_min",
+        "type":"number"
+      },
+      {
+        "name":"t_avg",
+        "type":"number"
+      },
+      {
+        "name":"t_max",
+        "type":"number"
+      },
+      {
+        "name":"total min (s)",
+        "type":"number"
+      },
+      {
+        "name":"total max (s)",
+        "type":"number"
+      },
+      {
+        "name":"total avg (s)",
+        "type":"number"
+      }
+    ],
+    "primaryKey":[
+      "level_0",
+      "level_1"
+    ],
+    "pandas_version":"1.4.0"
+  },
+  "data":[
+    {
+      "level_0":"total",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1.0,
+      "t_min":40.8774,
+      "t_avg":40.8774,
+      "t_max":40.8774,
+      "total min (s)":40.877,
+      "total max (s)":40.877,
+      "total avg (s)":40.877
+    },
+    {
+      "level_0":"integrate_nh",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.10694,
+      "t_avg":0.11332,
+      "t_max":0.32785,
+      "total min (s)":40.796,
+      "total max (s)":40.796,
+      "total avg (s)":40.796
+    },
+    {
+      "level_0":"nh_solve",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1800.0,
+      "t_min":0.00772,
+      "t_avg":0.00806,
+      "t_max":0.01064,
+      "total min (s)":14.514,
+      "total max (s)":14.514,
+      "total avg (s)":14.514
+    },
+    {
+      "level_0":"nh_solve.veltend",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":2160.0,
+      "t_min":0.00105,
+      "t_avg":0.00109,
+      "t_max":0.00218,
+      "total min (s)":2.351,
+      "total max (s)":2.351,
+      "total avg (s)":2.351
+    },
+    {
+      "level_0":"nh_solve.cellcomp",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":3600.0,
+      "t_min":0.00034,
+      "t_avg":0.00048,
+      "t_max":0.00065,
+      "total min (s)":1.717,
+      "total max (s)":1.717,
+      "total avg (s)":1.717
+    },
+    {
+      "level_0":"nh_solve.edgecomp",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":3600.0,
+      "t_min":0.00045,
+      "t_avg":0.00071,
+      "t_max":0.0014,
+      "total min (s)":2.552,
+      "total max (s)":2.552,
+      "total avg (s)":2.552
+    },
+    {
+      "level_0":"nh_solve.vnupd",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":3600.0,
+      "t_min":0.00044,
+      "t_avg":0.00073,
+      "t_max":0.00105,
+      "total min (s)":2.631,
+      "total max (s)":2.631,
+      "total avg (s)":2.631
+    },
+    {
+      "level_0":"nh_solve.vimpl",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":3600.0,
+      "t_min":0.00121,
+      "t_avg":0.00125,
+      "t_max":0.00134,
+      "total min (s)":4.487,
+      "total max (s)":4.487,
+      "total avg (s)":4.487
+    },
+    {
+      "level_0":"nh_solve.exch",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":7200.0,
+      "t_min":0.0,
+      "t_avg":0.0,
+      "t_max":0.00001,
+      "total min (s)":0.011,
+      "total max (s)":0.011,
+      "total avg (s)":0.011
+    },
+    {
+      "level_0":"nh_hdiff",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":361.0,
+      "t_min":0.00191,
+      "t_avg":0.00192,
+      "t_max":0.00193,
+      "total min (s)":0.693,
+      "total max (s)":0.693,
+      "total avg (s)":0.693
+    },
+    {
+      "level_0":"transport",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.01395,
+      "t_avg":0.01441,
+      "t_max":0.02278,
+      "total min (s)":5.189,
+      "total max (s)":5.189,
+      "total avg (s)":5.189
+    },
+    {
+      "level_0":"adv_horiz",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.00884,
+      "t_avg":0.00893,
+      "t_max":0.01764,
+      "total min (s)":3.216,
+      "total max (s)":3.216,
+      "total avg (s)":3.216
+    },
+    {
+      "level_0":"adv_hflx",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.00815,
+      "t_avg":0.00824,
+      "t_max":0.01694,
+      "total min (s)":2.966,
+      "total max (s)":2.966,
+      "total avg (s)":2.966
+    },
+    {
+      "level_0":"back_traj",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1080.0,
+      "t_min":0.00005,
+      "t_avg":0.0003,
+      "t_max":0.00098,
+      "total min (s)":0.326,
+      "total max (s)":0.326,
+      "total avg (s)":0.326
+    },
+    {
+      "level_0":"adv_vert",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.00399,
+      "t_avg":0.00437,
+      "t_max":0.00489,
+      "total min (s)":1.574,
+      "total max (s)":1.574,
+      "total avg (s)":1.574
+    },
+    {
+      "level_0":"adv_vflx",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.00355,
+      "t_avg":0.00389,
+      "t_max":0.00436,
+      "total min (s)":1.401,
+      "total max (s)":1.401,
+      "total avg (s)":1.401
+    },
+    {
+      "level_0":"nesting",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.0,
+      "t_avg":0.0,
+      "t_max":0.00002,
+      "total min (s)":0.001,
+      "total max (s)":0.001,
+      "total avg (s)":0.001
+    },
+    {
+      "level_0":"nesting.bdy_interp",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.0,
+      "t_avg":0.0,
+      "t_max":0.00001,
+      "total min (s)":0.0,
+      "total max (s)":0.0,
+      "total avg (s)":0.0
+    },
+    {
+      "level_0":"global_sum",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":369.0,
+      "t_min":0.0,
+      "t_avg":0.0,
+      "t_max":0.00001,
+      "total min (s)":0.001,
+      "total max (s)":0.001,
+      "total avg (s)":0.001
+    },
+    {
+      "level_0":"physics",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":361.0,
+      "t_min":0.04818,
+      "t_avg":0.05482,
+      "t_max":0.29546,
+      "total min (s)":19.792,
+      "total max (s)":19.792,
+      "total avg (s)":19.792
+    },
+    {
+      "level_0":"nwp_radiation",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":6.0,
+      "t_min":0.14395,
+      "t_avg":0.16678,
+      "t_max":0.1915,
+      "total min (s)":1.001,
+      "total max (s)":1.001,
+      "total avg (s)":1.001
+    },
+    {
+      "level_0":"preradiaton",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":6.0,
+      "t_min":0.00771,
+      "t_avg":0.00787,
+      "t_max":0.00846,
+      "total min (s)":0.047,
+      "total max (s)":0.047,
+      "total avg (s)":0.047
+    },
+    {
+      "level_0":"phys_acc_sync",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":361.0,
+      "t_min":0.00086,
+      "t_avg":0.0009,
+      "t_max":0.00152,
+      "total min (s)":0.323,
+      "total max (s)":0.323,
+      "total avg (s)":0.323
+    },
+    {
+      "level_0":"ordglb_sum",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":361.0,
+      "t_min":0.0,
+      "t_avg":0.0,
+      "t_max":0.00002,
+      "total min (s)":0.002,
+      "total max (s)":0.002,
+      "total avg (s)":0.002
+    },
+    {
+      "level_0":"satad",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":361.0,
+      "t_min":0.0009,
+      "t_avg":0.00161,
+      "t_max":0.00169,
+      "total min (s)":0.58,
+      "total max (s)":0.58,
+      "total avg (s)":0.58
+    },
+    {
+      "level_0":"phys_u_v",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":361.0,
+      "t_min":0.00037,
+      "t_avg":0.00037,
+      "t_max":0.00039,
+      "total min (s)":0.134,
+      "total max (s)":0.134,
+      "total avg (s)":0.134
+    },
+    {
+      "level_0":"nwp_turbulence",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":721.0,
+      "t_min":0.01087,
+      "t_avg":0.01341,
+      "t_max":0.04045,
+      "total min (s)":9.67,
+      "total max (s)":9.67,
+      "total avg (s)":9.67
+    },
+    {
+      "level_0":"nwp_turbtrans",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":361.0,
+      "t_min":0.01561,
+      "t_avg":0.01581,
+      "t_max":0.04037,
+      "total min (s)":5.707,
+      "total max (s)":5.707,
+      "total avg (s)":5.707
+    },
+    {
+      "level_0":"nwp_turbdiff",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.00668,
+      "t_avg":0.00674,
+      "t_max":0.00688,
+      "total min (s)":2.426,
+      "total max (s)":2.426,
+      "total avg (s)":2.426
+    },
+    {
+      "level_0":"nwp_surface",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.01383,
+      "t_avg":0.01414,
+      "t_max":0.01799,
+      "total min (s)":5.089,
+      "total max (s)":5.089,
+      "total avg (s)":5.089
+    },
+    {
+      "level_0":"nwp_microphysics",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":360.0,
+      "t_min":0.00326,
+      "t_avg":0.00336,
+      "t_max":0.00349,
+      "total min (s)":1.208,
+      "total max (s)":1.208,
+      "total avg (s)":1.208
+    },
+    {
+      "level_0":"rediag_prog_vars",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":361.0,
+      "t_min":0.00022,
+      "t_avg":0.00048,
+      "t_max":0.00059,
+      "total min (s)":0.174,
+      "total max (s)":0.174,
+      "total avg (s)":0.174
+    },
+    {
+      "level_0":"nwp_convection",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":31.0,
+      "t_min":0.03406,
+      "t_avg":0.03539,
+      "t_max":0.05233,
+      "total min (s)":1.097,
+      "total max (s)":1.097,
+      "total avg (s)":1.097
+    },
+    {
+      "level_0":"sso",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":31.0,
+      "t_min":0.00287,
+      "t_avg":0.00289,
+      "t_max":0.00303,
+      "total min (s)":0.09,
+      "total max (s)":0.09,
+      "total avg (s)":0.09
+    },
+    {
+      "level_0":"cloud_cover",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":31.0,
+      "t_min":0.00132,
+      "t_avg":0.00134,
+      "t_max":0.00145,
+      "total min (s)":0.041,
+      "total max (s)":0.041,
+      "total avg (s)":0.041
+    },
+    {
+      "level_0":"radheat",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":361.0,
+      "t_min":0.00066,
+      "t_avg":0.00067,
+      "t_max":0.00074,
+      "total min (s)":0.241,
+      "total max (s)":0.241,
+      "total avg (s)":0.241
+    },
+    {
+      "level_0":"nh_diagnostics",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1086.0,
+      "t_min":0.0,
+      "t_avg":0.00013,
+      "t_max":0.07801,
+      "total min (s)":0.142,
+      "total max (s)":0.142,
+      "total avg (s)":0.142
+    },
+    {
+      "level_0":"diagnose_pres_temp",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":32.0,
+      "t_min":0.00001,
+      "t_avg":0.00094,
+      "t_max":0.02913,
+      "total min (s)":0.03,
+      "total max (s)":0.03,
+      "total avg (s)":0.03
+    },
+    {
+      "level_0":"model_init",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":3.0,
+      "t_min":1.6814,
+      "t_avg":3.1656,
+      "t_max":5.9022,
+      "total min (s)":9.497,
+      "total max (s)":9.497,
+      "total avg (s)":9.497
+    },
+    {
+      "level_0":"compute_domain_decomp",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1.0,
+      "t_min":0.25604,
+      "t_avg":0.25604,
+      "t_max":0.25604,
+      "total min (s)":0.256,
+      "total max (s)":0.256,
+      "total avg (s)":0.256
+    },
+    {
+      "level_0":"compute_intp_coeffs",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1.0,
+      "t_min":1.2746,
+      "t_avg":1.2746,
+      "t_max":1.2746,
+      "total min (s)":1.275,
+      "total max (s)":1.275,
+      "total avg (s)":1.275
+    },
+    {
+      "level_0":"init_ext_data",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1.0,
+      "t_min":0.09701,
+      "t_avg":0.09701,
+      "t_max":0.09701,
+      "total min (s)":0.097,
+      "total max (s)":0.097,
+      "total avg (s)":0.097
+    },
+    {
+      "level_0":"init_icon",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1.0,
+      "t_min":1.389,
+      "t_avg":1.389,
+      "t_max":1.389,
+      "total min (s)":1.389,
+      "total max (s)":1.389,
+      "total avg (s)":1.389
+    },
+    {
+      "level_0":"init_latbc",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1.0,
+      "t_min":2.9642,
+      "t_avg":2.9642,
+      "t_max":2.9642,
+      "total min (s)":2.964,
+      "total max (s)":2.964,
+      "total avg (s)":2.964
+    },
+    {
+      "level_0":"init_nwp_phy",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1.0,
+      "t_min":0.41983,
+      "t_avg":0.41983,
+      "t_max":0.41983,
+      "total min (s)":0.42,
+      "total max (s)":0.42,
+      "total avg (s)":0.42
+    },
+    {
+      "level_0":"upper_atmosphere",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":4.0,
+      "t_min":0.0,
+      "t_avg":0.00004,
+      "t_max":0.00011,
+      "total min (s)":0.0,
+      "total max (s)":0.0,
+      "total avg (s)":0.0
+    },
+    {
+      "level_0":"upatmo_construction",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":2.0,
+      "t_min":0.00002,
+      "t_avg":0.00006,
+      "t_max":0.0001,
+      "total min (s)":0.0,
+      "total max (s)":0.0,
+      "total avg (s)":0.0
+    },
+    {
+      "level_0":"upatmo_destruction",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":2.0,
+      "t_min":0.0,
+      "t_avg":0.00001,
+      "t_max":0.00001,
+      "total min (s)":0.0,
+      "total max (s)":0.0,
+      "total avg (s)":0.0
+    },
+    {
+      "level_0":"write_restart",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":2.0,
+      "t_min":0.0,
+      "t_avg":0.00004,
+      "t_max":0.00009,
+      "total min (s)":0.0,
+      "total max (s)":0.0,
+      "total avg (s)":0.0
+    },
+    {
+      "level_0":"write_restart_io",
+      "level_1":"2023-08-31T01:43:24",
+      "# calls":1.0,
+      "t_min":0.0,
+      "t_avg":0.0,
+      "t_max":0.0,
+      "total min (s)":0.0,
+      "total max (s)":0.0,
+      "total avg (s)":0.0
+    }
+  ]
+}

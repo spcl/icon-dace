@@ -1,0 +1,48 @@
+#! /bin/bash
+
+# ICON-Land
+#
+# ---------------------------------------
+# Copyright (C) 2013-2024, MPI-M, MPI-BGC
+#
+# Contact: icon-model.org
+# Authors: AUTHORS.md
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------
+
+ires=63
+processTransitions=true
+
+mainWorkingPath="/work/mj0060/m300316/LUH2/extensions/T${ires}/"
+
+vrmFileName='mib0126_jsbach_jsbach_mean_1961-2005_code20'
+vegRatioMaxFile="/work/mj0060/m300316/LUH2/scenarios/T63/${vrmFileName}.nc"
+vrmVarName='var20'
+nrOfVarsvegMaxFile=4 #including vars for dimensions
+nrOfDimsVegMaxFile=3
+
+scaledStatesOutputFolder="states_scaled_with_${vrmFileName}"
+scaledTransitionsOutputFolder="transitions_scaled_with_${vrmFileName}"
+
+selStartYear=2015
+selEndYearStates=2016
+# simulations with transitions can only do 2299!!!
+
+orgDataHasAlreadyBeenAggregated=false         # i.e. for the required timespan preprocessing already happend (for the same or another resolution)
+mainWorkingPathForAggregatedData=$mainWorkingPath          # e.g. /work/mj0060/m300316/LUH2/scenarios/Txyz/ if for another resolution
+resolutionHasAlreadyBeenUsedForMapping=false  # i.e. for the required timespan CMIP5-way preprocessing has already been done for this resolution 
+
+pathToOrgData='/work/mj0060/m300316/LUH2/orgdata/extensions'
+scriptsFolder='/work/mj0060/m300316/LUH2/extensions/scripts'
+tools_dir='tools'
+bin_dir='bin'
+
+calledFrom="MAIN_preprocess_LUH2_extensions.bash [contact: julia.nabel@mpimet.mpg.de] -- using ${vegRatioMaxFile}"
+luhRelease='LUH2 v2e Release (02/22/19) - [http://luh.umd.edu/data.shtml]'
+
+scenPart=( "IMAGE-ssp126" "MAGPIE-ssp534" "MAGPIE-ssp585" )
+scenario=( "RCP2.6_SSP1" "RCP3.4OS_SSP5" "RCP8.5_SSP5" )
+
+# User defined states/transistions files names
+user_defined_states_trans=false

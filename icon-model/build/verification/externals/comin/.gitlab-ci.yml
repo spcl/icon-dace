@@ -1,0 +1,292 @@
+# -------------------------------------------------------------------------
+# CI Config for the ICON ComIn code.
+#
+# @author 06/2023 :: F. Prill, DWD  <comin@icon-model.org>
+# -------------------------------------------------------------------------
+
+include:
+  - project: 'anw_dienste/ci-templates'
+    file: '.slurm-ci.yml'
+
+# Stages
+#
+stages:
+  - lint
+  - build-ci
+#  - merge
+  - build
+  - test
+  - documentation
+  - publish
+  - release
+
+variables:
+  RELEASE_TAG: latest
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_FORCE_HTTPS: "true"
+
+  COMPILE_BASE_IMAGE_NAME: compile-base
+  COMPILE_BASE_DOCKERFILE: Dockerfile.$COMPILE_BASE_IMAGE_NAME
+  COMPILE_BASE_RELEASE_IMAGE: $CI_REGISTRY_IMAGE/$COMPILE_BASE_IMAGE_NAME:$RELEASE_TAG-$CI_COMMIT_REF_NAME
+
+  NVHPC_IMAGE: registry.gitlab.dkrz.de/icon-comin/comin:nvhpc
+
+  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/release"
+
+  ICON_BRANCH:
+    description: "Set the ICON branch for generating replay_data"
+
+  ICON_REPO:
+    value: "git@gitlab.dkrz.de:icon/icon.git"
+    description: "Set the ICON repository ssh url for generating replay_data"
+
+
+# CI rules: After a merge request is open on the branch, the pipeline
+# switches to a merge request pipeline.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+.default_rules:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+
+
+#
+# Build Docker Base Image for CI compile image
+#
+build-compile-base-image:
+  stage: build-ci
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --reproducible --context $CI_PROJECT_DIR
+        --dockerfile $CI_PROJECT_DIR/config/dockerfiles/$COMPILE_BASE_DOCKERFILE
+        --destination $COMPILE_BASE_RELEASE_IMAGE --cache=true --cache-copy-layers=true --cache-ttl=168h
+  tags:
+    - docker-any-image, dkrz
+  only:
+    changes:
+    - config/dockerfiles/Dockerfile.compile-base
+
+lint:
+  stage: lint
+  tags:
+    - conda, dkrz
+  script:
+    - pip install pre-commit
+    - pre-commit run --all-files
+  rules:
+    - !reference [.default_rules, rules]
+
+
+# deactivated for the time being
+.merge-job:
+  stage: merge
+  tags:
+    - conda, dkrz
+  rules:
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"'
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+  script:
+    - echo "merge job!"
+    # - sh config/cicd_merge.sh
+
+
+#
+# Build binary from source code
+#
+nvhpc-build:
+  stage: build
+  image: $NVHPC_IMAGE
+  needs: []
+  tags:
+    - docker-any-image, dkrz
+  script:
+    - bash config/nvhpc_build.sh
+  artifacts:
+    when: always
+    paths:
+      - build/
+      - netcdf-fortran-4.6.1/install
+  rules:
+    - !reference [.default_rules, rules]
+
+
+nvhpc-test:
+  stage: test
+  image: $NVHPC_IMAGE
+  needs:
+    - nvhpc-build
+  tags:
+    - docker-any-image, dkrz
+  script:
+    - cd build
+    - OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 ctest --output-on-failure --output-junit junit.xml
+  artifacts:
+    when: always
+    paths:
+      - build/junit.xml
+    reports:
+      junit:
+        - build/junit.xml
+  rules:
+    - !reference [.default_rules, rules]
+
+
+#
+# Build binary from source code
+#
+gcc-build:
+  stage: build
+  image: $COMPILE_BASE_RELEASE_IMAGE
+  tags:
+    - docker-any-image, dkrz
+  script:
+    - bash config/gcc_build.sh
+    - (! grep -C 3 -i "warn" build/build.log) || exit 166
+  allow_failure:
+    exit_codes: 166
+  artifacts:
+    when: always
+    paths:
+      - build
+      - include/comin_version.inc
+  rules:
+    - !reference [.default_rules, rules]
+
+
+gcc-test:
+  stage: test
+  image: $COMPILE_BASE_RELEASE_IMAGE
+  tags:
+    - docker-any-image, dkrz
+  needs:
+    - gcc-build
+  script:
+    - cd build
+    - ctest --output-on-failure --output-junit junit.xml
+  artifacts:
+    when: always
+    paths:
+      - build/junit.xml
+    reports:
+      junit:
+        - build/junit.xml
+  rules:
+    - !reference [.default_rules, rules]
+
+
+doxygen:
+  stage: documentation
+  variables:
+    PLANTUML_JAR: '/usr/share/java/plantuml.jar'
+  needs:
+    - gcc-build
+  script:
+    - doxygen --version
+    - cd build/doc
+    - doxygen Doxyfile
+  artifacts:
+    expire_in: 30min
+    paths:
+    - build/doc/html
+  tags:
+  - doxygen
+  rules:
+    - !reference [.default_rules, rules]
+
+
+pages:
+  stage: publish
+  variables:
+    GIT_STRATEGY: none
+  needs:
+    - doxygen
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: always
+    - when: never
+    - !reference [.default_rules, rules]
+  script:
+    - mv build/doc/html public
+  artifacts:
+    expire_in: 30min
+    paths:
+    - public
+  tags:
+  - doxygen
+
+
+release_job:
+  stage: release
+  image: alpine:latest
+  dependencies:
+    - doxygen
+    - gcc-build
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^comin-\d+\.\d+\.\d+$/               # Run this job when a tag is created
+  script:
+    - VERSION=`echo $CI_COMMIT_TAG | cut -c 7-`
+    - apk add --no-cache git curl
+    - WITHOUT_PATCH=`echo ${VERSION} | cut -d '.' -f -2`
+    - git fetch
+    - git branch -a --contains HEAD
+    - |
+      (git branch -a --contains HEAD | grep "comin-${WITHOUT_PATCH}$") || \
+        ( echo "ERROR: Not on branch 'comin-${WITHOUT_PATCH}'"; exit 255 ) # check if on correct branch
+    - curl --fail-with-body --location --output release-cli "https://gitlab.com/api/v4/projects/gitlab-org%2Frelease-cli/packages/generic/release-cli/latest/release-cli-linux-amd64"
+    - chmod +x ./release-cli
+    - git archive -o $CI_COMMIT_TAG.tar.gz $CI_COMMIT_TAG
+    - tar -C build/doc -cvf "documentation-$CI_COMMIT_TAG.tar.gz" html
+    - |
+      curl --fail-with-body --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file ${CI_COMMIT_TAG}.tar.gz ${PACKAGE_REGISTRY_URL}/${VERSION}/${CI_COMMIT_TAG}.tar.gz?select=package_file
+    - |
+      curl --fail-with-body --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file documentation-${CI_COMMIT_TAG}.tar.gz ${PACKAGE_REGISTRY_URL}/${VERSION}/documentation-${CI_COMMIT_TAG}.tar.gz?select=package_file
+    - |
+      ./release-cli create --name "Release $CI_COMMIT_TAG" --tag-name $CI_COMMIT_TAG \
+      --assets-link "{\"name\":\"$CI_COMMIT_TAG.tar.gz\",\"url\":\"${PACKAGE_REGISTRY_URL}/${VERSION}/${CI_COMMIT_TAG}.tar.gz\"}" \
+      --assets-link "{\"name\":\"$CI_COMMIT_TAG Documentation\",\"url\":\"${PACKAGE_REGISTRY_URL}/${VERSION}/documentation-${CI_COMMIT_TAG}.tar.gz\"}"
+    - echo "released $CI_COMMIT_TAG Yeah! 🎉"
+  tags:
+    - docker-any-image, dkrz
+
+
+generate_replay_data:
+  extends: .default
+  stage: publish
+  needs: []
+  variables:
+    # Users that are not part of $ACCOUNT can override the variable
+    ACCOUNT: "ka1125"
+    SCHEDULER_PARAMETERS: "--account=$ACCOUNT --partition=shared --ntasks=16"
+    MAKEFLAGS: "-j16"
+    GIT_STRATEGY: none
+  script:
+    - module load netcdf-c/4.8.1-openmpi-4.1.2-gcc-11.2.0 netcdf-fortran/4.5.3-openmpi-4.1.2-gcc-11.2.0
+    - git clone --recursive -b ${ICON_BRANCH} ${ICON_REPO}
+    - cd icon
+    - (cd externals/comin && git checkout ${CI_COMMIT_SHA})
+    - ./config/dkrz/levante.gcc --enable-comin
+    - make
+    - cd externals/comin/build
+    - cmake -DCOMIN_ENABLE_REPLAY_TOOL=ON .
+    - make
+    - cd ../../../..
+    - ./icon/externals/comin/config/generate_replay_data.sh
+  rules:
+    - if: $ICON_BRANCH != ""
+      when: always
+    - when: never
+  artifacts:
+    paths:
+      - predef_replay_data.cmake
