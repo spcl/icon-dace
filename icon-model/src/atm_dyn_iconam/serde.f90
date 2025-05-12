@@ -799,20 +799,12 @@ MODULE serde
     nline_local = .TRUE.
     IF (PRESENT(cleanup)) cleanup_local = cleanup
     IF (PRESENT(nline)) nline_local = nline
-    CALL serialize(io, '# id', cleanup = .FALSE.)
-    CALL serialize(io, x % id, cleanup = .FALSE.)
     CALL serialize(io, '# nblks_c', cleanup = .FALSE.)
     CALL serialize(io, x % nblks_c, cleanup = .FALSE.)
     CALL serialize(io, '# nblks_e', cleanup = .FALSE.)
     CALL serialize(io, x % nblks_e, cleanup = .FALSE.)
     CALL serialize(io, '# nblks_v', cleanup = .FALSE.)
     CALL serialize(io, x % nblks_v, cleanup = .FALSE.)
-    CALL serialize(io, '# nlev', cleanup = .FALSE.)
-    CALL serialize(io, x % nlev, cleanup = .FALSE.)
-    CALL serialize(io, '# nlevp1', cleanup = .FALSE.)
-    CALL serialize(io, x % nlevp1, cleanup = .FALSE.)
-    CALL serialize(io, '# nshift', cleanup = .FALSE.)
-    CALL serialize(io, x % nshift, cleanup = .FALSE.)
     CALL serialize(io, '# cells', cleanup = .FALSE.)
     CALL serialize(io, x % cells, cleanup = .FALSE.)
     CALL serialize(io, '# edges', cleanup = .FALSE.)
@@ -865,15 +857,6 @@ MODULE serde
     nline_local = .TRUE.
     IF (PRESENT(cleanup)) cleanup_local = cleanup
     IF (PRESENT(nline)) nline_local = nline
-    CALL serialize(io, '# vn_ie_ubc', cleanup = .FALSE.)
-    CALL serialize(io, '# assoc', cleanup = .FALSE.)
-    CALL serialize(io, ASSOCIATED(x % vn_ie_ubc), cleanup = .FALSE.)
-    IF (ASSOCIATED(x % vn_ie_ubc)) THEN
-      kmeta = 0
-      CALL serialize(io, "# missing", cleanup = .FALSE.)
-      CALL serialize(io, (kmeta == 0), cleanup = .FALSE.)
-      CALL serialize(io, x % vn_ie_ubc, cleanup = .FALSE.)
-    END IF
     CALL serialize(io, '# vt', cleanup = .FALSE.)
     CALL serialize(io, '# assoc', cleanup = .FALSE.)
     CALL serialize(io, ASSOCIATED(x % vt), cleanup = .FALSE.)
@@ -910,15 +893,6 @@ MODULE serde
       CALL serialize(io, (kmeta == 0), cleanup = .FALSE.)
       CALL serialize(io, x % ddt_vn_apc_pc, cleanup = .FALSE.)
     END IF
-    CALL serialize(io, '# ddt_vn_cor_pc', cleanup = .FALSE.)
-    CALL serialize(io, '# assoc', cleanup = .FALSE.)
-    CALL serialize(io, ASSOCIATED(x % ddt_vn_cor_pc), cleanup = .FALSE.)
-    IF (ASSOCIATED(x % ddt_vn_cor_pc)) THEN
-      kmeta = 0
-      CALL serialize(io, "# missing", cleanup = .FALSE.)
-      CALL serialize(io, (kmeta == 0), cleanup = .FALSE.)
-      CALL serialize(io, x % ddt_vn_cor_pc, cleanup = .FALSE.)
-    END IF
     CALL serialize(io, '# ddt_w_adv_pc', cleanup = .FALSE.)
     CALL serialize(io, '# assoc', cleanup = .FALSE.)
     CALL serialize(io, ASSOCIATED(x % ddt_w_adv_pc), cleanup = .FALSE.)
@@ -928,10 +902,6 @@ MODULE serde
       CALL serialize(io, (kmeta == 0), cleanup = .FALSE.)
       CALL serialize(io, x % ddt_w_adv_pc, cleanup = .FALSE.)
     END IF
-    CALL serialize(io, '# ddt_vn_adv_is_associated', cleanup = .FALSE.)
-    CALL serialize(io, x % ddt_vn_adv_is_associated, cleanup = .FALSE.)
-    CALL serialize(io, '# ddt_vn_cor_is_associated', cleanup = .FALSE.)
-    CALL serialize(io, x % ddt_vn_cor_is_associated, cleanup = .FALSE.)
     CALL serialize(io, '# max_vcfl_dyn', cleanup = .FALSE.)
     CALL serialize(io, x % max_vcfl_dyn, cleanup = .FALSE.)
     IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
@@ -2114,7 +2084,6 @@ MODULE serde
     USE mo_mpi, ONLY: i_am_accel_node => i_am_accel_node
     USE mo_nonhydrostatic_config, ONLY: lextra_diffu => lextra_diffu
     USE mo_parallel_config, ONLY: nproma => nproma
-    USE mo_run_config, ONLY: lvert_nest => lvert_nest
     USE mo_run_config, ONLY: timers_level => timers_level
     USE mo_timer, ONLY: timer_solve_nh_veltend => timer_solve_nh_veltend
     USE mo_timer, ONLY: timer_intp => timer_intp
@@ -2128,8 +2097,6 @@ MODULE serde
     CALL serialize(io, lextra_diffu, cleanup = .FALSE.)
     CALL serialize(io, "# nproma", cleanup = .FALSE.)
     CALL serialize(io, nproma, cleanup = .FALSE.)
-    CALL serialize(io, "# lvert_nest", cleanup = .FALSE.)
-    CALL serialize(io, lvert_nest, cleanup = .FALSE.)
     CALL serialize(io, "# timers_level", cleanup = .FALSE.)
     CALL serialize(io, timers_level, cleanup = .FALSE.)
     CALL serialize(io, "# timer_solve_nh_veltend", cleanup = .FALSE.)

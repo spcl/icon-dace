@@ -121,6 +121,7 @@ MODULE mo_velocity_advection
     INTEGER  :: ie, nrdmax_jg, nflatlev_jg, clip_count
     LOGICAL  :: levmask(p_patch%nblks_c,p_patch%nlev),levelmask(p_patch%nlev)
     LOGICAL  :: cfl_clipping(nproma,p_patch%nlevp1)   ! CFL > 0.85
+    LOGICAL  :: flag
 
 #ifdef __INTEL_COMPILER
 !DIR$ ATTRIBUTES ALIGN :64 :: z_w_concorr_mc,z_w_con_c,z_w_con_c_full
@@ -138,11 +139,57 @@ MODULE mo_velocity_advection
     ENDIF
 
     call tic()
-    velocity_tendencies_call_count = velocity_tendencies_call_count + 1
+    flag = .FALSE.
+    IF ((lvn_only .eqv. .FALSE.) .AND. (istep == 1)) THEN
+      velocity_tendencies_c1_count = velocity_tendencies_c1_count + 1
+      IF (velocity_tendencies_c1_count == 1 .OR. &
+      velocity_tendencies_c1_count == 7 .OR. &
+      velocity_tendencies_c1_count == 77 .OR. &
+      velocity_tendencies_c1_count == 432 .OR. &
+      velocity_tendencies_c1_count == 950 .OR. &
+      velocity_tendencies_c1_count == 1511 .OR. &
+      velocity_tendencies_c1_count == 5432) THEN
+        flag = .TRUE.
+      ENDIF
+    ENDIF
+    IF ((lvn_only .eqv. .FALSE.) .AND. (istep == 2)) THEN
+      velocity_tendencies_c2_count = velocity_tendencies_c2_count + 1
+      IF (velocity_tendencies_c2_count == 1 .OR. &
+      velocity_tendencies_c2_count == 7 .OR. &
+      velocity_tendencies_c2_count == 77 .OR. &
+      velocity_tendencies_c2_count == 432 .OR. &
+      velocity_tendencies_c2_count == 950 .OR. &
+      velocity_tendencies_c2_count == 1511 .OR. &
+      velocity_tendencies_c2_count == 5432) THEN
+        flag = .TRUE.
+      ENDIF
+    ENDIF
+    IF ((lvn_only .eqv. .TRUE.) .AND. (istep == 1)) THEN
+      velocity_tendencies_c3_count = velocity_tendencies_c3_count + 1
+      IF (velocity_tendencies_c3_count == 1 .OR. &
+      velocity_tendencies_c3_count == 7 .OR. &
+      velocity_tendencies_c3_count == 77 .OR. &
+      velocity_tendencies_c3_count == 432 .OR. &
+      velocity_tendencies_c3_count == 950 .OR. &
+      velocity_tendencies_c3_count == 1511 .OR. &
+      velocity_tendencies_c3_count == 5432) THEN
+        flag = .TRUE.
+      ENDIF
+    ENDIF
+    IF ((lvn_only .eqv. .TRUE.) .AND. (istep == 2)) THEN
+      velocity_tendencies_c4_count = velocity_tendencies_c4_count + 1
+      IF (velocity_tendencies_c1_count == 1 .OR. &
+      velocity_tendencies_c4_count == 7 .OR. &
+      velocity_tendencies_c4_count == 77 .OR. &
+      velocity_tendencies_c4_count == 432 .OR. &
+      velocity_tendencies_c4_count == 950 .OR. &
+      velocity_tendencies_c4_count == 1511 .OR. &
+      velocity_tendencies_c4_count == 5432) THEN
+        flag = .TRUE.
+      ENDIF
+    ENDIF
 
-    IF (velocity_tendencies_call_count == 5 .OR. &
-        velocity_tendencies_call_count == 17 .OR. &
-        velocity_tendencies_call_count == 22) THEN
+    IF (flag .eqv. .TRUE.) THEN
     call  serialize(at("p_patch"), p_patch)
     call  serialize(at("p_int"), p_int)
     call  serialize(at("ntnd"), ntnd)
@@ -893,9 +940,7 @@ MODULE mo_velocity_advection
 
     IF (timers_level > 5) CALL timer_stop(timer_solve_nh_veltend)
 
-    IF (velocity_tendencies_call_count == 5 .OR. &
-        velocity_tendencies_call_count == 17 .OR. &
-        velocity_tendencies_call_count == 22) THEN
+    IF (flag .eqv. .TRUE.) THEN
     call  serialize_global_data(at("global_data.t1"))
     call  serialize(at("p_prog.t1"), p_prog)
     call  serialize(at("p_metrics.t1"), p_metrics)
