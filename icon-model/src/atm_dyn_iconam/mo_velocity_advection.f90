@@ -122,6 +122,7 @@ MODULE mo_velocity_advection
     LOGICAL  :: levmask(p_patch%nblks_c,p_patch%nlev),levelmask(p_patch%nlev)
     LOGICAL  :: cfl_clipping(nproma,p_patch%nlevp1)   ! CFL > 0.85
     LOGICAL  :: flag
+    LOGICAL  :: do_serialize
 
 #ifdef __INTEL_COMPILER
 !DIR$ ATTRIBUTES ALIGN :64 :: z_w_concorr_mc,z_w_con_c,z_w_con_c_full
@@ -140,9 +141,9 @@ MODULE mo_velocity_advection
 
     call tic()
     flag = .FALSE.
-    serialize = .FALSE.
+    do_serialize = .FALSE.
 
-    IF (serialize) THEN
+    IF (do_serialize) THEN
       IF ((lvn_only .eqv. .FALSE.) .AND. (istep == 1)) THEN
         velocity_tendencies_c1_count = velocity_tendencies_c1_count + 1
         IF (velocity_tendencies_c1_count == 1 .OR. &
@@ -193,7 +194,7 @@ MODULE mo_velocity_advection
       ENDIF
     ENDIF
 
-    IF (serialize) THEN
+    IF (do_serialize) THEN
       IF (flag .eqv. .TRUE.) THEN
       call  serialize(at("p_patch"), p_patch)
       call  serialize(at("p_int"), p_int)
@@ -946,7 +947,7 @@ MODULE mo_velocity_advection
 
     IF (timers_level > 5) CALL timer_stop(timer_solve_nh_veltend)
 
-    IF (serialize) THEN
+    IF (do_serialize) THEN
       IF (flag .eqv. .TRUE.) THEN
       call  serialize_global_data(at("global_data.t1"))
       call  serialize(at("p_prog.t1"), p_prog)
