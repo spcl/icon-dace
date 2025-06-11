@@ -462,6 +462,7 @@ MODULE mo_solve_nonhydro
         ELSE
           velocity_c3_count = velocity_c3_count + 1
           print *, "Called istep=2, lvn_only=0"
+        ENDIF
         CALL cpu_time(start_time)
         CALL velocity_tendencies(p_nh%prog(nnew),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
           z_kin_hor_e,z_vt_ie,ntl2,istep,lvn_only,dtime,dt_linintp_ubc_nnew,ldeepatmo)
