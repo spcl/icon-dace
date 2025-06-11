@@ -140,72 +140,78 @@ MODULE mo_velocity_advection
 
     call tic()
     flag = .FALSE.
-    IF ((lvn_only .eqv. .FALSE.) .AND. (istep == 1)) THEN
-      velocity_tendencies_c1_count = velocity_tendencies_c1_count + 1
-      IF (velocity_tendencies_c1_count == 1 .OR. &
-      velocity_tendencies_c1_count == 7 .OR. &
-      velocity_tendencies_c1_count == 77 .OR. &
-      velocity_tendencies_c1_count == 432 .OR. &
-      velocity_tendencies_c1_count == 950 .OR. &
-      velocity_tendencies_c1_count == 1511 .OR. &
-      velocity_tendencies_c1_count == 5432) THEN
-        flag = .TRUE.
+    serialize = .FALSE.
+
+    IF (serialize) THEN
+      IF ((lvn_only .eqv. .FALSE.) .AND. (istep == 1)) THEN
+        velocity_tendencies_c1_count = velocity_tendencies_c1_count + 1
+        IF (velocity_tendencies_c1_count == 1 .OR. &
+        velocity_tendencies_c1_count == 7 .OR. &
+        velocity_tendencies_c1_count == 77 .OR. &
+        velocity_tendencies_c1_count == 432 .OR. &
+        velocity_tendencies_c1_count == 950 .OR. &
+        velocity_tendencies_c1_count == 1511 .OR. &
+        velocity_tendencies_c1_count == 5432) THEN
+          flag = .TRUE.
+        ENDIF
       ENDIF
-    ENDIF
-    IF ((lvn_only .eqv. .FALSE.) .AND. (istep == 2)) THEN
-      velocity_tendencies_c2_count = velocity_tendencies_c2_count + 1
-      IF (velocity_tendencies_c2_count == 1 .OR. &
-      velocity_tendencies_c2_count == 7 .OR. &
-      velocity_tendencies_c2_count == 77 .OR. &
-      velocity_tendencies_c2_count == 432 .OR. &
-      velocity_tendencies_c2_count == 950 .OR. &
-      velocity_tendencies_c2_count == 1511 .OR. &
-      velocity_tendencies_c2_count == 5432) THEN
-        flag = .TRUE.
+      IF ((lvn_only .eqv. .FALSE.) .AND. (istep == 2)) THEN
+        velocity_tendencies_c2_count = velocity_tendencies_c2_count + 1
+        IF (velocity_tendencies_c2_count == 1 .OR. &
+        velocity_tendencies_c2_count == 7 .OR. &
+        velocity_tendencies_c2_count == 77 .OR. &
+        velocity_tendencies_c2_count == 432 .OR. &
+        velocity_tendencies_c2_count == 950 .OR. &
+        velocity_tendencies_c2_count == 1511 .OR. &
+        velocity_tendencies_c2_count == 5432) THEN
+          flag = .TRUE.
+        ENDIF
       ENDIF
-    ENDIF
-    IF ((lvn_only .eqv. .TRUE.) .AND. (istep == 1)) THEN
-      velocity_tendencies_c3_count = velocity_tendencies_c3_count + 1
-      IF (velocity_tendencies_c3_count == 1 .OR. &
-      velocity_tendencies_c3_count == 7 .OR. &
-      velocity_tendencies_c3_count == 77 .OR. &
-      velocity_tendencies_c3_count == 432 .OR. &
-      velocity_tendencies_c3_count == 950 .OR. &
-      velocity_tendencies_c3_count == 1511 .OR. &
-      velocity_tendencies_c3_count == 5432) THEN
-        flag = .TRUE.
+      IF ((lvn_only .eqv. .TRUE.) .AND. (istep == 1)) THEN
+        velocity_tendencies_c3_count = velocity_tendencies_c3_count + 1
+        IF (velocity_tendencies_c3_count == 1 .OR. &
+        velocity_tendencies_c3_count == 7 .OR. &
+        velocity_tendencies_c3_count == 77 .OR. &
+        velocity_tendencies_c3_count == 432 .OR. &
+        velocity_tendencies_c3_count == 950 .OR. &
+        velocity_tendencies_c3_count == 1511 .OR. &
+        velocity_tendencies_c3_count == 5432) THEN
+          flag = .TRUE.
+        ENDIF
       ENDIF
-    ENDIF
-    IF ((lvn_only .eqv. .TRUE.) .AND. (istep == 2)) THEN
-      velocity_tendencies_c4_count = velocity_tendencies_c4_count + 1
-      IF (velocity_tendencies_c1_count == 1 .OR. &
-      velocity_tendencies_c4_count == 7 .OR. &
-      velocity_tendencies_c4_count == 77 .OR. &
-      velocity_tendencies_c4_count == 432 .OR. &
-      velocity_tendencies_c4_count == 950 .OR. &
-      velocity_tendencies_c4_count == 1511 .OR. &
-      velocity_tendencies_c4_count == 5432) THEN
-        flag = .TRUE.
+      IF ((lvn_only .eqv. .TRUE.) .AND. (istep == 2)) THEN
+        velocity_tendencies_c4_count = velocity_tendencies_c4_count + 1
+        IF (velocity_tendencies_c1_count == 1 .OR. &
+        velocity_tendencies_c4_count == 7 .OR. &
+        velocity_tendencies_c4_count == 77 .OR. &
+        velocity_tendencies_c4_count == 432 .OR. &
+        velocity_tendencies_c4_count == 950 .OR. &
+        velocity_tendencies_c4_count == 1511 .OR. &
+        velocity_tendencies_c4_count == 5432) THEN
+          flag = .TRUE.
+        ENDIF
       ENDIF
     ENDIF
 
-    IF (flag .eqv. .TRUE.) THEN
-    call  serialize(at("p_patch"), p_patch)
-    call  serialize(at("p_int"), p_int)
-    call  serialize(at("ntnd"), ntnd)
-    call  serialize(at("istep"), istep)
-    call  serialize(at("lvn_only"), lvn_only)
-    call  serialize(at("dtime"), dtime)
-    call  serialize(at("dt_linintp_ubc"), dt_linintp_ubc)
-    call  serialize(at("ldeepatmo"), ldeepatmo)
+    IF (serialize) THEN
+      IF (flag .eqv. .TRUE.) THEN
+      call  serialize(at("p_patch"), p_patch)
+      call  serialize(at("p_int"), p_int)
+      call  serialize(at("ntnd"), ntnd)
+      call  serialize(at("istep"), istep)
+      call  serialize(at("lvn_only"), lvn_only)
+      call  serialize(at("dtime"), dtime)
+      call  serialize(at("dt_linintp_ubc"), dt_linintp_ubc)
+      call  serialize(at("ldeepatmo"), ldeepatmo)
 
-    call  serialize_global_data(at("global_data.t0"))
-    call  serialize(at("p_prog.t0"), p_prog)
-    call  serialize(at("p_metrics.t0"), p_metrics)
-    call  serialize(at("p_diag.t0"), p_diag)
-    call  serialize(at("z_w_concorr_me.t0"), z_w_concorr_me)
-    call  serialize(at("z_kin_hor_e.t0"), z_kin_hor_e)
-    call  serialize(at("z_vt_ie.t0"), z_vt_ie)
+      call  serialize_global_data(at("global_data.t0"))
+      call  serialize(at("p_prog.t0"), p_prog)
+      call  serialize(at("p_metrics.t0"), p_metrics)
+      call  serialize(at("p_diag.t0"), p_diag)
+      call  serialize(at("z_w_concorr_me.t0"), z_w_concorr_me)
+      call  serialize(at("z_kin_hor_e.t0"), z_kin_hor_e)
+      call  serialize(at("z_vt_ie.t0"), z_vt_ie)
+      ENDIF
     ENDIF
 
     !Get patch id
@@ -940,14 +946,16 @@ MODULE mo_velocity_advection
 
     IF (timers_level > 5) CALL timer_stop(timer_solve_nh_veltend)
 
-    IF (flag .eqv. .TRUE.) THEN
-    call  serialize_global_data(at("global_data.t1"))
-    call  serialize(at("p_prog.t1"), p_prog)
-    call  serialize(at("p_metrics.t1"), p_metrics)
-    call  serialize(at("p_diag.t1"), p_diag)
-    call  serialize(at("z_w_concorr_me.t1"), z_w_concorr_me)
-    call  serialize(at("z_kin_hor_e.t1"), z_kin_hor_e)
-    call  serialize(at("z_vt_ie.t1"), z_vt_ie)
+    IF (serialize) THEN
+      IF (flag .eqv. .TRUE.) THEN
+      call  serialize_global_data(at("global_data.t1"))
+      call  serialize(at("p_prog.t1"), p_prog)
+      call  serialize(at("p_metrics.t1"), p_metrics)
+      call  serialize(at("p_diag.t1"), p_diag)
+      call  serialize(at("z_w_concorr_me.t1"), z_w_concorr_me)
+      call  serialize(at("z_kin_hor_e.t1"), z_kin_hor_e)
+      call  serialize(at("z_vt_ie.t1"), z_vt_ie)
+      ENDIF
     ENDIF
 
   END SUBROUTINE velocity_tendencies
