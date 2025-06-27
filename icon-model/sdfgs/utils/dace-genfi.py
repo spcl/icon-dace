@@ -2697,10 +2697,6 @@ contains
 {convenience_parameter_decls_str}
 {convenience_locals_decls_str}
 
-#ifdef _OPENACC
-    !$ACC WAIT
-#endif
-
 {initialize_optionals_src}
 
 {shallow_copies_copy_ins_src}
@@ -2720,9 +2716,7 @@ contains
 {convenience_parameter_decls_str}
 {convenience_locals_decls_str}
 
-#ifdef _OPENACC
     !$ACC WAIT
-#endif
 
 {initialize_optionals_src}
 
@@ -2743,9 +2737,7 @@ contains
 {convenience_locals_decls_str}
     logical :: local_result, result
 
-#ifdef _OPENACC
     !$ACC WAIT
-#endif
 
     result = .true.
     local_result = .true.
