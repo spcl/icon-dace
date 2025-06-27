@@ -140,13 +140,13 @@ def generate_start_substitution_src(name: str, arguments: Dict[str, str]) -> str
     return f"""\
 #if defined({COMPILER_DEFINE_ENABLE})
 #if defined({COMPILER_DEFINE_VERIFICATION_MODE})
-  PRINT *, "Enter {name}"
+  !PRINT *, "Enter {name}"
   CALL run_{name}_verification({arguments_str})
-  PRINT *, "Exit {name}"
+  !PRINT *, "Exit {name}"
 #else
-  PRINT *, "Enter {name}"
+  !PRINT *, "Enter {name}"
   CALL run_{name}({arguments_str})
-  PRINT *, "Exit {name}"
+  !PRINT *, "Exit {name}"
 #endif
 #endif
 
