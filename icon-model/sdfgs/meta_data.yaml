@@ -54,3 +54,117 @@ struct_members_use_null:
     - t_avginc
     - t_wgt_avginc
     - p_avginc
+
+use_openacc_data:
+  sdfg_parameters:
+    z_rth_pr:
+       - z_rth_pr
+       - rho
+       - rho_ref_mc
+       - theta_v
+       - theta_ref_mc
+    z_exner_ex_pr:
+      - exner
+      - exner_exfac
+      - exner_pr
+      - exner_ref_mc
+      - z_exner_ex_pr
+
+    velocity_no_nproma_if_prop_lvn_only_0_istep_1: []
+    velocity_no_nproma_if_prop_lvn_only_0_istep_2: []
+    velocity_no_nproma_if_prop_lvn_only_1_istep_1: []
+    velocity_no_nproma_if_prop_lvn_only_1_istep_2: []
+#   velocity_no_nproma_if_prop_lvn_only_0_istep_1:
+#     - z_kin_hor_e
+#     - z_vt_ie
+#     - z_w_concorr_me
+#   velocity_no_nproma_if_prop_lvn_only_0_istep_2:
+#     - z_kin_hor_e
+#     - z_vt_ie
+#     - z_w_concorr_me
+#   velocity_no_nproma_if_prop_lvn_only_1_istep_1:
+#     - z_kin_hor_e
+#     - z_vt_ie
+#     - z_w_concorr_me
+#   velocity_no_nproma_if_prop_lvn_only_1_istep_2:
+#     - z_kin_hor_e
+#     - z_vt_ie
+#     - z_w_concorr_me
+
+  struct_members: {}
+#   t_nh_diag:
+#   - ddt_vn_apc_pc
+#   - ddt_w_adv_pc
+#   - vn_ie
+#   - vt
+#   - w_concorr_c
+
+#   t_int_state:
+#   - cells_aw_verts
+#   - c_lin_e
+#   - e_bln_c_s
+#   - geofac_grdiv
+#   - geofac_n2s
+#   - geofac_rot
+#   - rbf_vec_coeff_e
+
+#   t_nh_metrics:
+#   - coeff1_dwdz
+#   - coeff2_dwdz
+#   - coeff_gradekin
+#   - ddqz_z_full_e
+#   - ddqz_z_half
+#   - ddxn_z_full
+#   - ddxt_z_full
+#   - wgtfac_c
+#   - wgtfac_e
+#   - wgtfacq_e
+
+#   t_nh_prog:
+#   - vn
+#   - w
+
+#   t_grid_cells:
+#   - area
+#   - edge_blk
+#   - edge_idx
+#   - neighbor_blk
+#   - neighbor_idx
+
+#   t_grid_edges:
+#   - area_edge
+#   - cell_blk
+#   - cell_idx
+#   - f_e
+#   - inv_dual_edge_length
+#   - inv_primal_edge_length
+#   - quad_blk
+#   - quad_idx
+#   - tangent_orientation
+#   - vertex_blk
+#   - vertex_idx
+
+#   t_grid_vertices:
+#   - cell_blk
+#   - cell_idx
+#   - edge_blk
+#   - edge_idx
+
+#   t_grid_domain_decomp_info:
+#   - owner_mask
+
+
+    # for veltend:
+    # CPU:
+    #   start/end indices/block (p_patch)
+    #   dtime
+    #   nproma (global_data)
+    #   maxvcfl dyn (p_diag)
+    # GPU:
+    #
+    #t_nh_metrics:
+      #  - rho_ref_mc
+    # t_nh_prog:
+    #   - rho
+
+

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import os
 from typing import Any, Collection, Dict, List, Optional, Set, Tuple, Union
 
 from functools import singledispatch, reduce
@@ -23,6 +22,74 @@ import dace
 # FIXME: add caching of struct & struct array arguments
 # FIXME: have to see about copy back from dace structs/arrays to fortran
 # FIXME: check if arrays are allocated/associated etc when copying in
+
+
+################################################################################
+# Hacked in library nodes for loading
+################################################################################
+from dace.libraries.standard import CodeLibraryNode
+from dace.properties import make_properties, Property
+
+from dace.transformation.auto_tile.add_compute_element_map import AddComputeElementBlockMap
+from dace.transformation.auto_tile.remainder_loop_stencil_map import RemainderLoopStencilMap
+from dace.transformation.auto_tile.thread_coarsening import ThreadCoarsening
+from dace.transformation.interstate import (
+    LoopToMap,
+    ContinueToCondition,
+    ConditionFusion,
+    StateFusion,
+)
+from dace.transformation.passes import (
+    InlineSDFGs,
+    SymbolPropagation,
+    StructToContainerGroups,
+)
+
+from dace.transformation.passes import GPUKernelLaunchRestructure
+from dace.transformation.dataflow import MapCollapse, MapFusion, TrivialMapElimination
+from dace.transformation.passes.to_gpu import ToGPU
+
+
+@make_properties
+class LibNode(CodeLibraryNode):
+    code = Property(dtype=str, default="", allow_none=False)
+
+    def __init__(self, name, input_names, output_names, code):
+        super().__init__(name=name, input_names=input_names, output_names=output_names)
+        self.code = code
+
+    def generate_code(self, inputs, outputs):
+        if (
+            inputs["in_arr"].storage == dace.StorageType.GPU_Global
+            or inputs["in_size"].storage == dace.StorageType.GPU_Shared
+        ):
+            return f"""
+            #define __REDUCE_GPU__
+            {self.code}
+            #undef __REDUCE_GPU__
+            """
+
+        return self.code
+
+import dace
+
+
+seg_reduction = f"""
+
+"""
+
+@make_properties
+class SegmentedReduceLibNode(CodeLibraryNode):
+    code = Property(dtype=str, default="", allow_none=False)
+
+    def __init__(self, name, input_names, output_names, code):
+        super().__init__(name=name, input_names=input_names, output_names=output_names)
+        self.code = code
+
+    def generate_code(self, inputs, outputs):
+        return self.code
+
+################################################################################
 
 _PRIMITIVE_DACE_TYPE_TO_FORRTRAN_C_TYPE = {
     dace.float32: "real(kind=c_float)",
@@ -324,10 +391,12 @@ def generate_copy_in_function_struct(
     struct: dace.data.Structure,
     struct_ignore_list: Set[str],
     struct_members_use_null: Dict[str, Set[str]],
+    struct_members_use_openacc: Dict[str, Set[str]],
 ) -> str:
     dace_type_name = f"dace_{struct.name}"
 
     members_use_null = struct_members_use_null.get(struct.name, set())
+    members_use_openacc = struct_members_use_openacc.get(struct.name, set())
     copy_fields_src = ""
     for member_name, member_type in struct.members.items():
 
@@ -373,7 +442,7 @@ def generate_copy_in_function_struct(
 """
 
         else:
-            copy_fields_src += f"""\
+            copy_member_src = f"""\
     dace_rich_obj%{member_name} = {
         generate_copy_in_fortran_expr(
             member_type,
@@ -383,6 +452,25 @@ def generate_copy_in_function_struct(
         )
 }
 """
+            if member_name in members_use_openacc:
+                assert isinstance(member_type, dace.data.Array)
+                assert not isinstance(member_type, dace.data.ContainerArray)
+                copy_member_src = f"""\
+#ifndef _OPENACC
+{copy_member_src}
+#else
+    dace_rich_obj%{member_name} = {
+        generate_copy_in_fortran_expr(
+            member_type,
+            expr=f"fortran_obj%{member_name}",
+            steal_arrays_expr="steal_arrays",
+            minimal_structs_expr="minimal_structs",
+            array_use_openacc=True,
+        )
+}
+#endif
+"""
+            copy_fields_src += copy_member_src
 
             if isinstance(member_type, dace.data.Array):
                 copy_fields_src += generate_array_literal_size_checks(
@@ -403,8 +491,9 @@ def generate_copy_in_function_struct(
     logical :: steal_arrays, minimal_structs
     type(c_ptr) :: dace_obj_ptr
     type({dace_type_name}), pointer :: dace_rich_obj
+    type({dace_type_name}) :: dace_c_obj
 
-    dace_obj_ptr = malloc(c_sizeof(dace_rich_obj))
+    dace_obj_ptr = malloc(c_sizeof(dace_c_obj))
     call c_f_pointer(dace_obj_ptr, dace_rich_obj)
 
 {copy_fields_src}
@@ -416,12 +505,14 @@ def generate_copy_in_function_global_data(
     struct: dace.data.Structure,
     struct_ignore_list: Set[str],
     struct_members_use_null: Dict[str, Set[str]],
+    struct_members_use_openacc: Dict[str, Set[str]],
     imports_collector: ImportsCollector,
 ) -> str:
     # FIXME: mostly a code clone of `generate_copy_in_function_struct` :(
     dace_type_name = f"dace_{struct.name}"
 
     members_use_null = struct_members_use_null.get(struct.name, set())
+    members_use_openacc = struct_members_use_openacc.get(struct.name, set())
     copy_fields_src = ""
     for member_name, member_type in struct.members.items():
 
@@ -470,7 +561,7 @@ def generate_copy_in_function_global_data(
 
         else:
             imports_collector.require_symbol(member_name)
-            copy_fields_src += f"""\
+            copy_member_src = f"""\
     dace_rich_obj%{member_name} = {
         generate_copy_in_fortran_expr(
             member_type,
@@ -480,6 +571,26 @@ def generate_copy_in_function_global_data(
         )
 }
 """
+            if member_name in members_use_openacc:
+                assert isinstance(member_type, dace.data.Array)
+                assert not isinstance(member_type, dace.data.ContainerArray)
+                copy_member_src = f"""\
+#ifndef _OPENACC
+{copy_member_src}
+#else
+    dace_rich_obj%{member_name} = {
+        generate_copy_in_fortran_expr(
+            member_type,
+            expr=member_name,
+            steal_arrays_expr="steal_arrays",
+            minimal_structs_expr="minimal_structs",
+            array_use_openacc=True,
+        )
+}
+#endif
+"""
+            copy_fields_src += copy_member_src
+
             if isinstance(member_type, dace.data.Array):
                 copy_fields_src += generate_array_literal_size_checks(
                 f"global_data.{member_name}",
@@ -499,8 +610,9 @@ def generate_copy_in_function_global_data(
     logical :: steal_arrays, minimal_structs
     type(c_ptr) :: dace_obj_ptr
     type({dace_type_name}), pointer :: dace_rich_obj
+    type({dace_type_name}) :: dace_c_obj
 
-    dace_obj_ptr = malloc(c_sizeof(dace_rich_obj))
+    dace_obj_ptr = malloc(c_sizeof(dace_c_obj))
     call c_f_pointer(dace_obj_ptr, dace_rich_obj)
 
 {copy_fields_src}
@@ -552,41 +664,28 @@ class ArrayLoopHelper:
         return loop_ends
 
 
-def generate_copy_in_function_array(
-    array: Union[dace.data.ContainerArray, dace.data.Array]
-) -> Tuple[str, str]:
+def generate_copy_in_function_array(array: dace.data.Array) -> Tuple[str, str]:
     rank = len(array.shape)
 
-    # FIXME(important!): take offsets into consideration!
+    # FIXME: take offsets into consideration!
 
     copy_in_str = ""
     copy_in_interface_str = ""
-    if isinstance(array, dace.data.ContainerArray):
-        base_type = array.stype
-        base_name = base_type.name
-        # cannot take pointer of struct arrays
-        array_shallow_copy_str = ""
-    else:
-        assert isinstance(array, dace.data.Array)
-        base_type = array.dtype
-        base_name = base_type.to_string()
-        array_shallow_copy_str = """
-    if (steal_arrays .eqv. .true.) then
-      dace_array_ptr = c_loc(fortran_array)
-      return
-    end if
-"""
+    base_type = array.dtype
+    base_name = base_type.to_string()
         # TODO: quite hacky to implement this here
-        if array.dtype == dace.int32:
-            # need to add fix because F2DaCe uses `int32` for Fortran `logical`
-            copy_in_interface_str += f"""
+    if array.dtype == dace.int32:
+        # need to add fix because F2DaCe uses `int32` for Fortran `logical`
+        # TODO: there should be a better solution for this
+        # maybe use `transfer` for whole arrays or go cast through `c_ptr`?
+        copy_in_interface_str += f"""
 interface logical_fix_{rank}d
   module procedure logical_to_int_{rank}d
   module procedure int_to_int_{rank}d
 end interface logical_fix_{rank}d
 """
 
-            copy_in_str += f"""\
+        copy_in_str += f"""\
   function logical_to_int_{rank}d(inp) result(out)
     logical(4), dimension({ArrayLoopHelper.dimensions(rank)}), target :: inp
     integer(kind=c_int), dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: out
@@ -605,20 +704,110 @@ end interface logical_fix_{rank}d
 
     # FIXME: type declarations here are super messy!
     copy_in_str += f"""\
-  function copy_in_{base_name}_{rank}d_array(fortran_array, steal_arrays, minimal_structs) result(dace_array_ptr)
+  function copy_in_{base_name}_{rank}d_array( &
+    fortran_array, &
+    steal_arrays, &
+    use_openacc, &
+    minimal_structs &
+   ) &
+   result(dace_array_ptr)
     {dace_type_to_fortran_rich_var_type_decl(array)} :: fortran_array
-    logical :: steal_arrays, minimal_structs
+    logical :: steal_arrays, use_openacc, minimal_structs
     {dace_type_to_fortran_c_var_type_decl(array)} :: dace_array_ptr
     {dace_type_to_fortran_c_var_type_decl(base_type)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: dace_rich_array
 
     {ArrayLoopHelper.indices_decl(rank)}
+#ifdef _OPENACC
+    integer(kind=c_size_t) :: size_bytes
+#endif
+
+    if (use_openacc) then
+#ifndef _OPENACC
+      print *, "!!!ERROR!!! Requested OpenACC, but built without OpenACC (SDFG bindings file)"
+      return
+#endif
+    end if
 
     if (.not. c_associated(c_loc(fortran_array))) then
       dace_array_ptr = c_null_ptr
       return
     end if
 
-{array_shallow_copy_str}
+    if (steal_arrays .eqv. .true.) then
+      if (use_openacc .eqv. .false.) then
+          dace_array_ptr = c_loc(fortran_array)
+      else
+#ifdef _OPENACC
+          dace_array_ptr = c_acc_deviceptr(c_loc(fortran_array))
+#endif
+      end if
+      return
+    end if
+
+    if (use_openacc .eqv. .false.) then
+        dace_array_ptr = malloc(c_sizeof(dace_array_ptr) * size(fortran_array))
+        call c_f_pointer(dace_array_ptr, dace_rich_array, shape=shape(fortran_array))
+{ArrayLoopHelper.loop_begins(rank, "fortran_array")}
+    {rank * "     "}dace_rich_array({ArrayLoopHelper.indices_expr(rank)}) = {
+        generate_copy_in_fortran_expr(
+            base_type,
+            expr=f"fortran_array({ArrayLoopHelper.indices_expr(rank)})",
+            steal_arrays_expr="steal_arrays",
+            minimal_structs_expr="minimal_structs",
+        )
+}
+{ArrayLoopHelper.loop_ends(rank)}
+    else
+#ifdef _OPENACC
+    size_bytes = size(fortran_array) * c_sizeof(fortran_array({", ".join("1"*rank)}))
+    dace_array_ptr = c_acc_malloc(size_bytes)
+    call c_acc_memcpy_device(dace_array_ptr, c_acc_deviceptr(c_loc(fortran_array)), size_bytes)
+#endif
+    end if
+  end function copy_in_{base_name}_{rank}d_array
+
+"""
+
+    return copy_in_str, copy_in_interface_str
+
+
+def generate_copy_in_function_struct_array(array: dace.data.ContainerArray) -> str:
+    rank = len(array.shape)
+
+    # FIXME: largely a code clone of generate_copy_in_function_array :(
+    # FIXME: take offsets into consideration!
+
+    base_type = array.stype
+    base_name = base_type.name
+
+    # FIXME: type declarations here are super messy!
+    copy_in_str = f"""\
+  function copy_in_{base_name}_{rank}d_array( &
+    fortran_array, &
+    steal_arrays, &
+    use_openacc, &
+    minimal_structs &
+  ) &
+  result(dace_array_ptr)
+    {dace_type_to_fortran_rich_var_type_decl(array)} :: fortran_array
+    logical :: steal_arrays, use_openacc, minimal_structs
+    {dace_type_to_fortran_c_var_type_decl(array)} :: dace_array_ptr
+    {dace_type_to_fortran_c_var_type_decl(base_type)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: dace_rich_array
+
+    {ArrayLoopHelper.indices_decl(rank)}
+
+    if (use_openacc) then
+#ifndef _OPENACC
+      print *, "!!!ERROR!!! Requested OpenACC, but built without OpenACC (SDFG bindings file)"
+      return
+#endif
+
+    end if
+    if (.not. c_associated(c_loc(fortran_array))) then
+      dace_array_ptr = c_null_ptr
+      return
+    end if
+
     dace_array_ptr = malloc(c_sizeof(dace_array_ptr) * size(fortran_array))
     call c_f_pointer(dace_array_ptr, dace_rich_array, shape=shape(fortran_array))
 {ArrayLoopHelper.loop_begins(rank, "fortran_array")}
@@ -635,7 +824,7 @@ end interface logical_fix_{rank}d
 
 """
 
-    return copy_in_str, copy_in_interface_str
+    return copy_in_str
 
 
 @singledispatch
@@ -644,6 +833,7 @@ def generate_copy_in_fortran_expr(
     expr: str,
     steal_arrays_expr: str,
     minimal_structs_expr: str,
+    array_use_openacc: bool = False,
     enable_inout_hack: bool = False,
 ) -> str:
     raise NotImplementedError(f"Unable to copy in fortran expression to '{dace_type}'")
@@ -664,11 +854,12 @@ _PRIMITIVE_FORTRAN_TO_DACE_COPY_IN_FUNCTIONS: Dict[
 
 # TODO: Cast int to LOGICAL if needed (transfer trick)
 @generate_copy_in_fortran_expr.register
-def _(
+def generate_copy_in_fortran_expr_typeclass(
     dtype: dace.dtypes.typeclass,
     expr: str,
     steal_arrays_expr: str,
     minimal_structs_expr: str,
+    array_use_openacc: bool = False,
     enable_inout_hack: bool = False,
 ) -> str:
     copy_in_func = _PRIMITIVE_FORTRAN_TO_DACE_COPY_IN_FUNCTIONS[dtype]
@@ -677,11 +868,12 @@ def _(
     return expr
 
 @generate_copy_in_fortran_expr.register
-def _(
+def generate_copy_in_fortran_expr_scalar(
     scalar: dace.data.Scalar,
     expr: str,
     steal_arrays_expr: str,
     minimal_structs_expr: str,
+    array_use_openacc: bool = False,
     enable_inout_hack: bool = False,
 ) -> str:
     return generate_copy_in_fortran_expr(
@@ -689,16 +881,18 @@ def _(
         expr,
         steal_arrays_expr=steal_arrays_expr,
         minimal_structs_expr=minimal_structs_expr,
+        array_use_openacc=array_use_openacc,
         enable_inout_hack=enable_inout_hack,
     )
 
 
 @generate_copy_in_fortran_expr.register
-def _(
+def generate_copy_in_fortran_expr_array(
     array: dace.data.Array,
     expr: str,
     steal_arrays_expr: str,
     minimal_structs_expr: str,
+    array_use_openacc: bool = False,
     enable_inout_hack: bool = False,
 ) -> str:
     if enable_inout_hack and array.shape == (1,):
@@ -713,16 +907,18 @@ def _(
     return f"""copy_in_{array.dtype.to_string()}_{rank}d_array( &
     fortran_array={expr}, &
     steal_arrays={steal_arrays_expr}, &
+    use_openacc={".true." if array_use_openacc else ".false."}, &
     minimal_structs={minimal_structs_expr} &
   )"""
 
 
 @generate_copy_in_fortran_expr.register
-def _(
+def generate_copy_in_fortran_expr_struct(
     struct: dace.data.Structure,
     expr: str,
     steal_arrays_expr: str,
     minimal_structs_expr: str,
+    array_use_openacc: bool = False,
     enable_inout_hack: bool = False,
 ) -> str:
     if struct.name == _STRUCT_GLOBAL_DATA_TYPE_NAME:
@@ -738,13 +934,15 @@ def _(
 
 
 @generate_copy_in_fortran_expr.register
-def _(
+def generate_copy_in_fortran_expr_struct_array(
     struct_array: dace.data.ContainerArray,
     expr: str,
     steal_arrays_expr: str,
     minimal_structs_expr: str,
+    array_use_openacc: bool = False,
     enable_inout_hack: bool = False,
 ) -> str:
+    assert isinstance(struct_array.stype, dace.data.Structure)
     return f"""copy_in_{struct_array.stype.name}_{len(struct_array.shape)}d_array( &
     fortran_array={expr}, &
     steal_arrays={steal_arrays_expr}, &
@@ -1060,7 +1258,7 @@ def generate_array_comparison_subroutine(dace_type) -> str:
 
 
 @generate_array_comparison_subroutine.register
-def _(array: dace.data.Array) -> str:
+def generate_array_comparison_subroutine_array(array: dace.data.Array) -> str:
     # FIXME: can we check sizes of Fortran & SDFG arrays?!
     rank = len(array.shape)
     dtype = array.dtype
@@ -1081,6 +1279,7 @@ def _(array: dace.data.Array) -> str:
   subroutine compare_{dtype.to_string()}_{rank}d_array( &
     actual, &
     ref, &
+    use_openacc, &
     result, &
     array_expr, &
     rel_threshold, &
@@ -1088,6 +1287,7 @@ def _(array: dace.data.Array) -> str:
   )
     {dace_type_to_fortran_c_var_type_decl(array)} :: actual
     {dace_type_to_fortran_rich_var_type_decl(array)}, intent(in) :: ref
+    logical, intent(in) :: use_openacc
     logical, intent(out) :: result
     real(kind=c_double), intent(in), optional :: rel_threshold, abs_threshold
     character(*), intent(in) :: array_expr
@@ -1148,65 +1348,111 @@ def _(array: dace.data.Array) -> str:
 
     call c_f_pointer(actual, actual_rich, shape=shape(ref))
 
-
+    if (use_openacc .eqv. .false.) then
 {ArrayLoopHelper.loop_begins(rank, "ref")}
 {comparison_stmts}
-    result = result .and. local_result
+      result = result .and. local_result
 {ArrayLoopHelper.loop_ends(rank)}
 
 {ArrayLoopHelper.loop_begins(rank, "ref")}
-    {comparison_stmts}
-    if (.not. local_result) then
-        if (first_fail == -1) then
-            {"\n            ".join([f"first_fail_{i} = {i}" for i in ArrayLoopHelper.indices_expr(rank).split(", ")])}
-            first_fail = 1
-        endif
-        {"\n        ".join([f"last_fail_{i} = {i}" for i in ArrayLoopHelper.indices_expr(rank).split(", ")])}
-        total_fails = total_fails + 1
-    endif
+       {comparison_stmts}
+       if (.not. local_result) then
+           if (first_fail == -1) then
+               {"\n            ".join([f"first_fail_{i} = {i}" for i in ArrayLoopHelper.indices_expr(rank).split(", ")])}
+               first_fail = 1
+           endif
+           {"\n        ".join([f"last_fail_{i} = {i}" for i in ArrayLoopHelper.indices_expr(rank).split(", ")])}
+           total_fails = total_fails + 1
+       endif
 {ArrayLoopHelper.loop_ends(rank)}
 
-    total_indices =  {" * ".join([f"size(ref, dim={i+1})" for i in range(rank)])}
+      total_indices =  {" * ".join([f"size(ref, dim={i+1})" for i in range(rank)])}
+
+      if (.not. result) then
+        max_threshold_ratio_loc = maxloc(abs(ref - actual_rich) / max(actual_rel_threshold * abs(ref), actual_abs_threshold))
+        {ArrayLoopHelper.indices_copy_stmt(rank, "max_threshold_ratio_i", "max_threshold_ratio_loc(", ")")}
+
+        error_ref = ref({ArrayLoopHelper.indices_expr(rank, "max_threshold_ratio_i")})
+        error_actual = actual_rich({ArrayLoopHelper.indices_expr(rank, "max_threshold_ratio_i")})
+
+        threshold_ratio = real(abs(error_ref - error_actual), kind=8) / max(actual_rel_threshold * abs(error_ref), actual_abs_threshold)
+        rel_error = abs(real(error_ref - error_actual, kind=8)/error_ref)
+        abs_error = abs(error_ref - error_actual)
+
+        write (message_text, '(a,a,a,e28.20,a,e28.20,a,e28.20,a,"(",{',", ",'.join(["i0"]*rank)},")",a,e28.20,a,e28.20,a,"(",{',", ",'.join(["i0"]*rank)},")",a,"(",{',", ",'.join(["i0"]*rank)},")",a,i0,a,i0,a,i0,a,"(",{',", ",'.join(["i0"]*rank)},")")') &
+          "Verification failed for array '", &
+            trim(array_expr), &
+          "':"//char(10)//"    - max_threshold_ratio = ", &
+            threshold_ratio, &
+            ", rel_error = ", &
+            rel_error, &
+            ", abs_error = ", &
+            abs_error, &
+          char(10)//"    - at (", &
+            {ArrayLoopHelper.indices_expr(rank, "max_threshold_ratio_i")}, &
+            "), ref = ", &
+            error_ref, &
+            ", actual = ", &
+            error_actual, &
+            char(10)//"    - first_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "first_fail_i")}, &
+            " last_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "last_fail_i")}, &
+            " total_fails: ", total_fails, &
+            " total_indices: ", total_indices, &
+            " call_to_size: ", size(ref), &
+            " shape: ", {ArrayLoopHelper.indices_expr(rank, "dim_i")}
+        print *, "compare_{dtype.to_string()}_{rank}d_array"
+        print *, trim(message_text)
+
+      end if
+
+      call free(actual)
+
+    else
+#ifndef _OPENACC
+      print *, "!!!ERROR!!! Requested OpenACC, but built without OpenACC (SDFG bindings file)"
+      return
+#else
+
+    rel_error = 0
+    abs_error = 0
+
+    !$ACC PARALLEL &
+    !$ACC   DEFAULT(PRESENT) &
+    !$ACC   DEVICEPTR(actual_rich) &
+    !$ACC   REDUCTION(.AND.:result) &
+    !$ACC   REDUCTION(MAX:rel_error) &
+    !$ACC   REDUCTION(MAX:abs_error)
+    !$ACC LOOP GANG VECTOR COLLAPSE({rank})
+{ArrayLoopHelper.loop_begins(rank, "ref")}
+      result = abs(ref({ArrayLoopHelper.indices_expr(rank)}) - actual_rich({ArrayLoopHelper.indices_expr(rank)})) <= max(actual_rel_threshold * abs(ref({ArrayLoopHelper.indices_expr(rank)})), actual_abs_threshold)
+
+      if (.not. result) then
+        rel_error = abs(real(ref({ArrayLoopHelper.indices_expr(rank)}) - actual_rich({ArrayLoopHelper.indices_expr(rank)}), kind=8)/ref({ArrayLoopHelper.indices_expr(rank)}))
+        abs_error = abs(ref({ArrayLoopHelper.indices_expr(rank)}) - actual_rich({ArrayLoopHelper.indices_expr(rank)}))
+      else
+        rel_error = 0
+        abs_error = 0
+      end if
+{ArrayLoopHelper.loop_ends(rank)}
+    !$ACC END PARALLEL
 
     if (.not. result) then
-      max_threshold_ratio_loc = maxloc(abs(ref - actual_rich) / max(actual_rel_threshold * abs(ref), actual_abs_threshold))
-      {ArrayLoopHelper.indices_copy_stmt(rank, "max_threshold_ratio_i", "max_threshold_ratio_loc(", ")")}
-
-      error_ref = ref({ArrayLoopHelper.indices_expr(rank, "max_threshold_ratio_i")})
-      error_actual = actual_rich({ArrayLoopHelper.indices_expr(rank, "max_threshold_ratio_i")})
-
-      threshold_ratio = real(abs(error_ref - error_actual), kind=8) / max(actual_rel_threshold * abs(error_ref), actual_abs_threshold)
-      rel_error = abs(real(error_ref - error_actual, kind=8)/error_ref)
-      abs_error = abs(error_ref - error_actual)
-
-      write (message_text, '(a,a,a,e28.20,a,e28.20,a,e28.20,a,"(",{',", ",'.join(["i0"]*rank)},")",a,e28.20,a,e28.20,a,"(",{',", ",'.join(["i0"]*rank)},")",a,"(",{',", ",'.join(["i0"]*rank)},")",a,i0,a,i0,a,i0,a,"(",{',", ",'.join(["i0"]*rank)},")")') &
+      write (message_text, '(a,a,a,e28.20,a,e28.20,a,i0,a,"(",{',", ",'.join(["i0"]*rank)},")")') &
         "Verification failed for array '", &
           trim(array_expr), &
-        "':"//char(10)//"    - max_threshold_ratio = ", &
-          threshold_ratio, &
-          ", rel_error = ", &
+        "':"//char(10)//"   - rel_error = ", &
           rel_error, &
           ", abs_error = ", &
           abs_error, &
-        char(10)//"    - at (", &
-          {ArrayLoopHelper.indices_expr(rank, "max_threshold_ratio_i")}, &
-          "), ref = ", &
-          error_ref, &
-          ", actual = ", &
-          error_actual, &
-          char(10)//"    - first_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "first_fail_i")}, &
-          " last_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "last_fail_i")}, &
-          " total_fails: ", total_fails, &
-          " total_indices: ", total_indices, &
-          " call_to_size: ", size(ref), &
+        char(10)//"   - call_to_size: ", size(ref), &
           " shape: ", {ArrayLoopHelper.indices_expr(rank, "dim_i")}
-      print *, "compare_{dtype.to_string()}_{rank}d_array"
+      print *, "compare_float64_3d_array"
       print *, trim(message_text)
-
     end if
 
-    ! FIXME: should be separate
-    call free(actual)
+    call c_acc_free(actual)
+#endif
+    end if
 
   end subroutine compare_{dtype.to_string()}_{rank}d_array
 """
@@ -1216,11 +1462,13 @@ def generate_comparison_routine_dace_struct(
     struct: dace.data.Structure,
     struct_ignore_list: Set[str],
     struct_members_use_null: Dict[str, Set[str]],
+    struct_members_use_openacc: Dict[str, Set[str]],
 ) -> str:
 
     compare_fields_src = ""
 
     members_use_null = struct_members_use_null.get(struct.name, set())
+    members_use_openacc = struct_members_use_openacc.get(struct.name, set())
     for member_name, member_type in struct.members.items():
 
         # TODO: refactor `_COPY_IN_IGNORES_STRUCT_MEMBER_TYPE`
@@ -1237,17 +1485,37 @@ def generate_comparison_routine_dace_struct(
             # we don't verify the helper fields
             continue
 
-        compare_fields_src += f"""
-    write (member_expr, '(a,a)') &
-      trim(struct_expr), &
-      "%{member_name}"
+        compare_member_src = generate_comparison_check_stmts(
+            member_type,
+            actual_expr=f"actual_rich%{member_name}",
+            ref_expr=f"ref%{member_name}",
+            result_expr="local_result",
+            var_expr="member_expr",
+        )
+
+        if member_name in members_use_openacc:
+            assert isinstance(member_type, dace.data.Array)
+            assert not isinstance(member_type, dace.data.ContainerArray)
+            compare_member_src = f"""\
+#ifndef _OPENACC
+{compare_member_src}
+#else
 {generate_comparison_check_stmts(
     member_type,
     actual_expr=f"actual_rich%{member_name}",
     ref_expr=f"ref%{member_name}",
     result_expr="local_result",
     var_expr="member_expr",
+    array_use_openacc=True,
 )}
+#endif
+"""
+
+        compare_fields_src += f"""
+    write (member_expr, '(a,a)') &
+      trim(struct_expr), &
+      "%{member_name}"
+{compare_member_src}
     result = result .and. local_result
 """
 
@@ -1275,7 +1543,6 @@ def generate_comparison_routine_dace_struct(
     result = .true.
 {compare_fields_src}
 
-    ! FIXME: should be separate
     call free(actual)
 
   end subroutine compare_{struct.name}_struct
@@ -1286,6 +1553,7 @@ def generate_comparison_routine_global_data(
     struct: dace.data.Structure,
     struct_ignore_list: Set[str],
     struct_members_use_null: Dict[str, Set[str]],
+    struct_members_use_openacc: Dict[str, Set[str]],
     imports_collector: ImportsCollector,
 ) -> str:
     # FIXME: mostly a code clone of `generate_comparison_routine_dace_struct` :(
@@ -1293,6 +1561,7 @@ def generate_comparison_routine_global_data(
     compare_fields_src = ""
 
     members_use_null = struct_members_use_null.get(struct.name, set())
+    members_use_openacc = struct_members_use_openacc.get(struct.name, set())
     for member_name, member_type in struct.members.items():
 
         # TODO: refactor `_COPY_IN_IGNORES_STRUCT_MEMBER_TYPE`
@@ -1309,17 +1578,36 @@ def generate_comparison_routine_global_data(
             # we don't verify the helper fields
             continue
 
+        compare_member_src = generate_comparison_check_stmts(
+            member_type,
+            actual_expr=f"actual_rich%{member_name}",
+            ref_expr=member_name,
+            result_expr="local_result",
+            var_expr="member_expr",
+        )
+
+        if member_name in members_use_openacc:
+            assert isinstance(member_type, dace.data.Array)
+            assert not isinstance(member_type, dace.data.ContainerArray)
+            compare_member_src = f"""\
+#ifndef _OPENACC
+{compare_member_src}
+#else
+{generate_comparison_check_stmts(
+    member_type,
+    actual_expr=f"actual_rich%{member_name}",
+    ref_expr=member_name,
+    result_expr="local_result",
+    var_expr="member_expr",
+    array_use_openacc=True,
+)}
+#endif
+"""
         compare_fields_src += f"""
     write (member_expr, '(a,a)') &
       trim(struct_expr), &
       "%{member_name}"
-{generate_comparison_check_stmts(
-    member_type,
-    actual_expr=f"actual_rich%{member_name}",
-    ref_expr=f"{member_name}",
-    result_expr="local_result",
-    var_expr="member_expr",
-)}
+{compare_member_src}
     result = result .and. local_result
 """
 
@@ -1345,7 +1633,6 @@ def generate_comparison_routine_global_data(
     result = .true.
 {compare_fields_src}
 
-    ! FIXME: should be separate
     call free(actual)
 
   end subroutine compare_{struct.name}_struct
@@ -1353,7 +1640,7 @@ def generate_comparison_routine_global_data(
 
 
 @generate_array_comparison_subroutine.register
-def _(struct_array: dace.data.ContainerArray) -> str:
+def generate_array_comparison_subroutine_struct_array(struct_array: dace.data.ContainerArray) -> str:
     # FIXME: can we check sizes of Fortran & SDFG arrays?!
     rank = len(struct_array.shape)
     stype = struct_array.stype
@@ -1414,7 +1701,6 @@ def _(struct_array: dace.data.ContainerArray) -> str:
     result = result .and. local_result
 {ArrayLoopHelper.loop_ends(rank)}
 
-    ! FIXME: should be separate
     call free(actual)
 
   end subroutine compare_{stype.name}_{rank}d_array
@@ -1428,6 +1714,7 @@ def generate_comparison_check_stmts(
     ref_expr: str,
     result_expr: str,
     var_expr: Optional[str] = None,
+    array_use_openacc: bool = False,
 ) -> str:
     raise NotImplementedError(
         f"Unable to generate comparison statements for dace type {dace_type}"
@@ -1435,12 +1722,13 @@ def generate_comparison_check_stmts(
 
 
 @generate_comparison_check_stmts.register
-def _(
+def generate_comparison_check_stmts_typeclass(
     dtype: dace.dtypes.typeclass,
     actual_expr: str,
     ref_expr: str,
     result_expr: str,
     var_expr: Optional[str] = None,
+    array_use_openacc: bool = False,
     rel_threshold_expr: Optional[str] = None,
     abs_threshold_expr: Optional[str] = None,
 ) -> str:
@@ -1472,17 +1760,18 @@ def _(
 
 
 @generate_comparison_check_stmts.register
-def _(scalar: dace.data.Scalar, *args, **kwargs) -> str:
+def generate_comparison_check_stmts_scalar(scalar: dace.data.Scalar, *args, **kwargs) -> str:
     return generate_comparison_check_stmts(scalar.dtype, *args, **kwargs)
 
 
 @generate_comparison_check_stmts.register
-def _(
+def generate_comparison_check_stmts_array(
     array: dace.data.Array,
     actual_expr: str,
     ref_expr: str,
     result_expr: str,
     var_expr: Optional[str] = None,
+    array_use_openacc: bool = False,
     rel_threshold_expr: Optional[str] = None,
     abs_threshold_expr: Optional[str] = None,
 ) -> str:
@@ -1509,18 +1798,20 @@ def _(
         actual={actual_expr}, &
         ref={ref_expr}, &
         result={result_expr}, &
+        use_openacc={".true." if array_use_openacc else ".false."}, &
         array_expr={var_expr}{optional_arguments} &
     )
 """
 
 
 @generate_comparison_check_stmts.register
-def _(
+def generate_comparison_check_stmts_struct(
     struct: dace.data.Structure,
     actual_expr: str,
     ref_expr: str,
     result_expr: str,
     var_expr: Optional[str] = None,
+    array_use_openacc: bool = False,
 ) -> str:
     assert var_expr is not None
 
@@ -1543,12 +1834,13 @@ def _(
 
 
 @generate_comparison_check_stmts.register
-def _(
+def generate_comparison_check_stmts_struct_array(
     struct_array: dace.data.ContainerArray,
     actual_expr: str,
     ref_expr: str,
     result_expr: str,
     var_expr: Optional[str] = None,
+    array_use_openacc: bool = False,
 ):
     assert var_expr is not None
 
@@ -1838,6 +2130,8 @@ def generate_fortran_interface_source(
     sdfg: dace.SDFG,
     struct_ignore_list: Set[str],
     struct_members_use_null: Dict[str, Set[str]],
+    struct_members_use_openacc: Dict[str, Set[str]],
+    parameters_use_openacc: Set[str],
     initializaion_checks_ignore_list: Set[str],
     module_definitions: Dict[str, str],
 ) -> str:
@@ -1906,6 +2200,7 @@ def generate_fortran_interface_source(
                 struct,
                 struct_ignore_list,
                 struct_members_use_null,
+                struct_members_use_openacc,
                 imports_collector,
             )
             copy_back_subroutines_src += generate_copy_back_subroutine_global_data(
@@ -1919,6 +2214,7 @@ def generate_fortran_interface_source(
                 struct,
                 struct_ignore_list,
                 struct_members_use_null,
+                struct_members_use_openacc,
             )
             copy_back_subroutines_src += generate_copy_back_subroutine_struct(
                 struct,
@@ -1927,13 +2223,15 @@ def generate_fortran_interface_source(
             )
     # we want to generate only one copy in procedure per base type & rank
     for array in array_translations.values():
-        copy_in_str, copy_in_interface_str = generate_copy_in_function_array(array)
-        copy_in_functions_str += copy_in_str
-        copy_in_functions_interface_str += copy_in_interface_str
         if isinstance(array, dace.data.ContainerArray):
+            copy_in_functions_str += generate_copy_in_function_struct_array(array)
             copy_back_subroutines_src += generate_copy_back_subroutine_struct_array(
                 array
             )
+        else:
+            copy_in_str, copy_in_interface_str = generate_copy_in_function_array(array)
+            copy_in_functions_str += copy_in_str
+            copy_in_functions_interface_str += copy_in_interface_str
 
     initializations_check_subroutine_str = generate_initializations_check(
         sdfg,
@@ -1953,6 +2251,7 @@ def generate_fortran_interface_source(
                 struct,
                 struct_ignore_list,
                 struct_members_use_null,
+                struct_members_use_openacc,
                 imports_collector,
             )
         else:
@@ -1960,6 +2259,7 @@ def generate_fortran_interface_source(
                 struct,
                 struct_ignore_list,
                 struct_members_use_null,
+                struct_members_use_openacc,
             )
     for array in array_translations.values():
         comparison_subroutines_str += generate_array_comparison_subroutine(array)
@@ -2022,7 +2322,7 @@ module {module_name}
 """
 
         verification_deep_copies_declarations_src += f"""\
-  type(c_ptr) :: verification_deep_copy_{param_name} = C_NULL_PTR
+  type(c_ptr) :: copy_or_ptr_{param_name} = C_NULL_PTR
 """
 
     source += f"""\
@@ -2072,6 +2372,36 @@ interface
     use iso_c_binding
     type(c_ptr), value :: ptr
   end subroutine free
+
+#ifdef _OPENACC
+
+  type(c_ptr) function c_acc_malloc(size) &
+    bind(c, name="acc_malloc")
+    use iso_c_binding
+    integer(kind=c_size_t), value :: size
+  end function c_acc_malloc
+
+  subroutine c_acc_free(device_ptr) &
+    bind(c, name="acc_free")
+    use iso_c_binding
+    type(c_ptr), value :: device_ptr
+  end subroutine c_acc_free
+
+  type(c_ptr) function c_acc_deviceptr(host_ptr) &
+    bind(c, name="acc_deviceptr")
+    use iso_c_binding
+    type(c_ptr), value :: host_ptr
+  end function c_acc_deviceptr
+
+  subroutine c_acc_memcpy_device(dst, src, size) &
+    bind(c, name="acc_memcpy_device")
+    use iso_c_binding
+    type(c_ptr), value :: dst
+    type(c_ptr), value :: src
+    integer(kind=c_size_t), value :: size
+  end subroutine c_acc_memcpy_device
+
+#endif
 
 
   type(c_ptr) function dace_init_{sdfg_name}({direct_program_parameters_without_state_str}) &
@@ -2178,7 +2508,7 @@ contains
 
     kw_args: List[str] = []
     kw_args_verification: List[str] = []
-    verification_shallow_copies_copy_ins_src = ""
+    shallow_copies_copy_ins_src = ""
     verification_deep_copies_copy_ins_src = ""
     shallow_copies_copy_back_src = ""
     verification_copies_comparisons_src = ""
@@ -2192,9 +2522,7 @@ contains
         ) or param_name.startswith(_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX):
             continue
 
-        kw_arg_verification = (
-            kw_arg
-        ) = f"""{param_name} = {generate_copy_in_fortran_expr(
+        kw_arg_verification = kw_arg = f"""{param_name} = {generate_copy_in_fortran_expr(
                 desc,
                 expr=var_name,
                 steal_arrays_expr=".true.",
@@ -2203,9 +2531,10 @@ contains
             )}"""
 
         if not isinstance(desc, dace.data.Scalar):
-            kw_arg_verification = f"{param_name} = verification_deep_copy_{param_name}"
-            verification_shallow_copies_copy_ins_src += f"""\
-    verification_deep_copy_{param_name} = {generate_copy_in_fortran_expr(
+            kw_arg_verification = f"{param_name} = copy_or_ptr_{param_name}"
+
+            shallow_copy_in_src = f"""\
+    copy_or_ptr_{param_name} = {generate_copy_in_fortran_expr(
         desc,
         expr=var_name,
         steal_arrays_expr=".true.",
@@ -2213,8 +2542,9 @@ contains
         enable_inout_hack=True,
     )}
 """
-            verification_deep_copies_copy_ins_src += f"""\
-    verification_deep_copy_{param_name} = {generate_copy_in_fortran_expr(
+
+            deep_copy_in_src = f"""\
+    copy_or_ptr_{param_name} = {generate_copy_in_fortran_expr(
         desc,
         expr=var_name,
         steal_arrays_expr=".false.",
@@ -2222,28 +2552,85 @@ contains
         enable_inout_hack=True,
     )}
 """
+            if param_name in parameters_use_openacc:
+                assert isinstance(desc, dace.data.Array)
+                assert not isinstance(desc, dace.data.ContainerArray)
+                shallow_copy_in_src = f"""\
+#ifndef _OPENACC
+{shallow_copy_in_src}
+#else
+    copy_or_ptr_{param_name} = {generate_copy_in_fortran_expr(
+        desc,
+        expr=var_name,
+        steal_arrays_expr=".true.",
+        minimal_structs_expr=".false.",
+        array_use_openacc=True,
+        enable_inout_hack=True,
+    )}
+#endif
+"""
+                deep_copy_in_src = f"""\
+#ifndef _OPENACC
+{deep_copy_in_src}
+#else
+    copy_or_ptr_{param_name} = {generate_copy_in_fortran_expr(
+        desc,
+        expr=var_name,
+        steal_arrays_expr=".false.",
+        minimal_structs_expr=".false.",
+        enable_inout_hack=True,
+        array_use_openacc=True,
+    )}
+#endif
+"""
+
+            shallow_copies_copy_ins_src += shallow_copy_in_src
+            verification_deep_copies_copy_ins_src += deep_copy_in_src
+
             if isinstance(desc, dace.data.Array):
                 literal_size_checks = generate_array_literal_size_checks(
                     f"{var_name}",
                     f"{var_name}",
                     desc
                 )
-                verification_shallow_copies_copy_ins_src += literal_size_checks
+                shallow_copies_copy_ins_src += literal_size_checks
                 verification_deep_copies_copy_ins_src += literal_size_checks
 
-            verification_copies_comparisons_src += f"""\
+            verification_comparison_src = generate_comparison_check_stmts(
+                desc,
+                actual_expr=f"copy_or_ptr_{param_name}",
+                ref_expr=var_name,
+                result_expr=f"local_result",
+                var_expr=f'"{param_name}"',
+            )
+
+            if param_name in parameters_use_openacc:
+                assert isinstance(desc, dace.data.Array)
+                assert not isinstance(desc, dace.data.ContainerArray)
+
+                verification_comparison_src = f"""\
+#ifndef _OPENACC
+{verification_comparison_src}
+#else
 {generate_comparison_check_stmts(
     desc,
-    actual_expr=f"verification_deep_copy_{param_name}",
+    actual_expr=f"copy_or_ptr_{param_name}",
     ref_expr=var_name,
     result_expr=f"local_result",
     var_expr=f'"{param_name}"',
+    array_use_openacc=True,
 )}
+#endif
+"""
+
+            verification_copies_comparisons_src += f"""\
+{verification_comparison_src}
     result = result .and. local_result
 """
+
             if isinstance(desc, (dace.data.Structure, dace.data.ContainerArray)):
                 shallow_copies_copy_back_src += generate_copy_back_stmts(
-                    desc, var_name, f"verification_deep_copy_{param_name}"
+                    desc, var_name, f"copy_or_ptr_{param_name}"
                 )
         kw_args.append(kw_arg)
         kw_args_verification.append(kw_arg_verification)
@@ -2309,9 +2696,14 @@ contains
   subroutine run_{sdfg_name}({convinience_parameters_str})
 {convenience_parameter_decls_str}
 {convenience_locals_decls_str}
+
+#ifdef _OPENACC
+    !$ACC WAIT
+#endif
+
 {initialize_optionals_src}
 
-{verification_shallow_copies_copy_ins_src}
+{shallow_copies_copy_ins_src}
 
     if (is_initialized .eqv. .false.) then
       is_initialized = .true.
@@ -2327,6 +2719,11 @@ contains
   subroutine run_{sdfg_name}_verification({convinience_parameters_str})
 {convenience_parameter_decls_str}
 {convenience_locals_decls_str}
+
+#ifdef _OPENACC
+    !$ACC WAIT
+#endif
+
 {initialize_optionals_src}
 
     call check_initializations()
@@ -2344,7 +2741,14 @@ contains
   subroutine verify_{sdfg_name}({convinience_parameters_str})
 {convenience_parameter_decls_str}
 {convenience_locals_decls_str}
-    logical :: local_result, result = .true.
+    logical :: local_result, result
+
+#ifdef _OPENACC
+    !$ACC WAIT
+#endif
+
+    result = .true.
+    local_result = .true.
 {initialize_optionals_src}
 
     if (is_initialized .eqv. .false.) then
@@ -2404,10 +2808,13 @@ def main():
     struct_ignore_list = set(meta_data["struct_ignore_list"])
     struct_members_use_null = {
         struct_name: set(members_use_null)
-        for struct_name, members_use_null in meta_data[
-            "struct_members_use_null"
-        ].items()
+        for struct_name, members_use_null in meta_data["struct_members_use_null"].items()
     }
+    struct_members_use_openacc = {
+        struct_name: set(members_use_openacc)
+        for struct_name, members_use_openacc in meta_data["use_openacc_data"]["struct_members"].items()
+    }
+    parameters_use_openacc = meta_data["use_openacc_data"]["sdfg_parameters"].get(sdfg.name, set())
     initializaion_checks_ignore_list = set(
         meta_data["initialization_checks_ignore_list"]
     )
@@ -2419,6 +2826,8 @@ def main():
         sdfg,
         struct_ignore_list,
         struct_members_use_null,
+        struct_members_use_openacc,
+        parameters_use_openacc,
         initializaion_checks_ignore_list,
         module_definitions,
     )

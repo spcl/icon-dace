@@ -81,7 +81,6 @@ def process(
         for start, end in insertions:
             start, end = start, end
 
-            print(associations[sdfg_name])
             before_src = generate_start_substitution_src(
                 sdfg_name, associations[sdfg_name][fortran_file_path.name][start][end]
             )
