@@ -34,16 +34,7 @@ initialization_checks_ignore_list:
   - modname
 
 struct_ignore_list:
-  # FIXME: due to differences between the ICON open source version and the version used in the DaFy paper
-  # TODO: Fix pipeline to be able to copy members of these
   -
-  #- t_comm_gather_pattern
-  #- t_uuid
-  #- t_int_state ()
-  #- t_grid_edges
-  #- t_grid_cells
-  #- t_nh_diag
-  #- t_nh_metrics
 
 struct_members_use_null:
   t_nh_diag:
@@ -70,88 +61,84 @@ use_openacc_data:
       - exner_ref_mc
       - z_exner_ex_pr
 
-    velocity_no_nproma_if_prop_lvn_only_0_istep_1: []
-    velocity_no_nproma_if_prop_lvn_only_0_istep_2: []
-    velocity_no_nproma_if_prop_lvn_only_1_istep_1: []
-    velocity_no_nproma_if_prop_lvn_only_1_istep_2: []
-#   velocity_no_nproma_if_prop_lvn_only_0_istep_1:
-#     - z_kin_hor_e
-#     - z_vt_ie
-#     - z_w_concorr_me
-#   velocity_no_nproma_if_prop_lvn_only_0_istep_2:
-#     - z_kin_hor_e
-#     - z_vt_ie
-#     - z_w_concorr_me
-#   velocity_no_nproma_if_prop_lvn_only_1_istep_1:
-#     - z_kin_hor_e
-#     - z_vt_ie
-#     - z_w_concorr_me
-#   velocity_no_nproma_if_prop_lvn_only_1_istep_2:
-#     - z_kin_hor_e
-#     - z_vt_ie
-#     - z_w_concorr_me
+    velocity_no_nproma_if_prop_lvn_only_0_istep_1:
+      - z_kin_hor_e
+      - z_vt_ie
+      - z_w_concorr_me
+    velocity_no_nproma_if_prop_lvn_only_0_istep_2:
+      - z_kin_hor_e
+      - z_vt_ie
+      - z_w_concorr_me
+    velocity_no_nproma_if_prop_lvn_only_1_istep_1:
+      - z_kin_hor_e
+      - z_vt_ie
+      - z_w_concorr_me
+    velocity_no_nproma_if_prop_lvn_only_1_istep_2:
+      - z_kin_hor_e
+      - z_vt_ie
+      - z_w_concorr_me
 
-  struct_members: {}
-#   t_nh_diag:
-#   - ddt_vn_apc_pc
-#   - ddt_w_adv_pc
-#   - vn_ie
-#   - vt
-#   - w_concorr_c
+  struct_members:
+    t_nh_diag:
+    - ddt_vn_apc_pc
+    - ddt_w_adv_pc
+    - vn_ie
+    - vt
+    - w_concorr_c
 
-#   t_int_state:
-#   - cells_aw_verts
-#   - c_lin_e
-#   - e_bln_c_s
-#   - geofac_grdiv
-#   - geofac_n2s
-#   - geofac_rot
-#   - rbf_vec_coeff_e
+    t_int_state:
+    - cells_aw_verts
+    - c_lin_e
+    - e_bln_c_s
+    - geofac_grdiv
+    - geofac_n2s
+    - geofac_rot
+    - rbf_vec_coeff_e
 
-#   t_nh_metrics:
-#   - coeff1_dwdz
-#   - coeff2_dwdz
-#   - coeff_gradekin
-#   - ddqz_z_full_e
-#   - ddqz_z_half
-#   - ddxn_z_full
-#   - ddxt_z_full
-#   - wgtfac_c
-#   - wgtfac_e
-#   - wgtfacq_e
+    t_nh_metrics:
+    - coeff1_dwdz
+    - coeff2_dwdz
+    - coeff_gradekin
+    - ddqz_z_full_e
+    - ddqz_z_half
+    - ddxn_z_full
+    - ddxt_z_full
+    - wgtfac_c
+    - wgtfac_e
+    - wgtfacq_e
 
-#   t_nh_prog:
-#   - vn
-#   - w
+    t_nh_prog:
+    - vn
+    - w
 
-#   t_grid_cells:
-#   - area
-#   - edge_blk
-#   - edge_idx
-#   - neighbor_blk
-#   - neighbor_idx
+    t_grid_cells:
+    - area
+    - edge_blk
+    - edge_idx
+    - neighbor_blk
+    - neighbor_idx
 
-#   t_grid_edges:
-#   - area_edge
-#   - cell_blk
-#   - cell_idx
-#   - f_e
-#   - inv_dual_edge_length
-#   - inv_primal_edge_length
-#   - quad_blk
-#   - quad_idx
-#   - tangent_orientation
-#   - vertex_blk
-#   - vertex_idx
+    t_grid_edges:
+    - area_edge
+    - cell_blk
+    - cell_idx
+    - f_e
+    - inv_dual_edge_length
+    - inv_primal_edge_length
+    - quad_blk
+    - quad_idx
+    - tangent_orientation
+    - vertex_blk
+    - vertex_idx
 
-#   t_grid_vertices:
-#   - cell_blk
-#   - cell_idx
-#   - edge_blk
-#   - edge_idx
+    t_grid_vertices:
+    - cell_blk
+    - cell_idx
+    - edge_blk
+    - edge_idx
 
-#   t_grid_domain_decomp_info:
-#   - owner_mask
+    t_grid_domain_decomp_info:
+    - owner_mask
 
 
     # for veltend:
@@ -163,8 +150,6 @@ use_openacc_data:
     # GPU:
     #
     #t_nh_metrics:
-      #  - rho_ref_mc
+    #  - rho_ref_mc
     # t_nh_prog:
     #   - rho
-
-
