@@ -123,6 +123,7 @@ MODULE mo_velocity_advection
     LOGICAL  :: cfl_clipping(nproma,p_patch%nlevp1)   ! CFL > 0.85
     LOGICAL  :: flag
     LOGICAL  :: do_serialize
+    REAL :: start_time, end_time, elapsed_time
 
 #ifdef __INTEL_COMPILER
 !DIR$ ATTRIBUTES ALIGN :64 :: z_w_concorr_mc,z_w_con_c,z_w_con_c_full
@@ -131,7 +132,8 @@ MODULE mo_velocity_advection
 #endif
     !--------------------------------------------------------------------------
 
-    IF (timers_level > 5) CALL timer_start(timer_solve_nh_veltend)
+    !IF (timers_level > 5) CALL timer_start(timer_solve_nh_veltend)
+    CALL cpu_time(start_time)
 
     IF ((lvert_nest) .AND. (p_patch%nshift > 0)) THEN
       l_vert_nested = .TRUE.
@@ -945,7 +947,11 @@ MODULE mo_velocity_advection
 
     !$ACC END DATA
 
-    IF (timers_level > 5) CALL timer_stop(timer_solve_nh_veltend)
+    !IF (timers_level > 5) CALL timer_stop(timer_solve_nh_veltend)
+
+    CALL cpu_time(end_time)
+    elapsed_time = end_time - start_time
+    print *, 'Elapsed time (seconds): ', elapsed_time
 
     IF (do_serialize) THEN
       IF (flag .eqv. .TRUE.) THEN

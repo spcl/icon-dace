@@ -446,12 +446,13 @@ MODULE mo_solve_nonhydro
             velocity_c1_count = velocity_c1_count + 1
             print *, "Called istep=1, lvn_only=0"
           ENDIF
-          CALL cpu_time(start_time)
+          !$ACC WAIT
+          !CALL cpu_time(start_time)
           CALL velocity_tendencies(p_nh%prog(nnow),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
             z_kin_hor_e,z_vt_ie,ntl1,istep,lvn_only,dtime,dt_linintp_ubc_nnow,ldeepatmo)
-          CALL cpu_time(end_time)
-          elapsed_time = end_time - start_time
-          print *, 'Elapsed time (seconds): ', elapsed_time
+          !CALL cpu_time(end_time)
+          !elapsed_time = end_time - start_time
+          !print *, 'Elapsed time (seconds): ', elapsed_time
         ENDIF
         nvar = nnow
       ELSE                 ! corrector step
@@ -463,12 +464,13 @@ MODULE mo_solve_nonhydro
           velocity_c3_count = velocity_c3_count + 1
           print *, "Called istep=2, lvn_only=0"
         ENDIF
-        CALL cpu_time(start_time)
+        !$ACC WAIT
+        !CALL cpu_time(start_time)
         CALL velocity_tendencies(p_nh%prog(nnew),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
           z_kin_hor_e,z_vt_ie,ntl2,istep,lvn_only,dtime,dt_linintp_ubc_nnew,ldeepatmo)
-        CALL cpu_time(end_time)
-        elapsed_time = end_time - start_time
-        print *, 'Elapsed time (seconds): ', elapsed_time
+        !CALL cpu_time(end_time)
+        !elapsed_time = end_time - start_time
+        !print *, 'Elapsed time (seconds): ', elapsed_time
         nvar = nnew
       ENDIF
 
