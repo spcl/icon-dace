@@ -13,6 +13,7 @@ export LD_LIBRARY_PATH="/capstor/scratch/cscs/ybudanaz/icon-artifacts/velocity:$
 export F90=nvfortran
 export CC=nvc
 export CXX=nvc++
-../../config/cscs/clariden_ben_dace.gpu.gh200.nvidia
+../../config/cscs/daint_yakup_dace.gpu.gh200.nvidia
 make -j16
+cp -R ../../grids .
 ```
