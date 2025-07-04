@@ -107,11 +107,11 @@ CONTAINS
         &  CALL finish(routine,'could not close '//maxwinds_filename)
     END IF
   END SUBROUTINE finalize_supervise_nh
-  
+
 
   !-----------------------------------------------------------------------------
   !! supervise_total_integrals_nh
-  
+
   SUBROUTINE supervise_total_integrals_nh( k_step, patch, nh_state, int_state, ntimlev, ntimlev_rcf, l_last_step, lacc)
 
     INTEGER,                  INTENT(IN) :: k_step            ! actual time step
@@ -280,7 +280,7 @@ CONTAINS
       ENDIF
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_volume) &
-      !$ACC   REDUCTION(+, z_total_mass, z_kin_energy, z_int_energy, z_pot_energy, z_dry_mass)
+      !$ACC   REDUCTION(+: z_total_mass, z_kin_energy, z_int_energy, z_pot_energy, z_dry_mass)
       DO jk = 1, nlev
         DO jc = 1, nlen
           z_volume = patch%cells%area(jc,jb)*nh_state%metrics%ddqz_z_full(jc,jk,jb) &
@@ -300,7 +300,7 @@ CONTAINS
       !$ACC END PARALLEL
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2) REDUCTION(+, z_mean_surfp)
+      !$ACC LOOP GANG VECTOR REDUCTION(+: z_mean_surfp)
       DO jc = 1, nlen
         z_mean_surfp = z_mean_surfp + diag%pres_sfc(jc,jb)*patch%cells%area(jc,jb) /  &
           &  (4._wp*grid_sphere_radius**2*pi)
@@ -657,7 +657,7 @@ CONTAINS
     CALL message('',message_text)
 
     ! --- Print-out of max winds to an ASCII file.
-    ! 
+    !
     !     This requires namelist setting 'run_nml::output = "maxwinds"'
 
     IF (output_mode%l_maxwinds .AND. my_process_is_stdio()) THEN
@@ -776,7 +776,7 @@ CONTAINS
     !$ACC WAIT
     !$ACC END DATA
 
-! At this point vn_aux and w_aux reside on the host.  
+! At this point vn_aux and w_aux reside on the host.
 ! Avoid doing MAXVAL with OpenACC -- this is not well supported!
 #ifndef __SX__
 !$OMP DO PRIVATE(jk) ICON_OMP_DEFAULT_SCHEDULE
@@ -885,10 +885,10 @@ CONTAINS
   !>
   !! Compute surface pressure time tendency abs(dpsdt)
   !!
-  !! Compute surface pressure time tendency. If desired, 
-  !! a spacial average is computed for the domain given 
-  !! and written to the log file. 
-  !! 
+  !! Compute surface pressure time tendency. If desired,
+  !! a spacial average is computed for the domain given
+  !! and written to the log file.
+  !!
   SUBROUTINE compute_dpsdt (pt_patch, dt, pt_diag, lacc)
 
     TYPE(t_patch),       INTENT(IN)    :: pt_patch     !< grid/patch info
