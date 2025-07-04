@@ -16,22 +16,20 @@ unset CDPATH
 script_dir=$(cd "$(dirname "$0")"; pwd)
 icon_dir=$(cd "${script_dir}/../.."; pwd)
 
-# NOTE: maybe we should enable mpi-gpu
-
 "${icon_dir}/configure" \
   '--disable-rpaths' \
   '--enable-atmo' \
   '--enable-les' \
   '--enable-nwp' \
   '--enable-ecrad' \
-  '--enable-aes' \
-  '--enable-jsbach' \
-  '--enable-rte-rrtmgp' \
-  '--enable-mpi' \
+  '--disable-mpi' \
   '--enable-gpu=openacc+cuda' \
   '--disable-upatmo' \
+  '--disable-jsbach' \
   '--disable-ocean' \
   '--disable-waves' \
+  '--disable-aes' \
+  '--disable-rte-rrtmgp' \
   '--disable-openmp' \
   '--disable-mpi-gpu' \
   '--disable-parallel-netcdf' \
@@ -44,16 +42,15 @@ icon_dir=$(cd "${script_dir}/../.."; pwd)
   '--disable-serialization' \
   '--disable-grib2' \
   '--disable-mpi-checks' \
-  'CC=mpicc' \
-  'CXX=mpicxx' \
-  'FC=mpif90' \
-  'MPI_LAUNCH=mpiexec' \
-  'CUDAFLAGS=-lineinfo -O3 -arch=sm_90 -ccbin=nvc++' \
+  'CC=nvc' \
+  'CXX=nvc++' \
+  'FC=nvfortran' \
+  'CUDAFLAGS=-lineinfo -O3 -arch=sm_80 -ccbin=nvc++' \
   'ICON_LDFLAGS=-c++libs' \
-  'CFLAGS=-g -O2 -I/user-environment/env/default/include/' \
-  "FCFLAGS=${DACE_FCFLAGS:-} ${FCFLAGS:-} -g -O2 -Mrecursive -Mallocatable=03 -Mstack_arrays -acc=gpu -gpu=cc90 $(pkg-config --cflags-only-I netcdf-fortran)" \
-  "LDFLAGS=${DACE_LDFLAGS:-} ${LDFLAGS:-} -L/user-environment/env/default/lib64 -L/user-environment/env/default/lib" \
-  "LIBS=${DACE_LIBS:-} ${LIBS:-} -lblas -llapack -lnvf -lnetcdff -lnetcdf -lcudart"
+  "CFLAGS=-g -O2" \
+  "FCFLAGS=${DACE_FCFLAGS:-} ${FCFLAGS:-} -g -O2 -Mrecursive -Mallocatable=03 -Mstack_arrays -acc=gpu -gpu=cc80" \
+  "LDFLAGS=${DACE_LDFLAGS:-} ${LDFLAGS:-}" \
+  "LIBS=${DACE_LIBS:-} -lblas -llapack -lnvf -lnetcdff -lnetcdf -lcudart"
 
 # Copy runscript-related files when building out-of-source:
 if test $(pwd) != $(cd "${icon_dir}"; pwd); then
