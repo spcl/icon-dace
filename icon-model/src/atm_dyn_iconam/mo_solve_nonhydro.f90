@@ -113,6 +113,9 @@ MODULE mo_solve_nonhydro
   SUBROUTINE solve_nh (p_nh, p_patch, p_int, prep_adv, nnow, nnew, l_init, l_recompute, lsave_mflx, &
                        lprep_adv, lclean_mflx, idyn_timestep, jstep, dtime, lacc)
 
+! SOLVE_NH PART TIMERS : PRATYAI
+real :: t0, t1
+
     TYPE(t_nh_state),    TARGET, INTENT(INOUT) :: p_nh
     TYPE(t_int_state),   TARGET, INTENT(IN)    :: p_int
     TYPE(t_patch),       TARGET, INTENT(INOUT) :: p_patch
@@ -438,7 +441,11 @@ MODULE mo_solve_nonhydro
 !$NEC sparse
     DO istep = 1, 2
 
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t0)
+
       IF (istep == 1) THEN ! predictor step
+
         IF (itime_scheme >= 6 .OR. l_init .OR. l_recompute) THEN
           IF (itime_scheme < 6 .AND. .NOT. l_init) THEN
             lvn_only = .TRUE. ! Recompute only vn tendency
@@ -1849,6 +1856,11 @@ MODULE mo_solve_nonhydro
 !$OMP END PARALLEL
 
 
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t1)
+if (istep == 1) print *, 'PREPRE (s): ', (t1-t0)
+if (istep == 2) print *, 'CORPRE (s): ', (t1-t0)
+
       !-------------------------
       ! communication phase
       IF (timers_level > 5) THEN
@@ -1869,6 +1881,9 @@ MODULE mo_solve_nonhydro
       ENDIF
       ! end communication phase
       !-------------------------
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t0)
 
 !$OMP PARALLEL PRIVATE (rl_start,rl_end,i_startblk,i_endblk)
       rl_start = 5
@@ -2942,6 +2957,11 @@ MODULE mo_solve_nonhydro
       ENDIF
 
 !$OMP END PARALLEL
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t1)
+if (istep == 1) print *, 'PREPOST (s): ', (t1-t0)
+if (istep == 2) print *, 'CORPOST (s): ', (t1-t0)
 
       !-------------------------
       ! communication phase
