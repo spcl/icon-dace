@@ -78,78 +78,358 @@ use_openacc_data:
       - z_vt_ie
       - z_w_concorr_me
 
+    solve_nh_predictor_pre:
+      - z_th_ddz_exner_c
+      - z_theta_v_pr_ic
+      - z_w_concorr_mc
+      - z_rho_e
+      - z_w_concorr_me
+      - z_dexner_dz_c
+      - scal_divdamp
+      - z_vt_ie
+      - z_rho_v
+      - z_exner_ic
+      - z_theta_v_fl_e
+      - z_flxdiv_theta
+      - z_graddiv2_vn
+      - z_kin_hor_e
+      - z_alpha
+      - z_exner_expl
+      - z_graddiv_vn
+      - z_grad_rth
+      - z_rth_pr
+      - z_flxdiv_mass
+      - z_beta
+      - z_raylfac
+      - z_hydro_corr
+      - z_theta_v_v
+      - bdy_divdamp
+      - z_rho_expl
+      - z_vn_avg
+      - z_contr_w_fl_l
+      - z_q
+      - z_mflx_top
+      - z_gradh_exner
+      - z_w_expl
+      - z_exner_ex_pr
+      - z_theta_v_e
+      - z_dwdz_dd
+    solve_nh_predictor_post:
+      - z_th_ddz_exner_c
+      - z_theta_v_pr_ic
+      - z_w_concorr_mc
+      - z_rho_e
+      - z_w_concorr_me
+      - z_dexner_dz_c
+      - scal_divdamp
+      - z_vt_ie
+      - z_rho_v
+      - z_exner_ic
+      - z_theta_v_fl_e
+      - z_flxdiv_theta
+      - z_graddiv2_vn
+      - z_kin_hor_e
+      - z_alpha
+      - z_exner_expl
+      - z_graddiv_vn
+      - z_grad_rth
+      - z_rth_pr
+      - z_flxdiv_mass
+      - z_beta
+      - z_raylfac
+      - z_hydro_corr
+      - z_theta_v_v
+      - bdy_divdamp
+      - z_rho_expl
+      - z_vn_avg
+      - z_contr_w_fl_l
+      - z_q
+      - z_mflx_top
+      - z_gradh_exner
+      - z_w_expl
+      - z_exner_ex_pr
+      - z_theta_v_e
+      - z_dwdz_dd
+    solve_nh_corrector_pre:
+      - z_th_ddz_exner_c
+      - z_theta_v_pr_ic
+      - z_w_concorr_mc
+      - z_rho_e
+      - z_w_concorr_me
+      - z_dexner_dz_c
+      - scal_divdamp
+      - z_vt_ie
+      - z_rho_v
+      - z_exner_ic
+      - z_theta_v_fl_e
+      - z_flxdiv_theta
+      - z_graddiv2_vn
+      - z_kin_hor_e
+      - z_alpha
+      - z_exner_expl
+      - z_graddiv_vn
+      - z_grad_rth
+      - z_rth_pr
+      - z_flxdiv_mass
+      - z_beta
+      - z_raylfac
+      - z_hydro_corr
+      - z_theta_v_v
+      - bdy_divdamp
+      - z_rho_expl
+      - z_vn_avg
+      - z_contr_w_fl_l
+      - z_q
+      - z_mflx_top
+      - z_gradh_exner
+      - z_w_expl
+      - z_exner_ex_pr
+      - z_theta_v_e
+      - z_dwdz_dd
+    solve_nh_corrector_post:
+      - z_th_ddz_exner_c
+      - z_theta_v_pr_ic
+      - z_w_concorr_mc
+      - z_rho_e
+      - z_w_concorr_me
+      - z_dexner_dz_c
+      - scal_divdamp
+      - z_vt_ie
+      - z_rho_v
+      - z_exner_ic
+      - z_theta_v_fl_e
+      - z_flxdiv_theta
+      - z_graddiv2_vn
+      - z_kin_hor_e
+      - z_alpha
+      - z_exner_expl
+      - z_graddiv_vn
+      - z_grad_rth
+      - z_rth_pr
+      - z_flxdiv_mass
+      - z_beta
+      - z_raylfac
+      - z_hydro_corr
+      - z_theta_v_v
+      - bdy_divdamp
+      - z_rho_expl
+      - z_vn_avg
+      - z_contr_w_fl_l
+      - z_q
+      - z_mflx_top
+      - z_gradh_exner
+      - z_w_expl
+      - z_exner_ex_pr
+      - z_theta_v_e
+      - z_dwdz_dd
+
   struct_members:
-    t_nh_diag:
-    - ddt_vn_apc_pc
-    - ddt_w_adv_pc
-    - vn_ie
-    - vt
-    - w_concorr_c
-
-    t_int_state:
-    - cells_aw_verts
-    - c_lin_e
-    - e_bln_c_s
-    - geofac_grdiv
-    - geofac_n2s
-    - geofac_rot
-    - rbf_vec_coeff_e
-
-    t_nh_metrics:
-    - coeff1_dwdz
-    - coeff2_dwdz
-    - coeff_gradekin
-    - ddqz_z_full_e
-    - ddqz_z_half
-    - ddxn_z_full
-    - ddxt_z_full
-    - wgtfac_c
-    - wgtfac_e
-    - wgtfacq_e
-
-    t_nh_prog:
-    - vn
-    - w
 
     t_grid_cells:
-    - area
-    - edge_blk
-    - edge_idx
-    - neighbor_blk
-    - neighbor_idx
+      - area
+      - edge_blk
+      - edge_idx
+      - neighbor_blk
+      - neighbor_idx
+
+    t_nh_diag:
+      - ddt_exner_phy
+      - ddt_vn_adv
+      - ddt_vn_apc_pc
+      - ddt_vn_cor
+      - ddt_vn_cor_pc
+      - ddt_vn_dmp
+      - ddt_vn_dyn
+      - ddt_vn_grf
+      - ddt_vn_iau
+      - ddt_vn_pgr
+      - ddt_vn_phd
+      - ddt_vn_phy
+      - ddt_vn_ray
+      - ddt_w_adv_pc
+      - exner_dyn_incr
+      - exner_incr
+      - exner_pr
+      - grf_bdy_mflx
+      - grf_tend_mflx
+      - grf_tend_rho
+      - grf_tend_thv
+      - grf_tend_vn
+      - grf_tend_w
+      - mass_fl_e
+      - mass_fl_e_sv
+      - mflx_ic_int
+      - mflx_ic_ubc
+      - rho_ic
+      - rho_ic_int
+      - rho_ic_ubc
+      - rho_incr
+      - theta_v_ic
+      - theta_v_ic_int
+      - theta_v_ic_ubc
+      - vn_ie
+      - vn_ie_int
+      - vn_ie_ubc
+      - vn_incr
+      - vt
+      - w_concorr_c
+      - w_int
+      - w_ubc
 
     t_grid_edges:
-    - area_edge
-    - cell_blk
-    - cell_idx
-    - f_e
-    - inv_dual_edge_length
-    - inv_primal_edge_length
-    - quad_blk
-    - quad_idx
-    - tangent_orientation
-    - vertex_blk
-    - vertex_idx
+      - area_edge
+      - cell_blk
+      - cell_idx
+      - f_e
+      - inv_dual_edge_length
+      - inv_primal_edge_length
+      - quad_blk
+      - quad_idx
+      - refin_ctrl
+      - tangent_orientation
+      - vertex_blk
+      - vertex_idx
+
+    global_data_type:
+      - kstart_dd3d
+      - ndyn_substeps_var
+
+    t_nh_metrics:
+      - coeff1_dwdz
+      - coeff2_dwdz
+      - coeff_gradekin
+      - coeff_gradp
+      - d2dexdz2_fac1_mc
+      - d2dexdz2_fac2_mc
+      - ddqz_z_full_e
+      - ddqz_z_half
+      - ddxn_z_full
+      - ddxt_z_full
+      - deepatmo_divh_mc
+      - deepatmo_divzl_mc
+      - deepatmo_divzu_mc
+      - deepatmo_gradh_mc
+      - d_exner_dz_ref_ic
+      - exner_exfac
+      - exner_ref_mc
+      - hmask_dd3d
+      - inv_ddqz_z_full
+      - rayleigh_vn
+      - rayleigh_w
+      - rho_ref_mc
+      - rho_ref_me
+      - scalfac_dd3d
+      - theta_ref_ic
+      - theta_ref_mc
+      - theta_ref_me
+      - vertidx_gradp
+      - vwind_expl_wgt
+      - vwind_impl_wgt
+      - wgtfac_c
+      - wgtfac_e
+      - wgtfacq1_c
+      - wgtfacq_c
+      - wgtfacq_e
+      - zdiff_gradp
+
+    t_int_state:
+      - cells_aw_verts
+      - c_lin_e
+      - e_bln_c_s
+      - e_flx_avg
+      - geofac_div
+      - geofac_grdiv
+      - geofac_grg
+      - geofac_n2s
+      - geofac_rot
+      - nudgecoeff_e
+      - pos_on_tplane_e
+      - rbf_vec_coeff_e
+
+    t_nh_prog:
+      - exner
+      - rho
+      - theta_v
+      - vn
+      - w
+
+    t_nh_ref:
+      - vn_ref
+      - w_ref
+
+    t_prepare_adv:
+      - mass_flx_ic
+      - mass_flx_me
+      - vn_traj
+      - vol_flx_ic
 
     t_grid_vertices:
-    - cell_blk
-    - cell_idx
-    - edge_blk
-    - edge_idx
+      - cell_blk
+      - cell_idx
+      - edge_blk
+      - edge_idx
 
     t_grid_domain_decomp_info:
-    - owner_mask
+      - owner_mask
+
+#   primal_normal_cell->t_tangent_vectors->v1
+#   primal_normal_cell->t_tangent_vectors->v2
+#   dual_normal_cell->t_tangent_vectors->v1
+#   dual_normal_cell->t_tangent_vectors->v2
 
 
-    # for veltend:
-    # CPU:
-    #   start/end indices/block (p_patch)
-    #   dtime
-    #   nproma (global_data)
-    #   maxvcfl dyn (p_diag)
-    # GPU:
-    #
-    #t_nh_metrics:
-    #  - rho_ref_mc
-    # t_nh_prog:
-    #   - rho
+# for veltend
+
+#   t_int_state:
+#   - cells_aw_verts
+#   - c_lin_e
+#   - e_bln_c_s
+#   - geofac_grdiv
+#   - geofac_n2s
+#   - geofac_rot
+#   - rbf_vec_coeff_e
+
+#   t_nh_metrics:
+#   - coeff1_dwdz
+#   - coeff2_dwdz
+#   - coeff_gradekin
+#   - ddqz_z_full_e
+#   - ddqz_z_half
+#   - ddxn_z_full
+#   - ddxt_z_full
+#   - wgtfac_c
+#   - wgtfac_e
+#   - wgtfacq_e
+
+#   t_nh_prog:
+#   - vn
+#   - w
+
+#   t_grid_cells:
+#   - area
+#   - edge_blk
+#   - edge_idx
+#   - neighbor_blk
+#   - neighbor_idx
+
+#   t_grid_edges:
+#   - area_edge
+#   - cell_blk
+#   - cell_idx
+#   - f_e
+#   - inv_dual_edge_length
+#   - inv_primal_edge_length
+#   - quad_blk
+#   - quad_idx
+#   - tangent_orientation
+#   - vertex_blk
+#   - vertex_idx
+
+#   t_grid_vertices:
+#   - cell_blk
+#   - cell_idx
+#   - edge_blk
+#   - edge_idx
+
+#   t_grid_domain_decomp_info:
+#   - owner_mask
