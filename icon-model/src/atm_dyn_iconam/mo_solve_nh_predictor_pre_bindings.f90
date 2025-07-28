@@ -52,9 +52,8 @@ module mo_solve_nh_predictor_pre_bindings
   use mo_timer, only: &
     timer_solve_nh_veltend, &
     timer_solve_nh_cellcomp, &
+    timer_solve_nh_vnupd, &
     timer_intp
-  use mo_time, only: &
-    timer_solve_nh_vnupd
   use mo_vertical_grid, only: &
     nrdmax, &
     nflat_gradp
@@ -3152,129 +3151,6 @@ contains
 
   end function copy_in_t_nh_prog
 
-  function copy_in_t_nh_prog(fortran_obj, steal_arrays, minimal_structs) result(dace_obj_ptr)
-    type(t_nh_prog), target :: fortran_obj
-    logical :: steal_arrays, minimal_structs
-    type(c_ptr) :: dace_obj_ptr
-    type(dace_t_nh_prog), pointer :: dace_rich_obj
-    type(dace_t_nh_prog) :: dace_c_obj
-
-    dace_obj_ptr = malloc(c_sizeof(dace_c_obj))
-    call c_f_pointer(dace_obj_ptr, dace_rich_obj)
-
-    dace_rich_obj%f2dace_SA_w_d_0_s = size(fortran_obj%w, dim=1)
-    dace_rich_obj%f2dace_SOA_w_d_0_s = lbound(fortran_obj%w, dim=1)
-    dace_rich_obj%f2dace_SA_w_d_1_s = size(fortran_obj%w, dim=2)
-    dace_rich_obj%f2dace_SOA_w_d_1_s = lbound(fortran_obj%w, dim=2)
-    dace_rich_obj%f2dace_SA_w_d_2_s = size(fortran_obj%w, dim=3)
-    dace_rich_obj%f2dace_SOA_w_d_2_s = lbound(fortran_obj%w, dim=3)
-    dace_rich_obj%f2dace_SA_vn_d_0_s = size(fortran_obj%vn, dim=1)
-    dace_rich_obj%f2dace_SOA_vn_d_0_s = lbound(fortran_obj%vn, dim=1)
-    dace_rich_obj%f2dace_SA_vn_d_1_s = size(fortran_obj%vn, dim=2)
-    dace_rich_obj%f2dace_SOA_vn_d_1_s = lbound(fortran_obj%vn, dim=2)
-    dace_rich_obj%f2dace_SA_vn_d_2_s = size(fortran_obj%vn, dim=3)
-    dace_rich_obj%f2dace_SOA_vn_d_2_s = lbound(fortran_obj%vn, dim=3)
-    dace_rich_obj%f2dace_SA_rho_d_0_s = size(fortran_obj%rho, dim=1)
-    dace_rich_obj%f2dace_SOA_rho_d_0_s = lbound(fortran_obj%rho, dim=1)
-    dace_rich_obj%f2dace_SA_rho_d_1_s = size(fortran_obj%rho, dim=2)
-    dace_rich_obj%f2dace_SOA_rho_d_1_s = lbound(fortran_obj%rho, dim=2)
-    dace_rich_obj%f2dace_SA_rho_d_2_s = size(fortran_obj%rho, dim=3)
-    dace_rich_obj%f2dace_SOA_rho_d_2_s = lbound(fortran_obj%rho, dim=3)
-    dace_rich_obj%f2dace_SA_exner_d_0_s = size(fortran_obj%exner, dim=1)
-    dace_rich_obj%f2dace_SOA_exner_d_0_s = lbound(fortran_obj%exner, dim=1)
-    dace_rich_obj%f2dace_SA_exner_d_1_s = size(fortran_obj%exner, dim=2)
-    dace_rich_obj%f2dace_SOA_exner_d_1_s = lbound(fortran_obj%exner, dim=2)
-    dace_rich_obj%f2dace_SA_exner_d_2_s = size(fortran_obj%exner, dim=3)
-    dace_rich_obj%f2dace_SOA_exner_d_2_s = lbound(fortran_obj%exner, dim=3)
-    dace_rich_obj%f2dace_SA_theta_v_d_0_s = size(fortran_obj%theta_v, dim=1)
-    dace_rich_obj%f2dace_SOA_theta_v_d_0_s = lbound(fortran_obj%theta_v, dim=1)
-    dace_rich_obj%f2dace_SA_theta_v_d_1_s = size(fortran_obj%theta_v, dim=2)
-    dace_rich_obj%f2dace_SOA_theta_v_d_1_s = lbound(fortran_obj%theta_v, dim=2)
-    dace_rich_obj%f2dace_SA_theta_v_d_2_s = size(fortran_obj%theta_v, dim=3)
-    dace_rich_obj%f2dace_SOA_theta_v_d_2_s = lbound(fortran_obj%theta_v, dim=3)
-#ifndef _OPENACC
-    dace_rich_obj%w = copy_in_float64_3d_array( &
-    fortran_array=fortran_obj%w, &
-    steal_arrays=steal_arrays, &
-    use_openacc=.false., &
-    minimal_structs=minimal_structs &
-  )
-
-#else
-    dace_rich_obj%w = copy_in_float64_3d_array( &
-    fortran_array=fortran_obj%w, &
-    steal_arrays=steal_arrays, &
-    use_openacc=.true., &
-    minimal_structs=minimal_structs &
-  )
-#endif
-#ifndef _OPENACC
-    dace_rich_obj%vn = copy_in_float64_3d_array( &
-    fortran_array=fortran_obj%vn, &
-    steal_arrays=steal_arrays, &
-    use_openacc=.false., &
-    minimal_structs=minimal_structs &
-  )
-
-#else
-    dace_rich_obj%vn = copy_in_float64_3d_array( &
-    fortran_array=fortran_obj%vn, &
-    steal_arrays=steal_arrays, &
-    use_openacc=.true., &
-    minimal_structs=minimal_structs &
-  )
-#endif
-#ifndef _OPENACC
-    dace_rich_obj%rho = copy_in_float64_3d_array( &
-    fortran_array=fortran_obj%rho, &
-    steal_arrays=steal_arrays, &
-    use_openacc=.false., &
-    minimal_structs=minimal_structs &
-  )
-
-#else
-    dace_rich_obj%rho = copy_in_float64_3d_array( &
-    fortran_array=fortran_obj%rho, &
-    steal_arrays=steal_arrays, &
-    use_openacc=.true., &
-    minimal_structs=minimal_structs &
-  )
-#endif
-#ifndef _OPENACC
-    dace_rich_obj%exner = copy_in_float64_3d_array( &
-    fortran_array=fortran_obj%exner, &
-    steal_arrays=steal_arrays, &
-    use_openacc=.false., &
-    minimal_structs=minimal_structs &
-  )
-
-#else
-    dace_rich_obj%exner = copy_in_float64_3d_array( &
-    fortran_array=fortran_obj%exner, &
-    steal_arrays=steal_arrays, &
-    use_openacc=.true., &
-    minimal_structs=minimal_structs &
-  )
-#endif
-#ifndef _OPENACC
-    dace_rich_obj%theta_v = copy_in_float64_3d_array( &
-    fortran_array=fortran_obj%theta_v, &
-    steal_arrays=steal_arrays, &
-    use_openacc=.false., &
-    minimal_structs=minimal_structs &
-  )
-
-#else
-    dace_rich_obj%theta_v = copy_in_float64_3d_array( &
-    fortran_array=fortran_obj%theta_v, &
-    steal_arrays=steal_arrays, &
-    use_openacc=.true., &
-    minimal_structs=minimal_structs &
-  )
-#endif
-
-  end function copy_in_t_nh_prog
-
   function copy_in_t_patch(fortran_obj, steal_arrays, minimal_structs) result(dace_obj_ptr)
     type(t_patch), target :: fortran_obj
     logical :: steal_arrays, minimal_structs
@@ -4650,12 +4526,11 @@ contains
   function copy_in_t_tangent_vectors_3d_array( &
     fortran_array, &
     steal_arrays, &
-    use_openacc, &
     minimal_structs &
   ) &
   result(dace_array_ptr)
     type(t_tangent_vectors), dimension(:,:,:), target :: fortran_array
-    logical :: steal_arrays, use_openacc, minimal_structs
+    logical :: steal_arrays, minimal_structs
     type(c_ptr) :: dace_array_ptr
     real(kind=c_double), dimension(:,:,:,:), pointer :: dace_rich_array
 #ifdef _OPENACC
@@ -4663,13 +4538,6 @@ contains
 #endif
 
     integer :: i0, i1, i2
-
-    if (use_openacc) then
-#ifndef _OPENACC
-      print *, "!!!ERROR!!! Requested OpenACC, but built without OpenACC (SDFG bindings file)"
-      return
-#endif
-    end if
 
     if (.not. c_associated(c_loc(fortran_array))) then
       dace_array_ptr = c_null_ptr
@@ -4694,7 +4562,7 @@ contains
 
     !$ACC PARALLEL &
     !$ACC   DEFAULT(PRESENT) &
-    !$ACC   DEVICEPTR(dace_rich_array) &
+    !$ACC   DEVICEPTR(dace_rich_array)
     !$ACC LOOP GANG VECTOR COLLAPSE(3)
     do i0 = 1, size(fortran_array, dim=1)
       do i1 = 1, size(fortran_array, dim=2)
@@ -4853,26 +4721,6 @@ contains
     call free(dace_obj_ptr)
 
   end subroutine copy_back_t_nh_metrics
-  subroutine copy_back_t_nh_prog(fortran_obj, dace_obj_ptr)
-    type(t_nh_prog), target :: fortran_obj
-    type(c_ptr) :: dace_obj_ptr
-
-    type(dace_t_nh_prog), pointer :: dace_rich_obj
-
-    if (.not. c_associated(c_loc(fortran_obj))) then
-      if (c_associated(dace_obj_ptr)) then
-        print *, "copy_back_t_nh_prog: Invalid allocation of t_nh_prog by DaCe!"
-      end if
-      return
-    end if
-
-    call c_f_pointer(dace_obj_ptr, dace_rich_obj)
-
-
-
-    call free(dace_obj_ptr)
-
-  end subroutine copy_back_t_nh_prog
   subroutine copy_back_t_nh_prog(fortran_obj, dace_obj_ptr)
     type(t_nh_prog), target :: fortran_obj
     type(c_ptr) :: dace_obj_ptr
@@ -8555,164 +8403,6 @@ contains
     call free(actual)
 
   end subroutine compare_t_nh_metrics_struct
-
-  subroutine compare_t_nh_prog_struct( &
-    actual, &
-    ref, &
-    result, &
-    struct_expr &
-  )
-    type(c_ptr), intent(in) :: actual
-    type(t_nh_prog), target, intent(in) :: ref
-    logical, intent(out) :: result
-    character(*), intent(in) :: struct_expr
-
-    CHARACTER(len=5000) :: member_expr = ''
-    type(dace_t_nh_prog), pointer :: actual_rich
-    logical :: local_result
-    call c_f_pointer(actual, actual_rich)
-
-    result = .true.
-
-    write (member_expr, '(a,a)') &
-      trim(struct_expr), &
-      "%w"
-#ifndef _OPENACC
-
-    call compare_float64_3d_array( &
-        actual=actual_rich%w, &
-        ref=ref%w, &
-        result=local_result, &
-        use_openacc=.false., &
-        array_expr=member_expr &
-    )
-
-#else
-
-    call compare_float64_3d_array( &
-        actual=actual_rich%w, &
-        ref=ref%w, &
-        result=local_result, &
-        use_openacc=.true., &
-        array_expr=member_expr &
-    )
-
-#endif
-
-    result = result .and. local_result
-
-    write (member_expr, '(a,a)') &
-      trim(struct_expr), &
-      "%vn"
-#ifndef _OPENACC
-
-    call compare_float64_3d_array( &
-        actual=actual_rich%vn, &
-        ref=ref%vn, &
-        result=local_result, &
-        use_openacc=.false., &
-        array_expr=member_expr &
-    )
-
-#else
-
-    call compare_float64_3d_array( &
-        actual=actual_rich%vn, &
-        ref=ref%vn, &
-        result=local_result, &
-        use_openacc=.true., &
-        array_expr=member_expr &
-    )
-
-#endif
-
-    result = result .and. local_result
-
-    write (member_expr, '(a,a)') &
-      trim(struct_expr), &
-      "%rho"
-#ifndef _OPENACC
-
-    call compare_float64_3d_array( &
-        actual=actual_rich%rho, &
-        ref=ref%rho, &
-        result=local_result, &
-        use_openacc=.false., &
-        array_expr=member_expr &
-    )
-
-#else
-
-    call compare_float64_3d_array( &
-        actual=actual_rich%rho, &
-        ref=ref%rho, &
-        result=local_result, &
-        use_openacc=.true., &
-        array_expr=member_expr &
-    )
-
-#endif
-
-    result = result .and. local_result
-
-    write (member_expr, '(a,a)') &
-      trim(struct_expr), &
-      "%exner"
-#ifndef _OPENACC
-
-    call compare_float64_3d_array( &
-        actual=actual_rich%exner, &
-        ref=ref%exner, &
-        result=local_result, &
-        use_openacc=.false., &
-        array_expr=member_expr &
-    )
-
-#else
-
-    call compare_float64_3d_array( &
-        actual=actual_rich%exner, &
-        ref=ref%exner, &
-        result=local_result, &
-        use_openacc=.true., &
-        array_expr=member_expr &
-    )
-
-#endif
-
-    result = result .and. local_result
-
-    write (member_expr, '(a,a)') &
-      trim(struct_expr), &
-      "%theta_v"
-#ifndef _OPENACC
-
-    call compare_float64_3d_array( &
-        actual=actual_rich%theta_v, &
-        ref=ref%theta_v, &
-        result=local_result, &
-        use_openacc=.false., &
-        array_expr=member_expr &
-    )
-
-#else
-
-    call compare_float64_3d_array( &
-        actual=actual_rich%theta_v, &
-        ref=ref%theta_v, &
-        result=local_result, &
-        use_openacc=.true., &
-        array_expr=member_expr &
-    )
-
-#endif
-
-    result = result .and. local_result
-
-
-    call free(actual)
-
-  end subroutine compare_t_nh_prog_struct
 
   subroutine compare_t_nh_prog_struct( &
     actual, &
