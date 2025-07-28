@@ -6,28 +6,66 @@ module mo_solve_nh_dace_structs
   use iso_c_binding
 
   type, bind(c) :: dace_global_data_type
-    integer(kind=c_int) :: grf_intmethod_e
-    integer(kind=c_int) :: i_am_accel_node
-    integer(kind=c_int) :: iadv_rhotheta
+    ! C++: double divdamp_fac = {}; (missing)
+    real(kind=c_double) :: divdamp_fac
+    ! C++: double divdamp_fac_o2 = {}; (missing)
+    real(kind=c_double) :: divdamp_fac_o2
+    ! C++: double iau_wgt_dyn = {};
     real(kind=c_double) :: iau_wgt_dyn
+    ! C++: int divdamp_order = {}; (missing)
+    integer(kind=c_int) :: divdamp_order
+    ! C++: int divdamp_type = {}; (missing)
+    integer(kind=c_int) :: divdamp_type
+    ! C++: int grf_intmethod_e = {};
+    integer(kind=c_int) :: grf_intmethod_e
+    ! C++: int i_am_accel_node = {};
+    integer(kind=c_int) :: i_am_accel_node
+    ! C++: int iadv_rhotheta = {};
+    integer(kind=c_int) :: iadv_rhotheta
+    ! C++: int igradp_method = {};
     integer(kind=c_int) :: igradp_method
+    ! C++: int is_iau_active = {};
     integer(kind=c_int) :: is_iau_active
+    ! C++: int itime_scheme = {};
     integer(kind=c_int) :: itime_scheme
-    type(c_ptr) :: kstart_dd3d
+    ! C++: int l_limited_area = {};
     integer(kind=c_int) :: l_limited_area
+    ! C++: int ldeepatmo = {};
     integer(kind=c_int) :: ldeepatmo
+    ! C++: int lextra_diffu = {};
     integer(kind=c_int) :: lextra_diffu
+    ! C++: int lvert_nest = {};
     integer(kind=c_int) :: lvert_nest
-    type(c_ptr) :: nflat_gradp
-    type(c_ptr) :: nflatlev
+    ! C++: int nproma = {};
     integer(kind=c_int) :: nproma
-    type(c_ptr) :: nrdmax
+    ! C++: int rayleigh_type = {};
     integer(kind=c_int) :: rayleigh_type
+    ! C++: int timer_intp = {};
     integer(kind=c_int) :: timer_intp
+    ! C++: int timer_solve_nh_cellcomp = {};
     integer(kind=c_int) :: timer_solve_nh_cellcomp
+    ! C++: int timer_solve_nh_edgecomp = {}; (missing)
+    integer(kind=c_int) :: timer_solve_nh_edgecomp
+    ! C++: int timer_solve_nh_veltend = {};
     integer(kind=c_int) :: timer_solve_nh_veltend
+    ! C++: int timer_solve_nh_vimpl = {}; (missing)
+    integer(kind=c_int) :: timer_solve_nh_vimpl
+    ! C++: int timer_solve_nh_vnupd = {};
     integer(kind=c_int) :: timer_solve_nh_vnupd
+    ! C++: int timers_level = {};
     integer(kind=c_int) :: timers_level
+    ! C++: int *kstart_dd3d = {};
+    type(c_ptr) :: kstart_dd3d
+    ! C++: int *kstart_moist = {}; (missing)
+    type(c_ptr) :: kstart_moist
+    ! C++: int *ndyn_substeps_var = {}; (missing)
+    type(c_ptr) :: ndyn_substeps_var
+    ! C++: int *nflat_gradp = {};
+    type(c_ptr) :: nflat_gradp
+    ! C++: int *nflatlev = {};
+    type(c_ptr) :: nflatlev
+    ! C++: int *nrdmax = {};
+    type(c_ptr) :: nrdmax
   end type dace_global_data_type
 
   type, bind(c) :: dace_t_tangent_vectors
@@ -802,8 +840,17 @@ module mo_solve_nh_dace_structs
   end type dace_t_nh_diag
 
   type, bind(c) :: dace_t_nh_state
+    ! C++: int __f2dace_SA_prog_d_0_s = {}; (missing)
+    integer(kind=c_int) :: f2dace_SA_prog_d_0_s
+    ! C++: int __f2dace_SOA_prog_d_0_s = {}; (missing)
+    integer(kind=c_int) :: f2dace_SOA_prog_d_0_s
+    ! C++: t_nh_diag *diag = {};
     type(c_ptr) :: diag
+    ! C++: t_nh_metrics *metrics = {};
     type(c_ptr) :: metrics
+    ! C++: t_nh_prog **prog = {}; (missing)
+    type(c_ptr) :: prog
+    ! C++: t_nh_ref *ref = {};
     type(c_ptr) :: ref
   end type dace_t_nh_state
 
