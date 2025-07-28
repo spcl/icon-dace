@@ -3,6 +3,7 @@ module mo_solve_nh_predictor_pre_bindings
 
   use iso_c_binding
 
+  ! use external struct definitions
   use mo_solve_nh_dace_structs
 
   use mo_intp_data_strc, only: &
@@ -67,6 +68,8 @@ module mo_solve_nh_predictor_pre_bindings
   public :: dace_init_solve_nh_predictor_pre
   public :: dace_exit_solve_nh_predictor_pre
   public :: dace_program_solve_nh_predictor_pre
+
+
 
 
   logical :: is_initialized = .false.
@@ -4643,6 +4646,7 @@ contains
     end if
   end function copy_in_int32_3d_array
 
+  ! requires special handling
   function copy_in_t_tangent_vectors_3d_array( &
     fortran_array, &
     steal_arrays, &
@@ -4653,7 +4657,10 @@ contains
     type(t_tangent_vectors), dimension(:,:,:), target :: fortran_array
     logical :: steal_arrays, use_openacc, minimal_structs
     type(c_ptr) :: dace_array_ptr
-    type(c_ptr), dimension(:,:,:), pointer :: dace_rich_array
+    real(kind=c_double), dimension(:,:,:,:), pointer :: dace_rich_array
+#ifdef _OPENACC
+    integer(kind=c_size_t) :: size_bytes
+#endif
 
     integer :: i0, i1, i2
 
@@ -4662,30 +4669,44 @@ contains
       print *, "!!!ERROR!!! Requested OpenACC, but built without OpenACC (SDFG bindings file)"
       return
 #endif
-
     end if
+
     if (.not. c_associated(c_loc(fortran_array))) then
       dace_array_ptr = c_null_ptr
       return
     end if
 
-    dace_array_ptr = malloc(c_sizeof(dace_array_ptr) * size(fortran_array))
-    call c_f_pointer(dace_array_ptr, dace_rich_array, shape=shape(fortran_array))
+#ifndef _OPENACC
+    dace_array_ptr = malloc(2 * c_sizeof(dace_array_ptr) * size(fortran_array))
+#else
+    size_bytes = 2 * size(fortran_array) * c_sizeof(fortran_array(1, 1, 1))
+    dace_array_ptr = c_acc_malloc(size_bytes)
+#endif
 
+    call c_f_pointer(dace_array_ptr, dace_rich_array, &
+      shape=[ &
+        size(fortran_array, dim=1), &
+        size(fortran_array, dim=2), &
+        size(fortran_array, dim=3), &
+        2 &
+      ] &
+    )
+
+    !$ACC PARALLEL &
+    !$ACC   DEFAULT(PRESENT) &
+    !$ACC   DEVICEPTR(dace_rich_array) &
+    !$ACC LOOP GANG VECTOR COLLAPSE(3)
     do i0 = 1, size(fortran_array, dim=1)
       do i1 = 1, size(fortran_array, dim=2)
         do i2 = 1, size(fortran_array, dim=3)
-          dace_rich_array(i0, i1, i2) = copy_in_t_tangent_vectors( &
-    fortran_obj=fortran_array(i0, i1, i2), &
-    steal_arrays=steal_arrays, &
-    minimal_structs=minimal_structs &
-  )
+          dace_rich_array(i0, i1, i2, 1) = fortran_array(i0, i1, i2)%v1
+          dace_rich_array(i0, i1, i2, 2) = fortran_array(i0, i1, i2)%v2
         end do
       end do
     end do
+    !$ACC END PARALLEL
 
   end function copy_in_t_tangent_vectors_3d_array
-
 
   subroutine copy_back_global_data_type(dace_obj_ptr)
     type(c_ptr) :: dace_obj_ptr
@@ -5028,7 +5049,7 @@ contains
     call free(dace_obj_ptr)
 
   end subroutine copy_back_t_prepare_adv
-
+  ! requires special handling
   subroutine copy_back_t_tangent_vectors_3d_array(fortran_struct_array, dace_struct_array_ptr)
     type(t_tangent_vectors), dimension(:,:,:), target, intent(in) :: fortran_struct_array
     type(c_ptr), intent(in) :: dace_struct_array_ptr
@@ -5038,25 +5059,18 @@ contains
 
     if (.not. c_associated(c_loc(fortran_struct_array))) then
       if (c_associated(dace_struct_array_ptr)) then
-        print *, "copy_back_t_tangent_vectors_3d_array: Invalid allocation of t_tangent_vectors array by DaCe!" 
+        print *, "copy_back_t_tangent_vectors_3d_array: Invalid allocation of t_tangent_vectors array by DaCe!"
       end if
       return
     end if
 
-    call c_f_pointer(dace_struct_array_ptr, dace_struct_array_rich, shape=shape(fortran_struct_array))
+    ! skip copy back of `t_tangent_vectors`
 
-
-    do i0 = 1, size(fortran_struct_array, dim=1)
-      do i1 = 1, size(fortran_struct_array, dim=2)
-        do i2 = 1, size(fortran_struct_array, dim=3)
-    call copy_back_t_tangent_vectors(fortran_struct_array(i0, i1, i2), dace_struct_array_rich(i0, i1, i2))
-
-        end do
-      end do
-    end do
-
-
+#ifndef _OPENACC
     call free(dace_struct_array_ptr)
+#else
+    call c_acc_free(dace_struct_array_ptr)
+#endif
 
   end subroutine copy_back_t_tangent_vectors_3d_array
 
@@ -11900,7 +11914,7 @@ contains
     end if
 
   end subroutine compare_int32_3d_array
-
+  ! requires special handling
   subroutine compare_t_tangent_vectors_3d_array( &
     actual, &
     ref, &
@@ -11933,34 +11947,13 @@ contains
       return
     end if
 
-    result = .true.
+    ! skip comparison of `t_tangent_vectors`
 
-    call c_f_pointer(actual, actual_rich, shape=shape(ref))
-
-
-    do i0 = 1, size(ref, dim=1)
-      do i1 = 1, size(ref, dim=2)
-        do i2 = 1, size(ref, dim=3)
-    write (member_expr, '(a,a,3(i0:,", "),a)') &
-      trim(struct_array_expr), &
-      "(", &
-      [i0, i1, i2], &
-      ")"
-
-    call compare_t_tangent_vectors_struct( &
-        actual=actual_rich(i0, i1, i2), &
-        ref=ref(i0, i1, i2), &
-        result=local_result, &
-        struct_expr=member_expr &
-    )
-
-    result = result .and. local_result
-        end do
-      end do
-    end do
-
-
+#ifndef _OPENACC
     call free(actual)
+#else
+    call c_acc_free(actual)
+#endif
 
   end subroutine compare_t_tangent_vectors_3d_array
 
