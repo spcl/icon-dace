@@ -778,14 +778,20 @@ end interface logical_fix_{rank}d
     return copy_in_str, copy_in_interface_str
 
 
-def generate_copy_in_function_struct_array(array: dace.data.ContainerArray) -> str:
-    rank = len(array.shape)
+def generate_copy_in_function_struct_array(struct_array: dace.data.ContainerArray) -> str:
+    rank = len(struct_array.shape)
 
     # FIXME: largely a code clone of generate_copy_in_function_array :(
     # FIXME: take offsets into consideration!
 
-    base_type = array.stype
+    base_type = struct_array.stype
     base_name = base_type.name
+
+    assert isinstance(base_type, dace.data.Structure)
+
+    # HACK: special handling for `t_tangent_vectors` (flattening in bindings)
+    if base_name == "t_tangent_vectors":
+        return generate_copy_in_function_t_tangent_vectors_struct_array(struct_array)
 
     # FIXME: type declarations here are super messy!
     copy_in_str = f"""\
@@ -796,9 +802,9 @@ def generate_copy_in_function_struct_array(array: dace.data.ContainerArray) -> s
     minimal_structs &
   ) &
   result(dace_array_ptr)
-    {dace_type_to_fortran_rich_var_type_decl(array)} :: fortran_array
+    {dace_type_to_fortran_rich_var_type_decl(struct_array)} :: fortran_array
     logical :: steal_arrays, use_openacc, minimal_structs
-    {dace_type_to_fortran_c_var_type_decl(array)} :: dace_array_ptr
+    {dace_type_to_fortran_c_var_type_decl(struct_array)} :: dace_array_ptr
     {dace_type_to_fortran_c_var_type_decl(base_type)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: dace_rich_array
 
     {ArrayLoopHelper.indices_decl(rank)}
@@ -833,6 +839,73 @@ def generate_copy_in_function_struct_array(array: dace.data.ContainerArray) -> s
 
     return copy_in_str
 
+
+def generate_copy_in_function_t_tangent_vectors_struct_array(struct_array: dace.data.ContainerArray) -> str:
+    assert struct_array.stype.name == "t_tangent_vectors"
+    assert len(struct_array.shape) == 3
+    return """\
+  ! requires special handling
+  function copy_in_t_tangent_vectors_3d_array( &
+    fortran_array, &
+    steal_arrays, &
+    use_openacc, &
+    minimal_structs &
+  ) &
+  result(dace_array_ptr)
+    type(t_tangent_vectors), dimension(:,:,:), target :: fortran_array
+    logical :: steal_arrays, use_openacc, minimal_structs
+    type(c_ptr) :: dace_array_ptr
+    type(c_ptr), dimension(:,:,:), pointer :: dace_rich_array
+#ifdef _OPENACC
+    integer(kind=c_size_t) :: size_bytes
+#endif
+
+    integer :: i0, i1, i2
+
+    if (use_openacc) then
+#ifndef _OPENACC
+      print *, "!!!ERROR!!! Requested OpenACC, but built without OpenACC (SDFG bindings file)"
+      return
+#endif
+    end if
+
+    if (.not. c_associated(c_loc(fortran_array))) then
+      dace_array_ptr = c_null_ptr
+      return
+    end if
+
+#ifndef _OPENACC
+    dace_array_ptr = malloc(2 * c_sizeof(dace_array_ptr) * size(fortran_array))
+#else
+    size_bytes = 2 * size(fortran_array) * c_sizeof(fortran_array(1, 1, 1))
+    dace_array_ptr = c_acc_malloc(size_bytes)
+#endif
+
+    call c_f_pointer(dace_array_ptr, dace_rich_array, &
+      shape=[ &
+        size(fortran_array, dim=1), &
+        size(fortran_array, dim=2), &
+        size(fortran_array, dim=3), &
+        2 &
+      ] &
+    )
+
+    !$ACC PARALLEL &
+    !$ACC   DEFAULT(PRESENT) &
+    !$ACC   DEVICEPTR(dace_rich_array) &
+    !$ACC LOOP GANG VECTOR COLLAPSE(3)
+    do i0 = 1, size(fortran_array, dim=1)
+      do i1 = 1, size(fortran_array, dim=2)
+        do i2 = 1, size(fortran_array, dim=3)
+          dace_rich_array(i0, i1, i2, 1) = fortran_array(i0, i1, i2)%v1
+          dace_rich_array(i0, i1, i2, 2) = fortran_array(i0, i1, i2)%v2
+        end do
+      end do
+    end do
+    !$ACC END PARALLEL
+
+  end function copy_in_t_tangent_vectors_3d_array
+"""
 
 @singledispatch
 def generate_copy_in_fortran_expr(
@@ -1086,24 +1159,29 @@ def generate_copy_back_subroutine_global_data(
   end subroutine copy_back_{struct.name}
 """
 
-def generate_copy_back_subroutine_struct_array(
-    struct_array: dace.data.ContainerArray,
-) -> str:
+
+def generate_copy_back_subroutine_struct_array(struct_array: dace.data.ContainerArray) -> str:
     rank = len(struct_array.shape)
-    stype = struct_array.stype
-    assert isinstance(stype, dace.data.Structure)
+    base_type = struct_array.stype
+    base_name = base_type.name
+
+    assert isinstance(base_type, dace.data.Structure)
+
+    # HACK: special handling for `t_tangent_vectors` (flattening in bindings)
+    if base_name == "t_tangent_vectors":
+        return generate_copy_back_subroutine_t_tangent_vectors_struct_array(struct_array)
 
     return f"""
-  subroutine copy_back_{stype.name}_{rank}d_array(fortran_struct_array, dace_struct_array_ptr)
+  subroutine copy_back_{base_name}_{rank}d_array(fortran_struct_array, dace_struct_array_ptr)
     {dace_type_to_fortran_rich_var_type_decl(struct_array)}, intent(in) :: fortran_struct_array
     {dace_type_to_fortran_c_var_type_decl(struct_array)}, intent(in) :: dace_struct_array_ptr
 
     {ArrayLoopHelper.indices_decl(rank)}
-    {dace_type_to_fortran_c_var_type_decl(stype)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: dace_struct_array_rich
+    {dace_type_to_fortran_c_var_type_decl(base_type)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: dace_struct_array_rich
 
     if (.not. c_associated(c_loc(fortran_struct_array))) then
       if (c_associated(dace_struct_array_ptr)) then
-        print *, "copy_back_{stype.name}_{rank}d_array: Invalid allocation of {stype.name} array by DaCe!" 
+        print *, "copy_back_{base_name}_{rank}d_array: Invalid allocation of {base_name} array by DaCe!"
       end if
       return
     end if
@@ -1112,7 +1190,7 @@ def generate_copy_back_subroutine_struct_array(
 
 {ArrayLoopHelper.loop_begins(rank, "fortran_struct_array")}
 {generate_copy_back_stmts(
-    stype,
+    base_type,
     f"fortran_struct_array({ArrayLoopHelper.indices_expr(rank)})",
     f"dace_struct_array_rich({ArrayLoopHelper.indices_expr(rank)})",
 )}
@@ -1120,7 +1198,39 @@ def generate_copy_back_subroutine_struct_array(
 
     call free(dace_struct_array_ptr)
 
-  end subroutine copy_back_{stype.name}_{rank}d_array
+  end subroutine copy_back_{base_name}_{rank}d_array
+"""
+
+
+
+def generate_copy_back_subroutine_t_tangent_vectors_struct_array(struct_array: dace.data.ContainerArray) -> str:
+    assert struct_array.stype.name == "t_tangent_vectors"
+    assert len(struct_array.shape) == 3
+    return """\
+  ! requires special handling
+  subroutine copy_back_t_tangent_vectors_3d_array(fortran_struct_array, dace_struct_array_ptr)
+    type(t_tangent_vectors), dimension(:,:,:), target, intent(in) :: fortran_struct_array
+    type(c_ptr), intent(in) :: dace_struct_array_ptr
+
+    integer :: i0, i1, i2
+    type(c_ptr), dimension(:,:,:), pointer :: dace_struct_array_rich
+
+    if (.not. c_associated(c_loc(fortran_struct_array))) then
+      if (c_associated(dace_struct_array_ptr)) then
+        print *, "copy_back_t_tangent_vectors_3d_array: Invalid allocation of t_tangent_vectors array by DaCe!"
+      end if
+      return
+    end if
+
+    ! skip copy back of `t_tangent_vectors`
+
+#ifndef _OPENACC
+    call free(dace_struct_array_ptr)
+#else
+    call c_acc_free(dace_struct_array_ptr)
+#endif
+
+  end subroutine copy_back_t_tangent_vectors_3d_array
 """
 
 
@@ -1650,11 +1760,17 @@ def generate_comparison_routine_global_data(
 def generate_array_comparison_subroutine_struct_array(struct_array: dace.data.ContainerArray) -> str:
     # FIXME: can we check sizes of Fortran & SDFG arrays?!
     rank = len(struct_array.shape)
-    stype = struct_array.stype
-    assert isinstance(stype, dace.data.Structure)
+    base_type = struct_array.stype
+    base_name = base_type.name
+
+    assert isinstance(base_type, dace.data.Structure)
+
+    # HACK: special handling for `t_tangent_vectors` (flattening in bindings)
+    if base_name == "t_tangent_vectors":
+        return generate_array_comparison_subroutine_t_tangent_vectors_struct_array(struct_array)
 
     comparison_stmts = generate_comparison_check_stmts(
-        stype,
+        base_type,
         actual_expr=f"actual_rich({ArrayLoopHelper.indices_expr(rank)})",
         ref_expr=f"ref({ArrayLoopHelper.indices_expr(rank)})",
         result_expr=f"local_result",
@@ -1662,7 +1778,7 @@ def generate_array_comparison_subroutine_struct_array(struct_array: dace.data.Co
     )
 
     return f"""
-  subroutine compare_{stype.name}_{rank}d_array( &
+  subroutine compare_{base_name}_{rank}d_array( &
     actual, &
     ref, &
     result, &
@@ -1677,7 +1793,7 @@ def generate_array_comparison_subroutine_struct_array(struct_array: dace.data.Co
     CHARACTER(len=5000) :: message_text = ''
     logical :: local_result
     {ArrayLoopHelper.indices_decl(rank)}
-    {dace_type_to_fortran_c_var_type_decl(stype)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: actual_rich
+    {dace_type_to_fortran_c_var_type_decl(base_type)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: actual_rich
 
     if (.not. c_associated(c_loc(ref))) then
       result = .not. c_associated(actual)
@@ -1687,7 +1803,7 @@ def generate_array_comparison_subroutine_struct_array(struct_array: dace.data.Co
           "Verification failed for array '", &
             trim(struct_array_expr), &
           "':"//char(10)//"    - ref was NULL, but actual was not!"
-        print *, "compare_{stype.name}_{rank}d_array"
+        print *, "compare_{base_name}_{rank}d_array"
         print *, trim(message_text)
       end if
 
@@ -1710,7 +1826,56 @@ def generate_array_comparison_subroutine_struct_array(struct_array: dace.data.Co
 
     call free(actual)
 
-  end subroutine compare_{stype.name}_{rank}d_array
+  end subroutine compare_{base_name}_{rank}d_array
+"""
+
+
+def generate_array_comparison_subroutine_t_tangent_vectors_struct_array(struct_array: dace.data.ContainerArray) -> str:
+    assert struct_array.stype.name == "t_tangent_vectors"
+    assert len(struct_array.shape) == 3
+    return """\
+  ! requires special handling
+  subroutine compare_t_tangent_vectors_3d_array( &
+    actual, &
+    ref, &
+    result, &
+    struct_array_expr &
+  )
+    type(c_ptr), intent(in) :: actual
+    type(t_tangent_vectors), dimension(:,:,:), target, intent(in) :: ref
+    logical, intent(out) :: result
+    character(*), intent(in) :: struct_array_expr
+
+    CHARACTER(len=5000) :: member_expr = ''
+    CHARACTER(len=5000) :: message_text = ''
+    logical :: local_result
+    integer :: i0, i1, i2
+    type(c_ptr), dimension(:,:,:), pointer :: actual_rich
+
+    if (.not. c_associated(c_loc(ref))) then
+      result = .not. c_associated(actual)
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(struct_array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not!"
+        print *, "compare_t_tangent_vectors_3d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
+    ! skip comparison of `t_tangent_vectors`
+
+#ifndef _OPENACC
+    call free(actual)
+#else
+    call c_acc_free(actual)
+#endif
+
+  end subroutine compare_t_tangent_vectors_3d_array
 """
 
 
