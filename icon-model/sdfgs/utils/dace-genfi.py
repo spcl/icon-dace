@@ -848,12 +848,11 @@ def generate_copy_in_function_t_tangent_vectors_struct_array(struct_array: dace.
   function copy_in_t_tangent_vectors_3d_array( &
     fortran_array, &
     steal_arrays, &
-    use_openacc, &
     minimal_structs &
   ) &
   result(dace_array_ptr)
     type(t_tangent_vectors), dimension(:,:,:), target :: fortran_array
-    logical :: steal_arrays, use_openacc, minimal_structs
+    logical :: steal_arrays, minimal_structs
     type(c_ptr) :: dace_array_ptr
     real(kind=c_double), dimension(:,:,:,:), pointer :: dace_rich_array
 #ifdef _OPENACC
@@ -861,13 +860,6 @@ def generate_copy_in_function_t_tangent_vectors_struct_array(struct_array: dace.
 #endif
 
     integer :: i0, i1, i2
-
-    if (use_openacc) then
-#ifndef _OPENACC
-      print *, "!!!ERROR!!! Requested OpenACC, but built without OpenACC (SDFG bindings file)"
-      return
-#endif
-    end if
 
     if (.not. c_associated(c_loc(fortran_array))) then
       dace_array_ptr = c_null_ptr
