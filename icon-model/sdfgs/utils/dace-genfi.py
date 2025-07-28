@@ -2334,6 +2334,9 @@ def generate_fortran_interface_source(
 
     # FIXME(medium): check that alignment & data layout are compatible with Fortran for arrays & structs
 
+    # Uniquify structs by name (not guaranteed unfortunately)
+    structs = {struct: None for struct in {struct.name: struct for struct in structs}.values()}
+
     # the arrays that need translation functions
     array_translations: Dict[
         Tuple[Union[dace.dtypes.typeclass, dace.data.Structure], int],
