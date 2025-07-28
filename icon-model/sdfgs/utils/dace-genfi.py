@@ -884,7 +884,7 @@ def generate_copy_in_function_t_tangent_vectors_struct_array(struct_array: dace.
 
     !$ACC PARALLEL &
     !$ACC   DEFAULT(PRESENT) &
-    !$ACC   DEVICEPTR(dace_rich_array) &
+    !$ACC   DEVICEPTR(dace_rich_array)
     !$ACC LOOP GANG VECTOR COLLAPSE(3)
     do i0 = 1, size(fortran_array, dim=1)
       do i1 = 1, size(fortran_array, dim=2)
