@@ -69,773 +69,1523 @@ module mo_solve_nh_dace_structs
   end type dace_global_data_type
 
   type, bind(c) :: dace_t_tangent_vectors
+    ! C++: double v1 = {};
     real(kind=c_double) :: v1
+    ! C++: double v2 = {};
     real(kind=c_double) :: v2
   end type dace_t_tangent_vectors
 
   type, bind(c) :: dace_t_grid_edges
+    ! C++: int __f2dace_SA_area_edge_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_area_edge_d_0_s
+    ! C++: int __f2dace_SA_area_edge_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_area_edge_d_1_s
+    ! C++: int __f2dace_SA_cell_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_blk_d_0_s
+    ! C++: int __f2dace_SA_cell_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_blk_d_1_s
+    ! C++: int __f2dace_SA_cell_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_blk_d_2_s
+    ! C++: int __f2dace_SA_cell_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_idx_d_0_s
+    ! C++: int __f2dace_SA_cell_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_idx_d_1_s
+    ! C++: int __f2dace_SA_cell_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_idx_d_2_s
+    ! C++: int __f2dace_SA_dual_normal_cell_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_dual_normal_cell_d_0_s
+    ! C++: int __f2dace_SA_dual_normal_cell_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_dual_normal_cell_d_1_s
+    ! C++: int __f2dace_SA_dual_normal_cell_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_dual_normal_cell_d_2_s
+    ! C++: int __f2dace_SA_end_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_end_block_d_0_s
+    ! C++: int __f2dace_SA_end_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_end_index_d_0_s
+    ! C++: int __f2dace_SA_f_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_f_e_d_0_s
+    ! C++: int __f2dace_SA_f_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_f_e_d_1_s
+    ! C++: int __f2dace_SA_fn_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_fn_e_d_0_s
+    ! C++: int __f2dace_SA_fn_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_fn_e_d_1_s
+    ! C++: int __f2dace_SA_ft_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ft_e_d_0_s
+    ! C++: int __f2dace_SA_ft_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ft_e_d_1_s
+    ! C++: int __f2dace_SA_inv_dual_edge_length_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_inv_dual_edge_length_d_0_s
+    ! C++: int __f2dace_SA_inv_dual_edge_length_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_inv_dual_edge_length_d_1_s
+    ! C++: int __f2dace_SA_inv_primal_edge_length_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_inv_primal_edge_length_d_0_s
+    ! C++: int __f2dace_SA_inv_primal_edge_length_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_inv_primal_edge_length_d_1_s
+    ! C++: int __f2dace_SA_primal_normal_cell_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_primal_normal_cell_d_0_s
+    ! C++: int __f2dace_SA_primal_normal_cell_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_primal_normal_cell_d_1_s
+    ! C++: int __f2dace_SA_primal_normal_cell_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_primal_normal_cell_d_2_s
+    ! C++: int __f2dace_SA_quad_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_quad_blk_d_0_s
+    ! C++: int __f2dace_SA_quad_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_quad_blk_d_1_s
+    ! C++: int __f2dace_SA_quad_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_quad_blk_d_2_s
+    ! C++: int __f2dace_SA_quad_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_quad_idx_d_0_s
+    ! C++: int __f2dace_SA_quad_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_quad_idx_d_1_s
+    ! C++: int __f2dace_SA_quad_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_quad_idx_d_2_s
+    ! C++: int __f2dace_SA_refin_ctrl_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_refin_ctrl_d_0_s
+    ! C++: int __f2dace_SA_refin_ctrl_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_refin_ctrl_d_1_s
+    ! C++: int __f2dace_SA_start_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_start_block_d_0_s
+    ! C++: int __f2dace_SA_start_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_start_index_d_0_s
+    ! C++: int __f2dace_SA_tangent_orientation_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_tangent_orientation_d_0_s
+    ! C++: int __f2dace_SA_tangent_orientation_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_tangent_orientation_d_1_s
+    ! C++: int __f2dace_SA_vertex_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vertex_blk_d_0_s
+    ! C++: int __f2dace_SA_vertex_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vertex_blk_d_1_s
+    ! C++: int __f2dace_SA_vertex_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vertex_blk_d_2_s
+    ! C++: int __f2dace_SA_vertex_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vertex_idx_d_0_s
+    ! C++: int __f2dace_SA_vertex_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vertex_idx_d_1_s
+    ! C++: int __f2dace_SA_vertex_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vertex_idx_d_2_s
+    ! C++: int __f2dace_SOA_area_edge_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_area_edge_d_0_s
+    ! C++: int __f2dace_SOA_area_edge_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_area_edge_d_1_s
+    ! C++: int __f2dace_SOA_cell_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_blk_d_0_s
+    ! C++: int __f2dace_SOA_cell_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_blk_d_1_s
+    ! C++: int __f2dace_SOA_cell_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_blk_d_2_s
+    ! C++: int __f2dace_SOA_cell_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_idx_d_0_s
+    ! C++: int __f2dace_SOA_cell_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_idx_d_1_s
+    ! C++: int __f2dace_SOA_cell_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_idx_d_2_s
+    ! C++: int __f2dace_SOA_dual_normal_cell_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_dual_normal_cell_d_0_s
+    ! C++: int __f2dace_SOA_dual_normal_cell_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_dual_normal_cell_d_1_s
+    ! C++: int __f2dace_SOA_dual_normal_cell_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_dual_normal_cell_d_2_s
+    ! C++: int __f2dace_SOA_end_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_end_block_d_0_s
+    ! C++: int __f2dace_SOA_end_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_end_index_d_0_s
+    ! C++: int __f2dace_SOA_f_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_f_e_d_0_s
+    ! C++: int __f2dace_SOA_f_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_f_e_d_1_s
+    ! C++: int __f2dace_SOA_fn_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_fn_e_d_0_s
+    ! C++: int __f2dace_SOA_fn_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_fn_e_d_1_s
+    ! C++: int __f2dace_SOA_ft_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ft_e_d_0_s
+    ! C++: int __f2dace_SOA_ft_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ft_e_d_1_s
+    ! C++: int __f2dace_SOA_inv_dual_edge_length_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_inv_dual_edge_length_d_0_s
+    ! C++: int __f2dace_SOA_inv_dual_edge_length_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_inv_dual_edge_length_d_1_s
+    ! C++: int __f2dace_SOA_inv_primal_edge_length_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_inv_primal_edge_length_d_0_s
+    ! C++: int __f2dace_SOA_inv_primal_edge_length_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_inv_primal_edge_length_d_1_s
+    ! C++: int __f2dace_SOA_primal_normal_cell_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_primal_normal_cell_d_0_s
+    ! C++: int __f2dace_SOA_primal_normal_cell_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_primal_normal_cell_d_1_s
+    ! C++: int __f2dace_SOA_primal_normal_cell_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_primal_normal_cell_d_2_s
+    ! C++: int __f2dace_SOA_quad_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_quad_blk_d_0_s
+    ! C++: int __f2dace_SOA_quad_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_quad_blk_d_1_s
+    ! C++: int __f2dace_SOA_quad_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_quad_blk_d_2_s
+    ! C++: int __f2dace_SOA_quad_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_quad_idx_d_0_s
+    ! C++: int __f2dace_SOA_quad_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_quad_idx_d_1_s
+    ! C++: int __f2dace_SOA_quad_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_quad_idx_d_2_s
+    ! C++: int __f2dace_SOA_refin_ctrl_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_refin_ctrl_d_0_s
+    ! C++: int __f2dace_SOA_refin_ctrl_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_refin_ctrl_d_1_s
+    ! C++: int __f2dace_SOA_start_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_start_block_d_0_s
+    ! C++: int __f2dace_SOA_start_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_start_index_d_0_s
+    ! C++: int __f2dace_SOA_tangent_orientation_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_tangent_orientation_d_0_s
+    ! C++: int __f2dace_SOA_tangent_orientation_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_tangent_orientation_d_1_s
+    ! C++: int __f2dace_SOA_vertex_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vertex_blk_d_0_s
+    ! C++: int __f2dace_SOA_vertex_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vertex_blk_d_1_s
+    ! C++: int __f2dace_SOA_vertex_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vertex_blk_d_2_s
+    ! C++: int __f2dace_SOA_vertex_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vertex_idx_d_0_s
+    ! C++: int __f2dace_SOA_vertex_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vertex_idx_d_1_s
+    ! C++: int __f2dace_SOA_vertex_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vertex_idx_d_2_s
+    ! C++: double *area_edge = {};
     type(c_ptr) :: area_edge
+    ! C++: int *cell_blk = {};
     type(c_ptr) :: cell_blk
+    ! C++: int *cell_idx = {};
     type(c_ptr) :: cell_idx
+    ! C++: t_tangent_vectors **dual_normal_cell = {};
     type(c_ptr) :: dual_normal_cell
+    ! C++: int *end_block = {};
     type(c_ptr) :: end_block
+    ! C++: int *end_index = {};
     type(c_ptr) :: end_index
+    ! C++: double *f_e = {};
     type(c_ptr) :: f_e
+    ! C++: double *fn_e = {};
     type(c_ptr) :: fn_e
+    ! C++: double *ft_e = {};
     type(c_ptr) :: ft_e
+    ! C++: double *inv_dual_edge_length = {};
     type(c_ptr) :: inv_dual_edge_length
+    ! C++: double *inv_primal_edge_length = {};
     type(c_ptr) :: inv_primal_edge_length
+    ! C++: t_tangent_vectors **primal_normal_cell = {};
     type(c_ptr) :: primal_normal_cell
+    ! C++: int *quad_blk = {};
     type(c_ptr) :: quad_blk
+    ! C++: int *quad_idx = {};
     type(c_ptr) :: quad_idx
+    ! C++: int *refin_ctrl = {};
     type(c_ptr) :: refin_ctrl
+    ! C++: int *start_block = {};
     type(c_ptr) :: start_block
+    ! C++: int *start_index = {};
     type(c_ptr) :: start_index
+    ! C++: double *tangent_orientation = {};
     type(c_ptr) :: tangent_orientation
+    ! C++: int *vertex_blk = {};
     type(c_ptr) :: vertex_blk
+    ! C++: int *vertex_idx = {};
     type(c_ptr) :: vertex_idx
   end type dace_t_grid_edges
 
   type, bind(c) :: dace_t_nh_metrics
+    ! C++: int __f2dace_SA_bdy_mflx_e_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_bdy_mflx_e_blk_d_0_s
+    ! C++: int __f2dace_SA_bdy_mflx_e_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_bdy_mflx_e_idx_d_0_s
+    ! C++: int __f2dace_SA_coeff1_dwdz_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff1_dwdz_d_0_s
+    ! C++: int __f2dace_SA_coeff1_dwdz_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff1_dwdz_d_1_s
+    ! C++: int __f2dace_SA_coeff1_dwdz_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff1_dwdz_d_2_s
+    ! C++: int __f2dace_SA_coeff2_dwdz_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff2_dwdz_d_0_s
+    ! C++: int __f2dace_SA_coeff2_dwdz_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff2_dwdz_d_1_s
+    ! C++: int __f2dace_SA_coeff2_dwdz_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff2_dwdz_d_2_s
+    ! C++: int __f2dace_SA_coeff_gradekin_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff_gradekin_d_0_s
+    ! C++: int __f2dace_SA_coeff_gradekin_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff_gradekin_d_1_s
+    ! C++: int __f2dace_SA_coeff_gradekin_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff_gradekin_d_2_s
+    ! C++: int __f2dace_SA_coeff_gradp_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff_gradp_d_0_s
+    ! C++: int __f2dace_SA_coeff_gradp_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff_gradp_d_1_s
+    ! C++: int __f2dace_SA_coeff_gradp_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff_gradp_d_2_s
+    ! C++: int __f2dace_SA_coeff_gradp_d_3_s = {};
     integer(kind=c_int) :: f2dace_SA_coeff_gradp_d_3_s
+    ! C++: int __f2dace_SA_d2dexdz2_fac1_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_d2dexdz2_fac1_mc_d_0_s
+    ! C++: int __f2dace_SA_d2dexdz2_fac1_mc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_d2dexdz2_fac1_mc_d_1_s
+    ! C++: int __f2dace_SA_d2dexdz2_fac1_mc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_d2dexdz2_fac1_mc_d_2_s
+    ! C++: int __f2dace_SA_d2dexdz2_fac2_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_d2dexdz2_fac2_mc_d_0_s
+    ! C++: int __f2dace_SA_d2dexdz2_fac2_mc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_d2dexdz2_fac2_mc_d_1_s
+    ! C++: int __f2dace_SA_d2dexdz2_fac2_mc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_d2dexdz2_fac2_mc_d_2_s
+    ! C++: int __f2dace_SA_d_exner_dz_ref_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_d_exner_dz_ref_ic_d_0_s
+    ! C++: int __f2dace_SA_d_exner_dz_ref_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_d_exner_dz_ref_ic_d_1_s
+    ! C++: int __f2dace_SA_d_exner_dz_ref_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_d_exner_dz_ref_ic_d_2_s
+    ! C++: int __f2dace_SA_ddqz_z_full_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddqz_z_full_e_d_0_s
+    ! C++: int __f2dace_SA_ddqz_z_full_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddqz_z_full_e_d_1_s
+    ! C++: int __f2dace_SA_ddqz_z_full_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddqz_z_full_e_d_2_s
+    ! C++: int __f2dace_SA_ddqz_z_half_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddqz_z_half_d_0_s
+    ! C++: int __f2dace_SA_ddqz_z_half_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddqz_z_half_d_1_s
+    ! C++: int __f2dace_SA_ddqz_z_half_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddqz_z_half_d_2_s
+    ! C++: int __f2dace_SA_ddxn_z_full_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddxn_z_full_d_0_s
+    ! C++: int __f2dace_SA_ddxn_z_full_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddxn_z_full_d_1_s
+    ! C++: int __f2dace_SA_ddxn_z_full_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddxn_z_full_d_2_s
+    ! C++: int __f2dace_SA_ddxt_z_full_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddxt_z_full_d_0_s
+    ! C++: int __f2dace_SA_ddxt_z_full_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddxt_z_full_d_1_s
+    ! C++: int __f2dace_SA_ddxt_z_full_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddxt_z_full_d_2_s
+    ! C++: int __f2dace_SA_deepatmo_divh_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_deepatmo_divh_mc_d_0_s
+    ! C++: int __f2dace_SA_deepatmo_divzl_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_deepatmo_divzl_mc_d_0_s
+    ! C++: int __f2dace_SA_deepatmo_divzu_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_deepatmo_divzu_mc_d_0_s
+    ! C++: int __f2dace_SA_deepatmo_gradh_ifc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_deepatmo_gradh_ifc_d_0_s
+    ! C++: int __f2dace_SA_deepatmo_gradh_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_deepatmo_gradh_mc_d_0_s
+    ! C++: int __f2dace_SA_deepatmo_invr_ifc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_deepatmo_invr_ifc_d_0_s
+    ! C++: int __f2dace_SA_deepatmo_invr_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_deepatmo_invr_mc_d_0_s
+    ! C++: int __f2dace_SA_exner_exfac_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_exfac_d_0_s
+    ! C++: int __f2dace_SA_exner_exfac_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_exfac_d_1_s
+    ! C++: int __f2dace_SA_exner_exfac_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_exfac_d_2_s
+    ! C++: int __f2dace_SA_exner_ref_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_ref_mc_d_0_s
+    ! C++: int __f2dace_SA_exner_ref_mc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_ref_mc_d_1_s
+    ! C++: int __f2dace_SA_exner_ref_mc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_ref_mc_d_2_s
+    ! C++: int __f2dace_SA_hmask_dd3d_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_hmask_dd3d_d_0_s
+    ! C++: int __f2dace_SA_hmask_dd3d_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_hmask_dd3d_d_1_s
+    ! C++: int __f2dace_SA_inv_ddqz_z_full_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_inv_ddqz_z_full_d_0_s
+    ! C++: int __f2dace_SA_inv_ddqz_z_full_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_inv_ddqz_z_full_d_1_s
+    ! C++: int __f2dace_SA_inv_ddqz_z_full_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_inv_ddqz_z_full_d_2_s
+    ! C++: int __f2dace_SA_pg_edgeblk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_pg_edgeblk_d_0_s
+    ! C++: int __f2dace_SA_pg_edgeidx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_pg_edgeidx_d_0_s
+    ! C++: int __f2dace_SA_pg_exdist_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_pg_exdist_d_0_s
+    ! C++: int __f2dace_SA_pg_vertidx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_pg_vertidx_d_0_s
+    ! C++: int __f2dace_SA_rayleigh_vn_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_rayleigh_vn_d_0_s
+    ! C++: int __f2dace_SA_rayleigh_w_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_rayleigh_w_d_0_s
+    ! C++: int __f2dace_SA_rho_ref_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ref_mc_d_0_s
+    ! C++: int __f2dace_SA_rho_ref_mc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ref_mc_d_1_s
+    ! C++: int __f2dace_SA_rho_ref_mc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ref_mc_d_2_s
+    ! C++: int __f2dace_SA_rho_ref_me_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ref_me_d_0_s
+    ! C++: int __f2dace_SA_rho_ref_me_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ref_me_d_1_s
+    ! C++: int __f2dace_SA_rho_ref_me_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ref_me_d_2_s
+    ! C++: int __f2dace_SA_scalfac_dd3d_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_scalfac_dd3d_d_0_s
+    ! C++: int __f2dace_SA_theta_ref_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_ref_ic_d_0_s
+    ! C++: int __f2dace_SA_theta_ref_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_ref_ic_d_1_s
+    ! C++: int __f2dace_SA_theta_ref_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_ref_ic_d_2_s
+    ! C++: int __f2dace_SA_theta_ref_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_ref_mc_d_0_s
+    ! C++: int __f2dace_SA_theta_ref_mc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_ref_mc_d_1_s
+    ! C++: int __f2dace_SA_theta_ref_mc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_ref_mc_d_2_s
+    ! C++: int __f2dace_SA_theta_ref_me_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_ref_me_d_0_s
+    ! C++: int __f2dace_SA_theta_ref_me_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_ref_me_d_1_s
+    ! C++: int __f2dace_SA_theta_ref_me_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_ref_me_d_2_s
+    ! C++: int __f2dace_SA_vertidx_gradp_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vertidx_gradp_d_0_s
+    ! C++: int __f2dace_SA_vertidx_gradp_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vertidx_gradp_d_1_s
+    ! C++: int __f2dace_SA_vertidx_gradp_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vertidx_gradp_d_2_s
+    ! C++: int __f2dace_SA_vertidx_gradp_d_3_s = {};
     integer(kind=c_int) :: f2dace_SA_vertidx_gradp_d_3_s
+    ! C++: int __f2dace_SA_vwind_expl_wgt_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vwind_expl_wgt_d_0_s
+    ! C++: int __f2dace_SA_vwind_expl_wgt_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vwind_expl_wgt_d_1_s
+    ! C++: int __f2dace_SA_vwind_impl_wgt_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vwind_impl_wgt_d_0_s
+    ! C++: int __f2dace_SA_vwind_impl_wgt_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vwind_impl_wgt_d_1_s
+    ! C++: int __f2dace_SA_wgtfac_c_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfac_c_d_0_s
+    ! C++: int __f2dace_SA_wgtfac_c_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfac_c_d_1_s
+    ! C++: int __f2dace_SA_wgtfac_c_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfac_c_d_2_s
+    ! C++: int __f2dace_SA_wgtfac_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfac_e_d_0_s
+    ! C++: int __f2dace_SA_wgtfac_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfac_e_d_1_s
+    ! C++: int __f2dace_SA_wgtfac_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfac_e_d_2_s
+    ! C++: int __f2dace_SA_wgtfacq1_c_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfacq1_c_d_0_s
+    ! C++: int __f2dace_SA_wgtfacq1_c_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfacq1_c_d_1_s
+    ! C++: int __f2dace_SA_wgtfacq1_c_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfacq1_c_d_2_s
+    ! C++: int __f2dace_SA_wgtfacq_c_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfacq_c_d_0_s
+    ! C++: int __f2dace_SA_wgtfacq_c_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfacq_c_d_1_s
+    ! C++: int __f2dace_SA_wgtfacq_c_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfacq_c_d_2_s
+    ! C++: int __f2dace_SA_wgtfacq_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfacq_e_d_0_s
+    ! C++: int __f2dace_SA_wgtfacq_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfacq_e_d_1_s
+    ! C++: int __f2dace_SA_wgtfacq_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_wgtfacq_e_d_2_s
+    ! C++: int __f2dace_SA_zdiff_gradp_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_zdiff_gradp_d_0_s
+    ! C++: int __f2dace_SA_zdiff_gradp_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_zdiff_gradp_d_1_s
+    ! C++: int __f2dace_SA_zdiff_gradp_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_zdiff_gradp_d_2_s
+    ! C++: int __f2dace_SA_zdiff_gradp_d_3_s = {};
     integer(kind=c_int) :: f2dace_SA_zdiff_gradp_d_3_s
+    ! C++: int __f2dace_SOA_bdy_mflx_e_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_bdy_mflx_e_blk_d_0_s
+    ! C++: int __f2dace_SOA_bdy_mflx_e_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_bdy_mflx_e_idx_d_0_s
+    ! C++: int __f2dace_SOA_coeff1_dwdz_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff1_dwdz_d_0_s
+    ! C++: int __f2dace_SOA_coeff1_dwdz_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff1_dwdz_d_1_s
+    ! C++: int __f2dace_SOA_coeff1_dwdz_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff1_dwdz_d_2_s
+    ! C++: int __f2dace_SOA_coeff2_dwdz_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff2_dwdz_d_0_s
+    ! C++: int __f2dace_SOA_coeff2_dwdz_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff2_dwdz_d_1_s
+    ! C++: int __f2dace_SOA_coeff2_dwdz_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff2_dwdz_d_2_s
+    ! C++: int __f2dace_SOA_coeff_gradekin_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff_gradekin_d_0_s
+    ! C++: int __f2dace_SOA_coeff_gradekin_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff_gradekin_d_1_s
+    ! C++: int __f2dace_SOA_coeff_gradekin_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff_gradekin_d_2_s
+    ! C++: int __f2dace_SOA_coeff_gradp_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff_gradp_d_0_s
+    ! C++: int __f2dace_SOA_coeff_gradp_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff_gradp_d_1_s
+    ! C++: int __f2dace_SOA_coeff_gradp_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff_gradp_d_2_s
+    ! C++: int __f2dace_SOA_coeff_gradp_d_3_s = {};
     integer(kind=c_int) :: f2dace_SOA_coeff_gradp_d_3_s
+    ! C++: int __f2dace_SOA_d2dexdz2_fac1_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_d2dexdz2_fac1_mc_d_0_s
+    ! C++: int __f2dace_SOA_d2dexdz2_fac1_mc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_d2dexdz2_fac1_mc_d_1_s
+    ! C++: int __f2dace_SOA_d2dexdz2_fac1_mc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_d2dexdz2_fac1_mc_d_2_s
+    ! C++: int __f2dace_SOA_d2dexdz2_fac2_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_d2dexdz2_fac2_mc_d_0_s
+    ! C++: int __f2dace_SOA_d2dexdz2_fac2_mc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_d2dexdz2_fac2_mc_d_1_s
+    ! C++: int __f2dace_SOA_d2dexdz2_fac2_mc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_d2dexdz2_fac2_mc_d_2_s
+    ! C++: int __f2dace_SOA_d_exner_dz_ref_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_d_exner_dz_ref_ic_d_0_s
+    ! C++: int __f2dace_SOA_d_exner_dz_ref_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_d_exner_dz_ref_ic_d_1_s
+    ! C++: int __f2dace_SOA_d_exner_dz_ref_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_d_exner_dz_ref_ic_d_2_s
+    ! C++: int __f2dace_SOA_ddqz_z_full_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddqz_z_full_e_d_0_s
+    ! C++: int __f2dace_SOA_ddqz_z_full_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddqz_z_full_e_d_1_s
+    ! C++: int __f2dace_SOA_ddqz_z_full_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddqz_z_full_e_d_2_s
+    ! C++: int __f2dace_SOA_ddqz_z_half_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddqz_z_half_d_0_s
+    ! C++: int __f2dace_SOA_ddqz_z_half_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddqz_z_half_d_1_s
+    ! C++: int __f2dace_SOA_ddqz_z_half_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddqz_z_half_d_2_s
+    ! C++: int __f2dace_SOA_ddxn_z_full_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddxn_z_full_d_0_s
+    ! C++: int __f2dace_SOA_ddxn_z_full_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddxn_z_full_d_1_s
+    ! C++: int __f2dace_SOA_ddxn_z_full_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddxn_z_full_d_2_s
+    ! C++: int __f2dace_SOA_ddxt_z_full_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddxt_z_full_d_0_s
+    ! C++: int __f2dace_SOA_ddxt_z_full_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddxt_z_full_d_1_s
+    ! C++: int __f2dace_SOA_ddxt_z_full_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddxt_z_full_d_2_s
+    ! C++: int __f2dace_SOA_deepatmo_divh_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_deepatmo_divh_mc_d_0_s
+    ! C++: int __f2dace_SOA_deepatmo_divzl_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_deepatmo_divzl_mc_d_0_s
+    ! C++: int __f2dace_SOA_deepatmo_divzu_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_deepatmo_divzu_mc_d_0_s
+    ! C++: int __f2dace_SOA_deepatmo_gradh_ifc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_deepatmo_gradh_ifc_d_0_s
+    ! C++: int __f2dace_SOA_deepatmo_gradh_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_deepatmo_gradh_mc_d_0_s
+    ! C++: int __f2dace_SOA_deepatmo_invr_ifc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_deepatmo_invr_ifc_d_0_s
+    ! C++: int __f2dace_SOA_deepatmo_invr_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_deepatmo_invr_mc_d_0_s
+    ! C++: int __f2dace_SOA_exner_exfac_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_exfac_d_0_s
+    ! C++: int __f2dace_SOA_exner_exfac_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_exfac_d_1_s
+    ! C++: int __f2dace_SOA_exner_exfac_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_exfac_d_2_s
+    ! C++: int __f2dace_SOA_exner_ref_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_ref_mc_d_0_s
+    ! C++: int __f2dace_SOA_exner_ref_mc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_ref_mc_d_1_s
+    ! C++: int __f2dace_SOA_exner_ref_mc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_ref_mc_d_2_s
+    ! C++: int __f2dace_SOA_hmask_dd3d_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_hmask_dd3d_d_0_s
+    ! C++: int __f2dace_SOA_hmask_dd3d_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_hmask_dd3d_d_1_s
+    ! C++: int __f2dace_SOA_inv_ddqz_z_full_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_inv_ddqz_z_full_d_0_s
+    ! C++: int __f2dace_SOA_inv_ddqz_z_full_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_inv_ddqz_z_full_d_1_s
+    ! C++: int __f2dace_SOA_inv_ddqz_z_full_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_inv_ddqz_z_full_d_2_s
+    ! C++: int __f2dace_SOA_pg_edgeblk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_pg_edgeblk_d_0_s
+    ! C++: int __f2dace_SOA_pg_edgeidx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_pg_edgeidx_d_0_s
+    ! C++: int __f2dace_SOA_pg_exdist_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_pg_exdist_d_0_s
+    ! C++: int __f2dace_SOA_pg_vertidx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_pg_vertidx_d_0_s
+    ! C++: int __f2dace_SOA_rayleigh_vn_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_rayleigh_vn_d_0_s
+    ! C++: int __f2dace_SOA_rayleigh_w_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_rayleigh_w_d_0_s
+    ! C++: int __f2dace_SOA_rho_ref_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ref_mc_d_0_s
+    ! C++: int __f2dace_SOA_rho_ref_mc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ref_mc_d_1_s
+    ! C++: int __f2dace_SOA_rho_ref_mc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ref_mc_d_2_s
+    ! C++: int __f2dace_SOA_rho_ref_me_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ref_me_d_0_s
+    ! C++: int __f2dace_SOA_rho_ref_me_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ref_me_d_1_s
+    ! C++: int __f2dace_SOA_rho_ref_me_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ref_me_d_2_s
+    ! C++: int __f2dace_SOA_scalfac_dd3d_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_scalfac_dd3d_d_0_s
+    ! C++: int __f2dace_SOA_theta_ref_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_ref_ic_d_0_s
+    ! C++: int __f2dace_SOA_theta_ref_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_ref_ic_d_1_s
+    ! C++: int __f2dace_SOA_theta_ref_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_ref_ic_d_2_s
+    ! C++: int __f2dace_SOA_theta_ref_mc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_ref_mc_d_0_s
+    ! C++: int __f2dace_SOA_theta_ref_mc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_ref_mc_d_1_s
+    ! C++: int __f2dace_SOA_theta_ref_mc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_ref_mc_d_2_s
+    ! C++: int __f2dace_SOA_theta_ref_me_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_ref_me_d_0_s
+    ! C++: int __f2dace_SOA_theta_ref_me_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_ref_me_d_1_s
+    ! C++: int __f2dace_SOA_theta_ref_me_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_ref_me_d_2_s
+    ! C++: int __f2dace_SOA_vertidx_gradp_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vertidx_gradp_d_0_s
+    ! C++: int __f2dace_SOA_vertidx_gradp_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vertidx_gradp_d_1_s
+    ! C++: int __f2dace_SOA_vertidx_gradp_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vertidx_gradp_d_2_s
+    ! C++: int __f2dace_SOA_vertidx_gradp_d_3_s = {};
     integer(kind=c_int) :: f2dace_SOA_vertidx_gradp_d_3_s
+    ! C++: int __f2dace_SOA_vwind_expl_wgt_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vwind_expl_wgt_d_0_s
+    ! C++: int __f2dace_SOA_vwind_expl_wgt_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vwind_expl_wgt_d_1_s
+    ! C++: int __f2dace_SOA_vwind_impl_wgt_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vwind_impl_wgt_d_0_s
+    ! C++: int __f2dace_SOA_vwind_impl_wgt_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vwind_impl_wgt_d_1_s
+    ! C++: int __f2dace_SOA_wgtfac_c_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfac_c_d_0_s
+    ! C++: int __f2dace_SOA_wgtfac_c_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfac_c_d_1_s
+    ! C++: int __f2dace_SOA_wgtfac_c_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfac_c_d_2_s
+    ! C++: int __f2dace_SOA_wgtfac_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfac_e_d_0_s
+    ! C++: int __f2dace_SOA_wgtfac_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfac_e_d_1_s
+    ! C++: int __f2dace_SOA_wgtfac_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfac_e_d_2_s
+    ! C++: int __f2dace_SOA_wgtfacq1_c_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfacq1_c_d_0_s
+    ! C++: int __f2dace_SOA_wgtfacq1_c_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfacq1_c_d_1_s
+    ! C++: int __f2dace_SOA_wgtfacq1_c_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfacq1_c_d_2_s
+    ! C++: int __f2dace_SOA_wgtfacq_c_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfacq_c_d_0_s
+    ! C++: int __f2dace_SOA_wgtfacq_c_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfacq_c_d_1_s
+    ! C++: int __f2dace_SOA_wgtfacq_c_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfacq_c_d_2_s
+    ! C++: int __f2dace_SOA_wgtfacq_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfacq_e_d_0_s
+    ! C++: int __f2dace_SOA_wgtfacq_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfacq_e_d_1_s
+    ! C++: int __f2dace_SOA_wgtfacq_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_wgtfacq_e_d_2_s
+    ! C++: int __f2dace_SOA_zdiff_gradp_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_zdiff_gradp_d_0_s
+    ! C++: int __f2dace_SOA_zdiff_gradp_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_zdiff_gradp_d_1_s
+    ! C++: int __f2dace_SOA_zdiff_gradp_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_zdiff_gradp_d_2_s
+    ! C++: int __f2dace_SOA_zdiff_gradp_d_3_s = {};
     integer(kind=c_int) :: f2dace_SOA_zdiff_gradp_d_3_s
+    ! C++: int *bdy_mflx_e_blk = {};
     type(c_ptr) :: bdy_mflx_e_blk
+    ! C++: int bdy_mflx_e_dim = {};
     integer(kind=c_int) :: bdy_mflx_e_dim
+    ! C++: int *bdy_mflx_e_idx = {};
     type(c_ptr) :: bdy_mflx_e_idx
+    ! C++: double *coeff1_dwdz = {};
     type(c_ptr) :: coeff1_dwdz
+    ! C++: double *coeff2_dwdz = {};
     type(c_ptr) :: coeff2_dwdz
+    ! C++: double *coeff_gradekin = {};
     type(c_ptr) :: coeff_gradekin
+    ! C++: double *coeff_gradp = {};
     type(c_ptr) :: coeff_gradp
+    ! C++: double *d2dexdz2_fac1_mc = {};
     type(c_ptr) :: d2dexdz2_fac1_mc
+    ! C++: double *d2dexdz2_fac2_mc = {};
     type(c_ptr) :: d2dexdz2_fac2_mc
+    ! C++: double *d_exner_dz_ref_ic = {};
     type(c_ptr) :: d_exner_dz_ref_ic
+    ! C++: double *ddqz_z_full_e = {};
     type(c_ptr) :: ddqz_z_full_e
+    ! C++: double *ddqz_z_half = {};
     type(c_ptr) :: ddqz_z_half
+    ! C++: double *ddxn_z_full = {};
     type(c_ptr) :: ddxn_z_full
+    ! C++: double *ddxt_z_full = {};
     type(c_ptr) :: ddxt_z_full
+    ! C++: double *deepatmo_divh_mc = {};
     type(c_ptr) :: deepatmo_divh_mc
+    ! C++: double *deepatmo_divzl_mc = {};
     type(c_ptr) :: deepatmo_divzl_mc
+    ! C++: double *deepatmo_divzu_mc = {};
     type(c_ptr) :: deepatmo_divzu_mc
+    ! C++: double *deepatmo_gradh_ifc = {};
     type(c_ptr) :: deepatmo_gradh_ifc
+    ! C++: double *deepatmo_gradh_mc = {};
     type(c_ptr) :: deepatmo_gradh_mc
+    ! C++: double *deepatmo_invr_ifc = {};
     type(c_ptr) :: deepatmo_invr_ifc
+    ! C++: double *deepatmo_invr_mc = {};
     type(c_ptr) :: deepatmo_invr_mc
+    ! C++: double *exner_exfac = {};
     type(c_ptr) :: exner_exfac
+    ! C++: double *exner_ref_mc = {};
     type(c_ptr) :: exner_ref_mc
+    ! C++: double *hmask_dd3d = {};
     type(c_ptr) :: hmask_dd3d
+    ! C++: double *inv_ddqz_z_full = {};
     type(c_ptr) :: inv_ddqz_z_full
+    ! C++: int *pg_edgeblk = {};
     type(c_ptr) :: pg_edgeblk
+    ! C++: int *pg_edgeidx = {};
     type(c_ptr) :: pg_edgeidx
+    ! C++: double *pg_exdist = {};
     type(c_ptr) :: pg_exdist
+    ! C++: int pg_listdim = {};
     integer(kind=c_int) :: pg_listdim
+    ! C++: int *pg_vertidx = {};
     type(c_ptr) :: pg_vertidx
+    ! C++: double *rayleigh_vn = {};
     type(c_ptr) :: rayleigh_vn
+    ! C++: double *rayleigh_w = {};
     type(c_ptr) :: rayleigh_w
+    ! C++: double *rho_ref_mc = {};
     type(c_ptr) :: rho_ref_mc
+    ! C++: double *rho_ref_me = {};
     type(c_ptr) :: rho_ref_me
+    ! C++: double *scalfac_dd3d = {};
     type(c_ptr) :: scalfac_dd3d
+    ! C++: double *theta_ref_ic = {};
     type(c_ptr) :: theta_ref_ic
+    ! C++: double *theta_ref_mc = {};
     type(c_ptr) :: theta_ref_mc
+    ! C++: double *theta_ref_me = {};
     type(c_ptr) :: theta_ref_me
+    ! C++: int *vertidx_gradp = {};
     type(c_ptr) :: vertidx_gradp
+    ! C++: double *vwind_expl_wgt = {};
     type(c_ptr) :: vwind_expl_wgt
+    ! C++: double *vwind_impl_wgt = {};
     type(c_ptr) :: vwind_impl_wgt
+    ! C++: double *wgtfac_c = {};
     type(c_ptr) :: wgtfac_c
+    ! C++: double *wgtfac_e = {};
     type(c_ptr) :: wgtfac_e
+    ! C++: double *wgtfacq1_c = {};
     type(c_ptr) :: wgtfacq1_c
+    ! C++: double *wgtfacq_c = {};
     type(c_ptr) :: wgtfacq_c
+    ! C++: double *wgtfacq_e = {};
     type(c_ptr) :: wgtfacq_e
+    ! C++: double *zdiff_gradp = {};
     type(c_ptr) :: zdiff_gradp
   end type dace_t_nh_metrics
 
   type, bind(c) :: dace_t_prepare_adv
+    ! C++: int __f2dace_SA_mass_flx_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_flx_ic_d_0_s
+    ! C++: int __f2dace_SA_mass_flx_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_flx_ic_d_1_s
+    ! C++: int __f2dace_SA_mass_flx_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_flx_ic_d_2_s
+    ! C++: int __f2dace_SA_mass_flx_me_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_flx_me_d_0_s
+    ! C++: int __f2dace_SA_mass_flx_me_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_flx_me_d_1_s
+    ! C++: int __f2dace_SA_mass_flx_me_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_flx_me_d_2_s
+    ! C++: int __f2dace_SA_vn_traj_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_traj_d_0_s
+    ! C++: int __f2dace_SA_vn_traj_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_traj_d_1_s
+    ! C++: int __f2dace_SA_vn_traj_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_traj_d_2_s
+    ! C++: int __f2dace_SA_vol_flx_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vol_flx_ic_d_0_s
+    ! C++: int __f2dace_SA_vol_flx_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vol_flx_ic_d_1_s
+    ! C++: int __f2dace_SA_vol_flx_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vol_flx_ic_d_2_s
+    ! C++: int __f2dace_SOA_mass_flx_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_flx_ic_d_0_s
+    ! C++: int __f2dace_SOA_mass_flx_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_flx_ic_d_1_s
+    ! C++: int __f2dace_SOA_mass_flx_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_flx_ic_d_2_s
+    ! C++: int __f2dace_SOA_mass_flx_me_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_flx_me_d_0_s
+    ! C++: int __f2dace_SOA_mass_flx_me_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_flx_me_d_1_s
+    ! C++: int __f2dace_SOA_mass_flx_me_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_flx_me_d_2_s
+    ! C++: int __f2dace_SOA_vn_traj_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_traj_d_0_s
+    ! C++: int __f2dace_SOA_vn_traj_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_traj_d_1_s
+    ! C++: int __f2dace_SOA_vn_traj_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_traj_d_2_s
+    ! C++: int __f2dace_SOA_vol_flx_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vol_flx_ic_d_0_s
+    ! C++: int __f2dace_SOA_vol_flx_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vol_flx_ic_d_1_s
+    ! C++: int __f2dace_SOA_vol_flx_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vol_flx_ic_d_2_s
+    ! C++: double *mass_flx_ic = {};
     type(c_ptr) :: mass_flx_ic
+    ! C++: double *mass_flx_me = {};
     type(c_ptr) :: mass_flx_me
+    ! C++: double *vn_traj = {};
     type(c_ptr) :: vn_traj
+    ! C++: double *vol_flx_ic = {};
     type(c_ptr) :: vol_flx_ic
   end type dace_t_prepare_adv
 
   type, bind(c) :: dace_t_nh_ref
+    ! C++: int __f2dace_SA_vn_ref_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ref_d_0_s
+    ! C++: int __f2dace_SA_vn_ref_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ref_d_1_s
+    ! C++: int __f2dace_SA_vn_ref_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ref_d_2_s
+    ! C++: int __f2dace_SA_w_ref_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_w_ref_d_0_s
+    ! C++: int __f2dace_SA_w_ref_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_w_ref_d_1_s
+    ! C++: int __f2dace_SA_w_ref_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_w_ref_d_2_s
+    ! C++: int __f2dace_SOA_vn_ref_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ref_d_0_s
+    ! C++: int __f2dace_SOA_vn_ref_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ref_d_1_s
+    ! C++: int __f2dace_SOA_vn_ref_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ref_d_2_s
+    ! C++: int __f2dace_SOA_w_ref_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_ref_d_0_s
+    ! C++: int __f2dace_SOA_w_ref_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_ref_d_1_s
+    ! C++: int __f2dace_SOA_w_ref_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_ref_d_2_s
+    ! C++: double *vn_ref = {};
     type(c_ptr) :: vn_ref
+    ! C++: double *w_ref = {};
     type(c_ptr) :: w_ref
   end type dace_t_nh_ref
 
   type, bind(c) :: dace_t_nh_prog
+    ! C++: int __f2dace_SA_exner_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_d_0_s
+    ! C++: int __f2dace_SA_exner_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_d_1_s
+    ! C++: int __f2dace_SA_exner_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_d_2_s
+    ! C++: int __f2dace_SA_rho_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_d_0_s
+    ! C++: int __f2dace_SA_rho_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_d_1_s
+    ! C++: int __f2dace_SA_rho_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_d_2_s
+    ! C++: int __f2dace_SA_theta_v_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_d_0_s
+    ! C++: int __f2dace_SA_theta_v_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_d_1_s
+    ! C++: int __f2dace_SA_theta_v_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_d_2_s
+    ! C++: int __f2dace_SA_vn_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_d_0_s
+    ! C++: int __f2dace_SA_vn_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_d_1_s
+    ! C++: int __f2dace_SA_vn_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_d_2_s
+    ! C++: int __f2dace_SA_w_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_w_d_0_s
+    ! C++: int __f2dace_SA_w_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_w_d_1_s
+    ! C++: int __f2dace_SA_w_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_w_d_2_s
+    ! C++: int __f2dace_SOA_exner_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_d_0_s
+    ! C++: int __f2dace_SOA_exner_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_d_1_s
+    ! C++: int __f2dace_SOA_exner_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_d_2_s
+    ! C++: int __f2dace_SOA_rho_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_d_0_s
+    ! C++: int __f2dace_SOA_rho_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_d_1_s
+    ! C++: int __f2dace_SOA_rho_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_d_2_s
+    ! C++: int __f2dace_SOA_theta_v_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_d_0_s
+    ! C++: int __f2dace_SOA_theta_v_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_d_1_s
+    ! C++: int __f2dace_SOA_theta_v_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_d_2_s
+    ! C++: int __f2dace_SOA_vn_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_d_0_s
+    ! C++: int __f2dace_SOA_vn_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_d_1_s
+    ! C++: int __f2dace_SOA_vn_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_d_2_s
+    ! C++: int __f2dace_SOA_w_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_d_0_s
+    ! C++: int __f2dace_SOA_w_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_d_1_s
+    ! C++: int __f2dace_SOA_w_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_d_2_s
+    ! C++: double *exner = {};
     type(c_ptr) :: exner
+    ! C++: double *rho = {};
     type(c_ptr) :: rho
+    ! C++: double *theta_v = {};
     type(c_ptr) :: theta_v
+    ! C++: double *vn = {};
     type(c_ptr) :: vn
+    ! C++: double *w = {};
     type(c_ptr) :: w
   end type dace_t_nh_prog
 
   type, bind(c) :: dace_t_nh_diag
+    ! C++: int __f2dace_SA_ddt_exner_phy_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_exner_phy_d_0_s
+    ! C++: int __f2dace_SA_ddt_exner_phy_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_exner_phy_d_1_s
+    ! C++: int __f2dace_SA_ddt_exner_phy_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_exner_phy_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_adv_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_adv_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_adv_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_adv_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_adv_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_adv_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_apc_pc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_apc_pc_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_apc_pc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_apc_pc_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_apc_pc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_apc_pc_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_apc_pc_d_3_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_apc_pc_d_3_s
+    ! C++: int __f2dace_SA_ddt_vn_cor_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_cor_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_cor_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_cor_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_cor_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_cor_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_cor_pc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_cor_pc_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_cor_pc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_cor_pc_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_cor_pc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_cor_pc_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_cor_pc_d_3_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_cor_pc_d_3_s
+    ! C++: int __f2dace_SA_ddt_vn_dmp_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_dmp_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_dmp_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_dmp_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_dmp_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_dmp_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_dyn_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_dyn_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_dyn_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_dyn_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_dyn_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_dyn_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_grf_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_grf_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_grf_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_grf_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_grf_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_grf_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_iau_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_iau_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_iau_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_iau_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_iau_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_iau_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_pgr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_pgr_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_pgr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_pgr_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_pgr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_pgr_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_phd_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_phd_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_phd_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_phd_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_phd_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_phd_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_phy_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_phy_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_phy_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_phy_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_phy_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_phy_d_2_s
+    ! C++: int __f2dace_SA_ddt_vn_ray_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_ray_d_0_s
+    ! C++: int __f2dace_SA_ddt_vn_ray_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_ray_d_1_s
+    ! C++: int __f2dace_SA_ddt_vn_ray_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_vn_ray_d_2_s
+    ! C++: int __f2dace_SA_ddt_w_adv_pc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_w_adv_pc_d_0_s
+    ! C++: int __f2dace_SA_ddt_w_adv_pc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_w_adv_pc_d_1_s
+    ! C++: int __f2dace_SA_ddt_w_adv_pc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_w_adv_pc_d_2_s
+    ! C++: int __f2dace_SA_ddt_w_adv_pc_d_3_s = {};
     integer(kind=c_int) :: f2dace_SA_ddt_w_adv_pc_d_3_s
+    ! C++: int __f2dace_SA_exner_dyn_incr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_dyn_incr_d_0_s
+    ! C++: int __f2dace_SA_exner_dyn_incr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_dyn_incr_d_1_s
+    ! C++: int __f2dace_SA_exner_dyn_incr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_dyn_incr_d_2_s
+    ! C++: int __f2dace_SA_exner_incr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_incr_d_0_s
+    ! C++: int __f2dace_SA_exner_incr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_incr_d_1_s
+    ! C++: int __f2dace_SA_exner_incr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_incr_d_2_s
+    ! C++: int __f2dace_SA_exner_pr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_pr_d_0_s
+    ! C++: int __f2dace_SA_exner_pr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_pr_d_1_s
+    ! C++: int __f2dace_SA_exner_pr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_exner_pr_d_2_s
+    ! C++: int __f2dace_SA_grf_bdy_mflx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_bdy_mflx_d_0_s
+    ! C++: int __f2dace_SA_grf_bdy_mflx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_bdy_mflx_d_1_s
+    ! C++: int __f2dace_SA_grf_bdy_mflx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_bdy_mflx_d_2_s
+    ! C++: int __f2dace_SA_grf_tend_mflx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_mflx_d_0_s
+    ! C++: int __f2dace_SA_grf_tend_mflx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_mflx_d_1_s
+    ! C++: int __f2dace_SA_grf_tend_mflx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_mflx_d_2_s
+    ! C++: int __f2dace_SA_grf_tend_rho_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_rho_d_0_s
+    ! C++: int __f2dace_SA_grf_tend_rho_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_rho_d_1_s
+    ! C++: int __f2dace_SA_grf_tend_rho_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_rho_d_2_s
+    ! C++: int __f2dace_SA_grf_tend_thv_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_thv_d_0_s
+    ! C++: int __f2dace_SA_grf_tend_thv_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_thv_d_1_s
+    ! C++: int __f2dace_SA_grf_tend_thv_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_thv_d_2_s
+    ! C++: int __f2dace_SA_grf_tend_vn_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_vn_d_0_s
+    ! C++: int __f2dace_SA_grf_tend_vn_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_vn_d_1_s
+    ! C++: int __f2dace_SA_grf_tend_vn_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_vn_d_2_s
+    ! C++: int __f2dace_SA_grf_tend_w_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_w_d_0_s
+    ! C++: int __f2dace_SA_grf_tend_w_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_w_d_1_s
+    ! C++: int __f2dace_SA_grf_tend_w_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_grf_tend_w_d_2_s
+    ! C++: int __f2dace_SA_mass_fl_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_fl_e_d_0_s
+    ! C++: int __f2dace_SA_mass_fl_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_fl_e_d_1_s
+    ! C++: int __f2dace_SA_mass_fl_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_fl_e_d_2_s
+    ! C++: int __f2dace_SA_mass_fl_e_sv_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_fl_e_sv_d_0_s
+    ! C++: int __f2dace_SA_mass_fl_e_sv_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_fl_e_sv_d_1_s
+    ! C++: int __f2dace_SA_mass_fl_e_sv_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_mass_fl_e_sv_d_2_s
+    ! C++: int __f2dace_SA_mflx_ic_int_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_mflx_ic_int_d_0_s
+    ! C++: int __f2dace_SA_mflx_ic_int_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_mflx_ic_int_d_1_s
+    ! C++: int __f2dace_SA_mflx_ic_int_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_mflx_ic_int_d_2_s
+    ! C++: int __f2dace_SA_mflx_ic_ubc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_mflx_ic_ubc_d_0_s
+    ! C++: int __f2dace_SA_mflx_ic_ubc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_mflx_ic_ubc_d_1_s
+    ! C++: int __f2dace_SA_mflx_ic_ubc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_mflx_ic_ubc_d_2_s
+    ! C++: int __f2dace_SA_rho_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ic_d_0_s
+    ! C++: int __f2dace_SA_rho_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ic_d_1_s
+    ! C++: int __f2dace_SA_rho_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ic_d_2_s
+    ! C++: int __f2dace_SA_rho_ic_int_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ic_int_d_0_s
+    ! C++: int __f2dace_SA_rho_ic_int_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ic_int_d_1_s
+    ! C++: int __f2dace_SA_rho_ic_int_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ic_int_d_2_s
+    ! C++: int __f2dace_SA_rho_ic_ubc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ic_ubc_d_0_s
+    ! C++: int __f2dace_SA_rho_ic_ubc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ic_ubc_d_1_s
+    ! C++: int __f2dace_SA_rho_ic_ubc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_ic_ubc_d_2_s
+    ! C++: int __f2dace_SA_rho_incr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_incr_d_0_s
+    ! C++: int __f2dace_SA_rho_incr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_incr_d_1_s
+    ! C++: int __f2dace_SA_rho_incr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_rho_incr_d_2_s
+    ! C++: int __f2dace_SA_theta_v_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_ic_d_0_s
+    ! C++: int __f2dace_SA_theta_v_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_ic_d_1_s
+    ! C++: int __f2dace_SA_theta_v_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_ic_d_2_s
+    ! C++: int __f2dace_SA_theta_v_ic_int_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_ic_int_d_0_s
+    ! C++: int __f2dace_SA_theta_v_ic_int_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_ic_int_d_1_s
+    ! C++: int __f2dace_SA_theta_v_ic_int_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_ic_int_d_2_s
+    ! C++: int __f2dace_SA_theta_v_ic_ubc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_ic_ubc_d_0_s
+    ! C++: int __f2dace_SA_theta_v_ic_ubc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_ic_ubc_d_1_s
+    ! C++: int __f2dace_SA_theta_v_ic_ubc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_theta_v_ic_ubc_d_2_s
+    ! C++: int __f2dace_SA_vn_ie_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ie_d_0_s
+    ! C++: int __f2dace_SA_vn_ie_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ie_d_1_s
+    ! C++: int __f2dace_SA_vn_ie_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ie_d_2_s
+    ! C++: int __f2dace_SA_vn_ie_int_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ie_int_d_0_s
+    ! C++: int __f2dace_SA_vn_ie_int_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ie_int_d_1_s
+    ! C++: int __f2dace_SA_vn_ie_int_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ie_int_d_2_s
+    ! C++: int __f2dace_SA_vn_ie_ubc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ie_ubc_d_0_s
+    ! C++: int __f2dace_SA_vn_ie_ubc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ie_ubc_d_1_s
+    ! C++: int __f2dace_SA_vn_ie_ubc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_ie_ubc_d_2_s
+    ! C++: int __f2dace_SA_vn_incr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_incr_d_0_s
+    ! C++: int __f2dace_SA_vn_incr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_incr_d_1_s
+    ! C++: int __f2dace_SA_vn_incr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vn_incr_d_2_s
+    ! C++: int __f2dace_SA_vt_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_vt_d_0_s
+    ! C++: int __f2dace_SA_vt_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_vt_d_1_s
+    ! C++: int __f2dace_SA_vt_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_vt_d_2_s
+    ! C++: int __f2dace_SA_w_concorr_c_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_w_concorr_c_d_0_s
+    ! C++: int __f2dace_SA_w_concorr_c_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_w_concorr_c_d_1_s
+    ! C++: int __f2dace_SA_w_concorr_c_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_w_concorr_c_d_2_s
+    ! C++: int __f2dace_SA_w_int_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_w_int_d_0_s
+    ! C++: int __f2dace_SA_w_int_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_w_int_d_1_s
+    ! C++: int __f2dace_SA_w_int_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_w_int_d_2_s
+    ! C++: int __f2dace_SA_w_ubc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_w_ubc_d_0_s
+    ! C++: int __f2dace_SA_w_ubc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_w_ubc_d_1_s
+    ! C++: int __f2dace_SA_w_ubc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_w_ubc_d_2_s
+    ! C++: int __f2dace_SOA_ddt_exner_phy_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_exner_phy_d_0_s
+    ! C++: int __f2dace_SOA_ddt_exner_phy_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_exner_phy_d_1_s
+    ! C++: int __f2dace_SOA_ddt_exner_phy_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_exner_phy_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_adv_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_adv_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_adv_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_adv_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_adv_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_adv_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_apc_pc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_apc_pc_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_apc_pc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_apc_pc_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_apc_pc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_apc_pc_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_apc_pc_d_3_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_apc_pc_d_3_s
+    ! C++: int __f2dace_SOA_ddt_vn_cor_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_cor_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_cor_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_cor_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_cor_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_cor_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_cor_pc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_cor_pc_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_cor_pc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_cor_pc_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_cor_pc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_cor_pc_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_cor_pc_d_3_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_cor_pc_d_3_s
+    ! C++: int __f2dace_SOA_ddt_vn_dmp_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_dmp_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_dmp_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_dmp_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_dmp_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_dmp_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_dyn_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_dyn_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_dyn_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_dyn_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_dyn_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_dyn_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_grf_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_grf_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_grf_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_grf_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_grf_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_grf_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_iau_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_iau_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_iau_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_iau_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_iau_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_iau_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_pgr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_pgr_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_pgr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_pgr_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_pgr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_pgr_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_phd_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_phd_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_phd_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_phd_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_phd_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_phd_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_phy_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_phy_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_phy_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_phy_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_phy_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_phy_d_2_s
+    ! C++: int __f2dace_SOA_ddt_vn_ray_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_ray_d_0_s
+    ! C++: int __f2dace_SOA_ddt_vn_ray_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_ray_d_1_s
+    ! C++: int __f2dace_SOA_ddt_vn_ray_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_vn_ray_d_2_s
+    ! C++: int __f2dace_SOA_ddt_w_adv_pc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_w_adv_pc_d_0_s
+    ! C++: int __f2dace_SOA_ddt_w_adv_pc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_w_adv_pc_d_1_s
+    ! C++: int __f2dace_SOA_ddt_w_adv_pc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_w_adv_pc_d_2_s
+    ! C++: int __f2dace_SOA_ddt_w_adv_pc_d_3_s = {};
     integer(kind=c_int) :: f2dace_SOA_ddt_w_adv_pc_d_3_s
+    ! C++: int __f2dace_SOA_exner_dyn_incr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_dyn_incr_d_0_s
+    ! C++: int __f2dace_SOA_exner_dyn_incr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_dyn_incr_d_1_s
+    ! C++: int __f2dace_SOA_exner_dyn_incr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_dyn_incr_d_2_s
+    ! C++: int __f2dace_SOA_exner_incr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_incr_d_0_s
+    ! C++: int __f2dace_SOA_exner_incr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_incr_d_1_s
+    ! C++: int __f2dace_SOA_exner_incr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_incr_d_2_s
+    ! C++: int __f2dace_SOA_exner_pr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_pr_d_0_s
+    ! C++: int __f2dace_SOA_exner_pr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_pr_d_1_s
+    ! C++: int __f2dace_SOA_exner_pr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_exner_pr_d_2_s
+    ! C++: int __f2dace_SOA_grf_bdy_mflx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_bdy_mflx_d_0_s
+    ! C++: int __f2dace_SOA_grf_bdy_mflx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_bdy_mflx_d_1_s
+    ! C++: int __f2dace_SOA_grf_bdy_mflx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_bdy_mflx_d_2_s
+    ! C++: int __f2dace_SOA_grf_tend_mflx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_mflx_d_0_s
+    ! C++: int __f2dace_SOA_grf_tend_mflx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_mflx_d_1_s
+    ! C++: int __f2dace_SOA_grf_tend_mflx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_mflx_d_2_s
+    ! C++: int __f2dace_SOA_grf_tend_rho_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_rho_d_0_s
+    ! C++: int __f2dace_SOA_grf_tend_rho_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_rho_d_1_s
+    ! C++: int __f2dace_SOA_grf_tend_rho_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_rho_d_2_s
+    ! C++: int __f2dace_SOA_grf_tend_thv_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_thv_d_0_s
+    ! C++: int __f2dace_SOA_grf_tend_thv_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_thv_d_1_s
+    ! C++: int __f2dace_SOA_grf_tend_thv_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_thv_d_2_s
+    ! C++: int __f2dace_SOA_grf_tend_vn_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_vn_d_0_s
+    ! C++: int __f2dace_SOA_grf_tend_vn_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_vn_d_1_s
+    ! C++: int __f2dace_SOA_grf_tend_vn_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_vn_d_2_s
+    ! C++: int __f2dace_SOA_grf_tend_w_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_w_d_0_s
+    ! C++: int __f2dace_SOA_grf_tend_w_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_w_d_1_s
+    ! C++: int __f2dace_SOA_grf_tend_w_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_grf_tend_w_d_2_s
+    ! C++: int __f2dace_SOA_mass_fl_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_fl_e_d_0_s
+    ! C++: int __f2dace_SOA_mass_fl_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_fl_e_d_1_s
+    ! C++: int __f2dace_SOA_mass_fl_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_fl_e_d_2_s
+    ! C++: int __f2dace_SOA_mass_fl_e_sv_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_fl_e_sv_d_0_s
+    ! C++: int __f2dace_SOA_mass_fl_e_sv_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_fl_e_sv_d_1_s
+    ! C++: int __f2dace_SOA_mass_fl_e_sv_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_mass_fl_e_sv_d_2_s
+    ! C++: int __f2dace_SOA_mflx_ic_int_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_mflx_ic_int_d_0_s
+    ! C++: int __f2dace_SOA_mflx_ic_int_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_mflx_ic_int_d_1_s
+    ! C++: int __f2dace_SOA_mflx_ic_int_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_mflx_ic_int_d_2_s
+    ! C++: int __f2dace_SOA_mflx_ic_ubc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_mflx_ic_ubc_d_0_s
+    ! C++: int __f2dace_SOA_mflx_ic_ubc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_mflx_ic_ubc_d_1_s
+    ! C++: int __f2dace_SOA_mflx_ic_ubc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_mflx_ic_ubc_d_2_s
+    ! C++: int __f2dace_SOA_rho_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ic_d_0_s
+    ! C++: int __f2dace_SOA_rho_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ic_d_1_s
+    ! C++: int __f2dace_SOA_rho_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ic_d_2_s
+    ! C++: int __f2dace_SOA_rho_ic_int_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ic_int_d_0_s
+    ! C++: int __f2dace_SOA_rho_ic_int_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ic_int_d_1_s
+    ! C++: int __f2dace_SOA_rho_ic_int_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ic_int_d_2_s
+    ! C++: int __f2dace_SOA_rho_ic_ubc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ic_ubc_d_0_s
+    ! C++: int __f2dace_SOA_rho_ic_ubc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ic_ubc_d_1_s
+    ! C++: int __f2dace_SOA_rho_ic_ubc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_ic_ubc_d_2_s
+    ! C++: int __f2dace_SOA_rho_incr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_incr_d_0_s
+    ! C++: int __f2dace_SOA_rho_incr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_incr_d_1_s
+    ! C++: int __f2dace_SOA_rho_incr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_rho_incr_d_2_s
+    ! C++: int __f2dace_SOA_theta_v_ic_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_ic_d_0_s
+    ! C++: int __f2dace_SOA_theta_v_ic_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_ic_d_1_s
+    ! C++: int __f2dace_SOA_theta_v_ic_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_ic_d_2_s
+    ! C++: int __f2dace_SOA_theta_v_ic_int_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_ic_int_d_0_s
+    ! C++: int __f2dace_SOA_theta_v_ic_int_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_ic_int_d_1_s
+    ! C++: int __f2dace_SOA_theta_v_ic_int_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_ic_int_d_2_s
+    ! C++: int __f2dace_SOA_theta_v_ic_ubc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_ic_ubc_d_0_s
+    ! C++: int __f2dace_SOA_theta_v_ic_ubc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_ic_ubc_d_1_s
+    ! C++: int __f2dace_SOA_theta_v_ic_ubc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_theta_v_ic_ubc_d_2_s
+    ! C++: int __f2dace_SOA_vn_ie_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ie_d_0_s
+    ! C++: int __f2dace_SOA_vn_ie_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ie_d_1_s
+    ! C++: int __f2dace_SOA_vn_ie_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ie_d_2_s
+    ! C++: int __f2dace_SOA_vn_ie_int_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ie_int_d_0_s
+    ! C++: int __f2dace_SOA_vn_ie_int_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ie_int_d_1_s
+    ! C++: int __f2dace_SOA_vn_ie_int_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ie_int_d_2_s
+    ! C++: int __f2dace_SOA_vn_ie_ubc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ie_ubc_d_0_s
+    ! C++: int __f2dace_SOA_vn_ie_ubc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ie_ubc_d_1_s
+    ! C++: int __f2dace_SOA_vn_ie_ubc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_ie_ubc_d_2_s
+    ! C++: int __f2dace_SOA_vn_incr_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_incr_d_0_s
+    ! C++: int __f2dace_SOA_vn_incr_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_incr_d_1_s
+    ! C++: int __f2dace_SOA_vn_incr_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vn_incr_d_2_s
+    ! C++: int __f2dace_SOA_vt_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_vt_d_0_s
+    ! C++: int __f2dace_SOA_vt_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_vt_d_1_s
+    ! C++: int __f2dace_SOA_vt_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_vt_d_2_s
+    ! C++: int __f2dace_SOA_w_concorr_c_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_concorr_c_d_0_s
+    ! C++: int __f2dace_SOA_w_concorr_c_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_concorr_c_d_1_s
+    ! C++: int __f2dace_SOA_w_concorr_c_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_concorr_c_d_2_s
+    ! C++: int __f2dace_SOA_w_int_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_int_d_0_s
+    ! C++: int __f2dace_SOA_w_int_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_int_d_1_s
+    ! C++: int __f2dace_SOA_w_int_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_int_d_2_s
+    ! C++: int __f2dace_SOA_w_ubc_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_ubc_d_0_s
+    ! C++: int __f2dace_SOA_w_ubc_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_ubc_d_1_s
+    ! C++: int __f2dace_SOA_w_ubc_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_w_ubc_d_2_s
+    ! C++: double *ddt_exner_phy = {};
     type(c_ptr) :: ddt_exner_phy
+    ! C++: double *ddt_vn_adv = {};
     type(c_ptr) :: ddt_vn_adv
+    ! C++: int ddt_vn_adv_is_associated = {};
     integer(kind=c_int) :: ddt_vn_adv_is_associated
+    ! C++: double *ddt_vn_apc_pc = {};
     type(c_ptr) :: ddt_vn_apc_pc
+    ! C++: double *ddt_vn_cor = {};
     type(c_ptr) :: ddt_vn_cor
+    ! C++: int ddt_vn_cor_is_associated = {};
     integer(kind=c_int) :: ddt_vn_cor_is_associated
+    ! C++: double *ddt_vn_cor_pc = {};
     type(c_ptr) :: ddt_vn_cor_pc
+    ! C++: double *ddt_vn_dmp = {};
     type(c_ptr) :: ddt_vn_dmp
+    ! C++: int ddt_vn_dmp_is_associated = {};
     integer(kind=c_int) :: ddt_vn_dmp_is_associated
+    ! C++: double *ddt_vn_dyn = {};
     type(c_ptr) :: ddt_vn_dyn
+    ! C++: int ddt_vn_dyn_is_associated = {};
     integer(kind=c_int) :: ddt_vn_dyn_is_associated
+    ! C++: double *ddt_vn_grf = {};
     type(c_ptr) :: ddt_vn_grf
+    ! C++: int ddt_vn_grf_is_associated = {};
     integer(kind=c_int) :: ddt_vn_grf_is_associated
+    ! C++: double *ddt_vn_iau = {};
     type(c_ptr) :: ddt_vn_iau
+    ! C++: int ddt_vn_iau_is_associated = {};
     integer(kind=c_int) :: ddt_vn_iau_is_associated
+    ! C++: double *ddt_vn_pgr = {};
     type(c_ptr) :: ddt_vn_pgr
+    ! C++: int ddt_vn_pgr_is_associated = {};
     integer(kind=c_int) :: ddt_vn_pgr_is_associated
+    ! C++: double *ddt_vn_phd = {};
     type(c_ptr) :: ddt_vn_phd
+    ! C++: int ddt_vn_phd_is_associated = {};
     integer(kind=c_int) :: ddt_vn_phd_is_associated
+    ! C++: double *ddt_vn_phy = {};
     type(c_ptr) :: ddt_vn_phy
+    ! C++: double *ddt_vn_ray = {};
     type(c_ptr) :: ddt_vn_ray
+    ! C++: int ddt_vn_ray_is_associated = {};
     integer(kind=c_int) :: ddt_vn_ray_is_associated
+    ! C++: double *ddt_w_adv_pc = {};
     type(c_ptr) :: ddt_w_adv_pc
+    ! C++: double *exner_dyn_incr = {};
     type(c_ptr) :: exner_dyn_incr
+    ! C++: double *exner_incr = {};
     type(c_ptr) :: exner_incr
+    ! C++: double *exner_pr = {};
     type(c_ptr) :: exner_pr
+    ! C++: double *grf_bdy_mflx = {};
     type(c_ptr) :: grf_bdy_mflx
+    ! C++: double *grf_tend_mflx = {};
     type(c_ptr) :: grf_tend_mflx
+    ! C++: double *grf_tend_rho = {};
     type(c_ptr) :: grf_tend_rho
+    ! C++: double *grf_tend_thv = {};
     type(c_ptr) :: grf_tend_thv
+    ! C++: double *grf_tend_vn = {};
     type(c_ptr) :: grf_tend_vn
+    ! C++: double *grf_tend_w = {};
     type(c_ptr) :: grf_tend_w
+    ! C++: double *mass_fl_e = {};
     type(c_ptr) :: mass_fl_e
+    ! C++: double *mass_fl_e_sv = {};
     type(c_ptr) :: mass_fl_e_sv
+    ! C++: double max_vcfl_dyn = {};
     real(kind=c_double) :: max_vcfl_dyn
+    ! C++: double *mflx_ic_int = {};
     type(c_ptr) :: mflx_ic_int
+    ! C++: double *mflx_ic_ubc = {};
     type(c_ptr) :: mflx_ic_ubc
+    ! C++: double *rho_ic = {};
     type(c_ptr) :: rho_ic
+    ! C++: double *rho_ic_int = {};
     type(c_ptr) :: rho_ic_int
+    ! C++: double *rho_ic_ubc = {};
     type(c_ptr) :: rho_ic_ubc
+    ! C++: double *rho_incr = {};
     type(c_ptr) :: rho_incr
+    ! C++: double *theta_v_ic = {};
     type(c_ptr) :: theta_v_ic
+    ! C++: double *theta_v_ic_int = {};
     type(c_ptr) :: theta_v_ic_int
+    ! C++: double *theta_v_ic_ubc = {};
     type(c_ptr) :: theta_v_ic_ubc
+    ! C++: double *vn_ie = {};
     type(c_ptr) :: vn_ie
+    ! C++: double *vn_ie_int = {};
     type(c_ptr) :: vn_ie_int
+    ! C++: double *vn_ie_ubc = {};
     type(c_ptr) :: vn_ie_ubc
+    ! C++: double *vn_incr = {};
     type(c_ptr) :: vn_incr
+    ! C++: double *vt = {};
     type(c_ptr) :: vt
+    ! C++: double *w_concorr_c = {};
     type(c_ptr) :: w_concorr_c
+    ! C++: double *w_int = {};
     type(c_ptr) :: w_int
+    ! C++: double *w_ubc = {};
     type(c_ptr) :: w_ubc
   end type dace_t_nh_diag
 
@@ -855,215 +1605,413 @@ module mo_solve_nh_dace_structs
   end type dace_t_nh_state
 
   type, bind(c) :: dace_t_grid_domain_decomp_info
+    ! C++: int __f2dace_SA_owner_mask_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_owner_mask_d_0_s
+    ! C++: int __f2dace_SA_owner_mask_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_owner_mask_d_1_s
+    ! C++: int __f2dace_SOA_owner_mask_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_owner_mask_d_0_s
+    ! C++: int __f2dace_SOA_owner_mask_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_owner_mask_d_1_s
+    ! C++: int *owner_mask = {};
     type(c_ptr) :: owner_mask
   end type dace_t_grid_domain_decomp_info
 
   type, bind(c) :: dace_t_grid_cells
+    ! C++: int __f2dace_SA_area_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_area_d_0_s
+    ! C++: int __f2dace_SA_area_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_area_d_1_s
+    ! C++: int __f2dace_SA_edge_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_blk_d_0_s
+    ! C++: int __f2dace_SA_edge_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_blk_d_1_s
+    ! C++: int __f2dace_SA_edge_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_blk_d_2_s
+    ! C++: int __f2dace_SA_edge_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_idx_d_0_s
+    ! C++: int __f2dace_SA_edge_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_idx_d_1_s
+    ! C++: int __f2dace_SA_edge_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_idx_d_2_s
+    ! C++: int __f2dace_SA_end_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_end_blk_d_0_s
+    ! C++: int __f2dace_SA_end_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_end_blk_d_1_s
+    ! C++: int __f2dace_SA_end_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_end_block_d_0_s
+    ! C++: int __f2dace_SA_end_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_end_index_d_0_s
+    ! C++: int __f2dace_SA_neighbor_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_neighbor_blk_d_0_s
+    ! C++: int __f2dace_SA_neighbor_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_neighbor_blk_d_1_s
+    ! C++: int __f2dace_SA_neighbor_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_neighbor_blk_d_2_s
+    ! C++: int __f2dace_SA_neighbor_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_neighbor_idx_d_0_s
+    ! C++: int __f2dace_SA_neighbor_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_neighbor_idx_d_1_s
+    ! C++: int __f2dace_SA_neighbor_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_neighbor_idx_d_2_s
+    ! C++: int __f2dace_SA_start_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_start_blk_d_0_s
+    ! C++: int __f2dace_SA_start_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_start_blk_d_1_s
+    ! C++: int __f2dace_SA_start_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_start_block_d_0_s
+    ! C++: int __f2dace_SA_start_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_start_index_d_0_s
+    ! C++: int __f2dace_SOA_area_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_area_d_0_s
+    ! C++: int __f2dace_SOA_area_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_area_d_1_s
+    ! C++: int __f2dace_SOA_edge_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_blk_d_0_s
+    ! C++: int __f2dace_SOA_edge_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_blk_d_1_s
+    ! C++: int __f2dace_SOA_edge_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_blk_d_2_s
+    ! C++: int __f2dace_SOA_edge_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_idx_d_0_s
+    ! C++: int __f2dace_SOA_edge_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_idx_d_1_s
+    ! C++: int __f2dace_SOA_edge_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_idx_d_2_s
+    ! C++: int __f2dace_SOA_end_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_end_blk_d_0_s
+    ! C++: int __f2dace_SOA_end_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_end_blk_d_1_s
+    ! C++: int __f2dace_SOA_end_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_end_block_d_0_s
+    ! C++: int __f2dace_SOA_end_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_end_index_d_0_s
+    ! C++: int __f2dace_SOA_neighbor_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_neighbor_blk_d_0_s
+    ! C++: int __f2dace_SOA_neighbor_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_neighbor_blk_d_1_s
+    ! C++: int __f2dace_SOA_neighbor_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_neighbor_blk_d_2_s
+    ! C++: int __f2dace_SOA_neighbor_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_neighbor_idx_d_0_s
+    ! C++: int __f2dace_SOA_neighbor_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_neighbor_idx_d_1_s
+    ! C++: int __f2dace_SOA_neighbor_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_neighbor_idx_d_2_s
+    ! C++: int __f2dace_SOA_start_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_start_blk_d_0_s
+    ! C++: int __f2dace_SOA_start_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_start_blk_d_1_s
+    ! C++: int __f2dace_SOA_start_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_start_block_d_0_s
+    ! C++: int __f2dace_SOA_start_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_start_index_d_0_s
+    ! C++: double *area = {};
     type(c_ptr) :: area
+    ! C++: t_grid_domain_decomp_info *decomp_info = {};
     type(c_ptr) :: decomp_info
+    ! C++: int *edge_blk = {};
     type(c_ptr) :: edge_blk
+    ! C++: int *edge_idx = {};
     type(c_ptr) :: edge_idx
+    ! C++: int *end_blk = {};
     type(c_ptr) :: end_blk
+    ! C++: int *end_block = {};
     type(c_ptr) :: end_block
+    ! C++: int *end_index = {};
     type(c_ptr) :: end_index
+    ! C++: int *neighbor_blk = {};
     type(c_ptr) :: neighbor_blk
+    ! C++: int *neighbor_idx = {};
     type(c_ptr) :: neighbor_idx
+    ! C++: int *start_blk = {};
     type(c_ptr) :: start_blk
+    ! C++: int *start_block = {};
     type(c_ptr) :: start_block
+    ! C++: int *start_index = {};
     type(c_ptr) :: start_index
   end type dace_t_grid_cells
 
   type, bind(c) :: dace_t_int_state
+    ! C++: int __f2dace_SA_c_lin_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_c_lin_e_d_0_s
+    ! C++: int __f2dace_SA_c_lin_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_c_lin_e_d_1_s
+    ! C++: int __f2dace_SA_c_lin_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_c_lin_e_d_2_s
+    ! C++: int __f2dace_SA_cells_aw_verts_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_cells_aw_verts_d_0_s
+    ! C++: int __f2dace_SA_cells_aw_verts_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_cells_aw_verts_d_1_s
+    ! C++: int __f2dace_SA_cells_aw_verts_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_cells_aw_verts_d_2_s
+    ! C++: int __f2dace_SA_e_bln_c_s_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_e_bln_c_s_d_0_s
+    ! C++: int __f2dace_SA_e_bln_c_s_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_e_bln_c_s_d_1_s
+    ! C++: int __f2dace_SA_e_bln_c_s_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_e_bln_c_s_d_2_s
+    ! C++: int __f2dace_SA_e_flx_avg_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_e_flx_avg_d_0_s
+    ! C++: int __f2dace_SA_e_flx_avg_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_e_flx_avg_d_1_s
+    ! C++: int __f2dace_SA_e_flx_avg_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_e_flx_avg_d_2_s
+    ! C++: int __f2dace_SA_geofac_div_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_div_d_0_s
+    ! C++: int __f2dace_SA_geofac_div_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_div_d_1_s
+    ! C++: int __f2dace_SA_geofac_div_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_div_d_2_s
+    ! C++: int __f2dace_SA_geofac_grdiv_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_grdiv_d_0_s
+    ! C++: int __f2dace_SA_geofac_grdiv_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_grdiv_d_1_s
+    ! C++: int __f2dace_SA_geofac_grdiv_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_grdiv_d_2_s
+    ! C++: int __f2dace_SA_geofac_grg_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_grg_d_0_s
+    ! C++: int __f2dace_SA_geofac_grg_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_grg_d_1_s
+    ! C++: int __f2dace_SA_geofac_grg_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_grg_d_2_s
+    ! C++: int __f2dace_SA_geofac_grg_d_3_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_grg_d_3_s
+    ! C++: int __f2dace_SA_geofac_n2s_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_n2s_d_0_s
+    ! C++: int __f2dace_SA_geofac_n2s_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_n2s_d_1_s
+    ! C++: int __f2dace_SA_geofac_n2s_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_n2s_d_2_s
+    ! C++: int __f2dace_SA_geofac_rot_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_rot_d_0_s
+    ! C++: int __f2dace_SA_geofac_rot_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_rot_d_1_s
+    ! C++: int __f2dace_SA_geofac_rot_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_geofac_rot_d_2_s
+    ! C++: int __f2dace_SA_nudgecoeff_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_nudgecoeff_e_d_0_s
+    ! C++: int __f2dace_SA_nudgecoeff_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_nudgecoeff_e_d_1_s
+    ! C++: int __f2dace_SA_pos_on_tplane_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_pos_on_tplane_e_d_0_s
+    ! C++: int __f2dace_SA_pos_on_tplane_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_pos_on_tplane_e_d_1_s
+    ! C++: int __f2dace_SA_pos_on_tplane_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_pos_on_tplane_e_d_2_s
+    ! C++: int __f2dace_SA_pos_on_tplane_e_d_3_s = {};
     integer(kind=c_int) :: f2dace_SA_pos_on_tplane_e_d_3_s
+    ! C++: int __f2dace_SA_rbf_vec_coeff_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_rbf_vec_coeff_e_d_0_s
+    ! C++: int __f2dace_SA_rbf_vec_coeff_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_rbf_vec_coeff_e_d_1_s
+    ! C++: int __f2dace_SA_rbf_vec_coeff_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_rbf_vec_coeff_e_d_2_s
+    ! C++: int __f2dace_SOA_c_lin_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_c_lin_e_d_0_s
+    ! C++: int __f2dace_SOA_c_lin_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_c_lin_e_d_1_s
+    ! C++: int __f2dace_SOA_c_lin_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_c_lin_e_d_2_s
+    ! C++: int __f2dace_SOA_cells_aw_verts_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_cells_aw_verts_d_0_s
+    ! C++: int __f2dace_SOA_cells_aw_verts_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_cells_aw_verts_d_1_s
+    ! C++: int __f2dace_SOA_cells_aw_verts_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_cells_aw_verts_d_2_s
+    ! C++: int __f2dace_SOA_e_bln_c_s_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_e_bln_c_s_d_0_s
+    ! C++: int __f2dace_SOA_e_bln_c_s_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_e_bln_c_s_d_1_s
+    ! C++: int __f2dace_SOA_e_bln_c_s_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_e_bln_c_s_d_2_s
+    ! C++: int __f2dace_SOA_e_flx_avg_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_e_flx_avg_d_0_s
+    ! C++: int __f2dace_SOA_e_flx_avg_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_e_flx_avg_d_1_s
+    ! C++: int __f2dace_SOA_e_flx_avg_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_e_flx_avg_d_2_s
+    ! C++: int __f2dace_SOA_geofac_div_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_div_d_0_s
+    ! C++: int __f2dace_SOA_geofac_div_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_div_d_1_s
+    ! C++: int __f2dace_SOA_geofac_div_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_div_d_2_s
+    ! C++: int __f2dace_SOA_geofac_grdiv_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_grdiv_d_0_s
+    ! C++: int __f2dace_SOA_geofac_grdiv_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_grdiv_d_1_s
+    ! C++: int __f2dace_SOA_geofac_grdiv_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_grdiv_d_2_s
+    ! C++: int __f2dace_SOA_geofac_grg_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_grg_d_0_s
+    ! C++: int __f2dace_SOA_geofac_grg_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_grg_d_1_s
+    ! C++: int __f2dace_SOA_geofac_grg_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_grg_d_2_s
+    ! C++: int __f2dace_SOA_geofac_grg_d_3_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_grg_d_3_s
+    ! C++: int __f2dace_SOA_geofac_n2s_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_n2s_d_0_s
+    ! C++: int __f2dace_SOA_geofac_n2s_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_n2s_d_1_s
+    ! C++: int __f2dace_SOA_geofac_n2s_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_n2s_d_2_s
+    ! C++: int __f2dace_SOA_geofac_rot_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_rot_d_0_s
+    ! C++: int __f2dace_SOA_geofac_rot_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_rot_d_1_s
+    ! C++: int __f2dace_SOA_geofac_rot_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_geofac_rot_d_2_s
+    ! C++: int __f2dace_SOA_nudgecoeff_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_nudgecoeff_e_d_0_s
+    ! C++: int __f2dace_SOA_nudgecoeff_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_nudgecoeff_e_d_1_s
+    ! C++: int __f2dace_SOA_pos_on_tplane_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_pos_on_tplane_e_d_0_s
+    ! C++: int __f2dace_SOA_pos_on_tplane_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_pos_on_tplane_e_d_1_s
+    ! C++: int __f2dace_SOA_pos_on_tplane_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_pos_on_tplane_e_d_2_s
+    ! C++: int __f2dace_SOA_pos_on_tplane_e_d_3_s = {};
     integer(kind=c_int) :: f2dace_SOA_pos_on_tplane_e_d_3_s
+    ! C++: int __f2dace_SOA_rbf_vec_coeff_e_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_rbf_vec_coeff_e_d_0_s
+    ! C++: int __f2dace_SOA_rbf_vec_coeff_e_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_rbf_vec_coeff_e_d_1_s
+    ! C++: int __f2dace_SOA_rbf_vec_coeff_e_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_rbf_vec_coeff_e_d_2_s
+    ! C++: double *c_lin_e = {};
     type(c_ptr) :: c_lin_e
+    ! C++: double *cells_aw_verts = {};
     type(c_ptr) :: cells_aw_verts
+    ! C++: double *e_bln_c_s = {};
     type(c_ptr) :: e_bln_c_s
+    ! C++: double *e_flx_avg = {};
     type(c_ptr) :: e_flx_avg
+    ! C++: double *geofac_div = {};
     type(c_ptr) :: geofac_div
+    ! C++: double *geofac_grdiv = {};
     type(c_ptr) :: geofac_grdiv
+    ! C++: double *geofac_grg = {};
     type(c_ptr) :: geofac_grg
+    ! C++: double *geofac_n2s = {};
     type(c_ptr) :: geofac_n2s
+    ! C++: double *geofac_rot = {};
     type(c_ptr) :: geofac_rot
+    ! C++: double *nudgecoeff_e = {};
     type(c_ptr) :: nudgecoeff_e
+    ! C++: double *pos_on_tplane_e = {};
     type(c_ptr) :: pos_on_tplane_e
+    ! C++: double *rbf_vec_coeff_e = {};
     type(c_ptr) :: rbf_vec_coeff_e
   end type dace_t_int_state
 
   type, bind(c) :: dace_t_grid_vertices
+    ! C++: int __f2dace_SA_cell_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_blk_d_0_s
+    ! C++: int __f2dace_SA_cell_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_blk_d_1_s
+    ! C++: int __f2dace_SA_cell_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_blk_d_2_s
+    ! C++: int __f2dace_SA_cell_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_idx_d_0_s
+    ! C++: int __f2dace_SA_cell_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_idx_d_1_s
+    ! C++: int __f2dace_SA_cell_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_cell_idx_d_2_s
+    ! C++: int __f2dace_SA_edge_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_blk_d_0_s
+    ! C++: int __f2dace_SA_edge_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_blk_d_1_s
+    ! C++: int __f2dace_SA_edge_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_blk_d_2_s
+    ! C++: int __f2dace_SA_edge_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_idx_d_0_s
+    ! C++: int __f2dace_SA_edge_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_idx_d_1_s
+    ! C++: int __f2dace_SA_edge_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SA_edge_idx_d_2_s
+    ! C++: int __f2dace_SA_end_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_end_block_d_0_s
+    ! C++: int __f2dace_SA_end_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_end_index_d_0_s
+    ! C++: int __f2dace_SA_start_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_start_block_d_0_s
+    ! C++: int __f2dace_SA_start_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SA_start_index_d_0_s
+    ! C++: int __f2dace_SOA_cell_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_blk_d_0_s
+    ! C++: int __f2dace_SOA_cell_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_blk_d_1_s
+    ! C++: int __f2dace_SOA_cell_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_blk_d_2_s
+    ! C++: int __f2dace_SOA_cell_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_idx_d_0_s
+    ! C++: int __f2dace_SOA_cell_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_idx_d_1_s
+    ! C++: int __f2dace_SOA_cell_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_cell_idx_d_2_s
+    ! C++: int __f2dace_SOA_edge_blk_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_blk_d_0_s
+    ! C++: int __f2dace_SOA_edge_blk_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_blk_d_1_s
+    ! C++: int __f2dace_SOA_edge_blk_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_blk_d_2_s
+    ! C++: int __f2dace_SOA_edge_idx_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_idx_d_0_s
+    ! C++: int __f2dace_SOA_edge_idx_d_1_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_idx_d_1_s
+    ! C++: int __f2dace_SOA_edge_idx_d_2_s = {};
     integer(kind=c_int) :: f2dace_SOA_edge_idx_d_2_s
+    ! C++: int __f2dace_SOA_end_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_end_block_d_0_s
+    ! C++: int __f2dace_SOA_end_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_end_index_d_0_s
+    ! C++: int __f2dace_SOA_start_block_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_start_block_d_0_s
+    ! C++: int __f2dace_SOA_start_index_d_0_s = {};
     integer(kind=c_int) :: f2dace_SOA_start_index_d_0_s
+    ! C++: int *cell_blk = {};
     type(c_ptr) :: cell_blk
+    ! C++: int *cell_idx = {};
     type(c_ptr) :: cell_idx
+    ! C++: int *edge_blk = {};
     type(c_ptr) :: edge_blk
+    ! C++: int *edge_idx = {};
     type(c_ptr) :: edge_idx
+    ! C++: int *end_block = {};
     type(c_ptr) :: end_block
+    ! C++: int *end_index = {};
     type(c_ptr) :: end_index
+    ! C++: int *start_block = {};
     type(c_ptr) :: start_block
+    ! C++: int *start_index = {};
     type(c_ptr) :: start_index
   end type dace_t_grid_vertices
 
   type, bind(c) :: dace_t_patch
+    ! C++: t_grid_cells *cells = {};
     type(c_ptr) :: cells
+    ! C++: t_grid_edges *edges = {};
     type(c_ptr) :: edges
+    ! C++: int id = {};
     integer(kind=c_int) :: id
+    ! C++: int n_childdom = {};
     integer(kind=c_int) :: n_childdom
+    ! C++: int nblks_c = {};
     integer(kind=c_int) :: nblks_c
+    ! C++: int nblks_e = {};
     integer(kind=c_int) :: nblks_e
+    ! C++: int nblks_v = {};
     integer(kind=c_int) :: nblks_v
+    ! C++: int nlev = {};
     integer(kind=c_int) :: nlev
+    ! C++: int nlevp1 = {};
     integer(kind=c_int) :: nlevp1
+    ! C++: int nshift = {};
     integer(kind=c_int) :: nshift
+    ! C++: t_grid_vertices *verts = {};
     type(c_ptr) :: verts
   end type dace_t_patch
 
