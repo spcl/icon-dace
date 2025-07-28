@@ -855,7 +855,7 @@ def generate_copy_in_function_t_tangent_vectors_struct_array(struct_array: dace.
     type(t_tangent_vectors), dimension(:,:,:), target :: fortran_array
     logical :: steal_arrays, use_openacc, minimal_structs
     type(c_ptr) :: dace_array_ptr
-    type(c_ptr), dimension(:,:,:), pointer :: dace_rich_array
+    real(kind=c_double), dimension(:,:,:,:), pointer :: dace_rich_array
 #ifdef _OPENACC
     integer(kind=c_size_t) :: size_bytes
 #endif
