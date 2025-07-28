@@ -273,9 +273,17 @@ def generate_dace_struct_definition(struct: dace.data.Structure) -> str:
 """
 
 
+_NUMBER_REGEX = "\\d+"
+
+
 def fix_identifier(identifier: str) -> str:
     while identifier.startswith("_"):
         identifier = identifier[1:]
+
+    match = re.fullmatch(f"(?P<helper_field>.*_s)_{_NUMBER_REGEX}", identifier)
+    if match:
+        return match.group("helper_field")
+
     return identifier
 
 
@@ -285,34 +293,33 @@ _F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX = fix_identifier("__f2dace_SA_")
 _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX = fix_identifier("__f2dace_SOA_")
 
 _IDENTIFIER_REGEX = "\\w+"
-_NUMBER_REGEX = "\\d+"
 _F2DACE_PARAM_ARRAY_SIZE_HELPER_PATTERN_STR = (
     f"{_F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX}"
     f"(?P<array_name>{_IDENTIFIER_REGEX})"
     "_d_"
     f"(?P<dim_num>{_NUMBER_REGEX})"
-    f"_s_{_NUMBER_REGEX}"
+    f"_s(_{_NUMBER_REGEX})?"
 )
 _F2DACE_PARAM_ARRAY_OFFSET_HELPER_PATTERN_STR = (
     f"{_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX}"
     f"(?P<array_name>{_IDENTIFIER_REGEX})"
     "_d_"
     f"(?P<dim_num>{_NUMBER_REGEX})"
-    f"_s_{_NUMBER_REGEX}"
+    f"_s(_{_NUMBER_REGEX})?"
 )
 _F2DACE_STRUCT_ARRAY_SIZE_HELPER_PATTERN_STR = (
     f"{_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX}"
     f"(?P<array_name>{_IDENTIFIER_REGEX})"
     "_d_"
     f"(?P<dim_num>{_NUMBER_REGEX})"
-    f"_s_{_NUMBER_REGEX}"
+    f"_s(_{_NUMBER_REGEX})?"
 )
 _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_PATTERN_STR = (
     f"{_F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX}"
     f"(?P<array_name>{_IDENTIFIER_REGEX})"
     "_d_"
     f"(?P<dim_num>{_NUMBER_REGEX})"
-    f"_s_{_NUMBER_REGEX}"
+    f"_s(_{_NUMBER_REGEX})?"
 )
 
 
