@@ -2449,6 +2449,9 @@ module {module_name}
 
   use iso_c_binding
 
+  ! use external struct definitions
+  use mo_solve_nh_dace_structs
+
 {imports_str}
 
   implicit none
@@ -2466,9 +2469,11 @@ module {module_name}
     ###################################################
     # DaCe struct definitions
     ###################################################
-    dace_struct_definitions_str = "\n".join(
-        generate_dace_struct_definition(struct) for struct in structs
-    )
+    # HACK: disable dace struct definitions (we import them from an external module)
+    dace_struct_definitions_str = ""
+#   dace_struct_definitions_str = "\n".join(
+#       generate_dace_struct_definition(struct) for struct in structs
+#   )
 
     verification_deep_copies_declarations_src = ""
     cached_shallow_copyies_declarations_src = ""
