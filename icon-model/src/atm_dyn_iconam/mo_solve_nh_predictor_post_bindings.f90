@@ -4531,9 +4531,7 @@ contains
     logical :: steal_arrays, minimal_structs
     type(c_ptr) :: dace_array_ptr
     real(kind=c_double), dimension(:,:,:,:), pointer :: dace_rich_array
-#ifdef _OPENACC
     integer(kind=c_size_t) :: size_bytes
-#endif
 
     integer :: i0, i1, i2
 

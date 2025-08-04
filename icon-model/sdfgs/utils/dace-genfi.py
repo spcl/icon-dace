@@ -855,9 +855,7 @@ def generate_copy_in_function_t_tangent_vectors_struct_array(struct_array: dace.
     logical :: steal_arrays, minimal_structs
     type(c_ptr) :: dace_array_ptr
     real(kind=c_double), dimension(:,:,:,:), pointer :: dace_rich_array
-#ifdef _OPENACC
     integer(kind=c_size_t) :: size_bytes
-#endif
 
     integer :: i0, i1, i2
 
@@ -866,10 +864,10 @@ def generate_copy_in_function_t_tangent_vectors_struct_array(struct_array: dace.
       return
     end if
 
+    size_bytes = 2 * size(fortran_array) * c_sizeof(dace_rich_array(1, 1, 1, 1))
 #ifndef _OPENACC
-    dace_array_ptr = malloc(2 * c_sizeof(dace_array_ptr) * size(fortran_array))
+    dace_array_ptr = malloc(size_bytes)
 #else
-    size_bytes = 2 * size(fortran_array) * c_sizeof(fortran_array(1, 1, 1))
     dace_array_ptr = c_acc_malloc(size_bytes)
 #endif
 
