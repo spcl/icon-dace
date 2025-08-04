@@ -806,22 +806,12 @@ contains
 #endif
     dace_rich_obj%divdamp_type = divdamp_type
     dace_rich_obj%rayleigh_type = rayleigh_type
-#ifndef _OPENACC
     dace_rich_obj%kstart_dd3d = copy_in_int32_1d_array( &
     fortran_array=logical_fix_1d(kstart_dd3d), &
     steal_arrays=steal_arrays, &
     use_openacc=.false., &
     minimal_structs=minimal_structs &
   )
-
-#else
-    dace_rich_obj%kstart_dd3d = copy_in_int32_1d_array( &
-    fortran_array=logical_fix_1d(kstart_dd3d), &
-    steal_arrays=steal_arrays, &
-    use_openacc=.true., &
-    minimal_structs=minimal_structs &
-  )
-#endif
 #if defined(DACE_SUBST_VERIFY)
     if (10 /= size(kstart_dd3d, dim=1)) then
       print *, &
@@ -5298,7 +5288,6 @@ contains
     write (member_expr, '(a,a)') &
       trim(struct_expr), &
       "%kstart_dd3d"
-#ifndef _OPENACC
 
     call compare_int32_1d_array( &
         actual=actual_rich%kstart_dd3d, &
@@ -5307,18 +5296,6 @@ contains
         use_openacc=.false., &
         array_expr=member_expr &
     )
-
-#else
-
-    call compare_int32_1d_array( &
-        actual=actual_rich%kstart_dd3d, &
-        ref=logical_fix_1d(kstart_dd3d), &
-        result=local_result, &
-        use_openacc=.true., &
-        array_expr=member_expr &
-    )
-
-#endif
 
     result = result .and. local_result
 

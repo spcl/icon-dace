@@ -291,7 +291,6 @@ use_openacc_data:
       - vertex_idx
 
     global_data_type:
-      - kstart_dd3d
       - ndyn_substeps_var
 
     t_nh_metrics:
