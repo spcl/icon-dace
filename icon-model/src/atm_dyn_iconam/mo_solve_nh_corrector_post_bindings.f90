@@ -780,22 +780,12 @@ contains
     dace_rich_obj%is_iau_active = is_iau_active
     dace_rich_obj%iau_wgt_dyn = iau_wgt_dyn
     dace_rich_obj%itime_scheme = itime_scheme
-#ifndef _OPENACC
     dace_rich_obj%ndyn_substeps_var = copy_in_int32_1d_array( &
     fortran_array=logical_fix_1d(ndyn_substeps_var), &
     steal_arrays=steal_arrays, &
     use_openacc=.false., &
     minimal_structs=minimal_structs &
   )
-
-#else
-    dace_rich_obj%ndyn_substeps_var = copy_in_int32_1d_array( &
-    fortran_array=logical_fix_1d(ndyn_substeps_var), &
-    steal_arrays=steal_arrays, &
-    use_openacc=.true., &
-    minimal_structs=minimal_structs &
-  )
-#endif
 #if defined(DACE_SUBST_VERIFY)
     if (10 /= size(ndyn_substeps_var, dim=1)) then
       print *, &
@@ -5246,7 +5236,6 @@ contains
     write (member_expr, '(a,a)') &
       trim(struct_expr), &
       "%ndyn_substeps_var"
-#ifndef _OPENACC
 
     call compare_int32_1d_array( &
         actual=actual_rich%ndyn_substeps_var, &
@@ -5255,18 +5244,6 @@ contains
         use_openacc=.false., &
         array_expr=member_expr &
     )
-
-#else
-
-    call compare_int32_1d_array( &
-        actual=actual_rich%ndyn_substeps_var, &
-        ref=logical_fix_1d(ndyn_substeps_var), &
-        result=local_result, &
-        use_openacc=.true., &
-        array_expr=member_expr &
-    )
-
-#endif
 
     result = result .and. local_result
 

@@ -290,8 +290,7 @@ use_openacc_data:
       - vertex_blk
       - vertex_idx
 
-    global_data_type:
-      - ndyn_substeps_var
+    global_data_type: []
 
     t_nh_metrics:
       - coeff1_dwdz
