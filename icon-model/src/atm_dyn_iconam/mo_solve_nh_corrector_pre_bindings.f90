@@ -3985,7 +3985,12 @@ contains
 #endif
     end if
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -4056,7 +4061,12 @@ contains
 #endif
     end if
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -4113,7 +4123,12 @@ contains
 #endif
     end if
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -4174,7 +4189,12 @@ contains
 #endif
     end if
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -4237,7 +4257,12 @@ contains
 #endif
     end if
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -4310,7 +4335,12 @@ contains
 #endif
     end if
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -4387,7 +4417,12 @@ contains
 #endif
     end if
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -4460,7 +4495,12 @@ contains
 #endif
     end if
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -4512,7 +4552,12 @@ contains
 
     integer :: i0, i1, i2
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -4882,6 +4927,16 @@ contains
     if (.not. c_associated(c_loc(fortran_struct_array))) then
       if (c_associated(dace_struct_array_ptr)) then
         print *, "copy_back_t_tangent_vectors_3d_array: Invalid allocation of t_tangent_vectors array by DaCe!"
+      end if
+      return
+    end if
+
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(fortran_struct_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      if (dace_struct_array_ptr /= c_null_ptr) then
+        print *, "copy_back_{base_name}_{rank}d_array: Invalid allocation of {base_name} array by DaCe (ff..fff8)!"
       end if
       return
     end if
@@ -9873,6 +9928,24 @@ contains
       return
     end if
 
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
+        print *, "compare_float64_1d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
     result = .true.
 
     if (present(rel_threshold)) then
@@ -10068,6 +10141,24 @@ contains
           "Verification failed for array '", &
             trim(array_expr), &
           "':"//char(10)//"    - ref was NULL, but actual was not!"
+        print *, "compare_int32_1d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
         print *, "compare_int32_1d_array"
         print *, trim(message_text)
       end if
@@ -10276,6 +10367,24 @@ contains
           "Verification failed for array '", &
             trim(array_expr), &
           "':"//char(10)//"    - ref was NULL, but actual was not!"
+        print *, "compare_float64_3d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
         print *, "compare_float64_3d_array"
         print *, trim(message_text)
       end if
@@ -10503,6 +10612,24 @@ contains
           "Verification failed for array '", &
             trim(array_expr), &
           "':"//char(10)//"    - ref was NULL, but actual was not!"
+        print *, "compare_float64_4d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
         print *, "compare_float64_4d_array"
         print *, trim(message_text)
       end if
@@ -10739,6 +10866,24 @@ contains
       return
     end if
 
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
+        print *, "compare_float64_2d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
     result = .true.
 
     if (present(rel_threshold)) then
@@ -10951,6 +11096,24 @@ contains
           "Verification failed for array '", &
             trim(array_expr), &
           "':"//char(10)//"    - ref was NULL, but actual was not!"
+        print *, "compare_int32_4d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
         print *, "compare_int32_4d_array"
         print *, trim(message_text)
       end if
@@ -11187,6 +11350,24 @@ contains
       return
     end if
 
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
+        print *, "compare_int32_2d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
     result = .true.
 
     if (present(rel_threshold)) then
@@ -11403,6 +11584,24 @@ contains
       return
     end if
 
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
+        print *, "compare_int32_3d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
     result = .true.
 
     if (present(rel_threshold)) then
@@ -11590,6 +11789,24 @@ contains
           "Verification failed for array '", &
             trim(struct_array_expr), &
           "':"//char(10)//"    - ref was NULL, but actual was not!"
+        print *, "compare_t_tangent_vectors_3d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(struct_array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
         print *, "compare_t_tangent_vectors_3d_array"
         print *, trim(message_text)
       end if

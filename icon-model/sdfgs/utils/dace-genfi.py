@@ -735,7 +735,12 @@ end interface logical_fix_{rank}d
 #endif
     end if
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -814,9 +819,14 @@ def generate_copy_in_function_struct_array(struct_array: dace.data.ContainerArra
       print *, "!!!ERROR!!! Requested OpenACC, but built without OpenACC (SDFG bindings file)"
       return
 #endif
-
     end if
-    if (.not. c_associated(c_loc(fortran_array))) then
+
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -859,7 +869,12 @@ def generate_copy_in_function_t_tangent_vectors_struct_array(struct_array: dace.
 
     integer :: i0, i1, i2
 
-    if (.not. c_associated(c_loc(fortran_array))) then
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      .not. c_associated(c_loc(fortran_array)) &
+      .or. &
+      transfer(c_loc(fortran_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
       dace_array_ptr = c_null_ptr
       return
     end if
@@ -1176,6 +1191,16 @@ def generate_copy_back_subroutine_struct_array(struct_array: dace.data.Container
       return
     end if
 
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(fortran_struct_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      if (dace_struct_array_ptr /= c_null_ptr) then
+        print *, "copy_back_{base_name}_{rank}d_array: Invalid allocation of {base_name} array by DaCe (ff..fff8)!"
+      end if
+      return
+    end if
+
     call c_f_pointer(dace_struct_array_ptr, dace_struct_array_rich, shape=shape(fortran_struct_array))
 
 {ArrayLoopHelper.loop_begins(rank, "fortran_struct_array")}
@@ -1208,6 +1233,16 @@ def generate_copy_back_subroutine_t_tangent_vectors_struct_array(struct_array: d
     if (.not. c_associated(c_loc(fortran_struct_array))) then
       if (c_associated(dace_struct_array_ptr)) then
         print *, "copy_back_t_tangent_vectors_3d_array: Invalid allocation of t_tangent_vectors array by DaCe!"
+      end if
+      return
+    end if
+
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(fortran_struct_array), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      if (dace_struct_array_ptr /= c_null_ptr) then
+        print *, "copy_back_{base_name}_{rank}d_array: Invalid allocation of {base_name} array by DaCe (ff..fff8)!"
       end if
       return
     end if
@@ -1432,6 +1467,24 @@ def generate_array_comparison_subroutine_array(array: dace.data.Array) -> str:
           "Verification failed for array '", &
             trim(array_expr), &
           "':"//char(10)//"    - ref was NULL, but actual was not!"
+        print *, "compare_{dtype.to_string()}_{rank}d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
         print *, "compare_{dtype.to_string()}_{rank}d_array"
         print *, trim(message_text)
       end if
@@ -1800,6 +1853,24 @@ def generate_array_comparison_subroutine_struct_array(struct_array: dace.data.Co
       return
     end if
 
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(struct_array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
+        print *, "compare_{base_name}_{rank}d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
     result = .true.
 
     call c_f_pointer(actual, actual_rich, shape=shape(ref))
@@ -1850,6 +1921,24 @@ def generate_array_comparison_subroutine_t_tangent_vectors_struct_array(struct_a
           "Verification failed for array '", &
             trim(struct_array_expr), &
           "':"//char(10)//"    - ref was NULL, but actual was not!"
+        print *, "compare_t_tangent_vectors_3d_array"
+        print *, trim(message_text)
+      end if
+
+      return
+    end if
+
+    ! ff..fff8 seems to be some kind of magic value for nvfortran (possibly together with OpenACC)
+    if ( &
+      transfer(c_loc(ref), mold=int(1, kind=c_intptr_t)) == int(Z'fffffffffffffff8', kind=c_intptr_t) &
+    ) then
+      result = actual == c_null_ptr
+
+      if (.not. result) then
+        write (message_text, '(a,a,a)') &
+          "Verification failed for array '", &
+            trim(struct_array_expr), &
+          "':"//char(10)//"    - ref was NULL, but actual was not (ff..fff8)!"
         print *, "compare_t_tangent_vectors_3d_array"
         print *, trim(message_text)
       end if
