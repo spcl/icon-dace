@@ -117,6 +117,9 @@ MODULE mo_solve_nonhydro
   SUBROUTINE solve_nh (p_nh, p_patch, p_int, prep_adv, nnow, nnew, l_init, l_recompute, lsave_mflx, &
                        lprep_adv, lclean_mflx, idyn_timestep, jstep, dtime, lacc)
 
+! SOLVE_NH PART TIMERS : PRATYAI
+real :: t0, t1
+
     TYPE(t_nh_state),    TARGET, INTENT(INOUT) :: p_nh
     TYPE(t_int_state),   TARGET, INTENT(IN)    :: p_int
     TYPE(t_patch),       TARGET, INTENT(INOUT) :: p_patch
@@ -443,6 +446,9 @@ MODULE mo_solve_nonhydro
 
     ! start `DO istep = 1, 2` unrolled with `istep == 1`
     istep = 1
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t0)
 
 #if defined(DACE_SUBST_ENABLE)
 #if defined(DACE_SUBST_VERIFY)
@@ -1951,6 +1957,7 @@ MODULE mo_solve_nonhydro
 #endif
 
 #if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+
   CALL verify_solve_nh_predictor_pre( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -2083,6 +2090,11 @@ MODULE mo_solve_nonhydro
     l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
     l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
   )
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t1)
+print *, 'PREPRE (s): ', (t1-t0)
+
 #endif
 
       !-------------------------
@@ -2103,6 +2115,9 @@ MODULE mo_solve_nonhydro
       ENDIF
       ! end communication phase
       !-------------------------
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t0)
 
 #if defined(DACE_SUBST_ENABLE)
 #if defined(DACE_SUBST_VERIFY)
@@ -3466,6 +3481,7 @@ MODULE mo_solve_nonhydro
 #endif
 
 #if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+
   CALL verify_solve_nh_predictor_post( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -3598,7 +3614,12 @@ MODULE mo_solve_nonhydro
     l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
     l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
   )
+
 #endif
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t1)
+print *, 'PREPOST (s): ', (t1-t0)
 
       !-------------------------
       ! communication phase
@@ -3634,6 +3655,9 @@ MODULE mo_solve_nonhydro
 
     ! start `DO istep = 1, 2` unrolled with `istep == 2`
     istep = 2
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t0)
 
 #if defined(DACE_SUBST_ENABLE)
 #if defined(DACE_SUBST_VERIFY)
@@ -5141,6 +5165,7 @@ MODULE mo_solve_nonhydro
 #endif
 
 #if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+
   CALL verify_solve_nh_corrector_pre( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -5273,7 +5298,12 @@ MODULE mo_solve_nonhydro
     l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
     l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
   )
+
 #endif
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t1)
+print *, 'CORPRE (s): ', (t1-t0)
 
       !-------------------------
       ! communication phase
@@ -5292,6 +5322,9 @@ MODULE mo_solve_nonhydro
       ENDIF
       ! end communication phase
       !-------------------------
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t0)
 
 #if defined(DACE_SUBST_ENABLE)
 #if defined(DACE_SUBST_VERIFY)
@@ -6655,6 +6688,7 @@ MODULE mo_solve_nonhydro
 #endif
 
 #if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+
   CALL verify_solve_nh_corrector_post( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -6787,7 +6821,12 @@ MODULE mo_solve_nonhydro
     l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
     l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
   )
+
 #endif
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t1)
+print *, 'CORPOST (s): ', (t1-t0)
 
       !-------------------------
       ! communication phase
