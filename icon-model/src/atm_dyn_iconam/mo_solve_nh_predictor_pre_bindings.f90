@@ -11973,6 +11973,8 @@ contains
     z_w_backtraj, &
     zf &
   )
+! SOLVE_NH PART TIMERS : PRATYAI
+real :: t0, t1
     real(kind=c_double), dimension(:), target :: bdy_divdamp
     real(kind=c_double), dimension(:), target :: enh_divdamp_fac
     type(t_int_state), target :: p_int
@@ -12896,6 +12898,9 @@ contains
     )
     end if
 
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t0)
+
     call dace_program_solve_nh_predictor_pre( &
       state = dace_state, &
       bdy_divdamp = copy_or_ptr_bdy_divdamp, &
@@ -13031,6 +13036,10 @@ contains
       z_w_backtraj = z_w_backtraj, &
       zf = zf &
     )
+
+! SOLVE_NH PART TIMERS : PRATYAI
+call cpu_time(t1)
+print *, 'PREPRE INTERNAL (s): ', (t1-t0)
 
     call copy_back_global_data_type(copy_or_ptr_global_data)
     call copy_back_t_int_state(p_int, copy_or_ptr_p_int)
