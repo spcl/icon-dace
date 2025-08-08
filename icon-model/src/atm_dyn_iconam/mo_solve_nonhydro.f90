@@ -1957,7 +1957,6 @@ call cpu_time(t0)
 #endif
 
 #if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
-
   CALL verify_solve_nh_predictor_pre( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -2091,11 +2090,11 @@ call cpu_time(t0)
     l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
   )
 
+#endif
+
 ! SOLVE_NH PART TIMERS : PRATYAI
 call cpu_time(t1)
 print *, 'PREPRE (s): ', (t1-t0)
-
-#endif
 
       !-------------------------
       ! communication phase
@@ -3481,7 +3480,6 @@ call cpu_time(t0)
 #endif
 
 #if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
-
   CALL verify_solve_nh_predictor_post( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -3614,7 +3612,6 @@ call cpu_time(t0)
     l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
     l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
   )
-
 #endif
 
 ! SOLVE_NH PART TIMERS : PRATYAI
@@ -5165,7 +5162,6 @@ call cpu_time(t0)
 #endif
 
 #if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
-
   CALL verify_solve_nh_corrector_pre( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -5298,7 +5294,6 @@ call cpu_time(t0)
     l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
     l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
   )
-
 #endif
 
 ! SOLVE_NH PART TIMERS : PRATYAI
@@ -6688,7 +6683,6 @@ call cpu_time(t0)
 #endif
 
 #if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
-
   CALL verify_solve_nh_corrector_post( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -6821,7 +6815,6 @@ call cpu_time(t0)
     l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
     l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
   )
-
 #endif
 
 ! SOLVE_NH PART TIMERS : PRATYAI
