@@ -19,6 +19,7 @@
 
 MODULE mo_solve_nonhydro
 
+use iso_c_binding, only: c_int
 #define DACE_SUBST_PREPRE DACE_SUBST_ENABLE
 #define DACE_SUBST_PREPOST DACE_SUBST_ENABLE
 #define DACE_SUBST_CORPRE DACE_SUBST_ENABLE
@@ -468,15 +469,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -586,10 +587,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
   !PRINT *, "Exit solve_nh_predictor_pre"
 #else
@@ -603,15 +604,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -721,10 +722,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
   !PRINT *, "Exit solve_nh_predictor_pre"
 #endif
@@ -1972,15 +1973,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -2090,10 +2091,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
 
 #endif
@@ -2136,15 +2137,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -2254,10 +2255,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
   !PRINT *, "Exit solve_nh_predictor_post"
 #else
@@ -2271,15 +2272,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -2389,10 +2390,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
   !PRINT *, "Exit solve_nh_predictor_post"
 #endif
@@ -3495,15 +3496,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -3613,10 +3614,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
 #endif
 
@@ -3674,15 +3675,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -3792,10 +3793,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
   !PRINT *, "Exit solve_nh_corrector_pre"
 #else
@@ -3809,15 +3810,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -3927,10 +3928,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
   !PRINT *, "Exit solve_nh_corrector_pre"
 #endif
@@ -5177,15 +5178,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -5295,10 +5296,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
 #endif
 
@@ -5339,15 +5340,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -5457,10 +5458,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
   !PRINT *, "Exit solve_nh_corrector_post"
 #else
@@ -5474,15 +5475,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -5592,10 +5593,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
   !PRINT *, "Exit solve_nh_corrector_post"
 #endif
@@ -6698,15 +6699,15 @@ call cpu_time(t0)
     prep_adv = prep_adv, &
     nnow = nnow, &
     nnew = nnew, &
-    l_init = transfer(l_init, mold=int(1, kind=4)), &
-    l_recompute = transfer(l_recompute, mold=int(1, kind=4)), &
-    lsave_mflx = transfer(lsave_mflx, mold=int(1, kind=4)), &
-    lprep_adv = transfer(lprep_adv, mold=int(1, kind=4)), &
-    lclean_mflx = transfer(lclean_mflx, mold=int(1, kind=4)), &
+    l_init = merge(int(1, kind=c_int), int(0, kind=c_int), l_init), &
+    l_recompute = merge(int(1, kind=c_int), int(0, kind=c_int), l_recompute), &
+    lsave_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lsave_mflx), &
+    lprep_adv = merge(int(1, kind=c_int), int(0, kind=c_int), lprep_adv), &
+    lclean_mflx = merge(int(1, kind=c_int), int(0, kind=c_int), lclean_mflx), &
     idyn_timestep = idyn_timestep, &
     jstep = jstep, &
     dtime = dtime, &
-    lacc = transfer(lacc, mold=int(1, kind=4)), &
+    lacc = merge(int(1, kind=c_int), int(0, kind=c_int), lacc), &
     jb = jb, &
     jk = jk, &
     jc = jc, &
@@ -6816,10 +6817,10 @@ call cpu_time(t0)
     npromz_gradp = npromz_gradp, &
     nlen_gradp = nlen_gradp, &
     jk_start = jk_start, &
-    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
-    lvn_pos = transfer(lvn_pos, mold=int(1, kind=4)), &
-    l_vert_nested = transfer(l_vert_nested, mold=int(1, kind=4)), &
-    l_child_vertnest = transfer(l_child_vertnest, mold=int(1, kind=4)) &
+    lvn_only = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_only), &
+    lvn_pos = merge(int(1, kind=c_int), int(0, kind=c_int), lvn_pos), &
+    l_vert_nested = merge(int(1, kind=c_int), int(0, kind=c_int), l_vert_nested), &
+    l_child_vertnest = merge(int(1, kind=c_int), int(0, kind=c_int), l_child_vertnest) &
   )
 #endif
 
