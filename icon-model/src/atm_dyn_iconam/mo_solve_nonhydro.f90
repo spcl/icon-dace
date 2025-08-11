@@ -18,6 +18,12 @@
 !----------------------------
 
 MODULE mo_solve_nonhydro
+
+#define DACE_SUBST_PREPRE DACE_SUBST_ENABLE
+#define DACE_SUBST_PREPOST DACE_SUBST_ENABLE
+#define DACE_SUBST_CORPRE DACE_SUBST_ENABLE
+#define DACE_SUBST_CORPOST DACE_SUBST_ENABLE
+
 #if defined(DACE_SUBST_ENABLE)
   USE mo_solve_nh_predictor_pre_bindings, ONLY: &
     run_solve_nh_predictor_pre, &
@@ -450,7 +456,7 @@ real :: t0, t1
 ! SOLVE_NH PART TIMERS : PRATYAI
 call cpu_time(t0)
 
-#if defined(DACE_SUBST_ENABLE)
+#if defined(DACE_SUBST_PREPRE)
 #if defined(DACE_SUBST_VERIFY)
   !PRINT *, "Enter solve_nh_predictor_pre"
   CALL run_solve_nh_predictor_pre_verification( &
@@ -724,7 +730,7 @@ call cpu_time(t0)
 #endif
 #endif
 
-#if !defined(DACE_SUBST_ENABLE) || defined(DACE_SUBST_VERIFY)
+#if !defined(DACE_SUBST_PREPRE) || defined(DACE_SUBST_VERIFY)
       ! start SDFG `solve_nh_predictor_pre`
 
       IF (istep == 1) THEN ! predictor step
@@ -1956,7 +1962,7 @@ call cpu_time(t0)
       ! end SDFG `solve_nh_predictor_pre`
 #endif
 
-#if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+#if defined(DACE_SUBST_PREPRE) && defined(DACE_SUBST_VERIFY)
   CALL verify_solve_nh_predictor_pre( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -2118,7 +2124,7 @@ print *, 'PREPRE (s): ', (t1-t0)
 ! SOLVE_NH PART TIMERS : PRATYAI
 call cpu_time(t0)
 
-#if defined(DACE_SUBST_ENABLE)
+#if defined(DACE_SUBST_PREPOST)
 #if defined(DACE_SUBST_VERIFY)
   !PRINT *, "Enter solve_nh_predictor_post"
   CALL run_solve_nh_predictor_post_verification( &
@@ -2392,7 +2398,7 @@ call cpu_time(t0)
 #endif
 #endif
 
-#if !defined(DACE_SUBST_ENABLE) || defined(DACE_SUBST_VERIFY)
+#if !defined(DACE_SUBST_PREPOST) || defined(DACE_SUBST_VERIFY)
       ! start SDFG `solve_nh_predictor_post`
 
       IF (timers_level > 5) THEN
@@ -3479,7 +3485,7 @@ call cpu_time(t0)
       ! end SDFG `solve_nh_predictor_post`
 #endif
 
-#if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+#if defined(DACE_SUBST_PREPOST) && defined(DACE_SUBST_VERIFY)
   CALL verify_solve_nh_predictor_post( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -3656,7 +3662,7 @@ print *, 'PREPOST (s): ', (t1-t0)
 ! SOLVE_NH PART TIMERS : PRATYAI
 call cpu_time(t0)
 
-#if defined(DACE_SUBST_ENABLE)
+#if defined(DACE_SUBST_CORPRE)
 #if defined(DACE_SUBST_VERIFY)
   !PRINT *, "Enter solve_nh_corrector_pre"
   CALL run_solve_nh_corrector_pre_verification( &
@@ -3930,7 +3936,7 @@ call cpu_time(t0)
 #endif
 #endif
 
-#if !defined(DACE_SUBST_ENABLE) || defined(DACE_SUBST_VERIFY)
+#if !defined(DACE_SUBST_CORPRE) || defined(DACE_SUBST_VERIFY)
       ! start SDFG `solve_nh_corrector_pre`
 
       IF (istep == 1) THEN ! predictor step
@@ -5161,7 +5167,7 @@ call cpu_time(t0)
       ! end SDFG `solve_nh_corrector_pre`
 #endif
 
-#if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+#if defined(DACE_SUBST_CORPRE) && defined(DACE_SUBST_VERIFY)
   CALL verify_solve_nh_corrector_pre( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
@@ -5321,7 +5327,7 @@ print *, 'CORPRE (s): ', (t1-t0)
 ! SOLVE_NH PART TIMERS : PRATYAI
 call cpu_time(t0)
 
-#if defined(DACE_SUBST_ENABLE)
+#if defined(DACE_SUBST_CORPOST)
 #if defined(DACE_SUBST_VERIFY)
   !PRINT *, "Enter solve_nh_corrector_post"
   CALL run_solve_nh_corrector_post_verification( &
@@ -5595,7 +5601,7 @@ call cpu_time(t0)
 #endif
 #endif
 
-#if !defined(DACE_SUBST_ENABLE) || defined(DACE_SUBST_VERIFY)
+#if !defined(DACE_SUBST_CORPOST) || defined(DACE_SUBST_VERIFY)
       ! start SDFG `solve_nh_corrector_post`
 
       IF (timers_level > 5) THEN
@@ -6682,7 +6688,7 @@ call cpu_time(t0)
       ! end SDFG `solve_nh_corrector_post`
 #endif
 
-#if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+#if defined(DACE_SUBST_CORPOST) && defined(DACE_SUBST_VERIFY)
   CALL verify_solve_nh_corrector_post( &
     p_nh = p_nh, &
     p_nh_prog_nnow = p_nh % prog(nnow), &
