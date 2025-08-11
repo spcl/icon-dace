@@ -69,7 +69,6 @@ module mo_solve_nh_predictor_pre_bindings
   public :: dace_program_solve_nh_predictor_pre
 
 
-  type(c_ptr) :: properly_cached_t_patch = c_null_ptr
 
 
   logical :: is_initialized = .false.
@@ -3149,12 +3148,7 @@ contains
     type(dace_t_patch), pointer :: dace_rich_obj
     type(dace_t_patch) :: dace_c_obj
 
-    if (properly_cached_t_patch /= c_null_ptr) then
-      return properly_cached_t_patch
-    end if
-
     dace_obj_ptr = malloc(c_sizeof(dace_c_obj))
-    properly_cached_t_patch = dace_obj_ptr
     call c_f_pointer(dace_obj_ptr, dace_rich_obj)
 
     dace_rich_obj%id = fortran_obj%id
@@ -4786,9 +4780,6 @@ contains
 
     type(dace_t_patch), pointer :: dace_rich_obj
 
-    ! No writes, so no copy back
-    return
-
     if (.not. c_associated(c_loc(fortran_obj))) then
       if (c_associated(dace_obj_ptr)) then
         print *, "copy_back_t_patch: Invalid allocation of t_patch by DaCe!"
@@ -4811,8 +4802,7 @@ contains
     call copy_back_t_grid_vertices(fortran_obj%verts, dace_rich_obj%verts)
 
 
-    ! Keep for proper caching
-    !call free(dace_obj_ptr)
+    call free(dace_obj_ptr)
 
   end subroutine copy_back_t_patch
   subroutine copy_back_t_grid_cells(fortran_obj, dace_obj_ptr)
@@ -8764,8 +8754,7 @@ contains
     result = result .and. local_result
 
 
-    ! Keep for proper caching
-    !call free(actual)
+    call free(actual)
 
   end subroutine compare_t_patch_struct
 
