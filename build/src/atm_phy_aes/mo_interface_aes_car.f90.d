@@ -1,0 +1,3 @@
+src/atm_phy_aes/mo_interface_aes_car.o src/atm_phy_aes/mo_interface_aes_car.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_aes/mo_interface_aes_car.f90
+mod/mo_interface_aes_car.mod.proxy: src/atm_phy_aes/mo_interface_aes_car.o
+src/atm_phy_aes/mo_interface_aes_car.o src/atm_phy_aes/mo_interface_aes_car.o: mod/mo_aes_phy_memory.mod.proxy mod/mo_aes_phy_config.mod.proxy mod/mo_timer.mod.proxy mod/mo_kind.mod.proxy mod/mo_run_config.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_lcariolle.mod.proxy mod/mo_bcs_time_interpolation.mod.proxy mod/mo_aes_phy_dims.mod.proxy

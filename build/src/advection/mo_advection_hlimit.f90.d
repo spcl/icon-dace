@@ -1,0 +1,3 @@
+src/advection/mo_advection_hlimit.o src/advection/mo_advection_hlimit.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/advection/mo_advection_hlimit.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_advection_hlimit.mod.proxy: src/advection/mo_advection_hlimit.o
+src/advection/mo_advection_hlimit.o src/advection/mo_advection_hlimit.o: mod/mo_model_domain.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_advection_utils.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_impl_constants_grf.mod.proxy mod/mo_intp_data_strc.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_sync.mod.proxy

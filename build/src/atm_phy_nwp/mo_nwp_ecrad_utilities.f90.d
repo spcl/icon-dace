@@ -1,0 +1,3 @@
+src/atm_phy_nwp/mo_nwp_ecrad_utilities.o src/atm_phy_nwp/mo_nwp_ecrad_utilities.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_nwp/mo_nwp_ecrad_utilities.f90
+mod/mo_nwp_ecrad_utilities.mod.proxy: src/atm_phy_nwp/mo_nwp_ecrad_utilities.o
+src/atm_phy_nwp/mo_nwp_ecrad_utilities.o src/atm_phy_nwp/mo_nwp_ecrad_utilities.o: mod/mo_bc_greenhouse_gases.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_scm_nml.mod.proxy mod/mo_atm_phy_nwp_config.mod.proxy mod/mo_radiation_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_nwp_tuning_config.mod.proxy

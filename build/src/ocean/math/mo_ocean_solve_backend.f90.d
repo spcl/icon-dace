@@ -1,0 +1,3 @@
+src/ocean/math/mo_ocean_solve_backend.o src/ocean/math/mo_ocean_solve_backend.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/math/mo_ocean_solve_backend.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/icon_definitions.inc
+mod/mo_ocean_solve_backend.mod.proxy: src/ocean/math/mo_ocean_solve_backend.o
+src/ocean/math/mo_ocean_solve_backend.o src/ocean/math/mo_ocean_solve_backend.o: mod/mo_run_config.mod.proxy mod/mo_timer.mod.proxy mod/mo_ocean_solve_aux.mod.proxy mod/mo_kind.mod.proxy mod/mo_ocean_solve_lhs.mod.proxy mod/mo_ocean_solve_transfer.mod.proxy mod/mo_ocean_solve_lhs_type.mod.proxy mod/mo_mpi.mod.proxy

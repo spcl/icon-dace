@@ -1,0 +1,3 @@
+src/io/restart/mo_multifile_restart_collector.o src/io/restart/mo_multifile_restart_collector.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/io/restart/mo_multifile_restart_collector.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/handle_mpi_error.inc /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_multifile_restart_collector.mod.proxy: src/io/restart/mo_multifile_restart_collector.o
+src/io/restart/mo_multifile_restart_collector.o src/io/restart/mo_multifile_restart_collector.o: mod/mo_multifile_restart_util.mod.proxy mod/mo_mpi.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_kind.mod.proxy mod/mo_decomposition_tools.mod.proxy mod/mo_communication.mod.proxy mod/mo_timer.mod.proxy

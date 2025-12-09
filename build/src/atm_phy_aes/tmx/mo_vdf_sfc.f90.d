@@ -1,0 +1,3 @@
+src/atm_phy_aes/tmx/mo_vdf_sfc.o src/atm_phy_aes/tmx/mo_vdf_sfc.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_aes/tmx/mo_vdf_sfc.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_vdf_sfc.mod.proxy: src/atm_phy_aes/tmx/mo_vdf_sfc.o
+src/atm_phy_aes/tmx/mo_vdf_sfc.o src/atm_phy_aes/tmx/mo_vdf_sfc.o: mod/mo_variable_list.mod.proxy mod/mo_tmx_field_class.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_master_config.mod.proxy mod/mo_index_list.mod.proxy mod/mo_vdf_diag_smag.mod.proxy mod/mo_tmx_process_class.mod.proxy mod/mo_sea_ice_nml.mod.proxy mod/mo_variable.mod.proxy mod/mo_tmx_surface_interface.mod.proxy mod/mo_kind.mod.proxy

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e
+
+exit 77
+#exit 77
+
+RUBYLIB="/scratch/pmazumde/paper-icon-dace/icon-dace/build/externals/cdi/interfaces/ruby/.libs:${RUBYLIB}"; export RUBYLIB
+${SHELL} '/scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/externals/cdi/config/missing' ruby '/scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/externals/cdi/interfaces/ruby/test.rb' '/scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/externals/cdi/interfaces/testdata/mulval.nc'

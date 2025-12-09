@@ -1,0 +1,3 @@
+src/testcases/mo_nh_testcase_interface.o src/testcases/mo_nh_testcase_interface.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/testcases/mo_nh_testcase_interface.f90
+mod/mo_nh_testcase_interface.mod.proxy: src/testcases/mo_nh_testcase_interface.o
+src/testcases/mo_nh_testcase_interface.o src/testcases/mo_nh_testcase_interface.o: mod/mo_dynamics_config.mod.proxy mod/mo_nh_df_test.mod.proxy mod/mo_nonhydrostatic_config.mod.proxy mod/mo_integrate_density_pa.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_nh_dcmip_hadley.mod.proxy mod/mo_nonhydro_types.mod.proxy mod/mo_intp_data_strc.mod.proxy mod/mo_kind.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_nh_pa_test.mod.proxy mod/mo_nh_testcases_nml.mod.proxy

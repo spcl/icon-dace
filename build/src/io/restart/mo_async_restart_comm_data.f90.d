@@ -1,0 +1,2 @@
+src/io/restart/mo_async_restart_comm_data.o src/io/restart/mo_async_restart_comm_data.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/io/restart/mo_async_restart_comm_data.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/icon_contiguous_defines.inc /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/handle_mpi_error.inc /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_async_restart_comm_data.mod.proxy: src/io/restart/mo_async_restart_comm_data.o

@@ -1,0 +1,3 @@
+src/sea_ice/dynamics_fem/mo_ice_fem_advection.o src/sea_ice/dynamics_fem/mo_ice_fem_advection.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/sea_ice/dynamics_fem/mo_ice_fem_advection.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_ice_fem_advection.mod.proxy: src/sea_ice/dynamics_fem/mo_ice_fem_advection.o
+src/sea_ice/dynamics_fem/mo_ice_fem_advection.o src/sea_ice/dynamics_fem/mo_ice_fem_advection.o: mod/mo_ice_fem_mesh.mod.proxy mod/mo_ice_fem_types.mod.proxy mod/mo_kind.mod.proxy mod/mo_ice_fem_icon_init.mod.proxy mod/mo_run_config.mod.proxy

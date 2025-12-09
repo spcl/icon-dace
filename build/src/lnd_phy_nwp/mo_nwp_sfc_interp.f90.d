@@ -1,0 +1,3 @@
+src/lnd_phy_nwp/mo_nwp_sfc_interp.o src/lnd_phy_nwp/mo_nwp_sfc_interp.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/lnd_phy_nwp/mo_nwp_sfc_interp.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/consistent_fma.inc
+mod/mo_nwp_sfc_interp.mod.proxy: src/lnd_phy_nwp/mo_nwp_sfc_interp.o
+src/lnd_phy_nwp/mo_nwp_sfc_interp.o src/lnd_phy_nwp/mo_nwp_sfc_interp.o: mod/mo_model_domain.mod.proxy mod/mo_run_config.mod.proxy mod/mo_physical_constants.mod.proxy mod/sfc_terra_data.mod.proxy mod/mo_lnd_nwp_config.mod.proxy mod/mo_idx_list.mod.proxy mod/mo_kind.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_ext_data_types.mod.proxy mod/mo_initicon_types.mod.proxy

@@ -1,0 +1,156 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#
+# Post-processing for a simulation from 1979 to 2008 (30 years)
+#
+# Marco Giorgetta, MPI-M, 2015-12-10
+# 
+#-----------------------------------------------------------------------------
+
+echo ' '
+echo '-------------------------------------------------------------------'
+echo $0
+date
+echo '-------------------------------------------------------------------'
+echo ' '
+
+call_dir=$( pwd )
+
+#--------------------------------------------------------------------------------------------------
+
+# (1) Variables provided by the scripting mechanism
+
+# EXPNAME                       = name of experiment in 'exp.<name>'
+# basedir                       = base directory, where src/, run/ etc exist
+
+#--------------------------------------------------------------------------------------------------
+
+# (2) Prepare post-processing
+
+expname=$EXPNAME
+exp_dir=${basedir}/experiments/${expname}
+post_dir=${exp_dir}_post
+echo "expname  = $expname"
+echo "exp_dir  = $exp_dir"
+echo "post_dir = $post_dir"
+if [[ ! -d $post_dir ]]; then
+  mkdir $post_dir
+  echo "  created $post_dir"
+fi
+echo " "
+
+# first and last dates/times included in the monthly means
+first_datetime="1979-01-01T00:00:00" ; last_datetime="2014-12-31T23:59:59"
+echo "first_datetime=$first_datetime ; last_datetime=$last_datetime"
+echo " "
+
+# make list of file types
+cd $exp_dir
+search_date=19790101T000000Z
+file_type_list=''
+for file in ${expname}_*_${search_date}.nc; do
+  file_type=${file#${expname}_}                # strip leading experiment name
+  file_type=${file_type%_$search_date.nc}      # strip trailing time stamp and ".nc"
+  file_type_list="$file_type_list $file_type"  # add this file type to the list
+done
+#
+echo "file_type_list = $file_type_list"
+echo " "
+
+#--------------------------------------------------------------------------------------------------
+
+# (3) Post-processing
+
+echo '==================================================================='
+echo ' '
+echo 'monthly means'
+
+cd $exp_dir
+for file_type in $file_type_list; do
+
+  # use "cdo -r ..." for relative time axis for GrADS etc.
+  rm -rf monmean_${expname}_${file_type}.nc
+  for file in ${expname}_${file_type}_????????T??????Z.nc; do
+    cdo -r cat                                               \
+           -monmean                                          \
+           -seldate,${first_datetime},${last_datetime} $file \
+           $post_dir/monmean_${expname}_${file_type}.nc
+  done
+  #
+done
+
+echo '==================================================================='
+echo ' '
+echo 'remap monthly means'
+echo '-------------------------------------------------------------------'
+echo ' '
+echo 'remap horizontally to the t63 grid'
+
+cd $post_dir
+for file in monmean_${expname}_*.nc; do
+  cdo -P 12 remapycon,t63grid $file t63grid_$file
+done
+
+echo '-------------------------------------------------------------------'
+echo ' '
+echo 'remap to pressure levels'
+
+# define pressure levels in [Pa]
+plevels="1,2,5,10,20,30,50,70,100,200,300,500,700,1000,2000,3000,5000,7000,10000,15000,20000,25000,30000,40000,50000,60000,70000,77500,85000,92500,100000"
+echo "pressure levels for vertical interpolation of 3d variables"
+echo "plevels = $plevels"
+echo " "
+
+cd $post_dir
+for file in t63grid_monmean_${expname}_*_3d_ml.nc; do
+  cdo ap2pl,$plevels $file ap2pl_$file
+  rm $file
+done
+
+echo '==================================================================='
+echo ' '
+echo 'spatial means'
+echo '-------------------------------------------------------------------'
+echo 'field mean of monthly mean data'
+
+cd $post_dir
+for file in monmean_${expname}_*.nc; do
+  cdo fldmean ${file} fldmean_${file}
+done
+
+echo '-------------------------------------------------------------------'
+echo 'zonal mean of remapped monthly mean data'
+
+cd $post_dir
+for file in *t63grid_monmean_${expname}_*.nc; do
+    cdo zonmean ${file} zonmean_${file}
+done
+
+echo '==================================================================='
+echo ' '
+echo 'time means'
+echo '-------------------------------------------------------------------'
+
+cd $post_dir
+for file in *monmean_${expname}_*.nc ; do
+  cdo timmean $file timmean_$file
+done
+
+echo '==================================================================='
+echo ' '
+cd $call_dir
+date
+echo '-------------------------------------------------------------------'
+
+#--------------------------------------------------------------------------------------------------

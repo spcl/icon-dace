@@ -1,0 +1,3 @@
+src/parallel_infrastructure/mo_communication.o src/parallel_infrastructure/mo_communication.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/parallel_infrastructure/mo_communication.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/icon_definitions.inc
+mod/mo_communication.mod.proxy: src/parallel_infrastructure/mo_communication.o
+src/parallel_infrastructure/mo_communication.o src/parallel_infrastructure/mo_communication.o: mod/mo_scatter_pattern_base.mod.proxy mod/mo_scatter_pattern_scatter.mod.proxy mod/mo_communication_types.mod.proxy mod/mo_mpi.mod.proxy mod/mo_kind.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_parallel_config.mod.proxy

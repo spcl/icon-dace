@@ -1,0 +1,3 @@
+src/data_assimilation/interfaces/mo_emvorado_interface.o src/data_assimilation/interfaces/mo_emvorado_interface.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/data_assimilation/interfaces/mo_emvorado_interface.f90
+mod/mo_emvorado_interface.mod.proxy: src/data_assimilation/interfaces/mo_emvorado_interface.o
+src/data_assimilation/interfaces/mo_emvorado_interface.o src/data_assimilation/interfaces/mo_emvorado_interface.o: mod/mo_model_domain.mod.proxy mod/mo_run_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_emvorado_config.mod.proxy mod/mo_util_mtime.mod.proxy mod/mo_timer.mod.proxy mod/mo_real_timer.mod.proxy

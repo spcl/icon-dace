@@ -1,0 +1,3 @@
+src/testbed/mo_test_netcdf_read.o src/testbed/mo_test_netcdf_read.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/testbed/mo_test_netcdf_read.f90
+mod/mo_test_netcdf_read.mod.proxy: src/testbed/mo_test_netcdf_read.o
+src/testbed/mo_test_netcdf_read.o src/testbed/mo_test_netcdf_read.o: mod/mo_kind.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_netcdf.mod.proxy mod/mo_read_interface.mod.proxy mod/mo_atmo_model.mod.proxy mod/mo_icon_testbed_config.mod.proxy mod/mo_timer.mod.proxy mod/mo_communication.mod.proxy mod/mo_netcdf_errhandler.mod.proxy mod/mo_mpi.mod.proxy mod/mo_model_domain.mod.proxy

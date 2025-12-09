@@ -1,0 +1,3 @@
+src/waves/diagnostics/mo_wave_diagnostics.o src/waves/diagnostics/mo_wave_diagnostics.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/waves/diagnostics/mo_wave_diagnostics.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_wave_diagnostics.mod.proxy: src/waves/diagnostics/mo_wave_diagnostics.o
+src/waves/diagnostics/mo_wave_diagnostics.o src/waves/diagnostics/mo_wave_diagnostics.o: mod/mo_loopindices.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_wave_config.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_wave_constants.mod.proxy mod/mo_wave_types.mod.proxy mod/mo_kind.mod.proxy

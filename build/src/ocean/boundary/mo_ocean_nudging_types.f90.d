@@ -1,0 +1,3 @@
+src/ocean/boundary/mo_ocean_nudging_types.o src/ocean/boundary/mo_ocean_nudging_types.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/boundary/mo_ocean_nudging_types.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/iconfor_dsl_definitions.inc /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/icon_definitions.inc /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_ocean_nudging_types.mod.proxy: src/ocean/boundary/mo_ocean_nudging_types.o
+src/ocean/boundary/mo_ocean_nudging_types.o src/ocean/boundary/mo_ocean_nudging_types.o: mod/mo_kind.mod.proxy

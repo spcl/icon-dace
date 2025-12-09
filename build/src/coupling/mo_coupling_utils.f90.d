@@ -1,0 +1,3 @@
+src/coupling/mo_coupling_utils.o src/coupling/mo_coupling_utils.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/coupling/mo_coupling_utils.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_coupling_utils.mod.proxy: src/coupling/mo_coupling_utils.o
+src/coupling/mo_coupling_utils.o src/coupling/mo_coupling_utils.o: mod/mo_model_domain.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_timer.mod.proxy mod/mo_decomposition_tools.mod.proxy mod/mo_master_control.mod.proxy mod/mo_run_config.mod.proxy mod/mo_time_config.mod.proxy mod/mo_mpi.mod.proxy

@@ -1,0 +1,3 @@
+src/atm_phy_aes/mo_atm_energy_diag.o src/atm_phy_aes/mo_atm_energy_diag.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_aes/mo_atm_energy_diag.f90
+mod/mo_atm_energy_diag.mod.proxy: src/atm_phy_aes/mo_atm_energy_diag.o
+src/atm_phy_aes/mo_atm_energy_diag.o src/atm_phy_aes/mo_atm_energy_diag.o: mod/mo_model_domain.mod.proxy mod/mo_aes_phy_memory.mod.proxy mod/mo_atm_energy_memory.mod.proxy mod/mo_run_config.mod.proxy mod/mo_timer.mod.proxy mod/mo_aes_thermo.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_statistics.mod.proxy mod/mo_dynamics_config.mod.proxy mod/mo_copy.mod.proxy mod/mo_nonhydro_state.mod.proxy mod/mo_kind.mod.proxy

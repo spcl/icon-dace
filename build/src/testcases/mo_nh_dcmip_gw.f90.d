@@ -1,0 +1,3 @@
+src/testcases/mo_nh_dcmip_gw.o src/testcases/mo_nh_dcmip_gw.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/testcases/mo_nh_dcmip_gw.f90
+mod/mo_nh_dcmip_gw.mod.proxy: src/testcases/mo_nh_dcmip_gw.o
+src/testcases/mo_nh_dcmip_gw.o src/testcases/mo_nh_dcmip_gw.o: mod/mo_nonhydro_types.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_io_config.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_dynamics_config.mod.proxy mod/mo_hydro_adjust.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_intp_data_strc.mod.proxy mod/mo_math_divrot.mod.proxy

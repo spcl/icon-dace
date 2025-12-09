@@ -1,0 +1,3 @@
+src/coupling/mo_atmo_wave_coupling.o src/coupling/mo_atmo_wave_coupling.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/coupling/mo_atmo_wave_coupling.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_atmo_wave_coupling.mod.proxy: src/coupling/mo_atmo_wave_coupling.o
+src/coupling/mo_atmo_wave_coupling.o src/coupling/mo_atmo_wave_coupling.o: mod/mo_physical_constants.mod.proxy mod/mo_lnd_nwp_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_idx_list.mod.proxy mod/mo_coupling_utils.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_kind.mod.proxy

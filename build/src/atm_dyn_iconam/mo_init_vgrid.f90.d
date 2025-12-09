@@ -1,0 +1,3 @@
+src/atm_dyn_iconam/mo_init_vgrid.o src/atm_dyn_iconam/mo_init_vgrid.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_dyn_iconam/mo_init_vgrid.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_init_vgrid.mod.proxy: src/atm_dyn_iconam/mo_init_vgrid.o
+src/atm_dyn_iconam/mo_init_vgrid.o src/atm_dyn_iconam/mo_init_vgrid.o: mod/mo_nonhydrostatic_config.mod.proxy mod/mo_vertical_coord_table.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_run_config.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_sleve_config.mod.proxy

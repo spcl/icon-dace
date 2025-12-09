@@ -1,0 +1,3 @@
+src/coupling/mo_atmo_o3_provider_coupling.o src/coupling/mo_atmo_o3_provider_coupling.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/coupling/mo_atmo_o3_provider_coupling.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_atmo_o3_provider_coupling.mod.proxy: src/coupling/mo_atmo_o3_provider_coupling.o
+src/coupling/mo_atmo_o3_provider_coupling.o src/coupling/mo_atmo_o3_provider_coupling.o: mod/mo_coupling_utils.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_kind.mod.proxy mod/mo_sync.mod.proxy mod/mo_coupling_config.mod.proxy mod/mo_aes_rad_config.mod.proxy

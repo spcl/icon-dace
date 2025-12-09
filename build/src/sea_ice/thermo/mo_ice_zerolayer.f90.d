@@ -1,0 +1,3 @@
+src/sea_ice/thermo/mo_ice_zerolayer.o src/sea_ice/thermo/mo_ice_zerolayer.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/sea_ice/thermo/mo_ice_zerolayer.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_ice_zerolayer.mod.proxy: src/sea_ice/thermo/mo_ice_zerolayer.o
+src/sea_ice/thermo/mo_ice_zerolayer.o src/sea_ice/thermo/mo_ice_zerolayer.o: mod/mo_parallel_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_sea_ice_nml.mod.proxy mod/mo_kind.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_sea_ice_types.mod.proxy mod/mo_grid_subset.mod.proxy mod/mo_run_config.mod.proxy mod/mo_util_dbg_prnt.mod.proxy

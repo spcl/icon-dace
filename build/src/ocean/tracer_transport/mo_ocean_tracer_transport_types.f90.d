@@ -1,0 +1,3 @@
+src/ocean/tracer_transport/mo_ocean_tracer_transport_types.o src/ocean/tracer_transport/mo_ocean_tracer_transport_types.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/tracer_transport/mo_ocean_tracer_transport_types.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/iconfor_dsl_definitions.inc
+mod/mo_ocean_tracer_transport_types.mod.proxy: src/ocean/tracer_transport/mo_ocean_tracer_transport_types.o
+src/ocean/tracer_transport/mo_ocean_tracer_transport_types.o src/ocean/tracer_transport/mo_ocean_tracer_transport_types.o: mod/mo_impl_constants.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_kind.mod.proxy

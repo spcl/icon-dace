@@ -1,0 +1,3 @@
+src/atm_phy_nwp/mo_opt_nwp_reflectivity.o src/atm_phy_nwp/mo_opt_nwp_reflectivity.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_nwp/mo_opt_nwp_reflectivity.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_opt_nwp_reflectivity.mod.proxy: src/atm_phy_nwp/mo_opt_nwp_reflectivity.o
+src/atm_phy_nwp/mo_opt_nwp_reflectivity.o src/atm_phy_nwp/mo_opt_nwp_reflectivity.o: mod/mo_2mom_mcrph_types.mod.proxy mod/mo_kind.mod.proxy mod/mo_2mom_mcrph_processes.mod.proxy mod/mo_2mom_mcrph_main.mod.proxy mod/microphysics_1mom_schemes.mod.proxy

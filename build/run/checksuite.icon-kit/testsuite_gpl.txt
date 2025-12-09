@@ -1,0 +1,1 @@
+runctrl_examples/run_scripts/exp.testsuite.nwp_lifetime_gpl_base NWP_LIFETIME none 00:30:00 cpuonly nodes=4

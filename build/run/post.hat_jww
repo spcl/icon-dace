@@ -1,0 +1,116 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#
+# This section sets up the environment for the proper postprocessing script.
+# Parameters are passed by the "${set_env}" file to be executed by the pp script.
+#
+#-----------------------------------------------------------------------------
+
+# Set parameters for postprocessing
+#
+EXP="test_hat_jww"
+grid_name="iconR2B04-grid"
+# ExpName="${EXP}_${grid_name}"
+ExpName="${EXP}"
+plotBaseName="${EXP}_R2B04L31"
+DOMAIN=""
+output_frequency=4
+config_string="JWw R2B04"
+! cell_type is not used=3
+horizontal_resolution="R2B04"
+vertical_resolution="L31"
+data_file_split=0
+plot_file_format="eps"
+interp_option=1
+cn_plot_option=2
+plot_ps=1
+plot_temp=1
+plot_vor=1
+plot_div=1
+plot_omega=1
+interp_temp=1
+interp_vor=1
+interp_div=1
+interp_omega=1
+ke_spectrum_diag=0
+trunc=85
+compute_remap_weights=1
+grid_optimization="hro"
+rm_tmp_files=1
+
+cd ../scripts/postprocessing/testcases
+
+# define individual set-env file
+set_env="Post.${EXP}.set_env"
+
+# Remove old ${set_env} file
+#
+if [ -f ${set_env} ] 
+then 
+  rm -f ${set_env}
+fi
+
+# Write new ${set_env} file
+#
+echo "EXP=\"${EXP}\""                                     >  ${set_env}
+echo "DOMAIN=\"${DOMAIN}\""                               >> ${set_env}
+echo "grid_name=\"${grid_name}\""                         >> ${set_env}
+echo "ExpName=\"${ExpName}\""                             >> ${set_env}
+echo "plotBaseName=\"${plotBaseName}\""                   >> ${set_env}
+echo "export output_frequency=${output_frequency}"        >> ${set_env}
+echo "config_string=\"${config_string}\""                 >> ${set_env}
+echo "export ! cell_type is not used=${! cell_type is not used}"                      >> ${set_env}
+echo "horizontal_resolution=\"${horizontal_resolution}\"" >> ${set_env}
+echo "vertical_resolution=\"${vertical_resolution}\""     >> ${set_env}
+echo "data_file_split=${data_file_split}"                 >> ${set_env}
+echo "interp_option=${interp_option}"                     >> ${set_env}
+echo "export plot_file_format=\"${plot_file_format}\""    >> ${set_env}
+echo "cn_plot_option=${cn_plot_option}"                   >> ${set_env}
+echo "plot_ps=${plot_ps}"                                 >> ${set_env}
+echo "plot_temp=${plot_temp}"                             >> ${set_env}
+echo "plot_vor=${plot_vor}"                               >> ${set_env}
+echo "plot_div=${plot_div}"                               >> ${set_env}
+echo "plot_omega=${plot_omega}"                           >> ${set_env}
+echo "interp_temp=${interp_temp}"                         >> ${set_env}
+echo "interp_vor=${interp_vor}"                           >> ${set_env}
+echo "interp_div=${interp_div}"                           >> ${set_env}
+echo "interp_omega=${interp_omega}"                       >> ${set_env}
+echo "ke_spectrum_diag=${ke_spectrum_diag}"               >> ${set_env}
+echo "trunc=${trunc}"                                     >> ${set_env}
+echo "compute_remap_weights=${compute_remap_weights}"     >> ${set_env}
+echo "grid_optimization=${grid_optimization}"             >> ${set_env}
+echo "rm_tmp_files=${rm_tmp_files}"                       >> ${set_env}
+echo "cdo=${cdo}"                                         >> ${set_env}
+
+# Load NCL resources
+#
+export NCARG_USRRESFILE=${WORKING_PATH}/scripts/postprocessing/.hluresfile
+
+# Start postprocessing script
+echo "-- ---------------------------------------------------------"
+echo "-- JWw_postpro_driver.bash starts at $(date) --"
+echo "-- ---------------------------------------------------------"
+#
+./JWw_postpro_driver.bash ${set_env}
+STATUS=$?
+echo "-- ---------------------------------------------------------"
+echo "-- JWw_postpro_driver.bash ends at $(date) --"
+echo "-- ---------------------------------------------------------"
+
+#rm -f ${set_env}
+
+check_error $STATUS "Creating of Plots"
+
+#--------------------------------------------------------------------
+exit $STATUS

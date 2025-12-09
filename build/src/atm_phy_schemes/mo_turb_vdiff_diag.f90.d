@@ -1,0 +1,3 @@
+src/atm_phy_schemes/mo_turb_vdiff_diag.o src/atm_phy_schemes/mo_turb_vdiff_diag.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_schemes/mo_turb_vdiff_diag.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/fsel.inc
+mod/mo_turb_vdiff_diag.mod.proxy: src/atm_phy_schemes/mo_turb_vdiff_diag.o
+src/atm_phy_schemes/mo_turb_vdiff_diag.o src/atm_phy_schemes/mo_turb_vdiff_diag.o: mod/mo_nh_testcases_nml.mod.proxy mod/mo_turb_vdiff_params.mod.proxy mod/mo_turb_vdiff_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_convect_tables.mod.proxy mod/mo_index_list.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_sleve_config.mod.proxy

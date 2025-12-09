@@ -1,0 +1,3 @@
+src/advection/mo_advection_quadrature.o src/advection/mo_advection_quadrature.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/advection/mo_advection_quadrature.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_advection_quadrature.mod.proxy: src/advection/mo_advection_quadrature.o
+src/advection/mo_advection_quadrature.o src/advection/mo_advection_quadrature.o: mod/mo_kind.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_advection_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_advection_utils.mod.proxy

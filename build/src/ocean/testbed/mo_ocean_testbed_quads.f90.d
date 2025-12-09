@@ -1,0 +1,3 @@
+src/ocean/testbed/mo_ocean_testbed_quads.o src/ocean/testbed/mo_ocean_testbed_quads.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/testbed/mo_ocean_testbed_quads.f90
+mod/mo_ocean_testbed_quads.mod.proxy: src/ocean/testbed/mo_ocean_testbed_quads.o
+src/ocean/testbed/mo_ocean_testbed_quads.o src/ocean/testbed/mo_ocean_testbed_quads.o: mod/mo_model_domain.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_read_netcdf_distributed.mod.proxy mod/mo_io_config.mod.proxy mod/mo_ocean_nml.mod.proxy mod/mo_kind.mod.proxy mod/mo_read_interface.mod.proxy mod/mo_communication.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_mpi.mod.proxy mod/mo_timer.mod.proxy mod/mo_master_control.mod.proxy

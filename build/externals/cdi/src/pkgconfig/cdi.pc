@@ -1,0 +1,45 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+cflags=-I${prefix}/include
+#fcflags=-I${prefix}/include
+libs=-L${exec_prefix}/lib -lcdi    -lnetcdf   -lm  -lvelocity_cpu -lopenblas -lnetcdff -lnetcdf
+threads_libs=
+threads_cflags=
+szlib_cflags=
+szlib_libs=
+netcdf_root=
+netcdf_cflags=
+netcdf_libs= -lnetcdf
+aux_libs=-lm  -lvelocity_cpu -lopenblas -lnetcdff -lnetcdf
+grib_api_cflags=
+grib_api_libs=
+eccodes_cflags=
+eccodes_libs=
+cdi_build_cc=/apps/ault/spack/opt/spack/linux-centos8-zen/gcc-8.4.1/gcc-10.2.0-fqf4ze2mfclmx6e7ehrjckznpoqnevmi/bin/gcc
+cdi_build_cflags=-g -O2
+cdi_build_cppflags= 
+cdi_build_ldflags=-L/scratch/pmazumde/gitspace/icon-artifacts/velocity/integrate_meh
+cdi_build_libs=-lm  -lvelocity_cpu -lopenblas -lnetcdff -lnetcdf
+cdi_build_fc=/apps/ault/spack/opt/spack/linux-centos8-zen/gcc-8.4.1/gcc-10.2.0-fqf4ze2mfclmx6e7ehrjckznpoqnevmi/bin/gfortran
+cdi_build_fcflags=-DDACE_SUBST_ENABLE -g -I/scratch/wbenjami/dafy/sdfg_gpu/spack/opt/spack/linux-centos8-zen2/gcc-10.2.0/netcdf-fortran-4.6.0-p7jdeag2groulzasdfqnokx2qiris3zh/include -I/scratch/wbenjami/dafy/sdfg_gpu/spack/opt/spack/linux-centos8-zen2/gcc-10.2.0/netcdf-c-4.9.2-zynxjqlltpkunevnlaltrm7kfqlwjgpu/include -O2 -std=legacy
+cdi_build_f77=no
+cdi_build_fflags=
+cdi_build_cxx=no
+cdi_build_cxxflags=
+cdi_build_enable_grib=yes
+cdi_build_enable_cgribex=yes
+cdi_build_enable_service=yes
+cdi_build_enable_extra=yes
+cdi_build_enable_ieg=yes
+
+Name: cdi
+Description: CDI is an Interface to access Climate and NWP model Data.
+URL: 
+Version: 2.4.0
+Requires: 
+Libs: ${libs}
+Cflags: ${cflags}
+@ENABLE_CF_INTERFACE@FCflags: ${fcflags}
+

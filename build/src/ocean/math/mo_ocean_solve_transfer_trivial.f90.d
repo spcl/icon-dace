@@ -1,0 +1,3 @@
+src/ocean/math/mo_ocean_solve_transfer_trivial.o src/ocean/math/mo_ocean_solve_transfer_trivial.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/math/mo_ocean_solve_transfer_trivial.f90
+mod/mo_ocean_solve_trivial_transfer.mod.proxy: src/ocean/math/mo_ocean_solve_transfer_trivial.o
+src/ocean/math/mo_ocean_solve_transfer_trivial.o src/ocean/math/mo_ocean_solve_transfer_trivial.o: mod/mo_model_domain.mod.proxy mod/mo_kind.mod.proxy mod/mo_ocean_solve_transfer.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_mpi.mod.proxy mod/mo_communication.mod.proxy mod/mo_run_config.mod.proxy mod/mo_timer.mod.proxy mod/mo_ocean_solve_aux.mod.proxy

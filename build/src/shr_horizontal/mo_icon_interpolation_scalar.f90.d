@@ -1,0 +1,3 @@
+src/shr_horizontal/mo_icon_interpolation_scalar.o src/shr_horizontal/mo_icon_interpolation_scalar.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/shr_horizontal/mo_icon_interpolation_scalar.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_icon_interpolation_scalar.mod.proxy: src/shr_horizontal/mo_icon_interpolation_scalar.o
+src/shr_horizontal/mo_icon_interpolation_scalar.o src/shr_horizontal/mo_icon_interpolation_scalar.o: mod/mo_grid_config.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_timer.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_mpi.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_run_config.mod.proxy mod/mo_kind.mod.proxy

@@ -1,0 +1,4 @@
+runctrl_examples/run_scripts/exp.testsuite.echam_amip_lifetime_base ECHAM_AMIP_LIFETIME none 00:15:00 accelerated nodes=4
+runctrl_examples/run_scripts/exp.testsuite.echam_amip_oh_chemistry_base ECHAM_AMIP_OH_CHEMISTRY none 01:00:00 accelerated nodes=4
+runctrl_examples/run_scripts/exp.testsuite.echam_amip_gasphase_base ECHAM_AMIP_GASPHASE none 01:00:00 accelerated nodes=4
+runctrl_examples/run_scripts/exp.testsuite.echam_amip_ext_data_base ECHAM_AMIP_EXT_DATA none 00:15:00 accelerated nodes=4

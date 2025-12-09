@@ -1,0 +1,3 @@
+src/waves/physics/mo_init_wave_phy.o src/waves/physics/mo_init_wave_phy.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/waves/physics/mo_init_wave_phy.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_init_wave_physics.mod.proxy: src/waves/physics/mo_init_wave_phy.o
+src/waves/physics/mo_init_wave_phy.o src/waves/physics/mo_init_wave_phy.o: mod/mo_wave_types.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_wave_constants.mod.proxy mod/mo_mpi.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_wave_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_loopindices.mod.proxy

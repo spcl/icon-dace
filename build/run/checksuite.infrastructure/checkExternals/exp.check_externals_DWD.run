@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+#PBS -q sx_norm
+#PBS -l elapstim_req=00:25:00
+#PBS --venode=3          # Run up to 3 * 8 = 24 MPI jobs
+#PBS --venum-lhost=8     # Number of VE per logical host
+#PBS --use-hca=2         # Number of HCA per logical host
+#PBS -T necmpi_hydra
+#PBS -j o
+#PBS -o LOG.exp.check_externals_DWD.run.run.o
+# ----------------------------------------------------------------------
+
+# for PBS change to directory where job was submitted
+# (without this job is started in HOME)
+if [[ -n ${PBS_O_WORKDIR} ]] ; then
+  cd ${PBS_O_WORKDIR} # This is ${ICON_DIR}/run under buildbot.
+fi
+
+# We cannot rely on the contents of the 'exp.check_externals_DWD.run.status.2'
+# file produced by the scheduler because it might be empty if the time limit for
+# the job is exceeded, which leads to a false positive result of the test.
+# Instead, we create 'exp.check_externals_DWD.run.final_status', which has
+# higher priority for the Buildbot. First, we write a non-zero exit code to the
+# file, which will indicate a failure if the rest of the script below does not
+# have enough time to finish the tests:
+echo '255' > exp.check_externals_DWD.run.final_status
+
+# Speed up the 'make check' (this step is allowed to fail):
+MAKE_PROCS=14
+make -C ../vector -j ${MAKE_PROCS} check-bundled TESTS= XFAIL_TESTS=
+
+# Run 'make check' for the vector engine build and save its exit code:
+exitcode=0
+make -C ../vector check || exitcode=$?
+
+# Overwrite the status file with the real exit code:
+echo "${exitcode}" > exp.check_externals_DWD.run.final_status
+
+# Print the log files for debugging:
+if false; then  # change false to true if the logs are needed
+  set +x
+  echo " ***** Test logs from '$(pwd)' ***** "
+  for d in $(find . -name 'tests'); do
+    echo " ||||| '$d' ||||| "
+    for f in $(find $d -name '*.log'); do
+      echo " ///// '$f' ///// "
+      cat $f
+      execf=${f%.log}
+      if test -f $execf; then
+        echo " +++++ '$execf' +++++ "
+        cat $execf
+      fi
+    done
+  done
+  echo " ***** End of test logs from '$(pwd)' ***** "
+  set -x
+fi
+
+# Exit with the exit code of the 'make check' command:
+exit ${exitcode}

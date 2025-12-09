@@ -1,0 +1,3 @@
+src/io/restart/mo_sync_restart_patch_data.o src/io/restart/mo_sync_restart_patch_data.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/io/restart/mo_sync_restart_patch_data.f90
+mod/mo_sync_restart_patch_data.mod.proxy: src/io/restart/mo_sync_restart_patch_data.o
+src/io/restart/mo_sync_restart_patch_data.o src/io/restart/mo_sync_restart_patch_data.o: mod/mo_var_list_register_utils.mod.proxy mod/mo_mpi.mod.proxy mod/mo_restart_patch_data.mod.proxy mod/mo_timer.mod.proxy mod/mo_netcdf.mod.proxy mod/mo_restart_var_data.mod.proxy mod/mo_netcdf_errhandler.mod.proxy mod/mo_kind.mod.proxy mod/mo_communication.mod.proxy mod/mo_var_metadata_types.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_dynamics_config.mod.proxy

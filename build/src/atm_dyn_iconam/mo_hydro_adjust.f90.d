@@ -1,0 +1,3 @@
+src/atm_dyn_iconam/mo_hydro_adjust.o src/atm_dyn_iconam/mo_hydro_adjust.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_dyn_iconam/mo_hydro_adjust.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_hydro_adjust.mod.proxy: src/atm_dyn_iconam/mo_hydro_adjust.o
+src/atm_dyn_iconam/mo_hydro_adjust.o src/atm_dyn_iconam/mo_hydro_adjust.o: mod/mo_satad.mod.proxy mod/mo_nonhydro_types.mod.proxy mod/mo_sync.mod.proxy mod/mo_mpi.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_run_config.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_kind.mod.proxy mod/mo_model_domain.mod.proxy

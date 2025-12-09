@@ -1,0 +1,3 @@
+src/io/shared/mo_read_netcdf_distributed.o src/io/shared/mo_read_netcdf_distributed.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/io/shared/mo_read_netcdf_distributed.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_read_netcdf_distributed.mod.proxy: src/io/shared/mo_read_netcdf_distributed.o
+src/io/shared/mo_read_netcdf_distributed.o src/io/shared/mo_read_netcdf_distributed.o: mod/ppm_extents.mod.proxy mod/mo_kind.mod.proxy mod/mo_netcdf_errhandler.mod.proxy mod/mo_netcdf.mod.proxy mod/mo_decomposition_tools.mod.proxy mod/mo_communication_factory.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_mpi.mod.proxy mod/mo_read_netcdf_types.mod.proxy mod/mo_communication.mod.proxy

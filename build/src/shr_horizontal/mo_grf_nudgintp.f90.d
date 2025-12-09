@@ -1,0 +1,3 @@
+src/shr_horizontal/mo_grf_nudgintp.o src/shr_horizontal/mo_grf_nudgintp.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/shr_horizontal/mo_grf_nudgintp.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_grf_nudgintp.mod.proxy: src/shr_horizontal/mo_grf_nudgintp.o
+src/shr_horizontal/mo_grf_nudgintp.o src/shr_horizontal/mo_grf_nudgintp.o: mod/mo_grf_intp_data_strc.mod.proxy mod/mo_kind.mod.proxy mod/mo_intp_data_strc.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_impl_constants_grf.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_loopindices.mod.proxy

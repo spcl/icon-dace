@@ -1,0 +1,3 @@
+src/shr_horizontal/mo_intp_coeffs.o src/shr_horizontal/mo_intp_coeffs.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/shr_horizontal/mo_intp_coeffs.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_intp_coeffs.mod.proxy: src/shr_horizontal/mo_intp_coeffs.o
+src/shr_horizontal/mo_intp_coeffs.o src/shr_horizontal/mo_intp_coeffs.o: mod/mo_sync.mod.proxy mod/mo_kind.mod.proxy mod/mo_dynamics_config.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_intp_data_strc.mod.proxy mod/mo_interpol_config.mod.proxy mod/mo_impl_constants_grf.mod.proxy mod/mo_grid_subset.mod.proxy mod/mo_model_domain.mod.proxy

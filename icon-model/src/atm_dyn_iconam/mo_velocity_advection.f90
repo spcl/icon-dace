@@ -33,7 +33,7 @@ MODULE mo_velocity_advection
   USE mo_loopindices,       ONLY: get_indices_c, get_indices_e
   USE mo_impl_constants,    ONLY: min_rlcell_int, min_rledge_int, min_rlvert_int
   USE mo_impl_constants_grf,ONLY: grf_bdywidth_c, grf_bdywidth_e
-  USE mo_timer,             ONLY: timer_solve_nh_veltend, timer_start, timer_stop
+  USE mo_timer,             ONLY: timer_solve_nh_veltend, timer_start, timer_stop, timer_report
 
   IMPLICIT NONE
 
@@ -865,7 +865,10 @@ MODULE mo_velocity_advection
 
     !$ACC END DATA
 
-    IF (timers_level > 5) CALL timer_stop(timer_solve_nh_veltend)
+    IF (timers_level > 5) THEN
+        CALL timer_stop(timer_solve_nh_veltend)
+        CALL timer_report(timer_solve_nh_veltend)
+    ENDIF
 
   END SUBROUTINE velocity_tendencies
 

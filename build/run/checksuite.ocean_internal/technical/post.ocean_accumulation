@@ -1,0 +1,62 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# ================================================================================
+# technical stuff
+basePath=${basedir}
+dataPath="${baseBath}../experiments/"
+scriptPath="/pool/data/ICON/tools"
+nclCaller="nclsh"
+plotCmd="${scriptPath}/icon_plot.ncl"
+# ================================================================================
+function myDiff {
+  ifile=$1
+  varName=$2
+  maskName=$3
+  ofile=`mktemp`
+
+  cdo -s diffv -div -selname,$varName $ifile -selname,$maskName $ifile -div -selname,${varName}_acc $ifile -selname,$maskName $ifile > $ofile
+
+  nDiff=$(wc -l < $ofile)
+
+  if (( $nDiff > 0 )); then
+    cat $ofile;
+  fi
+
+  rm -f $ofile
+  return $nDiff
+}
+
+# ================================================================================
+# default experiments
+EXP_DAILY=${EXPNAME}_daily
+EXP_HOURLY=${EXPNAME}_hourly
+EXP_SIMPLE=${EXPNAME}_simple
+# ================================================================================
+cd ${dataPath}
+for expDir in ${EXP_DAILY} ${EXP_HOURLY} ${EXPNAME}; do
+  if [ -d ${expDir} ]; then
+    echo "Try do get results from ${expDir}";
+    cd ${expDir};
+    case "${expDir}" in
+      "${EXP_HOURLY}"|"${EXPNAME}")
+        for ifile in ocean_accumulation*.nc*; do
+          for var in u h s t; do 
+            myDiff $ifile $var wet_c || exit 1
+          done;
+        done;
+        ;;
+    esac
+
+    cd -;
+  fi;
+done
+
+# vim:ft=sh

@@ -1,0 +1,3 @@
+src/atm_phy_aes/mo_surface_diag.o src/atm_phy_aes/mo_surface_diag.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_aes/mo_surface_diag.f90
+mod/mo_surface_diag.mod.proxy: src/atm_phy_aes/mo_surface_diag.o
+src/atm_phy_aes/mo_surface_diag.o src/atm_phy_aes/mo_surface_diag.o: mod/mo_turb_vdiff_params.mod.proxy mod/mo_aes_phy_memory.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_aes_thermo.mod.proxy mod/mo_kind.mod.proxy mod/mo_aes_convect_tables.mod.proxy mod/mo_index_list.mod.proxy

@@ -1,0 +1,3 @@
+src/parallel_infrastructure/mo_communication_factory.o src/parallel_infrastructure/mo_communication_factory.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/parallel_infrastructure/mo_communication_factory.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/icon_definitions.inc
+mod/mo_communication_factory.mod.proxy: src/parallel_infrastructure/mo_communication_factory.o
+src/parallel_infrastructure/mo_communication_factory.o src/parallel_infrastructure/mo_communication_factory.o: mod/mo_communication_orig.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_communication_types.mod.proxy mod/mo_decomposition_tools.mod.proxy

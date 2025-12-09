@@ -1,0 +1,3 @@
+src/atm_phy_bcs/mo_bc_aeropt_kinne.o src/atm_phy_bcs/mo_bc_aeropt_kinne.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_bcs/mo_bc_aeropt_kinne.f90
+mod/mo_bc_aeropt_kinne.mod.proxy: src/atm_phy_bcs/mo_bc_aeropt_kinne.o
+src/atm_phy_bcs/mo_bc_aeropt_kinne.o src/atm_phy_bcs/mo_bc_aeropt_kinne.o: mod/mo_model_domain.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_time_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_atmo_aero_provider_coupling.mod.proxy mod/mo_bcs_time_interpolation.mod.proxy mod/mo_io_config.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_read_interface.mod.proxy mod/mo_timer.mod.proxy

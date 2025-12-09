@@ -1,0 +1,503 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# ----------------------------------------------------------------------
+# path definitions
+# ----------------------------------------------------------------------
+
+make_and_change_to_experiment_dir # function in ../add_run_routines
+
+# Combine START and MODEL if START_MODEL is not already set.
+# START_MODEL is used to ease the execution of a machine that uses a complex 
+# mpirun command with multiple binaries
+START_MODEL="${START_MODEL:=$START $MODEL}"
+
+# set icon_data_poolFolder
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/buildbot_data/nwp"
+
+# base directory for ICON sources, binary and auxilary data:
+ICONDIR="${basedir}" # basedir can be set with create_target_header
+
+# root directory for input data
+DATAROOT="${icon_data_poolFolder}/Checksuite_data"
+
+# Base directory containing input data
+DATADIR=${DATAROOT}/ICON_LAM/
+
+# directory with input grids:
+GRIDDIR=${DATADIR}/ifs_lbcdata
+
+# directory with initial conditions
+INIDIR=${DATADIR}/ifs_lbcdata
+
+# directory with lateral boundary forcing data
+LBCDIR=${DATADIR}/ifs_lbcdata
+
+# directory with external parameter data:
+EXTPARDIR=${DATADIR}/ifs_lbcdata
+
+# ----------------------------------------------------------------------
+# copy input data: grids, external parameters
+# ----------------------------------------------------------------------
+
+ln -sf $GRIDDIR/nawdex_NordAtl_R0010km.nc iconR2B08_DOM01.nc
+ln -sf $EXTPARDIR/extpar_nawdex_NordAtl_R0010km.nc extpar_iconR2B08_DOM01.nc
+ln -sf $INIDIR/ifs2icon_R02B08_DOM01_2016081700.nc ifs2icon_R2B08_DOM01.nc
+
+rm lbcdir
+ln -sf $LBCDIR lbcdir
+
+# files needed for radiation
+cp ${ICONDIR}/data/ECHAM6_CldOptProps.nc .
+cp ${ICONDIR}/data/rrtmg_lw.nc .
+ln -sf ${ICONDIR}/run/dict.latbc .
+
+# ----------------------------------------------------------------------
+# global namelist settings
+# ----------------------------------------------------------------------
+
+# the namelist filename
+atmo_namelist=NAMELIST_${EXP}
+
+# global timing
+start_date="2016-08-17T00:00:00Z"
+ndays_restart=60
+dt_restart=$((${ndays_restart}*86400))
+
+
+# the grid parameters
+atmo_dyn_grids="iconR2B08_DOM01.nc"
+atmo_rad_grids="iconR2B09_DOM00.nc"
+
+
+# ----------------------------------------------------------------------
+# create ICON master namelist
+# ----------------------------------------------------------------------
+
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+cat > icon_master.namelist << EOF
+&master_nml
+ lrestart               = .false.
+/
+&time_nml
+ ini_datetime_string = "$start_date"
+ dt_restart          = $dt_restart
+/
+&master_model_nml
+  model_type=1
+  model_name="ATMO"
+  model_namelist_filename="$atmo_namelist"
+  model_min_rank=1
+  model_max_rank=65536
+  model_inc_rank=1
+/
+EOF
+
+
+# ----------------------------------------------------------------------
+# model namelists
+# ----------------------------------------------------------------------
+
+# reconstrcuct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+plevels="5000,10000,15000,20000,25000,30000,40000,50000,70000,85000"
+
+
+# Variables to configure the mpirun command on the RCL
+num_io_procs=2
+num_restart_procs=0
+num_prefetch_proc=1
+num_io_procs_radar=0
+
+cat > ${atmo_namelist} << EOF
+&parallel_nml
+ nproma                       =  ${nproma}
+ nproma_sub                   =  ${nproma_sub} ! loop chunk length for radiation
+ p_test_run                   = .FALSE.
+ l_test_openmp                = .FALSE.
+ l_log_checks                 = .FALSE.
+ num_io_procs                 = ${num_io_procs}
+ num_restart_procs            = ${num_restart_procs}
+ num_prefetch_proc            = ${num_prefetch_proc}
+ num_io_procs_radar           = ${num_io_procs_radar}
+ iorder_sendrecv              = 1
+ proc0_shift                  = ${proc0_shift}
+ use_omp_input                = .true.
+/
+&grid_nml
+ dynamics_grid_filename       =  'iconR2B08_DOM01.nc',
+ radiation_grid_filename      = ''          ! 
+ dynamics_parent_grid_id      = 0
+ lredgrid_phys                = .FALSE.,.FALSE.,.FALSE.,
+ lfeedback                    = .TRUE.
+ ifeedback_type               = 2
+ l_limited_area               = .true.
+/
+&initicon_nml
+ init_mode                    = 2           ! initialization mode (2 for IFS ana, 1 for DWD ana, 4=cosmo, 2=ifs, 3=combined
+ ana_varnames_map_file        = "map_file.ana"
+/
+&limarea_nml
+ itype_latbc                  = 1
+ dtime_latbc                  = 10800.
+ nlev_latbc                   = 137
+! latbc_path                   = '/scratch/ms/de/deia/icon/dei4/NARVALII/input/2016081700'
+ latbc_filename               = 'lbcdir/ifs2icon_R02B08_DOM01_<y><m><d><h>.nc'
+ latbc_varnames_map_file      = 'dict.latbc'
+/
+&run_nml
+ num_lev                      = 75,75 ! number of full levels of vertical grid
+ lvert_nest                   = .false.
+ nsteps                       = 200 ! 5400
+ dtime                        = 90    ! timestep in seconds
+ ldynamics                    = .TRUE.      ! dynamics
+ ltransport                   = .TRUE.
+ ntracer                      = 5
+ iforcing                     = 3           ! NWP forcing
+ ltestcase                    = .FALSE.     ! false: run with real data
+ msg_level                    = 7           ! default: 5, much more: 20
+ ltimer                       = .true.
+ timers_level                 = 4
+ activate_sync_timers         = .FALSE.
+ output                       = 'nml','totint'
+ check_uuid_gracefully        = .TRUE.
+ timers_level                 = 10
+/
+&io_nml
+ lflux_avg                    = .FALSE. ! false: accumulated fluxes
+ itype_pres_msl               = 4       ! 3: new IFS T and pressure calculation below ground
+                                        ! 4: IFS method with bug fix for self-consistency between SLP and geopotential
+ itype_rh                     = 1       ! RH w.r.t. water
+ restart_file_type            = 5       ! 4: netcdf2, 5: netcdf4
+/
+&nh_pzlev_nml
+ nplev             = 18     ! number of p level output (attention: levels in [Pa] and top-down)
+ nzlev             = 20     ! number of z level output (attention: levels in [m] and top-down)
+ plevels           = 5000,7000,10000,15000,20000,25000,30000,40000,50000,60000,70000,
+                     80000,85000,90000,92500,95000,97500,100000
+ zlevels           = 25000,20000,18000,16000,14000,12000,10000,8000,6000,5000,4000,3000,2000,
+                     1000,800,600,400,200,100,10
+/
+! OUTPUT: Regular grid, model levels, all domains
+&output_nml
+ filetype                     =  4                        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          =  1                        ! write all domains
+ output_time_unit             =  1                        ! 1: seconds
+ output_bounds                =  0., 216000., 1800.     ! start, end, increment
+ steps_per_file               =  1
+ mode                         =  1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last                 = .FALSE.
+ output_filename              = 'dei4_NARVALII_2016081700_ll'             ! file name base
+ ml_varlist                   = 'pres_msl','clct','tqv_dia','tqc_dia','tqi_dia','tqg','u_10m','v_10m','t_g',
+'t_2m','qv_2m','td_2m','rh_2m','accthb_t','accsob_t','accshfl_s','acclhfl_s','accthb_s',
+'accsob_s','accqhfl_s','tot_prec','cape_ml','cin_ml','tqv','tqc','tqi','tqr','tqs', 'tqg',
+ output_grid                  = .FALSE.
+ remap                        = 1                         ! 1: latlon,  0: native grid
+ reg_lon_def                  = -67.5,0.025,14.5
+ reg_lat_def                  =  -9.5,0.025, 19.5
+/
+&output_nml
+ filetype                     =  4                        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          =  2                        ! write all domains
+ output_time_unit             =  1                        ! 1: seconds
+ output_bounds                =  0., 216000., 1800.     ! start, end, increment
+ steps_per_file               =  1
+ mode                         =  1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last                 = .FALSE.
+ output_filename              = 'dei4_NARVALII_2016081700_ll'             ! file name base
+ ml_varlist                   = 'pres_msl','clct','tqv_dia','tqc_dia','tqi_dia','tqg','u_10m','v_10m','t_g',
+'t_2m','qv_2m','td_2m','rh_2m','accthb_t','accsob_t','accshfl_s','acclhfl_s','accthb_s',
+'accsob_s','accqhfl_s','tot_prec','cape_ml','cin_ml','tqv','tqc','tqi','tqr','tqs', 'tqg',
+ output_grid                  = .FALSE.
+ remap                        = 1                         ! 1: latlon,  0: native grid
+ reg_lon_def                  = -63.5,0.0125,-42.5
+ reg_lat_def                  =  -3.5,0.0125, 17.5
+/
+&output_nml
+ filetype                     =  4                        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          = -1                        ! write all domains
+ output_time_unit             =  1                        ! 1: seconds
+ output_bounds                =  0., 216000., 3600.     ! start, end, increment
+ steps_per_file               =  1
+ mode                         =  1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last                 = .FALSE.
+ output_filename              = 'dei4_NARVALII_2016081700_cloud'             ! file name base
+ ml_varlist                   = 'clc','tot_qc_dia','tot_qi_dia','qg'
+ output_grid                  = .FALSE.
+ remap                        = 0                         ! 1: latlon,  0: native grid
+/
+&output_nml
+ filetype                     =  4                        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          = -1                        ! write all domains
+ output_time_unit             =  1                        ! 1: seconds
+ output_bounds                =  0., 216000., 3600.       ! start, end, increment
+ steps_per_file               =  1
+ mode                         =  1  ! 1: fc mode (rel t-axis), 2: clim mode (abs t-axis)
+ include_last                 = .FALSE.
+ output_filename              = 'dei4_NARVALII_2016081700_rh_omega' 
+ p_levels                     = 5000,7000,10000,15000,20000,25000,30000,40000,50000,60000,70000,
+                                80000,85000,90000,92500,95000,97500,100000
+ pl_varlist                   = 'omega', 'rh'
+ output_grid                  = .FALSE.
+ remap                        = 0                  
+/
+&output_nml
+ filetype                     =  4                        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          = -1                        ! write all domains
+ output_time_unit             =  1                        ! 1: seconds
+ output_bounds                =  0., 10000000., 1800.     ! start, end, increment
+ steps_per_file               =  1
+ mode                         =  1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last                 = .TRUE.
+ output_filename              = 'dei4_NARVALII_2016081700'          ! file name base
+ ml_varlist                   = 'pres_msl','clct','tqv_dia','tqc_dia','tqi_dia','tqg','u_10m','v_10m','t_g',
+'t_2m','qv_2m','td_2m','rh_2m','accthb_t','accsob_t','accshfl_s','acclhfl_s','accthb_s',
+'accsob_s','accqhfl_s','tot_prec','cape_ml','cin_ml','tqv','tqc','tqi','tqr','tqs','tqg',
+ output_grid                  = .FALSE.
+ remap                        = 0                         ! 1: latlon,  0: native grid
+/
+&output_nml
+ filetype                     =  4                        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          = -1                        ! write all domains
+ output_time_unit             =  1                        ! 1: seconds
+ output_bounds                =  0., 216000., 3600.,    ! start, end, increment
+ steps_per_file               =  1
+ mode                         =  1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last                 = .TRUE.
+ output_filename              = 'dei4_NARVALII_2016081700_fg'       ! file name base
+ ml_varlist                   = 'group:dwd_fg_atm_vars','group:dwd_fg_sfc_vars','group:atmo_ml_vars'
+ output_grid                  = .FALSE.
+ remap                        = 0                         ! 1: latlon,  0: native grid
+/
+&meteogram_output_nml
+ lmeteogram_enabled= .TRUE.
+ n0_mtgrm          = 0              ! meteogram initial time step (0 is first step!)
+ ninc_mtgrm        = 50  ! meteogram output interval
+ ldistributed      = .false.
+ stationlist_tot   =  13.163, -59.429, 'BCO',
+                     -2.146,  -59.006, 'ATTO',
+                     -7.967,  -14.35,  'ARM_Ascension_Island',
+                      13.16,  -59.00,  'BCO_toE_0.5',
+                      13.16,  -58.50,  'BCO_toE_1.0',
+                      13.16,  -58.00,  'BCO_toE_1.5',
+                      13.16,  -57.50,  'BCO_toE_2.0',
+                      13.16,  -57.00,  'BCO_toE_2.5',
+                      13.16,  -56.50,  'BCO_toE_3.0',
+                      13.16,  -56.00,  'BCO_toE_3.5',
+                      13.16,  -55.50,  'BCO_toE_4.0',
+                      13.16,  -55.00,  'BCO_toE_4.5',
+                      13.16,  -54.50,  'BCO_toE_5.0',
+                      13.16,  -54.00,  'BCO_toE_5.5',
+                      13.16,  -53.50,  'BCO_toE_6.0',
+                      13.16,  -53.00,  'BCO_toE_6.5'
+/
+&nwp_phy_nml
+ inwp_gscp                    = 2,    ! 1: default, 2: graupel, 4: for two-moment
+ inwp_convection              = 0,0,0
+ inwp_radiation               = 1,
+ inwp_cldcover                = 1     ! 0: no cld, 1: new diagnostic, 3: COSMO, 5: grid scale
+ inwp_turb                    = 1     ! 1/10: Raschendorfer, 2: GME
+ inwp_satad                   = 1
+ inwp_sso                     = 0
+ inwp_gwd                     = 0
+ inwp_surface                 = 1
+ itype_z0                     = 2     ! 1: default, 2: turn off SSO part of z0
+ dt_conv                      = 300
+ dt_sso                       = 300
+ dt_gwd                       = 300
+ dt_rad                       = 720
+ latm_above_top               = .FALSE.,.FALSE.,.FALSE.
+ efdt_min_raylfric            = 7200.
+ icapdcycl                    = 3
+/
+!&synsat_nml
+! lsynsat = .true.,.true.  
+!/ 
+&nwp_tuning_nml
+ itune_albedo = 1
+ tune_zceff_min = 0.075
+/
+&turbdiff_nml
+ tkhmin                       = 0.75
+ tkmmin                       = 0.75
+ pat_len                      = 750.
+ c_diff                       = 0.2
+ rat_sea                      = 0.8
+ ltkesso                      = .true.
+ frcsmot                      = 0.2      ! these 2 switches together apply vertical smoothing of the TKE source terms
+ imode_frcsmot                = 2  ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+  itype_sher    = 3    
+  ltkeshs       = .true.
+  a_hshr        = 2.0
+  alpha0        = 0.0123
+  alpha0_max    = 0.0335
+/
+&lnd_nml
+ ntiles                       = 3
+ nlev_snow                    = 3
+ lmulti_snow                  = .false.
+ itype_heatcond               = 2
+ idiag_snowfrac               = 2
+ lsnowtile                    = .false.  !! later on .true. if GRIB encoding issues are solved
+ lseaice                      = .true.
+ llake                        = .true.
+ itype_lndtbl                 = 3  ! minimizes moist/cold bias in lower tropical troposphere
+ itype_root                   = 2
+/
+&radiation_nml
+ irad_o3                      = 7           ! 6: GME, 7: GEMS, 9: MACC
+ irad_aero                    = 6
+ izenith                      = 4           ! 4: NWP default, 3: no annual cycle
+ albedo_type                  = 2           ! 2: Modis albedo
+ vmr_co2                      = 390.e-06    ! trace gase values representative for 2012
+ vmr_ch4                      = 1800.e-09
+ vmr_n2o                      = 322.0e-09
+ vmr_o2                       = 0.20946
+ vmr_cfc11                    = 240.e-12
+ vmr_cfc12                    = 532.e-12
+/
+&nonhydrostatic_nml
+ iadv_rhotheta                = 2
+ ivctype                      = 2
+ itime_scheme                 = 4
+ exner_expol                  = 0.333
+ vwind_offctr                 = 0.2
+ damp_height                  = 20000.
+ rayleigh_coeff               = 1.0
+ divdamp_order                = 24
+ divdamp_type                 = 32
+ divdamp_fac                  = 0.004
+ igradp_method                = 3
+ l_zdiffu_t                   = .true.
+ thslp_zdiffu                 = 0.02
+ thhgtd_zdiffu                = 125.
+ htop_moist_proc              = 22500.
+ hbot_qvsubstep               = 19000.
+/
+&sleve_nml
+ min_lay_thckn                = 20.
+ max_lay_thckn                = 400.   ! maximum layer thickness below htop_thcknlimit
+ htop_thcknlimit              = 14000. ! this implies that the upcoming COSMO-EU nest will have 60 levels
+ top_height                   = 30000.
+ stretch_fac                  = 0.9
+ decay_scale_1                = 4000.
+ decay_scale_2                = 2500.
+ decay_exp                    = 1.2
+ flat_height                  = 16000.
+/
+&dynamics_nml
+ divavg_cntrwgt               = 0.50
+ lcoriolis                    = .TRUE.
+/
+&transport_nml
+ ctracer_list                 = '12345'
+ ivadv_tracer                 = 3,3,3,3,3
+ itype_hlimit                 = 3,4,4,4,4,0
+ ihadv_tracer                 = 52,2,2,2,2,0
+ nadv_substeps                = 2
+/
+&diffusion_nml
+ hdiff_order                  = 5
+ itype_vn_diffu               = 1
+ itype_t_diffu                = 2
+ hdiff_efdt_ratio             = 24.0       ! 24.0 for R2B6; recommendation for R3B7: 30.0
+ hdiff_smag_fac               = 0.025      ! 0.025for R2B6; recommendation for R3B7: 0.02
+ lhdiff_vn                    = .TRUE.
+ lhdiff_temp                  = .TRUE.
+/
+&interpol_nml
+ nudge_zone_width             = 8  !-1 create nudge zone in grid
+ lsq_high_ord                 = 2
+ rbf_vec_scale_c              = 0.3,  0.1,  0.03
+ rbf_vec_scale_v              = 0.4,  0.25, 0.07
+ rbf_vec_scale_e              = 0.45, 0.37, 0.25
+/
+&gridref_nml
+! grf_intmethod_ct            = 1
+ grf_intmethod_e              = 6   ! default 6
+ grf_scalfbk                  = 1
+ grf_tracfbk                  = 1
+ denom_diffu_v                = 150.
+ rbf_scale_grf_e              = 0.4, 0.3, 0.25   ! default:  0.5, 0.4, 0.35
+/
+&extpar_nml
+ itopo                        = 1
+ n_iter_smooth_topo           = 1,1,2
+ heightdiff_threshold         = 1000.,1000.,750.
+/
+EOF
+
+cat > map_file.ana << EOF2
+# internal name     GRIB2 shortName
+theta_v             THETA_V
+rho                 DEN
+vn                  VN
+u                   U
+v                   V
+w                   W
+tke                 TKE
+temp                T
+pres                P
+qv                  QV
+qc                  QC
+qi                  QI
+qr                  QR
+qs                  QS
+t_g                 T_G
+qv_s                QV_S
+fr_seaice           FR_ICE
+t_ice               T_ICE
+h_ice               H_ICE
+t_snow              T_SNOW
+freshsnow           FRESHSNW
+w_snow              W_SNOW
+rho_snow            RHO_SNOW
+h_snow              H_SNOW
+w_i                 W_I
+w_so                W_SO
+w_so_ice            W_SO_ICE
+t_so                T_SO
+smi                 SMI
+gz0                 Z0
+pres_sfc            PS
+z_ifc               HHL
+
+t_mnw_lk            T_MNW_LK
+t_wml_lk            T_WML_LK
+h_ml_lk             H_ML_LK
+t_bot_lk            T_BOT_LK
+c_t_lk              C_T_LK
+t_b1_lk             T_B1_LK
+h_b1_lk             H_B1_LK
+EOF2
+
+#
+# configure START_MODEL_function
+#
+ICON_COMPONENT1_VH_procs=$((num_restart_procs + num_io_procs + num_prefetch_proc + num_io_procs_radar))
+
+# ----------------------------------------------------------------------
+# run the model!
+# ----------------------------------------------------------------------
+
+$START_MODEL
+EXIT_STATUS=$?
+
+echo "EXIT_STATUS: $EXIT_STATUS"
+exit $EXIT_STATUS

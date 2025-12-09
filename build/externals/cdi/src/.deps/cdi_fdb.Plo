@@ -1,0 +1,8 @@
+cdi_fdb.lo: \
+ /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/externals/cdi/src/cdi_fdb.c \
+ /usr/include/stdc-predef.h \
+ /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/externals/cdi/src/cdi_fdb.h \
+ config.h
+/usr/include/stdc-predef.h:
+/scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/externals/cdi/src/cdi_fdb.h:
+config.h:

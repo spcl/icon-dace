@@ -1,0 +1,3 @@
+src/parallel_infrastructure/mo_sync.o src/parallel_infrastructure/mo_sync.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/parallel_infrastructure/mo_sync.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/icon_definitions.inc
+mod/mo_sync.mod.proxy: src/parallel_infrastructure/mo_sync.o
+src/parallel_infrastructure/mo_sync.o src/parallel_infrastructure/mo_sync.o: mod/mo_mpi.mod.proxy mod/mo_communication.mod.proxy mod/mo_timer.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_impl_constants_grf.mod.proxy mod/mo_decomposition_tools.mod.proxy mod/mo_run_config.mod.proxy

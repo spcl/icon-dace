@@ -1,0 +1,3 @@
+src/shared/mo_time_management.o src/shared/mo_time_management.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/shared/mo_time_management.f90
+mod/mo_time_management.mod.proxy: src/shared/mo_time_management.o
+src/shared/mo_time_management.o src/shared/mo_time_management.o: mod/mo_io_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_master_config.mod.proxy mod/mo_nonhydrostatic_config.mod.proxy mod/mo_restart_nml_and_att.mod.proxy mod/mo_time_config.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_initicon_config.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_master_control.mod.proxy mod/mo_run_config.mod.proxy mod/mo_key_value_store.mod.proxy mod/mo_atm_phy_nwp_config.mod.proxy mod/mo_impl_constants.mod.proxy

@@ -1,0 +1,3 @@
+src/coupling/mo_wave_coupling_frame.o src/coupling/mo_wave_coupling_frame.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/coupling/mo_wave_coupling_frame.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_wave_coupling_frame.mod.proxy: src/coupling/mo_wave_coupling_frame.o
+src/coupling/mo_wave_coupling_frame.o src/coupling/mo_wave_coupling_frame.o: mod/mo_coupling_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_wave_atmo_coupling.mod.proxy mod/mo_time_config.mod.proxy mod/mo_coupling_utils.mod.proxy mod/mo_timer.mod.proxy mod/mo_run_config.mod.proxy

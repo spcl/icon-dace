@@ -1,0 +1,3 @@
+#!/bin/sh
+suffix=ext
+. ./test_cksum_base

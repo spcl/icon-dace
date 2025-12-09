@@ -1,0 +1,3 @@
+src/upper_atmosphere/mo_upatmo_extdat_state.o src/upper_atmosphere/mo_upatmo_extdat_state.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/upper_atmosphere/mo_upatmo_extdat_state.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_upatmo_extdat_state.mod.proxy: src/upper_atmosphere/mo_upatmo_extdat_state.o
+src/upper_atmosphere/mo_upatmo_extdat_state.o src/upper_atmosphere/mo_upatmo_extdat_state.o: mod/mo_impl_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_upatmo_extdat_utils.mod.proxy mod/mo_upatmo_phy_chemheat.mod.proxy mod/mo_upatmo_impl_const.mod.proxy mod/mo_upatmo_phy_config.mod.proxy mod/mo_upatmo_config.mod.proxy mod/mo_upatmo_types.mod.proxy mod/mo_model_domain.mod.proxy

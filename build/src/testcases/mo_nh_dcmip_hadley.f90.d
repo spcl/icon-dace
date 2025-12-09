@@ -1,0 +1,3 @@
+src/testcases/mo_nh_dcmip_hadley.o src/testcases/mo_nh_dcmip_hadley.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/testcases/mo_nh_dcmip_hadley.f90
+mod/mo_nh_dcmip_hadley.mod.proxy: src/testcases/mo_nh_dcmip_hadley.o
+src/testcases/mo_nh_dcmip_hadley.o src/testcases/mo_nh_dcmip_hadley.o: mod/mo_loopindices.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_intp.mod.proxy mod/mo_sync.mod.proxy mod/mo_intp_data_strc.mod.proxy mod/mo_kind.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_nonhydro_types.mod.proxy mod/mo_impl_constants.mod.proxy

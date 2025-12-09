@@ -1,0 +1,3 @@
+src/io/shared/mo_name_list_output_zaxes.o src/io/shared/mo_name_list_output_zaxes.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/io/shared/mo_name_list_output_zaxes.f90
+mod/mo_name_list_output_zaxes.mod.proxy: src/io/shared/mo_name_list_output_zaxes.o
+src/io/shared/mo_name_list_output_zaxes.o src/io/shared/mo_name_list_output_zaxes.o: mod/mo_kind.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_io_config.mod.proxy mod/mo_nonhydrostatic_config.mod.proxy mod/mo_level_selection_types.mod.proxy mod/mo_run_config.mod.proxy mod/mo_lnd_nwp_config.mod.proxy mod/mo_name_list_output_zaxes_types.mod.proxy mod/mo_zaxis_type.mod.proxy mod/mo_util_vgrid_types.mod.proxy

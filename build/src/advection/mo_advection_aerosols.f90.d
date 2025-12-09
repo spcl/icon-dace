@@ -1,0 +1,3 @@
+src/advection/mo_advection_aerosols.o src/advection/mo_advection_aerosols.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/advection/mo_advection_aerosols.f90
+mod/mo_advection_aerosols.mod.proxy: src/advection/mo_advection_aerosols.o
+src/advection/mo_advection_aerosols.o src/advection/mo_advection_aerosols.o: mod/mo_vertical_coord_table.mod.proxy mod/mo_math_divrot.mod.proxy mod/mo_impl_constants_grf.mod.proxy mod/mo_advection_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_math_gradients.mod.proxy mod/mo_intp_data_strc.mod.proxy mod/mo_advection_traj.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_intp_rbf.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_loopindices.mod.proxy

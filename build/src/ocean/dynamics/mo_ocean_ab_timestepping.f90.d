@@ -1,0 +1,3 @@
+src/ocean/dynamics/mo_ocean_ab_timestepping.o src/ocean/dynamics/mo_ocean_ab_timestepping.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/dynamics/mo_ocean_ab_timestepping.f90
+mod/mo_ocean_ab_timestepping.mod.proxy: src/ocean/dynamics/mo_ocean_ab_timestepping.o
+src/ocean/dynamics/mo_ocean_ab_timestepping.o src/ocean/dynamics/mo_ocean_ab_timestepping.o: mod/mo_ocean_physics_types.mod.proxy mod/mo_dynamics_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_ocean_types.mod.proxy mod/mo_ocean_ab_timestepping_mimetic.mod.proxy mod/mo_ocean_surface_types.mod.proxy mod/mo_ocean_nml.mod.proxy mod/mo_ext_data_types.mod.proxy

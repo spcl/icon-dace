@@ -1,0 +1,3 @@
+src/atm_phy_schemes/mo_srtm_kgs.o src/atm_phy_schemes/mo_srtm_kgs.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_schemes/mo_srtm_kgs.f90
+mod/mo_yoesrta19.mod.proxy mod/mo_yoesrta20.mod.proxy mod/mo_yoesrta24.mod.proxy mod/mo_yoesrta22.mod.proxy mod/mo_yoesrta29.mod.proxy mod/mo_yoesrta21.mod.proxy mod/mo_yoesrta26.mod.proxy mod/mo_yoesrta16.mod.proxy mod/mo_yoesrta25.mod.proxy mod/mo_yoesrta23.mod.proxy mod/mo_yoesrta17.mod.proxy mod/mo_yoesrta28.mod.proxy mod/mo_yoesrta27.mod.proxy mod/mo_yoesrta18.mod.proxy: src/atm_phy_schemes/mo_srtm_kgs.o
+src/atm_phy_schemes/mo_srtm_kgs.o src/atm_phy_schemes/mo_srtm_kgs.o: mod/mo_kind.mod.proxy

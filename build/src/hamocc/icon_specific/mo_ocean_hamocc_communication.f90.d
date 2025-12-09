@@ -1,0 +1,3 @@
+src/hamocc/icon_specific/mo_ocean_hamocc_communication.o src/hamocc/icon_specific/mo_ocean_hamocc_communication.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/hamocc/icon_specific/mo_ocean_hamocc_communication.f90
+mod/mo_ocean_hamocc_communication.mod.proxy: src/hamocc/icon_specific/mo_ocean_hamocc_communication.o
+src/hamocc/icon_specific/mo_ocean_hamocc_communication.o src/hamocc/icon_specific/mo_ocean_hamocc_communication.o: mod/mo_master_control.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_run_config.mod.proxy

@@ -1,0 +1,3 @@
+src/sppt/mo_sppt_config.o src/sppt/mo_sppt_config.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/sppt/mo_sppt_config.f90
+mod/mo_sppt_config.mod.proxy: src/sppt/mo_sppt_config.o
+src/sppt/mo_sppt_config.o src/sppt/mo_sppt_config.o: mod/mo_sync.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_time_config.mod.proxy mod/mo_ls_forcing_nml.mod.proxy mod/mo_kind.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_run_config.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_util_mtime.mod.proxy mod/mo_vertical_coord_table.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_atm_phy_nwp_config.mod.proxy

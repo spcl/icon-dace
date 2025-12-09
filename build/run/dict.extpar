@@ -1,0 +1,46 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+# The following table defines the dictionary for the mapping between
+# external parameter short names defined in the "add_var" calls in
+# ICON and the corresponding GRIB2 short names
+#
+topography_c            HSURF
+FR_LAND		        FR_LAND
+ICE		        FR_ICE
+PLCOV_MX	        PLCOV_MX
+LAI_MX		        LAI_MX
+ROOTDP		        ROOTDP
+RSMIN		        RSMIN
+FOR_D		        FOR_D
+FOR_E		        FOR_E
+Z0		        Z0
+NDVI_MAX	        NDVI_MAX
+SOILTYP		        SOILTYP
+LU_CLASS_FRACTION       FR_LUC
+EMIS_RAD	        EMIS_RAD
+T_CL		        T_2M_CL
+SSO_STDH	        SSO_STDH
+SSO_THETA	        SSO_THETA
+SSO_GAMMA	        SSO_GAMMA
+SSO_SIGMA	        SSO_SIGMA
+FR_LAKE		        FR_LAKE
+DEPTH_LK	        DEPTH_LK
+NDVI_MRAT	        NDVI_MRAT
+topography_v	        
+AER_SS		        
+AER_DUST	        
+AER_ORG		        
+AER_SO4		        
+AER_BC		        
+ALB		        ALB_DIF12
+ALUVD		        
+ALNID		        
+

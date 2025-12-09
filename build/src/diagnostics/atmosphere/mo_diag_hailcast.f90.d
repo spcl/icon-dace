@@ -1,0 +1,3 @@
+src/diagnostics/atmosphere/mo_diag_hailcast.o src/diagnostics/atmosphere/mo_diag_hailcast.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/diagnostics/atmosphere/mo_diag_hailcast.f90
+mod/mo_diag_hailcast.mod.proxy: src/diagnostics/atmosphere/mo_diag_hailcast.o
+src/diagnostics/atmosphere/mo_diag_hailcast.o src/diagnostics/atmosphere/mo_diag_hailcast.o: mod/mo_nwp_phy_types.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_nh_pzlev_config.mod.proxy mod/mo_run_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_nonhydro_types.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_intp_data_strc.mod.proxy

@@ -1,0 +1,3 @@
+src/atm_dyn_iconam/mo_nh_moist_thdyn.o src/atm_dyn_iconam/mo_nh_moist_thdyn.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_dyn_iconam/mo_nh_moist_thdyn.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_nh_moist_thdyn.mod.proxy: src/atm_dyn_iconam/mo_nh_moist_thdyn.o
+src/atm_dyn_iconam/mo_nh_moist_thdyn.o src/atm_dyn_iconam/mo_nh_moist_thdyn.o: mod/mo_run_config.mod.proxy mod/mo_intp_data_strc.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_nonhydro_types.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_prepadv_types.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_nonhydrostatic_config.mod.proxy

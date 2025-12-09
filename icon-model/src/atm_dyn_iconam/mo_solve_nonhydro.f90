@@ -18,6 +18,20 @@
 !----------------------------
 
 MODULE mo_solve_nonhydro
+#if defined(DACE_SUBST_ENABLE)
+  USE mo_velocity_no_nproma_if_prop_lvn_only_1_istep_1_bindings, ONLY: &
+    verify_velocity_no_nproma_if_prop_lvn_only_1_istep_1, &
+    run_velocity_no_nproma_if_prop_lvn_only_1_istep_1_verification, &
+    run_velocity_no_nproma_if_prop_lvn_only_1_istep_1
+  USE mo_velocity_no_nproma_if_prop_lvn_only_0_istep_1_bindings, ONLY: &
+    run_velocity_no_nproma_if_prop_lvn_only_0_istep_1, &
+    verify_velocity_no_nproma_if_prop_lvn_only_0_istep_1, &
+    run_velocity_no_nproma_if_prop_lvn_only_0_istep_1_verification
+  USE mo_velocity_no_nproma_if_prop_lvn_only_0_istep_2_bindings, ONLY: &
+    verify_velocity_no_nproma_if_prop_lvn_only_0_istep_2, &
+    run_velocity_no_nproma_if_prop_lvn_only_0_istep_2, &
+    run_velocity_no_nproma_if_prop_lvn_only_0_istep_2_verification
+#endif
 
   USE mo_kind,                 ONLY: wp, vp
   USE mo_nonhydrostatic_config,ONLY: itime_scheme,iadv_rhotheta, igradp_method,             &
@@ -428,17 +442,217 @@ MODULE mo_solve_nonhydro
         IF (itime_scheme >= 6 .OR. l_init .OR. l_recompute) THEN
           IF (itime_scheme < 6 .AND. .NOT. l_init) THEN
             lvn_only = .TRUE. ! Recompute only vn tendency
+#if defined(DACE_SUBST_ENABLE)
+#if defined(DACE_SUBST_VERIFY)
+  PRINT *, "Enter velocity_no_nproma_if_prop_lvn_only_1_istep_1"
+  CALL run_velocity_no_nproma_if_prop_lvn_only_1_istep_1_verification( &
+    dt_linintp_ubc = dt_linintp_ubc_nnow, &
+    dtime = dtime, &
+    istep = istep, &
+    ldeepatmo = transfer(ldeepatmo, mold=int(1, kind=4)), &
+    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
+    ntnd = ntl1, &
+    p_diag = p_nh%diag, &
+    p_int = p_int, &
+    p_metrics = p_nh%metrics, &
+    p_patch = p_patch, &
+    p_prog = p_nh%prog(nnow), &
+    z_kin_hor_e = z_kin_hor_e, &
+    z_vt_ie = z_vt_ie, &
+    z_w_concorr_me = z_w_concorr_me, &
+    clip_count = 0 &
+  )
+  PRINT *, "Exit velocity_no_nproma_if_prop_lvn_only_1_istep_1"
+#else
+  PRINT *, "Enter velocity_no_nproma_if_prop_lvn_only_1_istep_1"
+  CALL run_velocity_no_nproma_if_prop_lvn_only_1_istep_1( &
+    dt_linintp_ubc = dt_linintp_ubc_nnow, &
+    dtime = dtime, &
+    istep = istep, &
+    ldeepatmo = transfer(ldeepatmo, mold=int(1, kind=4)), &
+    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
+    ntnd = ntl1, &
+    p_diag = p_nh%diag, &
+    p_int = p_int, &
+    p_metrics = p_nh%metrics, &
+    p_patch = p_patch, &
+    p_prog = p_nh%prog(nnow), &
+    z_kin_hor_e = z_kin_hor_e, &
+    z_vt_ie = z_vt_ie, &
+    z_w_concorr_me = z_w_concorr_me, &
+    clip_count = 0 &
+  )
+  PRINT *, "Exit velocity_no_nproma_if_prop_lvn_only_1_istep_1"
+#endif
+#endif
+
+#if !defined(DACE_SUBST_ENABLE) || defined(DACE_SUBST_VERIFY)
+            CALL velocity_tendencies(p_nh%prog(nnow),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
+              z_kin_hor_e,z_vt_ie,ntl1,istep,lvn_only,dtime,dt_linintp_ubc_nnow,ldeepatmo)
+#endif
+
+#if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+  CALL verify_velocity_no_nproma_if_prop_lvn_only_1_istep_1( &
+    dt_linintp_ubc = dt_linintp_ubc_nnow, &
+    dtime = dtime, &
+    istep = istep, &
+    ldeepatmo = transfer(ldeepatmo, mold=int(1, kind=4)), &
+    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
+    ntnd = ntl1, &
+    p_diag = p_nh%diag, &
+    p_int = p_int, &
+    p_metrics = p_nh%metrics, &
+    p_patch = p_patch, &
+    p_prog = p_nh%prog(nnow), &
+    z_kin_hor_e = z_kin_hor_e, &
+    z_vt_ie = z_vt_ie, &
+    z_w_concorr_me = z_w_concorr_me, &
+    clip_count = 0 &
+  )
+#endif
           ELSE
             lvn_only = .FALSE.
+#if defined(DACE_SUBST_ENABLE)
+#if defined(DACE_SUBST_VERIFY)
+  PRINT *, "Enter velocity_no_nproma_if_prop_lvn_only_0_istep_1"
+  CALL run_velocity_no_nproma_if_prop_lvn_only_0_istep_1_verification( &
+    dt_linintp_ubc = dt_linintp_ubc_nnow, &
+    dtime = dtime, &
+    istep = istep, &
+    ldeepatmo = transfer(ldeepatmo, mold=int(1, kind=4)), &
+    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
+    ntnd = ntl1, &
+    p_diag = p_nh%diag, &
+    p_int = p_int, &
+    p_metrics = p_nh%metrics, &
+    p_patch = p_patch, &
+    p_prog = p_nh%prog(nnow), &
+    z_kin_hor_e = z_kin_hor_e, &
+    z_vt_ie = z_vt_ie, &
+    z_w_concorr_me = z_w_concorr_me, &
+    clip_count = 0 &
+  )
+  PRINT *, "Exit velocity_no_nproma_if_prop_lvn_only_0_istep_1"
+#else
+  PRINT *, "Enter velocity_no_nproma_if_prop_lvn_only_0_istep_1"
+  CALL run_velocity_no_nproma_if_prop_lvn_only_0_istep_1( &
+    dt_linintp_ubc = dt_linintp_ubc_nnow, &
+    dtime = dtime, &
+    istep = istep, &
+    ldeepatmo = transfer(ldeepatmo, mold=int(1, kind=4)), &
+    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
+    ntnd = ntl1, &
+    p_diag = p_nh%diag, &
+    p_int = p_int, &
+    p_metrics = p_nh%metrics, &
+    p_patch = p_patch, &
+    p_prog = p_nh%prog(nnow), &
+    z_kin_hor_e = z_kin_hor_e, &
+    z_vt_ie = z_vt_ie, &
+    z_w_concorr_me = z_w_concorr_me, &
+    clip_count = 0 &
+  )
+  PRINT *, "Exit velocity_no_nproma_if_prop_lvn_only_0_istep_1"
+#endif
+#endif
+
+#if !defined(DACE_SUBST_ENABLE) || defined(DACE_SUBST_VERIFY)
+            CALL velocity_tendencies(p_nh%prog(nnow),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
+              z_kin_hor_e,z_vt_ie,ntl1,istep,lvn_only,dtime,dt_linintp_ubc_nnow,ldeepatmo)
+#endif
+
+#if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+  CALL verify_velocity_no_nproma_if_prop_lvn_only_0_istep_1( &
+    dt_linintp_ubc = dt_linintp_ubc_nnow, &
+    dtime = dtime, &
+    istep = istep, &
+    ldeepatmo = transfer(ldeepatmo, mold=int(1, kind=4)), &
+    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
+    ntnd = ntl1, &
+    p_diag = p_nh%diag, &
+    p_int = p_int, &
+    p_metrics = p_nh%metrics, &
+    p_patch = p_patch, &
+    p_prog = p_nh%prog(nnow), &
+    z_kin_hor_e = z_kin_hor_e, &
+    z_vt_ie = z_vt_ie, &
+    z_w_concorr_me = z_w_concorr_me, &
+    clip_count = 0 &
+  )
+#endif
           ENDIF
-          CALL velocity_tendencies(p_nh%prog(nnow),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
-            z_kin_hor_e,z_vt_ie,ntl1,istep,lvn_only,dtime,dt_linintp_ubc_nnow,ldeepatmo)
         ENDIF
         nvar = nnow
       ELSE                 ! corrector step
         lvn_only = .FALSE.
+#if defined(DACE_SUBST_ENABLE)
+#if defined(DACE_SUBST_VERIFY)
+  PRINT *, "Enter velocity_no_nproma_if_prop_lvn_only_0_istep_2"
+  CALL run_velocity_no_nproma_if_prop_lvn_only_0_istep_2_verification( &
+    dt_linintp_ubc = dt_linintp_ubc_nnew, &
+    dtime = dtime, &
+    istep = istep, &
+    ldeepatmo = transfer(ldeepatmo, mold=int(1, kind=4)), &
+    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
+    ntnd = ntl2, &
+    p_diag = p_nh%diag, &
+    p_int = p_int, &
+    p_metrics = p_nh%metrics, &
+    p_patch = p_patch, &
+    p_prog = p_nh%prog(nnew), &
+    z_kin_hor_e = z_kin_hor_e, &
+    z_vt_ie = z_vt_ie, &
+    z_w_concorr_me = z_w_concorr_me, &
+    clip_count = 0 &
+  )
+  PRINT *, "Exit velocity_no_nproma_if_prop_lvn_only_0_istep_2"
+#else
+  PRINT *, "Enter velocity_no_nproma_if_prop_lvn_only_0_istep_2"
+  CALL run_velocity_no_nproma_if_prop_lvn_only_0_istep_2( &
+    dt_linintp_ubc = dt_linintp_ubc_nnew, &
+    dtime = dtime, &
+    istep = istep, &
+    ldeepatmo = transfer(ldeepatmo, mold=int(1, kind=4)), &
+    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
+    ntnd = ntl2, &
+    p_diag = p_nh%diag, &
+    p_int = p_int, &
+    p_metrics = p_nh%metrics, &
+    p_patch = p_patch, &
+    p_prog = p_nh%prog(nnew), &
+    z_kin_hor_e = z_kin_hor_e, &
+    z_vt_ie = z_vt_ie, &
+    z_w_concorr_me = z_w_concorr_me, &
+    clip_count = 0 &
+  )
+  PRINT *, "Exit velocity_no_nproma_if_prop_lvn_only_0_istep_2"
+#endif
+#endif
+
+#if !defined(DACE_SUBST_ENABLE) || defined(DACE_SUBST_VERIFY)
         CALL velocity_tendencies(p_nh%prog(nnew),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
           z_kin_hor_e,z_vt_ie,ntl2,istep,lvn_only,dtime,dt_linintp_ubc_nnew,ldeepatmo)
+#endif
+
+#if defined(DACE_SUBST_ENABLE) && defined(DACE_SUBST_VERIFY)
+  CALL verify_velocity_no_nproma_if_prop_lvn_only_0_istep_2( &
+    dt_linintp_ubc = dt_linintp_ubc_nnew, &
+    dtime = dtime, &
+    istep = istep, &
+    ldeepatmo = transfer(ldeepatmo, mold=int(1, kind=4)), &
+    lvn_only = transfer(lvn_only, mold=int(1, kind=4)), &
+    ntnd = ntl2, &
+    p_diag = p_nh%diag, &
+    p_int = p_int, &
+    p_metrics = p_nh%metrics, &
+    p_patch = p_patch, &
+    p_prog = p_nh%prog(nnew), &
+    z_kin_hor_e = z_kin_hor_e, &
+    z_vt_ie = z_vt_ie, &
+    z_w_concorr_me = z_w_concorr_me, &
+    clip_count = 0 &
+  )
+#endif
         nvar = nnew
       ENDIF
 

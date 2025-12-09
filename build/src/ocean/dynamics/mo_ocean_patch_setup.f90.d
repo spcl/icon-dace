@@ -1,0 +1,3 @@
+src/ocean/dynamics/mo_ocean_patch_setup.o src/ocean/dynamics/mo_ocean_patch_setup.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/dynamics/mo_ocean_patch_setup.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_ocean_patch_setup.mod.proxy: src/ocean/dynamics/mo_ocean_patch_setup.o
+src/ocean/dynamics/mo_ocean_patch_setup.o src/ocean/dynamics/mo_ocean_patch_setup.o: mod/mo_grid_tools.mod.proxy mod/mo_dynamics_config.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_model_domimp_setup.mod.proxy mod/mo_grid_subset.mod.proxy mod/mo_mpi.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_sync.mod.proxy mod/mo_model_domain.mod.proxy

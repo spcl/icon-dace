@@ -1,0 +1,3 @@
+src/shr_horizontal/mo_alloc_patches.o src/shr_horizontal/mo_alloc_patches.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/shr_horizontal/mo_alloc_patches.f90
+mod/mo_alloc_patches.mod.proxy: src/shr_horizontal/mo_alloc_patches.o
+src/shr_horizontal/mo_alloc_patches.o src/shr_horizontal/mo_alloc_patches.o: mod/mo_grid_config.mod.proxy mod/mo_decomposition_tools.mod.proxy mod/mo_mpi.mod.proxy mod/ppm_extents.mod.proxy mod/mo_kind.mod.proxy mod/mo_read_netcdf_distributed.mod.proxy mod/mo_communication.mod.proxy mod/mo_parallel_config.mod.proxy mod/ppm_distributed_array.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_impl_constants.mod.proxy

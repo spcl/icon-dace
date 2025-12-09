@@ -1,0 +1,3 @@
+src/io/restart/mo_load_restart.o src/io/restart/mo_load_restart.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/io/restart/mo_load_restart.f90
+mod/mo_load_restart.mod.proxy: src/io/restart/mo_load_restart.o
+src/io/restart/mo_load_restart.o src/io/restart/mo_load_restart.o: mod/mo_mpi.mod.proxy mod/mo_master_control.mod.proxy mod/mo_load_singlefile_restart.mod.proxy mod/mo_load_multifile_restart.mod.proxy mod/mo_multifile_restart_util.mod.proxy mod/mo_var.mod.proxy mod/mo_netcdf_errhandler.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_timer.mod.proxy mod/mo_restart_util.mod.proxy mod/mo_var_list_register_utils.mod.proxy mod/mo_restart_nml_and_att.mod.proxy mod/mo_netcdf.mod.proxy

@@ -1,0 +1,3 @@
+src/atm_phy_bcs/mo_bc_ozone.o src/atm_phy_bcs/mo_bc_ozone.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_bcs/mo_bc_ozone.f90
+mod/mo_bc_ozone.mod.proxy: src/atm_phy_bcs/mo_bc_ozone.o
+src/atm_phy_bcs/mo_bc_ozone.o src/atm_phy_bcs/mo_bc_ozone.o: mod/mo_bcs_time_interpolation.mod.proxy mod/mo_timer.mod.proxy mod/mo_atmo_o3_provider_coupling.mod.proxy mod/mo_read_interface.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_netcdf.mod.proxy mod/mo_kind.mod.proxy mod/mo_aes_rad_config.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_netcdf_errhandler.mod.proxy mod/mo_time_config.mod.proxy mod/mo_mpi.mod.proxy mod/mo_io_config.mod.proxy

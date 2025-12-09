@@ -1,0 +1,3 @@
+src/ocean/math/mo_ocean_solve_transfer_subset.o src/ocean/math/mo_ocean_solve_transfer_subset.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/math/mo_ocean_solve_transfer_subset.f90
+mod/mo_ocean_solve_subset_transfer.mod.proxy: src/ocean/math/mo_ocean_solve_transfer_subset.o
+src/ocean/math/mo_ocean_solve_transfer_subset.o src/ocean/math/mo_ocean_solve_transfer_subset.o: mod/mo_timer.mod.proxy mod/mo_ocean_solve_aux.mod.proxy mod/mo_mpi.mod.proxy mod/mo_communication.mod.proxy mod/mo_ocean_solve_transfer.mod.proxy mod/mo_run_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_communication_factory.mod.proxy mod/mo_decomposition_tools.mod.proxy

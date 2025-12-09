@@ -1,0 +1,3 @@
+src/ocean/config/mo_ocean_read_namelists.o src/ocean/config/mo_ocean_read_namelists.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/config/mo_ocean_read_namelists.f90
+mod/mo_ocean_read_namelists.mod.proxy: src/ocean/config/mo_ocean_read_namelists.o
+src/ocean/config/mo_ocean_read_namelists.o src/ocean/config/mo_ocean_read_namelists.o: mod/mo_ocean_nml.mod.proxy mod/mo_sea_ice_nml.mod.proxy mod/mo_parallel_nml.mod.proxy mod/mo_run_nml.mod.proxy mod/mo_time_nml.mod.proxy mod/mo_nml_annotate.mod.proxy mod/mo_dbg_nml.mod.proxy mod/mo_io_nml.mod.proxy mod/mo_grid_nml.mod.proxy mod/mo_dynamics_nml.mod.proxy mod/mo_name_list_output_init.mod.proxy mod/mo_coupling_nml.mod.proxy mod/mo_mpi.mod.proxy mod/mo_hamocc_nml.mod.proxy mod/mo_gribout_nml.mod.proxy

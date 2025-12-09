@@ -1,0 +1,71 @@
+{
+  "build" : {
+    "tools" : {
+      "CC"       : "/apps/ault/spack/opt/spack/linux-centos8-zen/gcc-8.4.1/gcc-10.2.0-fqf4ze2mfclmx6e7ehrjckznpoqnevmi/bin/gcc",
+      "CPP"      : "/apps/ault/spack/opt/spack/linux-centos8-zen/gcc-8.4.1/gcc-10.2.0-fqf4ze2mfclmx6e7ehrjckznpoqnevmi/bin/gcc -E",
+      "CPPFLAGS" : " ",
+      "CFLAGS"   : "-g -O2",
+      "LDFLAGS"  : "-L/scratch/pmazumde/gitspace/icon-artifacts/velocity/integrate_meh",
+      "LIBS"     : "-lm  -lvelocity_cpu -lopenblas -lnetcdff -lnetcdf",
+      "FC"       : "/apps/ault/spack/opt/spack/linux-centos8-zen/gcc-8.4.1/gcc-10.2.0-fqf4ze2mfclmx6e7ehrjckznpoqnevmi/bin/gfortran",
+      "F77"      : "no",
+      "FCFLAGS"  : "-DDACE_SUBST_ENABLE -g -I/scratch/wbenjami/dafy/sdfg_gpu/spack/opt/spack/linux-centos8-zen2/gcc-10.2.0/netcdf-fortran-4.6.0-p7jdeag2groulzasdfqnokx2qiris3zh/include -I/scratch/wbenjami/dafy/sdfg_gpu/spack/opt/spack/linux-centos8-zen2/gcc-10.2.0/netcdf-c-4.9.2-zynxjqlltpkunevnlaltrm7kfqlwjgpu/include -O2 -std=legacy",
+      "LD"       : "/usr/bin/ld -m elf_x86_64",
+      "NM"       : "/usr/bin/nm -B",
+      "AR"       : "ar",
+      "DLLTOOL"  : "false",
+      "OBJDUMP"  : "objdump",
+      "STRIP"    : "strip",
+      "RANLIB"   : "ranlib",
+      "INSTALL"  : "/usr/bin/install -c"
+    },
+    "libraries" : {
+      "threads"    : {
+        "lib"      : "",
+        "include"  : ""
+      },
+      "mpi"        : {
+        "libs"     : "",
+        "cflags"   : "",
+        "fclibs"   : "",
+        "fcflags"  : ""
+      },
+      "fdb5"    : {
+        "lib"      : "",
+        "include"  : ""
+      },
+      "szlib"    : {
+        "lib"      : "",
+        "include"  : ""
+      },
+      "netcdf"   : {
+        "lib"      : " -lnetcdf",
+        "include"  : ""
+      },
+      "grib_api" : {
+        "lib"      : "",
+        "include"  : ""
+      },
+      "eccodes" : {
+        "lib"      : "",
+        "include"  : ""
+      }
+    },
+    "platform" : {
+      "SYSTEM_TYPE" : "x86_64-pc-linux-gnu"
+    }
+  },
+  "features" : {
+    "enable_cdi_lib" : true,
+    "grib"           : "yes",
+    "cgribex"        : "yes",
+    "service"        : "yes",
+    "extra"          : "yes",
+    "ieg"            : "yes",
+    "enable_mpi"     : false,
+    "parallel_nc4"   : 0,
+    "enable_python"  : false,
+    "enable_ruby"    : false
+    "across"         : "no",
+  }
+}

@@ -1,0 +1,3 @@
+src/shared/mo_util_dbg_prnt.o src/shared/mo_util_dbg_prnt.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/shared/mo_util_dbg_prnt.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/icon_definitions.inc
+mod/mo_util_dbg_prnt.mod.proxy: src/shared/mo_util_dbg_prnt.o
+src/shared/mo_util_dbg_prnt.o src/shared/mo_util_dbg_prnt.o: mod/mo_dbg_nml.mod.proxy mod/mo_timer.mod.proxy mod/mo_statistics.mod.proxy mod/mo_kind.mod.proxy mod/mo_grid_subset.mod.proxy mod/mo_sync.mod.proxy mod/mo_icon_comm_interface.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_mpi.mod.proxy mod/mo_model_domain.mod.proxy

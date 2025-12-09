@@ -1,0 +1,3 @@
+src/atm_phy_aes/mo_interface_aes_rad.o src/atm_phy_aes/mo_interface_aes_rad.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_aes/mo_interface_aes_rad.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_interface_aes_rad.mod.proxy: src/atm_phy_aes/mo_interface_aes_rad.o
+src/atm_phy_aes/mo_interface_aes_rad.o src/atm_phy_aes/mo_interface_aes_rad.o: mod/mo_aes_graupel.mod.proxy mod/mo_timer.mod.proxy mod/mo_aes_phy_memory.mod.proxy mod/mo_aes_rad_config.mod.proxy mod/mo_aes_phy_dims.mod.proxy mod/mo_snow_ice_reff.mod.proxy mod/mo_run_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_aes_phy_config.mod.proxy

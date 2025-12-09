@@ -1,0 +1,3 @@
+src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.o src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.f90
+mod/microphysics_1mom_schemes.mod.proxy: src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.o
+src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.o src/granules/microphysics_1mom_schemes/microphysics_1mom_schemes.o: mod/gscp_ice.mod.proxy mod/gscp_cloudice.mod.proxy mod/gscp_kessler.mod.proxy mod/gscp_data.mod.proxy mod/gscp_graupel.mod.proxy

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+exit 77
+test 'xyes' = xyes || exit 77
+
+PYTHONDONTWRITEBYTECODE=1; export PYTHONDONTWRITEBYTECODE
+PYTHONPATH="/scratch/pmazumde/paper-icon-dace/icon-dace/build/externals/cdi/interfaces/python:/scratch/pmazumde/paper-icon-dace/icon-dace/build/externals/cdi/interfaces/python/.libs:${PYTHONPATH}"; export PYTHONPATH
+ '/scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/externals/cdi/interfaces/python/test.py' '/scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/externals/cdi/interfaces/testdata/mulval.grb'

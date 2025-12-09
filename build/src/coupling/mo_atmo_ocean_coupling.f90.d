@@ -1,0 +1,3 @@
+src/coupling/mo_atmo_ocean_coupling.o src/coupling/mo_atmo_ocean_coupling.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/coupling/mo_atmo_ocean_coupling.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_atmo_ocean_coupling.mod.proxy: src/coupling/mo_atmo_ocean_coupling.o
+src/coupling/mo_atmo_ocean_coupling.o src/coupling/mo_atmo_ocean_coupling.o: mod/mo_kind.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_coupling_utils.mod.proxy mod/mo_run_config.mod.proxy mod/mo_util_dbg_prnt.mod.proxy mod/mo_ext_data_types.mod.proxy mod/mo_mpi.mod.proxy mod/mo_parallel_config.mod.proxy

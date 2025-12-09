@@ -1,0 +1,3 @@
+src/atm_phy_aes/tmx/mo_tmx_smagorinsky.o src/atm_phy_aes/tmx/mo_tmx_smagorinsky.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_aes/tmx/mo_tmx_smagorinsky.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_tmx_smagorinsky.mod.proxy: src/atm_phy_aes/tmx/mo_tmx_smagorinsky.o
+src/atm_phy_aes/tmx/mo_tmx_smagorinsky.o src/atm_phy_aes/tmx/mo_tmx_smagorinsky.o: mod/mo_loopindices.mod.proxy mod/mo_variable_list.mod.proxy mod/mo_tmx_field_class.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_sync.mod.proxy mod/mo_model_domain.mod.proxy

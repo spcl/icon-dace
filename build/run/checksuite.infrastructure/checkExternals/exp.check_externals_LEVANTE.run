@@ -1,0 +1,87 @@
+#! /bin/ksh
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#=============================================================================
+
+# mistral cpu batch job parameters
+# --------------------------------
+#SBATCH --account=mh0156
+#SBATCH --qos=buildbot
+#SBATCH --job-name=exp.check_externals_LEVANTE.run
+#SBATCH --partition=compute
+#SBATCH --nodes=1
+# the following is needed to work around a bug that otherwise leads to
+# a too low number of ranks when using compute,compute2 as queue
+#SBATCH --mem=0
+#SBATCH --output=LOG.exp.check_externals_LEVANTE.run.run.o
+#SBATCH  --error=LOG.exp.check_externals_LEVANTE.run.run.o
+#SBATCH --exclusive
+#SBATCH --time=00:20:00
+
+#=============================================================================
+set -x
+ulimit -s unlimited
+#=============================================================================
+thisdir=$(pwd)
+basedir=${thisdir%/*}
+
+icon_data_rootFolder=${icon_data_rootFolder:=/pool/data/ICON}
+
+# Prepare RTE-RRTMGP data:
+rte_data_rootFolder="${icon_data_rootFolder}/buildbot_data/rte-rrtmgp"
+rte_data_id='11a1825f6b'
+
+rte_builddir="${basedir}/externals/rte-rrtmgp"
+if [[ -f "${rte_builddir}/config.status" ]] ; then
+  rte_data_folder="${rte_data_rootFolder}/${rte_data_id}"
+
+  if [[ -d "${rte_data_folder}" ]] ; then
+    rsync -rtvz --chmod=u=rwX "${rte_data_folder}/" "${rte_builddir}/.testcache"
+  else
+    # Most probably, the compute node will attempt to download the data and fail
+    echo "WARNING: directory '${rte_data_folder}' with RTE-RRTMGP test data does not exist" >&2
+  fi
+fi
+
+# Speed up the 'make check' (this step is allowed to fail):
+MAKE_PROCS=22
+make -C "${basedir}" -j ${MAKE_PROCS} check-bundled TESTS= XFAIL_TESTS=
+
+# Run 'make check' and save its exit code:
+exitcode=0
+make -C "${basedir}" check-bundled || exitcode=$?
+
+# Generate the status file for the buildbot
+echo "${exitcode}" > exp.check_externals_LEVANTE.run.final_status
+
+# Print the log files for debugging:
+if false; then  # change false to true if the logs are needed
+  set +x
+  echo " ***** Test logs from '$(pwd)' ***** "
+  for d in $(find . -name 'tests'); do
+    echo " ||||| '$d' ||||| "
+    for f in $(find $d -name '*.log'); do
+      echo " ///// '$f' ///// "
+      cat $f
+      execf=${f%.log}
+      if test -f $execf; then
+        echo " +++++ '$execf' +++++ "
+        cat $execf
+      fi
+    done
+  done
+  echo " ***** End of test logs from '$(pwd)' ***** "
+  set -x
+fi
+
+# Exit with the exit code of the 'make check' command:
+exit ${exitcode}

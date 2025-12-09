@@ -16,12 +16,20 @@ unset CDPATH
 script_dir=$(cd "$(dirname "$0")"; pwd)
 icon_dir=$(cd "${script_dir}/../.."; pwd)
 
+# export LD_LIBRARY_PATH="/scratch/pmazumde/gitspace/icon-artifacts/velocity/integrate_meh:$LD_LIBRARY_PATH"
+# export FCFLAGS="-DDACE_SUBST_ENABLE"
+# export LDFLAGS="-L/scratch/pmazumde/gitspace/icon-artifacts/velocity/integrate_meh"
+# export LIBS="-lvelocity_no_nproma_if_prop_lvn_only_0_istep_1 -lvelocity_no_nproma_if_prop_lvn_only_0_istep_2 -lvelocity_no_nproma_if_prop_lvn_only_1_istep_1 -lvelocity_no_nproma_if_prop_lvn_only_1_istep_2"
+export DACE_FCFLAGS="-DDACE_SUBST_ENABLE"
+export DACE_LDFLAGS="-L/scratch/pmazumde/gitspace/icon-artifacts/velocity/integrate_meh"
+export DACE_LIBS="-lvelocity_no_nproma_if_prop_lvn_only_0_istep_1 -lvelocity_no_nproma_if_prop_lvn_only_0_istep_2 -lvelocity_no_nproma_if_prop_lvn_only_1_istep_1 -lvelocity_no_nproma_if_prop_lvn_only_1_istep_2"
+
 "${icon_dir}/configure" \
   '--disable-rpaths' \
   '--enable-atmo' \
   '--enable-les' \
   '--enable-nwp' \
-  '--enable-ecrad' \
+  '--disable-ecrad' \
   '--enable-mpi' \
   '--enable-gpu=openacc+cuda' \
   '--disable-upatmo' \

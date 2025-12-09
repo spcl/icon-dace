@@ -1,0 +1,27 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+#
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+
+####### Expanded from @PACKAGE_INIT@ by configure_package_config_file() #######
+####### Any changes to this file will be overwritten by the next CMake run ####
+####### The input file was config.cmake.in                            ########
+
+get_filename_component(PACKAGE_PREFIX_DIR "${CMAKE_CURRENT_LIST_DIR}/../../" ABSOLUTE)
+
+####################################################################################
+
+include("${CMAKE_CURRENT_LIST_DIR}/math-support-targets.cmake")
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(math-support REQUIRED_VARS math-support_DIR)
+
+include(CMakeFindDependencyMacro)
+find_dependency(fortran-support REQUIRED)

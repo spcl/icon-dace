@@ -1,0 +1,67 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#--------------------------------------------------------------------------------
+# 
+# 1. Define the experiment and the files to be checked
+
+# EXPERIMENT is the name of the experiment, that defines the experiment descriptor
+# file run/exp.<EXPNAME>. EXPNAME is used also for:
+# - the output directory name: experiments/<EXPNAME>
+# - the output  file names: <EXPNAME>_<TYPE>_<DATE>.nc
+# - the restart file names: 
+#
+export EXPERIMENT='oce_omip_0160km'
+
+# TYPES is a list of names identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export TYPES='oceDefault oceDiag'
+
+# DATES is a list of dates identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export DATES='20010101T000000Z 20010101T120000Z 20010101T180000Z 20010102T000000Z 20010102T120000Z 20010102T180000Z 20010103T000000Z'
+
+# RESTART_DATE defines the date and time from which restarts should be performed.
+# 
+export RESTART_DATE='20010102T000000Z'
+
+#--------------------------------------------------------------------------------
+# 
+# 2. Define the checksuite mode
+#
+# u = update test
+# r = restart test
+# n = nproma test
+# m = mpi test
+# o = omp test
+#
+# default: MD='rnmo'
+#
+export MD='rnmo'
+
+#--------------------------------------------------------------------------------
+# 
+# 3. Launch the checksuite from run/
+
+rundir=`pwd`
+cd checksuite.icon-dev
+
+./icon-dev.checksuite
+STATUS=$?
+
+check_final_status $STATUS "$EXPERIMENT"
+
+
+#--------------------------------------------------------------------------------
+exit

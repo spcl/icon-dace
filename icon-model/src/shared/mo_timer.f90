@@ -39,6 +39,7 @@ MODULE mo_timer
   IMPLICIT NONE
   PRIVATE
 
+  public :: timer_report
   PUBLIC :: ltimer, timers_level, activate_sync_timers
   PUBLIC :: new_timer, timer_start, timer_stop                !< procedures imported from mo_real_timer
   PUBLIC :: print_timer, cleanup_timer, delete_timer          !< procedures imported and renamed

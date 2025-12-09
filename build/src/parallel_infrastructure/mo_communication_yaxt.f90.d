@@ -1,0 +1,2 @@
+src/parallel_infrastructure/mo_communication_yaxt.o src/parallel_infrastructure/mo_communication_yaxt.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/parallel_infrastructure/mo_communication_yaxt.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/crayftn_ptr_fail.inc /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/icon_definitions.inc
+mod/mo_communication_yaxt.mod.proxy: src/parallel_infrastructure/mo_communication_yaxt.o

@@ -1,0 +1,3 @@
+src/upper_atmosphere/mo_upatmo_flowevent_utils.o src/upper_atmosphere/mo_upatmo_flowevent_utils.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/upper_atmosphere/mo_upatmo_flowevent_utils.f90
+mod/mo_upatmo_flowevent_utils.mod.proxy: src/upper_atmosphere/mo_upatmo_flowevent_utils.o
+src/upper_atmosphere/mo_upatmo_flowevent_utils.o src/upper_atmosphere/mo_upatmo_flowevent_utils.o: mod/mo_upatmo_impl_const.mod.proxy mod/mo_upatmo_types.mod.proxy mod/mo_restart_nml_and_att.mod.proxy mod/mo_kind.mod.proxy mod/mo_upatmo_utils.mod.proxy mod/mo_upatmo_config.mod.proxy mod/mo_packed_message.mod.proxy mod/mo_key_value_store.mod.proxy mod/mo_impl_constants.mod.proxy

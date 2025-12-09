@@ -1,0 +1,3 @@
+src/atm_phy_nwp/mo_nwp_vdiff_types.o src/atm_phy_nwp/mo_nwp_vdiff_types.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/atm_phy_nwp/mo_nwp_vdiff_types.f90
+mod/mo_nwp_vdiff_types.mod.proxy: src/atm_phy_nwp/mo_nwp_vdiff_types.o
+src/atm_phy_nwp/mo_nwp_vdiff_types.o src/atm_phy_nwp/mo_nwp_vdiff_types.o: mod/mo_var_list.mod.proxy mod/mo_var_groups.mod.proxy mod/mo_time_config.mod.proxy mod/mo_cdi_constants.mod.proxy mod/mo_cf_convention.mod.proxy mod/mo_io_config.mod.proxy mod/mo_zaxis_type.mod.proxy mod/mo_util_mtime.mod.proxy mod/mo_coupling_config.mod.proxy mod/mo_grib2.mod.proxy mod/mo_kind.mod.proxy

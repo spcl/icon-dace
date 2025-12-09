@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -euo pipefail
+
+# This is the generic file that is used to generate probtest tolerances
+
+# This file will be copied on the fly by scripts/experiments/yaml_experiment_test_processor.py
+# before adding it with addexp.
+
+# set basic name
+probtest_exp=${EXPNAME#generate_tolerance_}
+
+echo "Generate new tolerance data for '$probtest_exp' (using job $EXPNAME)"
+
+# make sure the resulting data and directories are global readable
+umask 0022
+
+# path to probtest script
+PROBTEST="${basedir}/externals/probtest/probtest.py"
+
+stats_file_name="stats_${probtest_exp}_{member_id}.csv"
+default_reference_stats_file_name="stats_${probtest_exp}_ref.csv"
+reference_file_name="${basedir}/${probtest_exp}_reference.csv"
+
+if [[ -z "$probtest_exp" ]]; then
+    echo "ERROR: \$probtest_exp not set"
+    echo "probtest_exp is required for pp.generate_tolerance"
+    exit 1
+fi
+
+# Set PROBTEST_CONFIG according to initialized json file in yaml_experiment_test_processor.py
+export PROBTEST_CONFIG="${basedir}/${probtest_exp}-config.json"
+
+# create stats file for each seed (layer-wise max/min/mean)
+"$PROBTEST" stats --ensemble --stats-file-name "$stats_file_name" || exit 3
+
+# store the reference stats file
+echo "storing reference ${default_reference_stats_file_name} to ${reference_file_name}"
+cp "$default_reference_stats_file_name" "$reference_file_name" || exit 4
+
+tolerance_file_name="${basedir}/${probtest_exp}_tolerance.csv"
+# compute tolerance range from above stats files (maximum spread across all pairs of stats files and maximum across all layers)
+"$PROBTEST" tolerance --stats-file-name "$stats_file_name" --tolerance-file-name "$tolerance_file_name" || exit 5
+
+# exit 0 on success (and don't execute any appended scripts)
+exit 0

@@ -1,0 +1,3 @@
+src/advection/mo_prepadv_state.o src/advection/mo_prepadv_state.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/advection/mo_prepadv_state.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/add_var_acc_macro.inc
+mod/mo_prepadv_state.mod.proxy: src/advection/mo_prepadv_state.o
+src/advection/mo_prepadv_state.o src/advection/mo_prepadv_state.o: mod/mo_run_config.mod.proxy mod/mo_master_control.mod.proxy mod/mo_var_list_register.mod.proxy mod/mo_var_list.mod.proxy mod/mo_prepadv_types.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_cdi_constants.mod.proxy mod/mo_cf_convention.mod.proxy mod/mo_grib2.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_zaxis_type.mod.proxy

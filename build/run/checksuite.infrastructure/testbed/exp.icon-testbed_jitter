@@ -1,0 +1,62 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#-----------------------------------------------------------------------------
+#
+# Basic specifications of the simulation
+# --------------------------------------
+#
+#-----------------------------------------------------------------------------
+# The following values must be set here as shell variables so that they can be used
+# also in the executing section of the completed run script
+#-----------------------------------------------------------------------------
+# the namelist filename
+testbed_namelist=NAMELIST_${EXPNAME}
+#
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+nproma=${nproma:=4}
+testbed_iterations=${testbed_iterations:=1000}
+calculate_iterations=${calculate_iterations:=20}
+no_of_blocks=${no_of_blocks:=64}
+no_of_layers=${no_of_layers:=80}
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+# write ICON namelist parameters
+# input: namelist_filename
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+#  
+create_namelist()
+{
+namelist_filename=$1
+cat > $namelist_filename << EOF
+&testbed_nml
+  testbed_model        = 3  ! test the jitter
+  testbed_iterations   = ${testbed_iterations}
+  calculate_iterations = ${calculate_iterations}
+  no_of_blocks         = ${no_of_blocks}
+  no_of_layers         = ${no_of_layers}
+/
+&parallel_nml
+ nproma         = ${nproma}
+/
+EOF
+}
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+create_namelist $testbed_namelist
+#-----------------------------------------------------------------------------
+

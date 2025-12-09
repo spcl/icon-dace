@@ -1,0 +1,3 @@
+src/ocean/math/mo_ocean_solve_lhs_primal_flip_flop.o src/ocean/math/mo_ocean_solve_lhs_primal_flip_flop.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/math/mo_ocean_solve_lhs_primal_flip_flop.f90
+mod/mo_primal_flip_flop_lhs.mod.proxy: src/ocean/math/mo_ocean_solve_lhs_primal_flip_flop.o
+src/ocean/math/mo_ocean_solve_lhs_primal_flip_flop.o src/ocean/math/mo_ocean_solve_lhs_primal_flip_flop.o: mod/mo_kind.mod.proxy mod/mo_ocean_types.mod.proxy mod/mo_ocean_solve_aux.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_scalar_product.mod.proxy mod/mo_ocean_solve_lhs_type.mod.proxy

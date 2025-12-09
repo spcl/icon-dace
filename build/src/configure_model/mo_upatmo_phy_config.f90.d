@@ -1,0 +1,3 @@
+src/configure_model/mo_upatmo_phy_config.o src/configure_model/mo_upatmo_phy_config.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/configure_model/mo_upatmo_phy_config.f90
+mod/mo_upatmo_phy_config.mod.proxy: src/configure_model/mo_upatmo_phy_config.o
+src/configure_model/mo_upatmo_phy_config.o src/configure_model/mo_upatmo_phy_config.o: mod/mo_upatmo_impl_const.mod.proxy mod/mo_kind.mod.proxy mod/mo_name_list_output_types.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_phy_events.mod.proxy mod/mo_upatmo_utils.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_mpi.mod.proxy

@@ -1,0 +1,486 @@
+{
+  "name": "root",
+  "ancestry": [],
+  "children": [
+    {
+      "name": "total",
+      "ancestry": [
+        "root"
+      ],
+      "children": [
+        {
+          "name": "integrate_nh",
+          "ancestry": [
+            "root",
+            "total"
+          ],
+          "children": [
+            {
+              "name": "nh_solve",
+              "ancestry": [
+                "root",
+                "total",
+                "integrate_nh"
+              ],
+              "children": [
+                {
+                  "name": "nh_solve.veltend",
+                  "ancestry": [
+                    "root",
+                    "total",
+                    "integrate_nh",
+                    "nh_solve"
+                  ],
+                  "children": []
+                },
+                {
+                  "name": "nh_solve.cellcomp",
+                  "ancestry": [
+                    "root",
+                    "total",
+                    "integrate_nh",
+                    "nh_solve"
+                  ],
+                  "children": []
+                },
+                {
+                  "name": "nh_solve.edgecomp",
+                  "ancestry": [
+                    "root",
+                    "total",
+                    "integrate_nh",
+                    "nh_solve"
+                  ],
+                  "children": []
+                },
+                {
+                  "name": "nh_solve.vnupd",
+                  "ancestry": [
+                    "root",
+                    "total",
+                    "integrate_nh",
+                    "nh_solve"
+                  ],
+                  "children": []
+                },
+                {
+                  "name": "nh_solve.vimpl",
+                  "ancestry": [
+                    "root",
+                    "total",
+                    "integrate_nh",
+                    "nh_solve"
+                  ],
+                  "children": []
+                },
+                {
+                  "name": "nh_solve.exch",
+                  "ancestry": [
+                    "root",
+                    "total",
+                    "integrate_nh",
+                    "nh_solve"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "nh_hdiff",
+              "ancestry": [
+                "root",
+                "total",
+                "integrate_nh"
+              ],
+              "children": []
+            },
+            {
+              "name": "transport",
+              "ancestry": [
+                "root",
+                "total",
+                "integrate_nh"
+              ],
+              "children": [
+                {
+                  "name": "adv_horiz",
+                  "ancestry": [
+                    "root",
+                    "total",
+                    "integrate_nh",
+                    "transport"
+                  ],
+                  "children": [
+                    {
+                      "name": "adv_hflx",
+                      "ancestry": [
+                        "root",
+                        "total",
+                        "integrate_nh",
+                        "transport",
+                        "adv_horiz"
+                      ],
+                      "children": [
+                        {
+                          "name": "back_traj",
+                          "ancestry": [
+                            "root",
+                            "total",
+                            "integrate_nh",
+                            "transport",
+                            "adv_horiz",
+                            "adv_hflx"
+                          ],
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "adv_vert",
+                  "ancestry": [
+                    "root",
+                    "total",
+                    "integrate_nh",
+                    "transport"
+                  ],
+                  "children": [
+                    {
+                      "name": "adv_vflx",
+                      "ancestry": [
+                        "root",
+                        "total",
+                        "integrate_nh",
+                        "transport",
+                        "adv_vert"
+                      ],
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "nesting",
+              "ancestry": [
+                "root",
+                "total",
+                "integrate_nh"
+              ],
+              "children": [
+                {
+                  "name": "nesting.bdy_interp",
+                  "ancestry": [
+                    "root",
+                    "total",
+                    "integrate_nh",
+                    "nesting"
+                  ],
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "exch_data",
+      "ancestry": [
+        "root"
+      ],
+      "children": [
+        {
+          "name": "exch_data.wait",
+          "ancestry": [
+            "root",
+            "exch_data"
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "global_sum",
+      "ancestry": [
+        "root"
+      ],
+      "children": []
+    },
+    {
+      "name": "ordglb_sum",
+      "ancestry": [
+        "root"
+      ],
+      "children": []
+    },
+    {
+      "name": "wrt_output",
+      "ancestry": [
+        "root"
+      ],
+      "children": [
+        {
+          "name": "wait_for_async_io",
+          "ancestry": [
+            "root",
+            "wrt_output"
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "physics",
+      "ancestry": [
+        "root"
+      ],
+      "children": [
+        {
+          "name": "nwp_radiation",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": [
+            {
+              "name": "preradiaton",
+              "ancestry": [
+                "root",
+                "physics",
+                "nwp_radiation"
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "phys_acc_sync",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": []
+        },
+        {
+          "name": "satad",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": []
+        },
+        {
+          "name": "phys_u_v",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": []
+        },
+        {
+          "name": "nwp_turbulence",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": [
+            {
+              "name": "nwp_turbtrans",
+              "ancestry": [
+                "root",
+                "physics",
+                "nwp_turbulence"
+              ],
+              "children": []
+            },
+            {
+              "name": "nwp_turbdiff",
+              "ancestry": [
+                "root",
+                "physics",
+                "nwp_turbulence"
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "nwp_surface",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": []
+        },
+        {
+          "name": "nwp_microphysics",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": []
+        },
+        {
+          "name": "rediag_prog_vars",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": []
+        },
+        {
+          "name": "nwp_convection",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": []
+        },
+        {
+          "name": "sso",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": []
+        },
+        {
+          "name": "cloud_cover",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": []
+        },
+        {
+          "name": "radheat",
+          "ancestry": [
+            "root",
+            "physics"
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "nh_diagnostics",
+      "ancestry": [
+        "root"
+      ],
+      "children": []
+    },
+    {
+      "name": "diagnose_pres_temp",
+      "ancestry": [
+        "root"
+      ],
+      "children": []
+    },
+    {
+      "name": "model_init",
+      "ancestry": [
+        "root"
+      ],
+      "children": [
+        {
+          "name": "compute_domain_decomp",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "compute_intp_coeffs",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "init_ext_data",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "init_icon",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "init_latbc",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "init_nwp_phy",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "upper_atmosphere",
+      "ancestry": [
+        "root"
+      ],
+      "children": [
+        {
+          "name": "upatmo_construction",
+          "ancestry": [
+            "root",
+            "upper_atmosphere"
+          ],
+          "children": []
+        },
+        {
+          "name": "upatmo_destruction",
+          "ancestry": [
+            "root",
+            "upper_atmosphere"
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "write_restart",
+      "ancestry": [
+        "root"
+      ],
+      "children": [
+        {
+          "name": "write_restart_io",
+          "ancestry": [
+            "root",
+            "write_restart"
+          ],
+          "children": []
+        },
+        {
+          "name": "write_restart_communication",
+          "ancestry": [
+            "root",
+            "write_restart"
+          ],
+          "children": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+src/advection/mo_advection_vflux.o src/advection/mo_advection_vflux.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/advection/mo_advection_vflux.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_advection_vflux.mod.proxy: src/advection/mo_advection_vflux.o
+src/advection/mo_advection_vflux.o src/advection/mo_advection_vflux.o: mod/mo_run_config.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_sync.mod.proxy mod/mo_advection_config.mod.proxy mod/mo_kind.mod.proxy mod/mo_nonhydro_types.mod.proxy mod/mo_mpi.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_impl_constants_grf.mod.proxy mod/mo_timer.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_advection_vlimit.mod.proxy mod/mo_model_domain.mod.proxy

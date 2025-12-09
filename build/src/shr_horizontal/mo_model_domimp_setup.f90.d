@@ -1,0 +1,3 @@
+src/shr_horizontal/mo_model_domimp_setup.o src/shr_horizontal/mo_model_domimp_setup.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/shr_horizontal/mo_model_domimp_setup.f90 /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/include/omp_definitions.inc
+mod/mo_model_domimp_setup.mod.proxy: src/shr_horizontal/mo_model_domimp_setup.o
+src/shr_horizontal/mo_model_domimp_setup.o src/shr_horizontal/mo_model_domimp_setup.o: mod/mo_grid_subset.mod.proxy mod/mo_master_control.mod.proxy mod/mo_run_config.mod.proxy mod/mo_sync.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_impl_constants_grf.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_impl_constants.mod.proxy

@@ -1,0 +1,3 @@
+src/testcases/mo_nh_wk_exp.o src/testcases/mo_nh_wk_exp.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/testcases/mo_nh_wk_exp.f90
+mod/mo_nh_wk_exp.mod.proxy: src/testcases/mo_nh_wk_exp.o
+src/testcases/mo_nh_wk_exp.o src/testcases/mo_nh_wk_exp.o: mod/mo_nh_init_utils.mod.proxy mod/mo_nh_diagnose_pres_temp.mod.proxy mod/mo_run_config.mod.proxy mod/mo_loopindices.mod.proxy mod/mo_extpar_config.mod.proxy mod/mo_impl_constants.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_nonhydro_types.mod.proxy mod/mo_satad.mod.proxy mod/mo_intp_data_strc.mod.proxy mod/mo_sync.mod.proxy mod/mo_physical_constants.mod.proxy mod/mo_kind.mod.proxy mod/mo_model_domain.mod.proxy mod/mo_hydro_adjust.mod.proxy mod/mo_vertical_coord_table.mod.proxy

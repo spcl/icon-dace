@@ -1,0 +1,3 @@
+src/ocean/config/mo_ocean_nml_crosscheck.o src/ocean/config/mo_ocean_nml_crosscheck.f90.d: /scratch/pmazumde/paper-icon-dace/icon-dace/icon-model/src/ocean/config/mo_ocean_nml_crosscheck.f90
+mod/mo_ocean_nml_crosscheck.mod.proxy: src/ocean/config/mo_ocean_nml_crosscheck.o
+src/ocean/config/mo_ocean_nml_crosscheck.o src/ocean/config/mo_ocean_nml_crosscheck.o: mod/mo_time_management.mod.proxy mod/mo_kind.mod.proxy mod/mo_grid_config.mod.proxy mod/mo_parallel_config.mod.proxy mod/mo_ocean_nml.mod.proxy mod/mo_master_control.mod.proxy mod/mo_master_config.mod.proxy mod/mo_time_config.mod.proxy mod/mo_run_config.mod.proxy mod/mo_io_config.mod.proxy
