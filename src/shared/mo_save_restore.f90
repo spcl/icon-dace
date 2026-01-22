@@ -67,10 +67,16 @@ MODULE mo_save_restore
     INTEGER,  ALLOCATABLE :: i(:,:,:,:,:)
     LOGICAL,  ALLOCATABLE :: l(:,:,:,:,:)
   CONTAINS
-    PROCEDURE, PRIVATE :: t_saved_field_put_r, t_saved_field_put_s, t_saved_field_put_i, t_saved_field_put_l
+    PROCEDURE, PRIVATE :: t_saved_field_put_r
+    PROCEDURE, PRIVATE :: t_saved_field_put_s
+    PROCEDURE, PRIVATE :: t_saved_field_put_i
+    PROCEDURE, PRIVATE :: t_saved_field_put_l
     GENERIC :: put => t_saved_field_put_r, t_saved_field_put_s, t_saved_field_put_i, t_saved_field_put_l
 
-    PROCEDURE, PRIVATE :: t_saved_field_get_r, t_saved_field_get_s, t_saved_field_get_i, t_saved_field_get_l
+    PROCEDURE, PRIVATE :: t_saved_field_get_r
+    PROCEDURE, PRIVATE :: t_saved_field_get_s
+    PROCEDURE, PRIVATE :: t_saved_field_get_i
+    PROCEDURE, PRIVATE :: t_saved_field_get_l
     GENERIC :: get => t_saved_field_get_r, t_saved_field_get_s, t_saved_field_get_i, t_saved_field_get_l
 
     PROCEDURE :: is_allocated => t_saved_field_is_allocated

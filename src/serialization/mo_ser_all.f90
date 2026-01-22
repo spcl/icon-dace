@@ -16,7 +16,7 @@ MODULE mo_ser_all
 
   PUBLIC :: serialize_all ! This is the only component that has to be available without SERIALIZE
 
-
+CONTAINS
 
   SUBROUTINE serialize_all(nproma, jg, savepoint_base, is_input, opt_id, opt_dt)
     USE mtime, ONLY: datetime
