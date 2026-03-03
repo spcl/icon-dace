@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+icon_dir=$(cd "${script_dir}/../.."; pwd)
+
+"${icon_dir}/configure" \
+  '--enable-atmo' \
+  '--enable-les' \
+  '--enable-ecrad' \
+  '--enable-openmp' \
+  '--enable-nwp' \
+  '--disable-mpi' \
+  '--disable-coupling' \
+  '--disable-ocean' \
+  '--disable-rpaths' \
+  '--disable-upatmo' \
+  '--disable-jsbach' \
+  '--disable-waves' \
+  '--disable-aes' \
+  '--disable-rte-rrtmgp' \
+  '--disable-mpi-gpu' \
+  '--disable-parallel-netcdf' \
+  '--disable-cdi-pio' \
+  '--disable-yaxt' \
+  '--disable-mixed-precision' \
+  '--disable-comin' \
+  '--disable-art' \
+  '--disable-serialization' \
+  '--disable-grib2' \
+  '--disable-mpi-checks' \
+  '--disable-gpu' \
+  'CFLAGS=-g' \
+  'ICON_CFLAGS=-O3' \
+  'ICON_BUNDLED_CFLAGS=-O2' \
+  "FCFLAGS=${DACE_FCFLAGS:-} -g $(pkg-config --cflags-only-I netcdf-fortran)" \
+  'ICON_FCFLAGS=-O2 -std=legacy' \
+  "LDFLAGS=${DACE_LDFLAGS:-}" \
+  "LIBS=${DACE_LIBS:-} -lopenblas -lnetcdff -lnetcdf"
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${icon_dir}"; pwd); then
+  if rsync -h >/dev/null 2>&1; then
+    echo "Copying runscript input files from the source directory..."
+    rsync -uavz ${icon_dir}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+    ln -sf ${icon_dir}/run/standard_* run/
+    rsync -uavz ${icon_dir}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+    rsync -uavz ${icon_dir}/make_runscripts .
+    ln -sf ${icon_dir}/data
+    ln -sf ${icon_dir}/vertical_coord_tables
+  else
+    echo "WARNING: 'rsync' is not available: unable to copy runscript input files from the source directory." >&2
+  fi
+fi
