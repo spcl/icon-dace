@@ -39,7 +39,7 @@ MODULE mo_solve_nonhydro
   USE mo_physical_constants,ONLY: rd, cpd, cvd, grav, p0ref
   USE mo_math_gradients,    ONLY: grad_green_gauss_cell
   USE mo_velocity_advection,ONLY: velocity_tendencies
-  USE velocity_call_tracker, ONLY: velocity_c1_count, velocity_c2_count, &
+  USE mo_velocity_call_tracker, ONLY: velocity_c1_count, velocity_c2_count, &
                                   velocity_c3_count, velocity_c4_count
   USE mo_math_constants,    ONLY: dbl_eps
   USE mo_vertical_grid,     ONLY: nrdmax, nflat_gradp

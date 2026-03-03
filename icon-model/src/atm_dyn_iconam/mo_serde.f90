@@ -1,4 +1,4 @@
-MODULE serde
+MODULE mo_serde
   IMPLICIT NONE
   INTERFACE serialize
     MODULE PROCEDURE :: W_string
@@ -2107,4 +2107,4 @@ MODULE serde
     CALL serialize(io, nrdmax, cleanup = .FALSE.)
     CLOSE(UNIT = io)
   END SUBROUTINE serialize_global_data
-END MODULE serde
+END MODULE mo_serde

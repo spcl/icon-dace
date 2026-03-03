@@ -36,8 +36,8 @@ MODULE mo_velocity_advection
   USE mo_impl_constants,    ONLY: min_rlcell_int, min_rledge_int, min_rlvert_int
   USE mo_impl_constants_grf,ONLY: grf_bdywidth_c, grf_bdywidth_e
   USE mo_timer,             ONLY: timer_solve_nh_veltend, timer_start, timer_stop
-  USE serde
-  USE velocity_tendency_tracker, ONLY: velocity_tendencies_c1_count, velocity_tendencies_c2_count, velocity_tendencies_c3_count, velocity_tendencies_c4_count
+  USE mo_serde
+  USE mo_velocity_tendency_tracker, ONLY: velocity_tendencies_c1_count, velocity_tendencies_c2_count, velocity_tendencies_c3_count, velocity_tendencies_c4_count
   IMPLICIT NONE
 
   PRIVATE
