@@ -17,6 +17,8 @@
 #include "omp_definitions.inc"
 !----------------------------
 
+
+
 MODULE mo_velocity_advection
 
   USE mo_kind,                 ONLY: wp, vp
@@ -35,7 +37,7 @@ MODULE mo_velocity_advection
   USE mo_impl_constants_grf,ONLY: grf_bdywidth_c, grf_bdywidth_e
   USE mo_timer,             ONLY: timer_solve_nh_veltend, timer_start, timer_stop
   USE serde
-  USE velocity_tendency_tracker
+  USE velocity_tendency_tracker, ONLY: velocity_tendencies_c1_count, velocity_tendencies_c2_count, velocity_tendencies_c3_count, velocity_tendencies_c4_count
   IMPLICIT NONE
 
   PRIVATE
@@ -143,7 +145,7 @@ MODULE mo_velocity_advection
 
     call tic()
     flag = .FALSE.
-    do_serialize = .FALSE.
+    do_serialize = .TRUE.
 
     IF (do_serialize) THEN
       IF ((lvn_only .eqv. .FALSE.) .AND. (istep == 1)) THEN
@@ -151,9 +153,9 @@ MODULE mo_velocity_advection
         IF (velocity_tendencies_c1_count == 1 .OR. &
         velocity_tendencies_c1_count == 7 .OR. &
         velocity_tendencies_c1_count == 77 .OR. &
-        velocity_tendencies_c1_count == 432 .OR. &
-        velocity_tendencies_c1_count == 950 .OR. &
-        velocity_tendencies_c1_count == 1511 .OR. &
+        !velocity_tendencies_c1_count == 432 .OR. &
+        !velocity_tendencies_c1_count == 950 .OR. &
+        !velocity_tendencies_c1_count == 1511 .OR. &
         velocity_tendencies_c1_count == 5432) THEN
           flag = .TRUE.
         ENDIF
@@ -163,9 +165,9 @@ MODULE mo_velocity_advection
         IF (velocity_tendencies_c2_count == 1 .OR. &
         velocity_tendencies_c2_count == 7 .OR. &
         velocity_tendencies_c2_count == 77 .OR. &
-        velocity_tendencies_c2_count == 432 .OR. &
-        velocity_tendencies_c2_count == 950 .OR. &
-        velocity_tendencies_c2_count == 1511 .OR. &
+        !velocity_tendencies_c2_count == 432 .OR. &
+        !velocity_tendencies_c2_count == 950 .OR. &
+        !velocity_tendencies_c2_count == 1511 .OR. &
         velocity_tendencies_c2_count == 5432) THEN
           flag = .TRUE.
         ENDIF
@@ -175,9 +177,9 @@ MODULE mo_velocity_advection
         IF (velocity_tendencies_c3_count == 1 .OR. &
         velocity_tendencies_c3_count == 7 .OR. &
         velocity_tendencies_c3_count == 77 .OR. &
-        velocity_tendencies_c3_count == 432 .OR. &
-        velocity_tendencies_c3_count == 950 .OR. &
-        velocity_tendencies_c3_count == 1511 .OR. &
+        !velocity_tendencies_c3_count == 432 .OR. &
+        !velocity_tendencies_c3_count == 950 .OR. &
+        !velocity_tendencies_c3_count == 1511 .OR. &
         velocity_tendencies_c3_count == 5432) THEN
           flag = .TRUE.
         ENDIF
@@ -187,9 +189,9 @@ MODULE mo_velocity_advection
         IF (velocity_tendencies_c1_count == 1 .OR. &
         velocity_tendencies_c4_count == 7 .OR. &
         velocity_tendencies_c4_count == 77 .OR. &
-        velocity_tendencies_c4_count == 432 .OR. &
-        velocity_tendencies_c4_count == 950 .OR. &
-        velocity_tendencies_c4_count == 1511 .OR. &
+        !velocity_tendencies_c4_count == 432 .OR. &
+        !velocity_tendencies_c4_count == 950 .OR. &
+        !velocity_tendencies_c4_count == 1511 .OR. &
         velocity_tendencies_c4_count == 5432) THEN
           flag = .TRUE.
         ENDIF
