@@ -1,1048 +1,8 @@
-MODULE f90_glue_vt_serde
-  USE, INTRINSIC :: iso_c_binding
-  USE mo_decomposition_tools, ONLY: t_grid_domain_decomp_info
-  USE mo_intp_data_strc, ONLY: t_int_state
-  USE mo_model_domain, ONLY: t_grid_cells
-  USE mo_model_domain, ONLY: t_grid_edges
-  USE mo_model_domain, ONLY: t_grid_vertices
-  USE mo_model_domain, ONLY: t_patch
-  USE mo_nonhydro_types, ONLY: t_nh_diag
-  USE mo_nonhydro_types, ONLY: t_nh_metrics
-  USE mo_nonhydro_types, ONLY: t_nh_prog
-  IMPLICIT NONE
-  TYPE, BIND(C) :: glue_global_data_type
-    INTEGER(KIND = c_int) :: m_i_am_accel_node
-    INTEGER(KIND = c_int) :: m_lextra_diffu
-    TYPE(c_ptr) :: m_nflatlev
-    INTEGER(KIND = c_int) :: m_nproma
-    TYPE(c_ptr) :: m_nrdmax
-    INTEGER(KIND = c_int) :: m_timer_intp
-    INTEGER(KIND = c_int) :: m_timer_solve_nh_veltend
-    INTEGER(KIND = c_int) :: m_timers_level
-  END TYPE glue_global_data_type
-  TYPE, BIND(C) :: glue_t_patch
-    TYPE(c_ptr) :: m_cells
-    TYPE(c_ptr) :: m_edges
-    INTEGER(KIND = c_int) :: m_nblks_c
-    INTEGER(KIND = c_int) :: m_nblks_e
-    INTEGER(KIND = c_int) :: m_nblks_v
-    TYPE(c_ptr) :: m_verts
-  END TYPE glue_t_patch
-  TYPE, BIND(C) :: glue_t_int_state
-    INTEGER(KIND = c_int) :: m___f2dace_SA_c_lin_e_d_0_s_25
-    INTEGER(KIND = c_int) :: m___f2dace_SA_c_lin_e_d_1_s_26
-    INTEGER(KIND = c_int) :: m___f2dace_SA_c_lin_e_d_2_s_27
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cells_aw_verts_d_0_s_31
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cells_aw_verts_d_1_s_32
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cells_aw_verts_d_2_s_33
-    INTEGER(KIND = c_int) :: m___f2dace_SA_e_bln_c_s_d_0_s_28
-    INTEGER(KIND = c_int) :: m___f2dace_SA_e_bln_c_s_d_1_s_29
-    INTEGER(KIND = c_int) :: m___f2dace_SA_e_bln_c_s_d_2_s_30
-    INTEGER(KIND = c_int) :: m___f2dace_SA_geofac_grdiv_d_0_s_37
-    INTEGER(KIND = c_int) :: m___f2dace_SA_geofac_grdiv_d_1_s_38
-    INTEGER(KIND = c_int) :: m___f2dace_SA_geofac_grdiv_d_2_s_39
-    INTEGER(KIND = c_int) :: m___f2dace_SA_geofac_n2s_d_0_s_43
-    INTEGER(KIND = c_int) :: m___f2dace_SA_geofac_n2s_d_1_s_44
-    INTEGER(KIND = c_int) :: m___f2dace_SA_geofac_n2s_d_2_s_45
-    INTEGER(KIND = c_int) :: m___f2dace_SA_geofac_rot_d_0_s_40
-    INTEGER(KIND = c_int) :: m___f2dace_SA_geofac_rot_d_1_s_41
-    INTEGER(KIND = c_int) :: m___f2dace_SA_geofac_rot_d_2_s_42
-    INTEGER(KIND = c_int) :: m___f2dace_SA_rbf_vec_coeff_e_d_0_s_34
-    INTEGER(KIND = c_int) :: m___f2dace_SA_rbf_vec_coeff_e_d_1_s_35
-    INTEGER(KIND = c_int) :: m___f2dace_SA_rbf_vec_coeff_e_d_2_s_36
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_c_lin_e_d_0_s_25
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_c_lin_e_d_1_s_26
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_c_lin_e_d_2_s_27
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cells_aw_verts_d_0_s_31
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cells_aw_verts_d_1_s_32
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cells_aw_verts_d_2_s_33
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_e_bln_c_s_d_0_s_28
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_e_bln_c_s_d_1_s_29
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_e_bln_c_s_d_2_s_30
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_geofac_grdiv_d_0_s_37
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_geofac_grdiv_d_1_s_38
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_geofac_grdiv_d_2_s_39
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_geofac_n2s_d_0_s_43
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_geofac_n2s_d_1_s_44
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_geofac_n2s_d_2_s_45
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_geofac_rot_d_0_s_40
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_geofac_rot_d_1_s_41
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_geofac_rot_d_2_s_42
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_rbf_vec_coeff_e_d_0_s_34
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_rbf_vec_coeff_e_d_1_s_35
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_rbf_vec_coeff_e_d_2_s_36
-    TYPE(c_ptr) :: m_c_lin_e
-    TYPE(c_ptr) :: m_cells_aw_verts
-    TYPE(c_ptr) :: m_e_bln_c_s
-    TYPE(c_ptr) :: m_geofac_grdiv
-    TYPE(c_ptr) :: m_geofac_n2s
-    TYPE(c_ptr) :: m_geofac_rot
-    TYPE(c_ptr) :: m_rbf_vec_coeff_e
-  END TYPE glue_t_int_state
-  TYPE, BIND(C) :: glue_t_nh_prog
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_d_0_s_288
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_d_1_s_289
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_d_2_s_290
-    INTEGER(KIND = c_int) :: m___f2dace_SA_w_d_0_s_285
-    INTEGER(KIND = c_int) :: m___f2dace_SA_w_d_1_s_286
-    INTEGER(KIND = c_int) :: m___f2dace_SA_w_d_2_s_287
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_d_0_s_288
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_d_1_s_289
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_d_2_s_290
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_d_0_s_285
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_d_1_s_286
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_d_2_s_287
-    TYPE(c_ptr) :: m_vn
-    TYPE(c_ptr) :: m_w
-  END TYPE glue_t_nh_prog
-  TYPE, BIND(C) :: glue_t_nh_metrics
-    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff1_dwdz_d_0_s_332
-    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff1_dwdz_d_1_s_333
-    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff1_dwdz_d_2_s_334
-    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff2_dwdz_d_0_s_335
-    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff2_dwdz_d_1_s_336
-    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff2_dwdz_d_2_s_337
-    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff_gradekin_d_0_s_329
-    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff_gradekin_d_1_s_330
-    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff_gradekin_d_2_s_331
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddqz_z_full_e_d_0_s_314
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddqz_z_full_e_d_1_s_315
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddqz_z_full_e_d_2_s_316
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddqz_z_half_d_0_s_317
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddqz_z_half_d_1_s_318
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddqz_z_half_d_2_s_319
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddxn_z_full_d_0_s_308
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddxn_z_full_d_1_s_309
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddxn_z_full_d_2_s_310
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddxt_z_full_d_0_s_311
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddxt_z_full_d_1_s_312
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddxt_z_full_d_2_s_313
-    INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_gradh_ifc_d_0_s_340
-    INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_gradh_mc_d_0_s_338
-    INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_invr_ifc_d_0_s_341
-    INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_invr_mc_d_0_s_339
-    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_c_d_0_s_320
-    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_c_d_1_s_321
-    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_c_d_2_s_322
-    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_e_d_0_s_323
-    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_e_d_1_s_324
-    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_e_d_2_s_325
-    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq_e_d_0_s_326
-    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq_e_d_1_s_327
-    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq_e_d_2_s_328
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff1_dwdz_d_0_s_332
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff1_dwdz_d_1_s_333
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff1_dwdz_d_2_s_334
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff2_dwdz_d_0_s_335
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff2_dwdz_d_1_s_336
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff2_dwdz_d_2_s_337
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff_gradekin_d_0_s_329
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff_gradekin_d_1_s_330
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff_gradekin_d_2_s_331
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddqz_z_full_e_d_0_s_314
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddqz_z_full_e_d_1_s_315
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddqz_z_full_e_d_2_s_316
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddqz_z_half_d_0_s_317
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddqz_z_half_d_1_s_318
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddqz_z_half_d_2_s_319
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddxn_z_full_d_0_s_308
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddxn_z_full_d_1_s_309
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddxn_z_full_d_2_s_310
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddxt_z_full_d_0_s_311
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddxt_z_full_d_1_s_312
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddxt_z_full_d_2_s_313
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_gradh_ifc_d_0_s_340
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_gradh_mc_d_0_s_338
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_invr_ifc_d_0_s_341
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_invr_mc_d_0_s_339
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_c_d_0_s_320
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_c_d_1_s_321
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_c_d_2_s_322
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_e_d_0_s_323
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_e_d_1_s_324
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_e_d_2_s_325
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq_e_d_0_s_326
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq_e_d_1_s_327
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq_e_d_2_s_328
-    TYPE(c_ptr) :: m_coeff1_dwdz
-    TYPE(c_ptr) :: m_coeff2_dwdz
-    TYPE(c_ptr) :: m_coeff_gradekin
-    TYPE(c_ptr) :: m_ddqz_z_full_e
-    TYPE(c_ptr) :: m_ddqz_z_half
-    TYPE(c_ptr) :: m_ddxn_z_full
-    TYPE(c_ptr) :: m_ddxt_z_full
-    TYPE(c_ptr) :: m_deepatmo_gradh_ifc
-    TYPE(c_ptr) :: m_deepatmo_gradh_mc
-    TYPE(c_ptr) :: m_deepatmo_invr_ifc
-    TYPE(c_ptr) :: m_deepatmo_invr_mc
-    TYPE(c_ptr) :: m_wgtfac_c
-    TYPE(c_ptr) :: m_wgtfac_e
-    TYPE(c_ptr) :: m_wgtfacq_e
-  END TYPE glue_t_nh_metrics
-  TYPE, BIND(C) :: glue_t_nh_diag
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_apc_pc_d_0_s_300
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_apc_pc_d_1_s_301
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_apc_pc_d_2_s_302
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_apc_pc_d_3_s_303
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_w_adv_pc_d_0_s_304
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_w_adv_pc_d_1_s_305
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_w_adv_pc_d_2_s_306
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_w_adv_pc_d_3_s_307
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_d_0_s_294
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_d_1_s_295
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_d_2_s_296
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vt_d_0_s_291
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vt_d_1_s_292
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vt_d_2_s_293
-    INTEGER(KIND = c_int) :: m___f2dace_SA_w_concorr_c_d_0_s_297
-    INTEGER(KIND = c_int) :: m___f2dace_SA_w_concorr_c_d_1_s_298
-    INTEGER(KIND = c_int) :: m___f2dace_SA_w_concorr_c_d_2_s_299
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_apc_pc_d_0_s_300
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_apc_pc_d_1_s_301
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_apc_pc_d_2_s_302
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_apc_pc_d_3_s_303
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_w_adv_pc_d_0_s_304
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_w_adv_pc_d_1_s_305
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_w_adv_pc_d_2_s_306
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_w_adv_pc_d_3_s_307
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_d_0_s_294
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_d_1_s_295
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_d_2_s_296
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vt_d_0_s_291
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vt_d_1_s_292
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vt_d_2_s_293
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_concorr_c_d_0_s_297
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_concorr_c_d_1_s_298
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_concorr_c_d_2_s_299
-    TYPE(c_ptr) :: m_ddt_vn_apc_pc
-    TYPE(c_ptr) :: m_ddt_w_adv_pc
-    REAL(KIND = c_double) :: m_max_vcfl_dyn
-    TYPE(c_ptr) :: m_vn_ie
-    TYPE(c_ptr) :: m_vt
-    TYPE(c_ptr) :: m_w_concorr_c
-  END TYPE glue_t_nh_diag
-  TYPE, BIND(C) :: glue_t_grid_edges
-    INTEGER(KIND = c_int) :: m___f2dace_SA_area_edge_d_0_s_188
-    INTEGER(KIND = c_int) :: m___f2dace_SA_area_edge_d_1_s_189
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_0_s_167
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_1_s_168
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_2_s_169
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_0_s_164
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_1_s_165
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_2_s_166
-    INTEGER(KIND = c_int) :: m___f2dace_SA_end_block_d_0_s_199
-    INTEGER(KIND = c_int) :: m___f2dace_SA_end_index_d_0_s_197
-    INTEGER(KIND = c_int) :: m___f2dace_SA_f_e_d_0_s_190
-    INTEGER(KIND = c_int) :: m___f2dace_SA_f_e_d_1_s_191
-    INTEGER(KIND = c_int) :: m___f2dace_SA_fn_e_d_0_s_192
-    INTEGER(KIND = c_int) :: m___f2dace_SA_fn_e_d_1_s_193
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ft_e_d_0_s_194
-    INTEGER(KIND = c_int) :: m___f2dace_SA_ft_e_d_1_s_195
-    INTEGER(KIND = c_int) :: m___f2dace_SA_inv_dual_edge_length_d_0_s_186
-    INTEGER(KIND = c_int) :: m___f2dace_SA_inv_dual_edge_length_d_1_s_187
-    INTEGER(KIND = c_int) :: m___f2dace_SA_inv_primal_edge_length_d_0_s_184
-    INTEGER(KIND = c_int) :: m___f2dace_SA_inv_primal_edge_length_d_1_s_185
-    INTEGER(KIND = c_int) :: m___f2dace_SA_quad_blk_d_0_s_181
-    INTEGER(KIND = c_int) :: m___f2dace_SA_quad_blk_d_1_s_182
-    INTEGER(KIND = c_int) :: m___f2dace_SA_quad_blk_d_2_s_183
-    INTEGER(KIND = c_int) :: m___f2dace_SA_quad_idx_d_0_s_178
-    INTEGER(KIND = c_int) :: m___f2dace_SA_quad_idx_d_1_s_179
-    INTEGER(KIND = c_int) :: m___f2dace_SA_quad_idx_d_2_s_180
-    INTEGER(KIND = c_int) :: m___f2dace_SA_start_block_d_0_s_198
-    INTEGER(KIND = c_int) :: m___f2dace_SA_start_index_d_0_s_196
-    INTEGER(KIND = c_int) :: m___f2dace_SA_tangent_orientation_d_0_s_176
-    INTEGER(KIND = c_int) :: m___f2dace_SA_tangent_orientation_d_1_s_177
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vertex_blk_d_0_s_173
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vertex_blk_d_1_s_174
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vertex_blk_d_2_s_175
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vertex_idx_d_0_s_170
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vertex_idx_d_1_s_171
-    INTEGER(KIND = c_int) :: m___f2dace_SA_vertex_idx_d_2_s_172
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_area_edge_d_0_s_188
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_area_edge_d_1_s_189
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_0_s_167
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_1_s_168
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_2_s_169
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_0_s_164
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_1_s_165
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_2_s_166
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_block_d_0_s_199
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_index_d_0_s_197
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_f_e_d_0_s_190
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_f_e_d_1_s_191
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_fn_e_d_0_s_192
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_fn_e_d_1_s_193
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ft_e_d_0_s_194
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_ft_e_d_1_s_195
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_inv_dual_edge_length_d_0_s_186
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_inv_dual_edge_length_d_1_s_187
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_inv_primal_edge_length_d_0_s_184
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_inv_primal_edge_length_d_1_s_185
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_blk_d_0_s_181
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_blk_d_1_s_182
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_blk_d_2_s_183
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_idx_d_0_s_178
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_idx_d_1_s_179
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_idx_d_2_s_180
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_block_d_0_s_198
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_index_d_0_s_196
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_tangent_orientation_d_0_s_176
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_tangent_orientation_d_1_s_177
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vertex_blk_d_0_s_173
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vertex_blk_d_1_s_174
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vertex_blk_d_2_s_175
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vertex_idx_d_0_s_170
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vertex_idx_d_1_s_171
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_vertex_idx_d_2_s_172
-    TYPE(c_ptr) :: m_area_edge
-    TYPE(c_ptr) :: m_cell_blk
-    TYPE(c_ptr) :: m_cell_idx
-    TYPE(c_ptr) :: m_end_block
-    TYPE(c_ptr) :: m_end_index
-    TYPE(c_ptr) :: m_f_e
-    TYPE(c_ptr) :: m_fn_e
-    TYPE(c_ptr) :: m_ft_e
-    TYPE(c_ptr) :: m_inv_dual_edge_length
-    TYPE(c_ptr) :: m_inv_primal_edge_length
-    TYPE(c_ptr) :: m_quad_blk
-    TYPE(c_ptr) :: m_quad_idx
-    TYPE(c_ptr) :: m_start_block
-    TYPE(c_ptr) :: m_start_index
-    TYPE(c_ptr) :: m_tangent_orientation
-    TYPE(c_ptr) :: m_vertex_blk
-    TYPE(c_ptr) :: m_vertex_idx
-  END TYPE glue_t_grid_edges
-  TYPE, BIND(C) :: glue_t_grid_cells
-    INTEGER(KIND = c_int) :: m___f2dace_SA_area_d_0_s_158
-    INTEGER(KIND = c_int) :: m___f2dace_SA_area_d_1_s_159
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_0_s_155
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_1_s_156
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_2_s_157
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_0_s_152
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_1_s_153
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_2_s_154
-    INTEGER(KIND = c_int) :: m___f2dace_SA_end_block_d_0_s_163
-    INTEGER(KIND = c_int) :: m___f2dace_SA_end_index_d_0_s_161
-    INTEGER(KIND = c_int) :: m___f2dace_SA_neighbor_blk_d_0_s_149
-    INTEGER(KIND = c_int) :: m___f2dace_SA_neighbor_blk_d_1_s_150
-    INTEGER(KIND = c_int) :: m___f2dace_SA_neighbor_blk_d_2_s_151
-    INTEGER(KIND = c_int) :: m___f2dace_SA_neighbor_idx_d_0_s_146
-    INTEGER(KIND = c_int) :: m___f2dace_SA_neighbor_idx_d_1_s_147
-    INTEGER(KIND = c_int) :: m___f2dace_SA_neighbor_idx_d_2_s_148
-    INTEGER(KIND = c_int) :: m___f2dace_SA_start_block_d_0_s_162
-    INTEGER(KIND = c_int) :: m___f2dace_SA_start_index_d_0_s_160
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_area_d_0_s_158
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_area_d_1_s_159
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_0_s_155
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_1_s_156
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_2_s_157
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_0_s_152
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_1_s_153
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_2_s_154
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_block_d_0_s_163
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_index_d_0_s_161
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_neighbor_blk_d_0_s_149
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_neighbor_blk_d_1_s_150
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_neighbor_blk_d_2_s_151
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_neighbor_idx_d_0_s_146
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_neighbor_idx_d_1_s_147
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_neighbor_idx_d_2_s_148
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_block_d_0_s_162
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_index_d_0_s_160
-    TYPE(c_ptr) :: m_area
-    TYPE(c_ptr) :: m_decomp_info
-    TYPE(c_ptr) :: m_edge_blk
-    TYPE(c_ptr) :: m_edge_idx
-    TYPE(c_ptr) :: m_end_block
-    TYPE(c_ptr) :: m_end_index
-    TYPE(c_ptr) :: m_neighbor_blk
-    TYPE(c_ptr) :: m_neighbor_idx
-    TYPE(c_ptr) :: m_start_block
-    TYPE(c_ptr) :: m_start_index
-  END TYPE glue_t_grid_cells
-  TYPE, BIND(C) :: glue_t_grid_domain_decomp_info
-    INTEGER(KIND = c_int) :: m___f2dace_SA_owner_mask_d_0_s_2
-    INTEGER(KIND = c_int) :: m___f2dace_SA_owner_mask_d_1_s_3
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_owner_mask_d_0_s_2
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_owner_mask_d_1_s_3
-    TYPE(c_ptr) :: m_owner_mask
-  END TYPE glue_t_grid_domain_decomp_info
-  TYPE, BIND(C) :: glue_t_grid_vertices
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_0_s_203
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_1_s_204
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_2_s_205
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_0_s_200
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_1_s_201
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_2_s_202
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_0_s_209
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_1_s_210
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_2_s_211
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_0_s_206
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_1_s_207
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_2_s_208
-    INTEGER(KIND = c_int) :: m___f2dace_SA_end_block_d_0_s_215
-    INTEGER(KIND = c_int) :: m___f2dace_SA_end_index_d_0_s_213
-    INTEGER(KIND = c_int) :: m___f2dace_SA_start_block_d_0_s_214
-    INTEGER(KIND = c_int) :: m___f2dace_SA_start_index_d_0_s_212
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_0_s_203
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_1_s_204
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_2_s_205
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_0_s_200
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_1_s_201
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_2_s_202
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_0_s_209
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_1_s_210
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_2_s_211
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_0_s_206
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_1_s_207
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_2_s_208
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_block_d_0_s_215
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_index_d_0_s_213
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_block_d_0_s_214
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_index_d_0_s_212
-    TYPE(c_ptr) :: m_cell_blk
-    TYPE(c_ptr) :: m_cell_idx
-    TYPE(c_ptr) :: m_edge_blk
-    TYPE(c_ptr) :: m_edge_idx
-    TYPE(c_ptr) :: m_end_block
-    TYPE(c_ptr) :: m_end_index
-    TYPE(c_ptr) :: m_start_block
-    TYPE(c_ptr) :: m_start_index
-  END TYPE glue_t_grid_vertices
-  INTERFACE ctor
-    MODULE PROCEDURE :: ctor_t_patch
-    MODULE PROCEDURE :: ctor_t_int_state
-    MODULE PROCEDURE :: ctor_t_nh_prog
-    MODULE PROCEDURE :: ctor_t_nh_metrics
-    MODULE PROCEDURE :: ctor_t_nh_diag
-    MODULE PROCEDURE :: ctor_t_grid_edges
-    MODULE PROCEDURE :: ctor_t_grid_cells
-    MODULE PROCEDURE :: ctor_t_grid_domain_decomp_info
-    MODULE PROCEDURE :: ctor_t_grid_vertices
-  END INTERFACE ctor
-  CONTAINS
-  SUBROUTINE ctor_t_patch(inp, out, initalloc)
-    TYPE(t_patch), INTENT(IN) :: inp
-    TYPE(glue_t_patch), INTENT(INOUT) :: out
-    LOGICAL, INTENT(IN) :: initalloc
-    TYPE(glue_t_grid_cells), ALLOCATABLE, TARGET :: a_cells
-    TYPE(glue_t_grid_edges), ALLOCATABLE, TARGET :: a_edges
-    TYPE(glue_t_grid_vertices), ALLOCATABLE, TARGET :: a_verts
-    IF (initalloc) ALLOCATE(a_cells)
-    CALL ctor(inp % cells, a_cells, initalloc)
-    out % m_cells = c_loc(a_cells)
-    IF (initalloc) ALLOCATE(a_edges)
-    CALL ctor(inp % edges, a_edges, initalloc)
-    out % m_edges = c_loc(a_edges)
-    out % m_nblks_c = inp % nblks_c
-    out % m_nblks_e = inp % nblks_e
-    out % m_nblks_v = inp % nblks_v
-    IF (initalloc) ALLOCATE(a_verts)
-    CALL ctor(inp % verts, a_verts, initalloc)
-    out % m_verts = c_loc(a_verts)
-  END SUBROUTINE ctor_t_patch
-  SUBROUTINE ctor_t_int_state(inp, out, initalloc)
-    TYPE(t_int_state), INTENT(IN) :: inp
-    TYPE(glue_t_int_state), INTENT(INOUT) :: out
-    LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_c_lin_e(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_cells_aw_verts(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_e_bln_c_s(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_geofac_grdiv(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_geofac_n2s(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_geofac_rot(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_rbf_vec_coeff_e(:, :, :)
-    IF (initalloc) ALLOCATE(a_c_lin_e(SIZE(inp % c_lin_e, 26), SIZE(inp % c_lin_e, 127), SIZE(inp % c_lin_e, 228)))
-    a_c_lin_e = inp % c_lin_e
-    out % m_c_lin_e = c_loc(a_c_lin_e)
-    out % m___f2dace_SA_c_lin_e_d_0_s_25 = SIZE(inp % c_lin_e, 26)
-    out % m___f2dace_SA_c_lin_e_d_1_s_26 = SIZE(inp % c_lin_e, 127)
-    out % m___f2dace_SA_c_lin_e_d_2_s_27 = SIZE(inp % c_lin_e, 228)
-    out % m___f2dace_SOA_c_lin_e_d_0_s_25 = LBOUND(inp % c_lin_e, 26)
-    out % m___f2dace_SOA_c_lin_e_d_1_s_26 = LBOUND(inp % c_lin_e, 127)
-    out % m___f2dace_SOA_c_lin_e_d_2_s_27 = LBOUND(inp % c_lin_e, 228)
-    IF (initalloc) ALLOCATE(a_cells_aw_verts(SIZE(inp % cells_aw_verts, 32), SIZE(inp % cells_aw_verts, 133), SIZE(inp % cells_aw_verts, 234)))
-    a_cells_aw_verts = inp % cells_aw_verts
-    out % m_cells_aw_verts = c_loc(a_cells_aw_verts)
-    out % m___f2dace_SA_cells_aw_verts_d_0_s_31 = SIZE(inp % cells_aw_verts, 32)
-    out % m___f2dace_SA_cells_aw_verts_d_1_s_32 = SIZE(inp % cells_aw_verts, 133)
-    out % m___f2dace_SA_cells_aw_verts_d_2_s_33 = SIZE(inp % cells_aw_verts, 234)
-    out % m___f2dace_SOA_cells_aw_verts_d_0_s_31 = LBOUND(inp % cells_aw_verts, 32)
-    out % m___f2dace_SOA_cells_aw_verts_d_1_s_32 = LBOUND(inp % cells_aw_verts, 133)
-    out % m___f2dace_SOA_cells_aw_verts_d_2_s_33 = LBOUND(inp % cells_aw_verts, 234)
-    IF (initalloc) ALLOCATE(a_e_bln_c_s(SIZE(inp % e_bln_c_s, 29), SIZE(inp % e_bln_c_s, 130), SIZE(inp % e_bln_c_s, 231)))
-    a_e_bln_c_s = inp % e_bln_c_s
-    out % m_e_bln_c_s = c_loc(a_e_bln_c_s)
-    out % m___f2dace_SA_e_bln_c_s_d_0_s_28 = SIZE(inp % e_bln_c_s, 29)
-    out % m___f2dace_SA_e_bln_c_s_d_1_s_29 = SIZE(inp % e_bln_c_s, 130)
-    out % m___f2dace_SA_e_bln_c_s_d_2_s_30 = SIZE(inp % e_bln_c_s, 231)
-    out % m___f2dace_SOA_e_bln_c_s_d_0_s_28 = LBOUND(inp % e_bln_c_s, 29)
-    out % m___f2dace_SOA_e_bln_c_s_d_1_s_29 = LBOUND(inp % e_bln_c_s, 130)
-    out % m___f2dace_SOA_e_bln_c_s_d_2_s_30 = LBOUND(inp % e_bln_c_s, 231)
-    IF (initalloc) ALLOCATE(a_geofac_grdiv(SIZE(inp % geofac_grdiv, 38), SIZE(inp % geofac_grdiv, 139), SIZE(inp % geofac_grdiv, 240)))
-    a_geofac_grdiv = inp % geofac_grdiv
-    out % m_geofac_grdiv = c_loc(a_geofac_grdiv)
-    out % m___f2dace_SA_geofac_grdiv_d_0_s_37 = SIZE(inp % geofac_grdiv, 38)
-    out % m___f2dace_SA_geofac_grdiv_d_1_s_38 = SIZE(inp % geofac_grdiv, 139)
-    out % m___f2dace_SA_geofac_grdiv_d_2_s_39 = SIZE(inp % geofac_grdiv, 240)
-    out % m___f2dace_SOA_geofac_grdiv_d_0_s_37 = LBOUND(inp % geofac_grdiv, 38)
-    out % m___f2dace_SOA_geofac_grdiv_d_1_s_38 = LBOUND(inp % geofac_grdiv, 139)
-    out % m___f2dace_SOA_geofac_grdiv_d_2_s_39 = LBOUND(inp % geofac_grdiv, 240)
-    IF (initalloc) ALLOCATE(a_geofac_n2s(SIZE(inp % geofac_n2s, 44), SIZE(inp % geofac_n2s, 145), SIZE(inp % geofac_n2s, 246)))
-    a_geofac_n2s = inp % geofac_n2s
-    out % m_geofac_n2s = c_loc(a_geofac_n2s)
-    out % m___f2dace_SA_geofac_n2s_d_0_s_43 = SIZE(inp % geofac_n2s, 44)
-    out % m___f2dace_SA_geofac_n2s_d_1_s_44 = SIZE(inp % geofac_n2s, 145)
-    out % m___f2dace_SA_geofac_n2s_d_2_s_45 = SIZE(inp % geofac_n2s, 246)
-    out % m___f2dace_SOA_geofac_n2s_d_0_s_43 = LBOUND(inp % geofac_n2s, 44)
-    out % m___f2dace_SOA_geofac_n2s_d_1_s_44 = LBOUND(inp % geofac_n2s, 145)
-    out % m___f2dace_SOA_geofac_n2s_d_2_s_45 = LBOUND(inp % geofac_n2s, 246)
-    IF (initalloc) ALLOCATE(a_geofac_rot(SIZE(inp % geofac_rot, 41), SIZE(inp % geofac_rot, 142), SIZE(inp % geofac_rot, 243)))
-    a_geofac_rot = inp % geofac_rot
-    out % m_geofac_rot = c_loc(a_geofac_rot)
-    out % m___f2dace_SA_geofac_rot_d_0_s_40 = SIZE(inp % geofac_rot, 41)
-    out % m___f2dace_SA_geofac_rot_d_1_s_41 = SIZE(inp % geofac_rot, 142)
-    out % m___f2dace_SA_geofac_rot_d_2_s_42 = SIZE(inp % geofac_rot, 243)
-    out % m___f2dace_SOA_geofac_rot_d_0_s_40 = LBOUND(inp % geofac_rot, 41)
-    out % m___f2dace_SOA_geofac_rot_d_1_s_41 = LBOUND(inp % geofac_rot, 142)
-    out % m___f2dace_SOA_geofac_rot_d_2_s_42 = LBOUND(inp % geofac_rot, 243)
-    IF (initalloc) ALLOCATE(a_rbf_vec_coeff_e(SIZE(inp % rbf_vec_coeff_e, 35), SIZE(inp % rbf_vec_coeff_e, 136), SIZE(inp % rbf_vec_coeff_e, 237)))
-    a_rbf_vec_coeff_e = inp % rbf_vec_coeff_e
-    out % m_rbf_vec_coeff_e = c_loc(a_rbf_vec_coeff_e)
-    out % m___f2dace_SA_rbf_vec_coeff_e_d_0_s_34 = SIZE(inp % rbf_vec_coeff_e, 35)
-    out % m___f2dace_SA_rbf_vec_coeff_e_d_1_s_35 = SIZE(inp % rbf_vec_coeff_e, 136)
-    out % m___f2dace_SA_rbf_vec_coeff_e_d_2_s_36 = SIZE(inp % rbf_vec_coeff_e, 237)
-    out % m___f2dace_SOA_rbf_vec_coeff_e_d_0_s_34 = LBOUND(inp % rbf_vec_coeff_e, 35)
-    out % m___f2dace_SOA_rbf_vec_coeff_e_d_1_s_35 = LBOUND(inp % rbf_vec_coeff_e, 136)
-    out % m___f2dace_SOA_rbf_vec_coeff_e_d_2_s_36 = LBOUND(inp % rbf_vec_coeff_e, 237)
-  END SUBROUTINE ctor_t_int_state
-  SUBROUTINE ctor_t_nh_prog(inp, out, initalloc)
-    TYPE(t_nh_prog), INTENT(IN) :: inp
-    TYPE(glue_t_nh_prog), INTENT(INOUT) :: out
-    LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_vn(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_w(:, :, :)
-    IF (initalloc) ALLOCATE(a_vn(SIZE(inp % vn, 289), SIZE(inp % vn, 1290), SIZE(inp % vn, 2291)))
-    a_vn = inp % vn
-    out % m_vn = c_loc(a_vn)
-    out % m___f2dace_SA_vn_d_0_s_288 = SIZE(inp % vn, 289)
-    out % m___f2dace_SA_vn_d_1_s_289 = SIZE(inp % vn, 1290)
-    out % m___f2dace_SA_vn_d_2_s_290 = SIZE(inp % vn, 2291)
-    out % m___f2dace_SOA_vn_d_0_s_288 = LBOUND(inp % vn, 289)
-    out % m___f2dace_SOA_vn_d_1_s_289 = LBOUND(inp % vn, 1290)
-    out % m___f2dace_SOA_vn_d_2_s_290 = LBOUND(inp % vn, 2291)
-    IF (initalloc) ALLOCATE(a_w(SIZE(inp % w, 286), SIZE(inp % w, 1287), SIZE(inp % w, 2288)))
-    a_w = inp % w
-    out % m_w = c_loc(a_w)
-    out % m___f2dace_SA_w_d_0_s_285 = SIZE(inp % w, 286)
-    out % m___f2dace_SA_w_d_1_s_286 = SIZE(inp % w, 1287)
-    out % m___f2dace_SA_w_d_2_s_287 = SIZE(inp % w, 2288)
-    out % m___f2dace_SOA_w_d_0_s_285 = LBOUND(inp % w, 286)
-    out % m___f2dace_SOA_w_d_1_s_286 = LBOUND(inp % w, 1287)
-    out % m___f2dace_SOA_w_d_2_s_287 = LBOUND(inp % w, 2288)
-  END SUBROUTINE ctor_t_nh_prog
-  SUBROUTINE ctor_t_nh_metrics(inp, out, initalloc)
-    TYPE(t_nh_metrics), INTENT(IN) :: inp
-    TYPE(glue_t_nh_metrics), INTENT(INOUT) :: out
-    LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_coeff1_dwdz(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_coeff2_dwdz(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_coeff_gradekin(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddqz_z_full_e(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddqz_z_half(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddxn_z_full(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddxt_z_full(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_deepatmo_gradh_ifc(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_deepatmo_gradh_mc(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_deepatmo_invr_ifc(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_deepatmo_invr_mc(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_wgtfac_c(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_wgtfac_e(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_wgtfacq_e(:, :, :)
-    IF (initalloc) ALLOCATE(a_coeff1_dwdz(SIZE(inp % coeff1_dwdz, 333), SIZE(inp % coeff1_dwdz, 1334), SIZE(inp % coeff1_dwdz, 2335)))
-    a_coeff1_dwdz = inp % coeff1_dwdz
-    out % m_coeff1_dwdz = c_loc(a_coeff1_dwdz)
-    out % m___f2dace_SA_coeff1_dwdz_d_0_s_332 = SIZE(inp % coeff1_dwdz, 333)
-    out % m___f2dace_SA_coeff1_dwdz_d_1_s_333 = SIZE(inp % coeff1_dwdz, 1334)
-    out % m___f2dace_SA_coeff1_dwdz_d_2_s_334 = SIZE(inp % coeff1_dwdz, 2335)
-    out % m___f2dace_SOA_coeff1_dwdz_d_0_s_332 = LBOUND(inp % coeff1_dwdz, 333)
-    out % m___f2dace_SOA_coeff1_dwdz_d_1_s_333 = LBOUND(inp % coeff1_dwdz, 1334)
-    out % m___f2dace_SOA_coeff1_dwdz_d_2_s_334 = LBOUND(inp % coeff1_dwdz, 2335)
-    IF (initalloc) ALLOCATE(a_coeff2_dwdz(SIZE(inp % coeff2_dwdz, 336), SIZE(inp % coeff2_dwdz, 1337), SIZE(inp % coeff2_dwdz, 2338)))
-    a_coeff2_dwdz = inp % coeff2_dwdz
-    out % m_coeff2_dwdz = c_loc(a_coeff2_dwdz)
-    out % m___f2dace_SA_coeff2_dwdz_d_0_s_335 = SIZE(inp % coeff2_dwdz, 336)
-    out % m___f2dace_SA_coeff2_dwdz_d_1_s_336 = SIZE(inp % coeff2_dwdz, 1337)
-    out % m___f2dace_SA_coeff2_dwdz_d_2_s_337 = SIZE(inp % coeff2_dwdz, 2338)
-    out % m___f2dace_SOA_coeff2_dwdz_d_0_s_335 = LBOUND(inp % coeff2_dwdz, 336)
-    out % m___f2dace_SOA_coeff2_dwdz_d_1_s_336 = LBOUND(inp % coeff2_dwdz, 1337)
-    out % m___f2dace_SOA_coeff2_dwdz_d_2_s_337 = LBOUND(inp % coeff2_dwdz, 2338)
-    IF (initalloc) ALLOCATE(a_coeff_gradekin(SIZE(inp % coeff_gradekin, 330), SIZE(inp % coeff_gradekin, 1331), SIZE(inp % coeff_gradekin, 2332)))
-    a_coeff_gradekin = inp % coeff_gradekin
-    out % m_coeff_gradekin = c_loc(a_coeff_gradekin)
-    out % m___f2dace_SA_coeff_gradekin_d_0_s_329 = SIZE(inp % coeff_gradekin, 330)
-    out % m___f2dace_SA_coeff_gradekin_d_1_s_330 = SIZE(inp % coeff_gradekin, 1331)
-    out % m___f2dace_SA_coeff_gradekin_d_2_s_331 = SIZE(inp % coeff_gradekin, 2332)
-    out % m___f2dace_SOA_coeff_gradekin_d_0_s_329 = LBOUND(inp % coeff_gradekin, 330)
-    out % m___f2dace_SOA_coeff_gradekin_d_1_s_330 = LBOUND(inp % coeff_gradekin, 1331)
-    out % m___f2dace_SOA_coeff_gradekin_d_2_s_331 = LBOUND(inp % coeff_gradekin, 2332)
-    IF (initalloc) ALLOCATE(a_ddqz_z_full_e(SIZE(inp % ddqz_z_full_e, 315), SIZE(inp % ddqz_z_full_e, 1316), SIZE(inp % ddqz_z_full_e, 2317)))
-    a_ddqz_z_full_e = inp % ddqz_z_full_e
-    out % m_ddqz_z_full_e = c_loc(a_ddqz_z_full_e)
-    out % m___f2dace_SA_ddqz_z_full_e_d_0_s_314 = SIZE(inp % ddqz_z_full_e, 315)
-    out % m___f2dace_SA_ddqz_z_full_e_d_1_s_315 = SIZE(inp % ddqz_z_full_e, 1316)
-    out % m___f2dace_SA_ddqz_z_full_e_d_2_s_316 = SIZE(inp % ddqz_z_full_e, 2317)
-    out % m___f2dace_SOA_ddqz_z_full_e_d_0_s_314 = LBOUND(inp % ddqz_z_full_e, 315)
-    out % m___f2dace_SOA_ddqz_z_full_e_d_1_s_315 = LBOUND(inp % ddqz_z_full_e, 1316)
-    out % m___f2dace_SOA_ddqz_z_full_e_d_2_s_316 = LBOUND(inp % ddqz_z_full_e, 2317)
-    IF (initalloc) ALLOCATE(a_ddqz_z_half(SIZE(inp % ddqz_z_half, 318), SIZE(inp % ddqz_z_half, 1319), SIZE(inp % ddqz_z_half, 2320)))
-    a_ddqz_z_half = inp % ddqz_z_half
-    out % m_ddqz_z_half = c_loc(a_ddqz_z_half)
-    out % m___f2dace_SA_ddqz_z_half_d_0_s_317 = SIZE(inp % ddqz_z_half, 318)
-    out % m___f2dace_SA_ddqz_z_half_d_1_s_318 = SIZE(inp % ddqz_z_half, 1319)
-    out % m___f2dace_SA_ddqz_z_half_d_2_s_319 = SIZE(inp % ddqz_z_half, 2320)
-    out % m___f2dace_SOA_ddqz_z_half_d_0_s_317 = LBOUND(inp % ddqz_z_half, 318)
-    out % m___f2dace_SOA_ddqz_z_half_d_1_s_318 = LBOUND(inp % ddqz_z_half, 1319)
-    out % m___f2dace_SOA_ddqz_z_half_d_2_s_319 = LBOUND(inp % ddqz_z_half, 2320)
-    IF (initalloc) ALLOCATE(a_ddxn_z_full(SIZE(inp % ddxn_z_full, 309), SIZE(inp % ddxn_z_full, 1310), SIZE(inp % ddxn_z_full, 2311)))
-    a_ddxn_z_full = inp % ddxn_z_full
-    out % m_ddxn_z_full = c_loc(a_ddxn_z_full)
-    out % m___f2dace_SA_ddxn_z_full_d_0_s_308 = SIZE(inp % ddxn_z_full, 309)
-    out % m___f2dace_SA_ddxn_z_full_d_1_s_309 = SIZE(inp % ddxn_z_full, 1310)
-    out % m___f2dace_SA_ddxn_z_full_d_2_s_310 = SIZE(inp % ddxn_z_full, 2311)
-    out % m___f2dace_SOA_ddxn_z_full_d_0_s_308 = LBOUND(inp % ddxn_z_full, 309)
-    out % m___f2dace_SOA_ddxn_z_full_d_1_s_309 = LBOUND(inp % ddxn_z_full, 1310)
-    out % m___f2dace_SOA_ddxn_z_full_d_2_s_310 = LBOUND(inp % ddxn_z_full, 2311)
-    IF (initalloc) ALLOCATE(a_ddxt_z_full(SIZE(inp % ddxt_z_full, 312), SIZE(inp % ddxt_z_full, 1313), SIZE(inp % ddxt_z_full, 2314)))
-    a_ddxt_z_full = inp % ddxt_z_full
-    out % m_ddxt_z_full = c_loc(a_ddxt_z_full)
-    out % m___f2dace_SA_ddxt_z_full_d_0_s_311 = SIZE(inp % ddxt_z_full, 312)
-    out % m___f2dace_SA_ddxt_z_full_d_1_s_312 = SIZE(inp % ddxt_z_full, 1313)
-    out % m___f2dace_SA_ddxt_z_full_d_2_s_313 = SIZE(inp % ddxt_z_full, 2314)
-    out % m___f2dace_SOA_ddxt_z_full_d_0_s_311 = LBOUND(inp % ddxt_z_full, 312)
-    out % m___f2dace_SOA_ddxt_z_full_d_1_s_312 = LBOUND(inp % ddxt_z_full, 1313)
-    out % m___f2dace_SOA_ddxt_z_full_d_2_s_313 = LBOUND(inp % ddxt_z_full, 2314)
-    IF (initalloc) ALLOCATE(a_deepatmo_gradh_ifc(SIZE(inp % deepatmo_gradh_ifc, 341)))
-    a_deepatmo_gradh_ifc = inp % deepatmo_gradh_ifc
-    out % m_deepatmo_gradh_ifc = c_loc(a_deepatmo_gradh_ifc)
-    out % m___f2dace_SA_deepatmo_gradh_ifc_d_0_s_340 = SIZE(inp % deepatmo_gradh_ifc, 341)
-    out % m___f2dace_SOA_deepatmo_gradh_ifc_d_0_s_340 = LBOUND(inp % deepatmo_gradh_ifc, 341)
-    IF (initalloc) ALLOCATE(a_deepatmo_gradh_mc(SIZE(inp % deepatmo_gradh_mc, 339)))
-    a_deepatmo_gradh_mc = inp % deepatmo_gradh_mc
-    out % m_deepatmo_gradh_mc = c_loc(a_deepatmo_gradh_mc)
-    out % m___f2dace_SA_deepatmo_gradh_mc_d_0_s_338 = SIZE(inp % deepatmo_gradh_mc, 339)
-    out % m___f2dace_SOA_deepatmo_gradh_mc_d_0_s_338 = LBOUND(inp % deepatmo_gradh_mc, 339)
-    IF (initalloc) ALLOCATE(a_deepatmo_invr_ifc(SIZE(inp % deepatmo_invr_ifc, 342)))
-    a_deepatmo_invr_ifc = inp % deepatmo_invr_ifc
-    out % m_deepatmo_invr_ifc = c_loc(a_deepatmo_invr_ifc)
-    out % m___f2dace_SA_deepatmo_invr_ifc_d_0_s_341 = SIZE(inp % deepatmo_invr_ifc, 342)
-    out % m___f2dace_SOA_deepatmo_invr_ifc_d_0_s_341 = LBOUND(inp % deepatmo_invr_ifc, 342)
-    IF (initalloc) ALLOCATE(a_deepatmo_invr_mc(SIZE(inp % deepatmo_invr_mc, 340)))
-    a_deepatmo_invr_mc = inp % deepatmo_invr_mc
-    out % m_deepatmo_invr_mc = c_loc(a_deepatmo_invr_mc)
-    out % m___f2dace_SA_deepatmo_invr_mc_d_0_s_339 = SIZE(inp % deepatmo_invr_mc, 340)
-    out % m___f2dace_SOA_deepatmo_invr_mc_d_0_s_339 = LBOUND(inp % deepatmo_invr_mc, 340)
-    IF (initalloc) ALLOCATE(a_wgtfac_c(SIZE(inp % wgtfac_c, 321), SIZE(inp % wgtfac_c, 1322), SIZE(inp % wgtfac_c, 2323)))
-    a_wgtfac_c = inp % wgtfac_c
-    out % m_wgtfac_c = c_loc(a_wgtfac_c)
-    out % m___f2dace_SA_wgtfac_c_d_0_s_320 = SIZE(inp % wgtfac_c, 321)
-    out % m___f2dace_SA_wgtfac_c_d_1_s_321 = SIZE(inp % wgtfac_c, 1322)
-    out % m___f2dace_SA_wgtfac_c_d_2_s_322 = SIZE(inp % wgtfac_c, 2323)
-    out % m___f2dace_SOA_wgtfac_c_d_0_s_320 = LBOUND(inp % wgtfac_c, 321)
-    out % m___f2dace_SOA_wgtfac_c_d_1_s_321 = LBOUND(inp % wgtfac_c, 1322)
-    out % m___f2dace_SOA_wgtfac_c_d_2_s_322 = LBOUND(inp % wgtfac_c, 2323)
-    IF (initalloc) ALLOCATE(a_wgtfac_e(SIZE(inp % wgtfac_e, 324), SIZE(inp % wgtfac_e, 1325), SIZE(inp % wgtfac_e, 2326)))
-    a_wgtfac_e = inp % wgtfac_e
-    out % m_wgtfac_e = c_loc(a_wgtfac_e)
-    out % m___f2dace_SA_wgtfac_e_d_0_s_323 = SIZE(inp % wgtfac_e, 324)
-    out % m___f2dace_SA_wgtfac_e_d_1_s_324 = SIZE(inp % wgtfac_e, 1325)
-    out % m___f2dace_SA_wgtfac_e_d_2_s_325 = SIZE(inp % wgtfac_e, 2326)
-    out % m___f2dace_SOA_wgtfac_e_d_0_s_323 = LBOUND(inp % wgtfac_e, 324)
-    out % m___f2dace_SOA_wgtfac_e_d_1_s_324 = LBOUND(inp % wgtfac_e, 1325)
-    out % m___f2dace_SOA_wgtfac_e_d_2_s_325 = LBOUND(inp % wgtfac_e, 2326)
-    IF (initalloc) ALLOCATE(a_wgtfacq_e(SIZE(inp % wgtfacq_e, 327), SIZE(inp % wgtfacq_e, 1328), SIZE(inp % wgtfacq_e, 2329)))
-    a_wgtfacq_e = inp % wgtfacq_e
-    out % m_wgtfacq_e = c_loc(a_wgtfacq_e)
-    out % m___f2dace_SA_wgtfacq_e_d_0_s_326 = SIZE(inp % wgtfacq_e, 327)
-    out % m___f2dace_SA_wgtfacq_e_d_1_s_327 = SIZE(inp % wgtfacq_e, 1328)
-    out % m___f2dace_SA_wgtfacq_e_d_2_s_328 = SIZE(inp % wgtfacq_e, 2329)
-    out % m___f2dace_SOA_wgtfacq_e_d_0_s_326 = LBOUND(inp % wgtfacq_e, 327)
-    out % m___f2dace_SOA_wgtfacq_e_d_1_s_327 = LBOUND(inp % wgtfacq_e, 1328)
-    out % m___f2dace_SOA_wgtfacq_e_d_2_s_328 = LBOUND(inp % wgtfacq_e, 2329)
-  END SUBROUTINE ctor_t_nh_metrics
-  SUBROUTINE ctor_t_nh_diag(inp, out, initalloc)
-    TYPE(t_nh_diag), INTENT(IN) :: inp
-    TYPE(glue_t_nh_diag), INTENT(INOUT) :: out
-    LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddt_vn_apc_pc(:, :, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddt_w_adv_pc(:, :, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_vn_ie(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_vt(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_w_concorr_c(:, :, :)
-    IF (initalloc) ALLOCATE(a_ddt_vn_apc_pc(SIZE(inp % ddt_vn_apc_pc, 301), SIZE(inp % ddt_vn_apc_pc, 1302), SIZE(inp % ddt_vn_apc_pc, 2303), SIZE(inp % ddt_vn_apc_pc, 3304)))
-    a_ddt_vn_apc_pc = inp % ddt_vn_apc_pc
-    out % m_ddt_vn_apc_pc = c_loc(a_ddt_vn_apc_pc)
-    out % m___f2dace_SA_ddt_vn_apc_pc_d_0_s_300 = SIZE(inp % ddt_vn_apc_pc, 301)
-    out % m___f2dace_SA_ddt_vn_apc_pc_d_1_s_301 = SIZE(inp % ddt_vn_apc_pc, 1302)
-    out % m___f2dace_SA_ddt_vn_apc_pc_d_2_s_302 = SIZE(inp % ddt_vn_apc_pc, 2303)
-    out % m___f2dace_SA_ddt_vn_apc_pc_d_3_s_303 = SIZE(inp % ddt_vn_apc_pc, 3304)
-    out % m___f2dace_SOA_ddt_vn_apc_pc_d_0_s_300 = LBOUND(inp % ddt_vn_apc_pc, 301)
-    out % m___f2dace_SOA_ddt_vn_apc_pc_d_1_s_301 = LBOUND(inp % ddt_vn_apc_pc, 1302)
-    out % m___f2dace_SOA_ddt_vn_apc_pc_d_2_s_302 = LBOUND(inp % ddt_vn_apc_pc, 2303)
-    out % m___f2dace_SOA_ddt_vn_apc_pc_d_3_s_303 = LBOUND(inp % ddt_vn_apc_pc, 3304)
-    IF (initalloc) ALLOCATE(a_ddt_w_adv_pc(SIZE(inp % ddt_w_adv_pc, 305), SIZE(inp % ddt_w_adv_pc, 1306), SIZE(inp % ddt_w_adv_pc, 2307), SIZE(inp % ddt_w_adv_pc, 3308)))
-    a_ddt_w_adv_pc = inp % ddt_w_adv_pc
-    out % m_ddt_w_adv_pc = c_loc(a_ddt_w_adv_pc)
-    out % m___f2dace_SA_ddt_w_adv_pc_d_0_s_304 = SIZE(inp % ddt_w_adv_pc, 305)
-    out % m___f2dace_SA_ddt_w_adv_pc_d_1_s_305 = SIZE(inp % ddt_w_adv_pc, 1306)
-    out % m___f2dace_SA_ddt_w_adv_pc_d_2_s_306 = SIZE(inp % ddt_w_adv_pc, 2307)
-    out % m___f2dace_SA_ddt_w_adv_pc_d_3_s_307 = SIZE(inp % ddt_w_adv_pc, 3308)
-    out % m___f2dace_SOA_ddt_w_adv_pc_d_0_s_304 = LBOUND(inp % ddt_w_adv_pc, 305)
-    out % m___f2dace_SOA_ddt_w_adv_pc_d_1_s_305 = LBOUND(inp % ddt_w_adv_pc, 1306)
-    out % m___f2dace_SOA_ddt_w_adv_pc_d_2_s_306 = LBOUND(inp % ddt_w_adv_pc, 2307)
-    out % m___f2dace_SOA_ddt_w_adv_pc_d_3_s_307 = LBOUND(inp % ddt_w_adv_pc, 3308)
-    out % m_max_vcfl_dyn = inp % max_vcfl_dyn
-    IF (initalloc) ALLOCATE(a_vn_ie(SIZE(inp % vn_ie, 295), SIZE(inp % vn_ie, 1296), SIZE(inp % vn_ie, 2297)))
-    a_vn_ie = inp % vn_ie
-    out % m_vn_ie = c_loc(a_vn_ie)
-    out % m___f2dace_SA_vn_ie_d_0_s_294 = SIZE(inp % vn_ie, 295)
-    out % m___f2dace_SA_vn_ie_d_1_s_295 = SIZE(inp % vn_ie, 1296)
-    out % m___f2dace_SA_vn_ie_d_2_s_296 = SIZE(inp % vn_ie, 2297)
-    out % m___f2dace_SOA_vn_ie_d_0_s_294 = LBOUND(inp % vn_ie, 295)
-    out % m___f2dace_SOA_vn_ie_d_1_s_295 = LBOUND(inp % vn_ie, 1296)
-    out % m___f2dace_SOA_vn_ie_d_2_s_296 = LBOUND(inp % vn_ie, 2297)
-    IF (initalloc) ALLOCATE(a_vt(SIZE(inp % vt, 292), SIZE(inp % vt, 1293), SIZE(inp % vt, 2294)))
-    a_vt = inp % vt
-    out % m_vt = c_loc(a_vt)
-    out % m___f2dace_SA_vt_d_0_s_291 = SIZE(inp % vt, 292)
-    out % m___f2dace_SA_vt_d_1_s_292 = SIZE(inp % vt, 1293)
-    out % m___f2dace_SA_vt_d_2_s_293 = SIZE(inp % vt, 2294)
-    out % m___f2dace_SOA_vt_d_0_s_291 = LBOUND(inp % vt, 292)
-    out % m___f2dace_SOA_vt_d_1_s_292 = LBOUND(inp % vt, 1293)
-    out % m___f2dace_SOA_vt_d_2_s_293 = LBOUND(inp % vt, 2294)
-    IF (initalloc) ALLOCATE(a_w_concorr_c(SIZE(inp % w_concorr_c, 298), SIZE(inp % w_concorr_c, 1299), SIZE(inp % w_concorr_c, 2300)))
-    a_w_concorr_c = inp % w_concorr_c
-    out % m_w_concorr_c = c_loc(a_w_concorr_c)
-    out % m___f2dace_SA_w_concorr_c_d_0_s_297 = SIZE(inp % w_concorr_c, 298)
-    out % m___f2dace_SA_w_concorr_c_d_1_s_298 = SIZE(inp % w_concorr_c, 1299)
-    out % m___f2dace_SA_w_concorr_c_d_2_s_299 = SIZE(inp % w_concorr_c, 2300)
-    out % m___f2dace_SOA_w_concorr_c_d_0_s_297 = LBOUND(inp % w_concorr_c, 298)
-    out % m___f2dace_SOA_w_concorr_c_d_1_s_298 = LBOUND(inp % w_concorr_c, 1299)
-    out % m___f2dace_SOA_w_concorr_c_d_2_s_299 = LBOUND(inp % w_concorr_c, 2300)
-  END SUBROUTINE ctor_t_nh_diag
-  SUBROUTINE ctor_t_grid_edges(inp, out, initalloc)
-    TYPE(t_grid_edges), INTENT(IN) :: inp
-    TYPE(glue_t_grid_edges), INTENT(INOUT) :: out
-    LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_area_edge(:, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_cell_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_cell_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_index(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_f_e(:, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_fn_e(:, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ft_e(:, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_inv_dual_edge_length(:, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_inv_primal_edge_length(:, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_quad_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_quad_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_index(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_tangent_orientation(:, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_vertex_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_vertex_idx(:, :, :)
-    IF (initalloc) ALLOCATE(a_area_edge(SIZE(inp % area_edge, 189), SIZE(inp % area_edge, 1190)))
-    a_area_edge = inp % area_edge
-    out % m_area_edge = c_loc(a_area_edge)
-    out % m___f2dace_SA_area_edge_d_0_s_188 = SIZE(inp % area_edge, 189)
-    out % m___f2dace_SA_area_edge_d_1_s_189 = SIZE(inp % area_edge, 1190)
-    out % m___f2dace_SOA_area_edge_d_0_s_188 = LBOUND(inp % area_edge, 189)
-    out % m___f2dace_SOA_area_edge_d_1_s_189 = LBOUND(inp % area_edge, 1190)
-    IF (initalloc) ALLOCATE(a_cell_blk(SIZE(inp % cell_blk, 168), SIZE(inp % cell_blk, 1169), SIZE(inp % cell_blk, 2170)))
-    a_cell_blk = inp % cell_blk
-    out % m_cell_blk = c_loc(a_cell_blk)
-    out % m___f2dace_SA_cell_blk_d_0_s_167 = SIZE(inp % cell_blk, 168)
-    out % m___f2dace_SA_cell_blk_d_1_s_168 = SIZE(inp % cell_blk, 1169)
-    out % m___f2dace_SA_cell_blk_d_2_s_169 = SIZE(inp % cell_blk, 2170)
-    out % m___f2dace_SOA_cell_blk_d_0_s_167 = LBOUND(inp % cell_blk, 168)
-    out % m___f2dace_SOA_cell_blk_d_1_s_168 = LBOUND(inp % cell_blk, 1169)
-    out % m___f2dace_SOA_cell_blk_d_2_s_169 = LBOUND(inp % cell_blk, 2170)
-    IF (initalloc) ALLOCATE(a_cell_idx(SIZE(inp % cell_idx, 165), SIZE(inp % cell_idx, 1166), SIZE(inp % cell_idx, 2167)))
-    a_cell_idx = inp % cell_idx
-    out % m_cell_idx = c_loc(a_cell_idx)
-    out % m___f2dace_SA_cell_idx_d_0_s_164 = SIZE(inp % cell_idx, 165)
-    out % m___f2dace_SA_cell_idx_d_1_s_165 = SIZE(inp % cell_idx, 1166)
-    out % m___f2dace_SA_cell_idx_d_2_s_166 = SIZE(inp % cell_idx, 2167)
-    out % m___f2dace_SOA_cell_idx_d_0_s_164 = LBOUND(inp % cell_idx, 165)
-    out % m___f2dace_SOA_cell_idx_d_1_s_165 = LBOUND(inp % cell_idx, 1166)
-    out % m___f2dace_SOA_cell_idx_d_2_s_166 = LBOUND(inp % cell_idx, 2167)
-    IF (initalloc) ALLOCATE(a_end_block(SIZE(inp % end_block, 200)))
-    a_end_block = inp % end_block
-    out % m_end_block = c_loc(a_end_block)
-    out % m___f2dace_SA_end_block_d_0_s_199 = SIZE(inp % end_block, 200)
-    out % m___f2dace_SOA_end_block_d_0_s_199 = LBOUND(inp % end_block, 200)
-    IF (initalloc) ALLOCATE(a_end_index(SIZE(inp % end_index, 198)))
-    a_end_index = inp % end_index
-    out % m_end_index = c_loc(a_end_index)
-    out % m___f2dace_SA_end_index_d_0_s_197 = SIZE(inp % end_index, 198)
-    out % m___f2dace_SOA_end_index_d_0_s_197 = LBOUND(inp % end_index, 198)
-    IF (initalloc) ALLOCATE(a_f_e(SIZE(inp % f_e, 191), SIZE(inp % f_e, 1192)))
-    a_f_e = inp % f_e
-    out % m_f_e = c_loc(a_f_e)
-    out % m___f2dace_SA_f_e_d_0_s_190 = SIZE(inp % f_e, 191)
-    out % m___f2dace_SA_f_e_d_1_s_191 = SIZE(inp % f_e, 1192)
-    out % m___f2dace_SOA_f_e_d_0_s_190 = LBOUND(inp % f_e, 191)
-    out % m___f2dace_SOA_f_e_d_1_s_191 = LBOUND(inp % f_e, 1192)
-    IF (initalloc) ALLOCATE(a_fn_e(SIZE(inp % fn_e, 193), SIZE(inp % fn_e, 1194)))
-    a_fn_e = inp % fn_e
-    out % m_fn_e = c_loc(a_fn_e)
-    out % m___f2dace_SA_fn_e_d_0_s_192 = SIZE(inp % fn_e, 193)
-    out % m___f2dace_SA_fn_e_d_1_s_193 = SIZE(inp % fn_e, 1194)
-    out % m___f2dace_SOA_fn_e_d_0_s_192 = LBOUND(inp % fn_e, 193)
-    out % m___f2dace_SOA_fn_e_d_1_s_193 = LBOUND(inp % fn_e, 1194)
-    IF (initalloc) ALLOCATE(a_ft_e(SIZE(inp % ft_e, 195), SIZE(inp % ft_e, 1196)))
-    a_ft_e = inp % ft_e
-    out % m_ft_e = c_loc(a_ft_e)
-    out % m___f2dace_SA_ft_e_d_0_s_194 = SIZE(inp % ft_e, 195)
-    out % m___f2dace_SA_ft_e_d_1_s_195 = SIZE(inp % ft_e, 1196)
-    out % m___f2dace_SOA_ft_e_d_0_s_194 = LBOUND(inp % ft_e, 195)
-    out % m___f2dace_SOA_ft_e_d_1_s_195 = LBOUND(inp % ft_e, 1196)
-    IF (initalloc) ALLOCATE(a_inv_dual_edge_length(SIZE(inp % inv_dual_edge_length, 187), SIZE(inp % inv_dual_edge_length, 1188)))
-    a_inv_dual_edge_length = inp % inv_dual_edge_length
-    out % m_inv_dual_edge_length = c_loc(a_inv_dual_edge_length)
-    out % m___f2dace_SA_inv_dual_edge_length_d_0_s_186 = SIZE(inp % inv_dual_edge_length, 187)
-    out % m___f2dace_SA_inv_dual_edge_length_d_1_s_187 = SIZE(inp % inv_dual_edge_length, 1188)
-    out % m___f2dace_SOA_inv_dual_edge_length_d_0_s_186 = LBOUND(inp % inv_dual_edge_length, 187)
-    out % m___f2dace_SOA_inv_dual_edge_length_d_1_s_187 = LBOUND(inp % inv_dual_edge_length, 1188)
-    IF (initalloc) ALLOCATE(a_inv_primal_edge_length(SIZE(inp % inv_primal_edge_length, 185), SIZE(inp % inv_primal_edge_length, 1186)))
-    a_inv_primal_edge_length = inp % inv_primal_edge_length
-    out % m_inv_primal_edge_length = c_loc(a_inv_primal_edge_length)
-    out % m___f2dace_SA_inv_primal_edge_length_d_0_s_184 = SIZE(inp % inv_primal_edge_length, 185)
-    out % m___f2dace_SA_inv_primal_edge_length_d_1_s_185 = SIZE(inp % inv_primal_edge_length, 1186)
-    out % m___f2dace_SOA_inv_primal_edge_length_d_0_s_184 = LBOUND(inp % inv_primal_edge_length, 185)
-    out % m___f2dace_SOA_inv_primal_edge_length_d_1_s_185 = LBOUND(inp % inv_primal_edge_length, 1186)
-    IF (initalloc) ALLOCATE(a_quad_blk(SIZE(inp % quad_blk, 182), SIZE(inp % quad_blk, 1183), SIZE(inp % quad_blk, 2184)))
-    a_quad_blk = inp % quad_blk
-    out % m_quad_blk = c_loc(a_quad_blk)
-    out % m___f2dace_SA_quad_blk_d_0_s_181 = SIZE(inp % quad_blk, 182)
-    out % m___f2dace_SA_quad_blk_d_1_s_182 = SIZE(inp % quad_blk, 1183)
-    out % m___f2dace_SA_quad_blk_d_2_s_183 = SIZE(inp % quad_blk, 2184)
-    out % m___f2dace_SOA_quad_blk_d_0_s_181 = LBOUND(inp % quad_blk, 182)
-    out % m___f2dace_SOA_quad_blk_d_1_s_182 = LBOUND(inp % quad_blk, 1183)
-    out % m___f2dace_SOA_quad_blk_d_2_s_183 = LBOUND(inp % quad_blk, 2184)
-    IF (initalloc) ALLOCATE(a_quad_idx(SIZE(inp % quad_idx, 179), SIZE(inp % quad_idx, 1180), SIZE(inp % quad_idx, 2181)))
-    a_quad_idx = inp % quad_idx
-    out % m_quad_idx = c_loc(a_quad_idx)
-    out % m___f2dace_SA_quad_idx_d_0_s_178 = SIZE(inp % quad_idx, 179)
-    out % m___f2dace_SA_quad_idx_d_1_s_179 = SIZE(inp % quad_idx, 1180)
-    out % m___f2dace_SA_quad_idx_d_2_s_180 = SIZE(inp % quad_idx, 2181)
-    out % m___f2dace_SOA_quad_idx_d_0_s_178 = LBOUND(inp % quad_idx, 179)
-    out % m___f2dace_SOA_quad_idx_d_1_s_179 = LBOUND(inp % quad_idx, 1180)
-    out % m___f2dace_SOA_quad_idx_d_2_s_180 = LBOUND(inp % quad_idx, 2181)
-    IF (initalloc) ALLOCATE(a_start_block(SIZE(inp % start_block, 199)))
-    a_start_block = inp % start_block
-    out % m_start_block = c_loc(a_start_block)
-    out % m___f2dace_SA_start_block_d_0_s_198 = SIZE(inp % start_block, 199)
-    out % m___f2dace_SOA_start_block_d_0_s_198 = LBOUND(inp % start_block, 199)
-    IF (initalloc) ALLOCATE(a_start_index(SIZE(inp % start_index, 197)))
-    a_start_index = inp % start_index
-    out % m_start_index = c_loc(a_start_index)
-    out % m___f2dace_SA_start_index_d_0_s_196 = SIZE(inp % start_index, 197)
-    out % m___f2dace_SOA_start_index_d_0_s_196 = LBOUND(inp % start_index, 197)
-    IF (initalloc) ALLOCATE(a_tangent_orientation(SIZE(inp % tangent_orientation, 177), SIZE(inp % tangent_orientation, 1178)))
-    a_tangent_orientation = inp % tangent_orientation
-    out % m_tangent_orientation = c_loc(a_tangent_orientation)
-    out % m___f2dace_SA_tangent_orientation_d_0_s_176 = SIZE(inp % tangent_orientation, 177)
-    out % m___f2dace_SA_tangent_orientation_d_1_s_177 = SIZE(inp % tangent_orientation, 1178)
-    out % m___f2dace_SOA_tangent_orientation_d_0_s_176 = LBOUND(inp % tangent_orientation, 177)
-    out % m___f2dace_SOA_tangent_orientation_d_1_s_177 = LBOUND(inp % tangent_orientation, 1178)
-    IF (initalloc) ALLOCATE(a_vertex_blk(SIZE(inp % vertex_blk, 174), SIZE(inp % vertex_blk, 1175), SIZE(inp % vertex_blk, 2176)))
-    a_vertex_blk = inp % vertex_blk
-    out % m_vertex_blk = c_loc(a_vertex_blk)
-    out % m___f2dace_SA_vertex_blk_d_0_s_173 = SIZE(inp % vertex_blk, 174)
-    out % m___f2dace_SA_vertex_blk_d_1_s_174 = SIZE(inp % vertex_blk, 1175)
-    out % m___f2dace_SA_vertex_blk_d_2_s_175 = SIZE(inp % vertex_blk, 2176)
-    out % m___f2dace_SOA_vertex_blk_d_0_s_173 = LBOUND(inp % vertex_blk, 174)
-    out % m___f2dace_SOA_vertex_blk_d_1_s_174 = LBOUND(inp % vertex_blk, 1175)
-    out % m___f2dace_SOA_vertex_blk_d_2_s_175 = LBOUND(inp % vertex_blk, 2176)
-    IF (initalloc) ALLOCATE(a_vertex_idx(SIZE(inp % vertex_idx, 171), SIZE(inp % vertex_idx, 1172), SIZE(inp % vertex_idx, 2173)))
-    a_vertex_idx = inp % vertex_idx
-    out % m_vertex_idx = c_loc(a_vertex_idx)
-    out % m___f2dace_SA_vertex_idx_d_0_s_170 = SIZE(inp % vertex_idx, 171)
-    out % m___f2dace_SA_vertex_idx_d_1_s_171 = SIZE(inp % vertex_idx, 1172)
-    out % m___f2dace_SA_vertex_idx_d_2_s_172 = SIZE(inp % vertex_idx, 2173)
-    out % m___f2dace_SOA_vertex_idx_d_0_s_170 = LBOUND(inp % vertex_idx, 171)
-    out % m___f2dace_SOA_vertex_idx_d_1_s_171 = LBOUND(inp % vertex_idx, 1172)
-    out % m___f2dace_SOA_vertex_idx_d_2_s_172 = LBOUND(inp % vertex_idx, 2173)
-  END SUBROUTINE ctor_t_grid_edges
-  SUBROUTINE ctor_t_grid_cells(inp, out, initalloc)
-    TYPE(t_grid_cells), INTENT(IN) :: inp
-    TYPE(glue_t_grid_cells), INTENT(INOUT) :: out
-    LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_area(:, :)
-    TYPE(glue_t_grid_domain_decomp_info), ALLOCATABLE, TARGET :: a_decomp_info
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_edge_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_edge_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_index(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_neighbor_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_neighbor_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_index(:)
-    IF (initalloc) ALLOCATE(a_area(SIZE(inp % area, 159), SIZE(inp % area, 1160)))
-    a_area = inp % area
-    out % m_area = c_loc(a_area)
-    out % m___f2dace_SA_area_d_0_s_158 = SIZE(inp % area, 159)
-    out % m___f2dace_SA_area_d_1_s_159 = SIZE(inp % area, 1160)
-    out % m___f2dace_SOA_area_d_0_s_158 = LBOUND(inp % area, 159)
-    out % m___f2dace_SOA_area_d_1_s_159 = LBOUND(inp % area, 1160)
-    IF (initalloc) ALLOCATE(a_decomp_info)
-    CALL ctor(inp % decomp_info, a_decomp_info, initalloc)
-    out % m_decomp_info = c_loc(a_decomp_info)
-    IF (initalloc) ALLOCATE(a_edge_blk(SIZE(inp % edge_blk, 156), SIZE(inp % edge_blk, 1157), SIZE(inp % edge_blk, 2158)))
-    a_edge_blk = inp % edge_blk
-    out % m_edge_blk = c_loc(a_edge_blk)
-    out % m___f2dace_SA_edge_blk_d_0_s_155 = SIZE(inp % edge_blk, 156)
-    out % m___f2dace_SA_edge_blk_d_1_s_156 = SIZE(inp % edge_blk, 1157)
-    out % m___f2dace_SA_edge_blk_d_2_s_157 = SIZE(inp % edge_blk, 2158)
-    out % m___f2dace_SOA_edge_blk_d_0_s_155 = LBOUND(inp % edge_blk, 156)
-    out % m___f2dace_SOA_edge_blk_d_1_s_156 = LBOUND(inp % edge_blk, 1157)
-    out % m___f2dace_SOA_edge_blk_d_2_s_157 = LBOUND(inp % edge_blk, 2158)
-    IF (initalloc) ALLOCATE(a_edge_idx(SIZE(inp % edge_idx, 153), SIZE(inp % edge_idx, 1154), SIZE(inp % edge_idx, 2155)))
-    a_edge_idx = inp % edge_idx
-    out % m_edge_idx = c_loc(a_edge_idx)
-    out % m___f2dace_SA_edge_idx_d_0_s_152 = SIZE(inp % edge_idx, 153)
-    out % m___f2dace_SA_edge_idx_d_1_s_153 = SIZE(inp % edge_idx, 1154)
-    out % m___f2dace_SA_edge_idx_d_2_s_154 = SIZE(inp % edge_idx, 2155)
-    out % m___f2dace_SOA_edge_idx_d_0_s_152 = LBOUND(inp % edge_idx, 153)
-    out % m___f2dace_SOA_edge_idx_d_1_s_153 = LBOUND(inp % edge_idx, 1154)
-    out % m___f2dace_SOA_edge_idx_d_2_s_154 = LBOUND(inp % edge_idx, 2155)
-    IF (initalloc) ALLOCATE(a_end_block(SIZE(inp % end_block, 164)))
-    a_end_block = inp % end_block
-    out % m_end_block = c_loc(a_end_block)
-    out % m___f2dace_SA_end_block_d_0_s_163 = SIZE(inp % end_block, 164)
-    out % m___f2dace_SOA_end_block_d_0_s_163 = LBOUND(inp % end_block, 164)
-    IF (initalloc) ALLOCATE(a_end_index(SIZE(inp % end_index, 162)))
-    a_end_index = inp % end_index
-    out % m_end_index = c_loc(a_end_index)
-    out % m___f2dace_SA_end_index_d_0_s_161 = SIZE(inp % end_index, 162)
-    out % m___f2dace_SOA_end_index_d_0_s_161 = LBOUND(inp % end_index, 162)
-    IF (initalloc) ALLOCATE(a_neighbor_blk(SIZE(inp % neighbor_blk, 150), SIZE(inp % neighbor_blk, 1151), SIZE(inp % neighbor_blk, 2152)))
-    a_neighbor_blk = inp % neighbor_blk
-    out % m_neighbor_blk = c_loc(a_neighbor_blk)
-    out % m___f2dace_SA_neighbor_blk_d_0_s_149 = SIZE(inp % neighbor_blk, 150)
-    out % m___f2dace_SA_neighbor_blk_d_1_s_150 = SIZE(inp % neighbor_blk, 1151)
-    out % m___f2dace_SA_neighbor_blk_d_2_s_151 = SIZE(inp % neighbor_blk, 2152)
-    out % m___f2dace_SOA_neighbor_blk_d_0_s_149 = LBOUND(inp % neighbor_blk, 150)
-    out % m___f2dace_SOA_neighbor_blk_d_1_s_150 = LBOUND(inp % neighbor_blk, 1151)
-    out % m___f2dace_SOA_neighbor_blk_d_2_s_151 = LBOUND(inp % neighbor_blk, 2152)
-    IF (initalloc) ALLOCATE(a_neighbor_idx(SIZE(inp % neighbor_idx, 147), SIZE(inp % neighbor_idx, 1148), SIZE(inp % neighbor_idx, 2149)))
-    a_neighbor_idx = inp % neighbor_idx
-    out % m_neighbor_idx = c_loc(a_neighbor_idx)
-    out % m___f2dace_SA_neighbor_idx_d_0_s_146 = SIZE(inp % neighbor_idx, 147)
-    out % m___f2dace_SA_neighbor_idx_d_1_s_147 = SIZE(inp % neighbor_idx, 1148)
-    out % m___f2dace_SA_neighbor_idx_d_2_s_148 = SIZE(inp % neighbor_idx, 2149)
-    out % m___f2dace_SOA_neighbor_idx_d_0_s_146 = LBOUND(inp % neighbor_idx, 147)
-    out % m___f2dace_SOA_neighbor_idx_d_1_s_147 = LBOUND(inp % neighbor_idx, 1148)
-    out % m___f2dace_SOA_neighbor_idx_d_2_s_148 = LBOUND(inp % neighbor_idx, 2149)
-    IF (initalloc) ALLOCATE(a_start_block(SIZE(inp % start_block, 163)))
-    a_start_block = inp % start_block
-    out % m_start_block = c_loc(a_start_block)
-    out % m___f2dace_SA_start_block_d_0_s_162 = SIZE(inp % start_block, 163)
-    out % m___f2dace_SOA_start_block_d_0_s_162 = LBOUND(inp % start_block, 163)
-    IF (initalloc) ALLOCATE(a_start_index(SIZE(inp % start_index, 161)))
-    a_start_index = inp % start_index
-    out % m_start_index = c_loc(a_start_index)
-    out % m___f2dace_SA_start_index_d_0_s_160 = SIZE(inp % start_index, 161)
-    out % m___f2dace_SOA_start_index_d_0_s_160 = LBOUND(inp % start_index, 161)
-  END SUBROUTINE ctor_t_grid_cells
-  SUBROUTINE ctor_t_grid_domain_decomp_info(inp, out, initalloc)
-    TYPE(t_grid_domain_decomp_info), INTENT(IN) :: inp
-    TYPE(glue_t_grid_domain_decomp_info), INTENT(INOUT) :: out
-    LOGICAL, INTENT(IN) :: initalloc
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_owner_mask(:, :)
-    IF (initalloc) ALLOCATE(a_owner_mask(SIZE(inp % owner_mask, 3), SIZE(inp % owner_mask, 14)))
-    a_owner_mask = inp % owner_mask
-    out % m_owner_mask = c_loc(a_owner_mask)
-    out % m___f2dace_SA_owner_mask_d_0_s_2 = SIZE(inp % owner_mask, 3)
-    out % m___f2dace_SA_owner_mask_d_1_s_3 = SIZE(inp % owner_mask, 14)
-    out % m___f2dace_SOA_owner_mask_d_0_s_2 = LBOUND(inp % owner_mask, 3)
-    out % m___f2dace_SOA_owner_mask_d_1_s_3 = LBOUND(inp % owner_mask, 14)
-  END SUBROUTINE ctor_t_grid_domain_decomp_info
-  SUBROUTINE ctor_t_grid_vertices(inp, out, initalloc)
-    TYPE(t_grid_vertices), INTENT(IN) :: inp
-    TYPE(glue_t_grid_vertices), INTENT(INOUT) :: out
-    LOGICAL, INTENT(IN) :: initalloc
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_cell_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_cell_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_edge_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_edge_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_index(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_index(:)
-    IF (initalloc) ALLOCATE(a_cell_blk(SIZE(inp % cell_blk, 204), SIZE(inp % cell_blk, 1205), SIZE(inp % cell_blk, 2206)))
-    a_cell_blk = inp % cell_blk
-    out % m_cell_blk = c_loc(a_cell_blk)
-    out % m___f2dace_SA_cell_blk_d_0_s_203 = SIZE(inp % cell_blk, 204)
-    out % m___f2dace_SA_cell_blk_d_1_s_204 = SIZE(inp % cell_blk, 1205)
-    out % m___f2dace_SA_cell_blk_d_2_s_205 = SIZE(inp % cell_blk, 2206)
-    out % m___f2dace_SOA_cell_blk_d_0_s_203 = LBOUND(inp % cell_blk, 204)
-    out % m___f2dace_SOA_cell_blk_d_1_s_204 = LBOUND(inp % cell_blk, 1205)
-    out % m___f2dace_SOA_cell_blk_d_2_s_205 = LBOUND(inp % cell_blk, 2206)
-    IF (initalloc) ALLOCATE(a_cell_idx(SIZE(inp % cell_idx, 201), SIZE(inp % cell_idx, 1202), SIZE(inp % cell_idx, 2203)))
-    a_cell_idx = inp % cell_idx
-    out % m_cell_idx = c_loc(a_cell_idx)
-    out % m___f2dace_SA_cell_idx_d_0_s_200 = SIZE(inp % cell_idx, 201)
-    out % m___f2dace_SA_cell_idx_d_1_s_201 = SIZE(inp % cell_idx, 1202)
-    out % m___f2dace_SA_cell_idx_d_2_s_202 = SIZE(inp % cell_idx, 2203)
-    out % m___f2dace_SOA_cell_idx_d_0_s_200 = LBOUND(inp % cell_idx, 201)
-    out % m___f2dace_SOA_cell_idx_d_1_s_201 = LBOUND(inp % cell_idx, 1202)
-    out % m___f2dace_SOA_cell_idx_d_2_s_202 = LBOUND(inp % cell_idx, 2203)
-    IF (initalloc) ALLOCATE(a_edge_blk(SIZE(inp % edge_blk, 210), SIZE(inp % edge_blk, 1211), SIZE(inp % edge_blk, 2212)))
-    a_edge_blk = inp % edge_blk
-    out % m_edge_blk = c_loc(a_edge_blk)
-    out % m___f2dace_SA_edge_blk_d_0_s_209 = SIZE(inp % edge_blk, 210)
-    out % m___f2dace_SA_edge_blk_d_1_s_210 = SIZE(inp % edge_blk, 1211)
-    out % m___f2dace_SA_edge_blk_d_2_s_211 = SIZE(inp % edge_blk, 2212)
-    out % m___f2dace_SOA_edge_blk_d_0_s_209 = LBOUND(inp % edge_blk, 210)
-    out % m___f2dace_SOA_edge_blk_d_1_s_210 = LBOUND(inp % edge_blk, 1211)
-    out % m___f2dace_SOA_edge_blk_d_2_s_211 = LBOUND(inp % edge_blk, 2212)
-    IF (initalloc) ALLOCATE(a_edge_idx(SIZE(inp % edge_idx, 207), SIZE(inp % edge_idx, 1208), SIZE(inp % edge_idx, 2209)))
-    a_edge_idx = inp % edge_idx
-    out % m_edge_idx = c_loc(a_edge_idx)
-    out % m___f2dace_SA_edge_idx_d_0_s_206 = SIZE(inp % edge_idx, 207)
-    out % m___f2dace_SA_edge_idx_d_1_s_207 = SIZE(inp % edge_idx, 1208)
-    out % m___f2dace_SA_edge_idx_d_2_s_208 = SIZE(inp % edge_idx, 2209)
-    out % m___f2dace_SOA_edge_idx_d_0_s_206 = LBOUND(inp % edge_idx, 207)
-    out % m___f2dace_SOA_edge_idx_d_1_s_207 = LBOUND(inp % edge_idx, 1208)
-    out % m___f2dace_SOA_edge_idx_d_2_s_208 = LBOUND(inp % edge_idx, 2209)
-    IF (initalloc) ALLOCATE(a_end_block(SIZE(inp % end_block, 216)))
-    a_end_block = inp % end_block
-    out % m_end_block = c_loc(a_end_block)
-    out % m___f2dace_SA_end_block_d_0_s_215 = SIZE(inp % end_block, 216)
-    out % m___f2dace_SOA_end_block_d_0_s_215 = LBOUND(inp % end_block, 216)
-    IF (initalloc) ALLOCATE(a_end_index(SIZE(inp % end_index, 214)))
-    a_end_index = inp % end_index
-    out % m_end_index = c_loc(a_end_index)
-    out % m___f2dace_SA_end_index_d_0_s_213 = SIZE(inp % end_index, 214)
-    out % m___f2dace_SOA_end_index_d_0_s_213 = LBOUND(inp % end_index, 214)
-    IF (initalloc) ALLOCATE(a_start_block(SIZE(inp % start_block, 215)))
-    a_start_block = inp % start_block
-    out % m_start_block = c_loc(a_start_block)
-    out % m___f2dace_SA_start_block_d_0_s_214 = SIZE(inp % start_block, 215)
-    out % m___f2dace_SOA_start_block_d_0_s_214 = LBOUND(inp % start_block, 215)
-    IF (initalloc) ALLOCATE(a_start_index(SIZE(inp % start_index, 213)))
-    a_start_index = inp % start_index
-    out % m_start_index = c_loc(a_start_index)
-    out % m___f2dace_SA_start_index_d_0_s_212 = SIZE(inp % start_index, 213)
-    out % m___f2dace_SOA_start_index_d_0_s_212 = LBOUND(inp % start_index, 213)
-  END SUBROUTINE ctor_t_grid_vertices
-END MODULE f90_glue_vt_serde
 MODULE vt_serde
   IMPLICIT NONE
   INTERFACE serialize
-    MODULE PROCEDURE W_global_data_type, W_integer1, W_integer2, W_integer4, W_integer8, W_integer__4_R_1, W_integer__4_R_3, W_logical, W_logical_R_2, W_real4, W_real8, W_real__8_R_1, W_real__8_R_2, W_real__8_R_3, W_real__8_R_4, W_string, W_t_grid_cells, W_t_grid_domain_decomp_info, W_t_grid_edges, W_t_grid_vertices, W_t_int_state, W_t_nh_diag, W_t_nh_metrics, W_t_nh_prog, W_t_patch
+    MODULE PROCEDURE :: W_string
+    MODULE PROCEDURE W_t_grid_domain_decomp_info, W_t_int_state, W_t_grid_cells, W_t_grid_edges, W_t_grid_vertices, W_t_patch, W_t_nh_prog, W_t_nh_diag, W_t_nh_metrics, W_logical_R_1, W_integer__1_R_1, W_integer__2_R_1, W_integer__4_R_1, W_integer__8_R_1, W_real__4_R_1, W_real__8_R_1, W_logical_R_2, W_integer__1_R_2, W_integer__2_R_2, W_integer__4_R_2, W_integer__8_R_2, W_real__4_R_2, W_real__8_R_2, W_logical_R_3, W_integer__1_R_3, W_integer__2_R_3, W_integer__4_R_3, W_integer__8_R_3, W_real__4_R_3, W_real__8_R_3, W_logical_R_4, W_integer__1_R_4, W_integer__2_R_4, W_integer__4_R_4, W_integer__8_R_4, W_real__4_R_4, W_real__8_R_4, W_logical, W_integer1, W_integer2, W_integer4, W_integer8, W_real4, W_real8
   END INTERFACE serialize
   INTEGER :: generation = 0
   CONTAINS
@@ -1091,115 +51,6 @@ MODULE vt_serde
     IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_string
-  SUBROUTINE W_logical(io, x, cleanup, nline)
-    CHARACTER(LEN = 50) :: buf
-    INTEGER :: io
-    LOGICAL, INTENT(IN) :: x
-    INTEGER :: y
-    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
-    LOGICAL :: cleanup_local, nline_local
-    cleanup_local = .TRUE.
-    nline_local = .TRUE.
-    IF (PRESENT(cleanup)) cleanup_local = cleanup
-    IF (PRESENT(nline)) nline_local = nline
-    y = MERGE(1, 0, x)
-    WRITE(io, '(g0)', ADVANCE = 'no') y
-    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
-    IF (cleanup_local) CLOSE(UNIT = io)
-  END SUBROUTINE W_logical
-  SUBROUTINE W_integer1(io, x, cleanup, nline)
-    CHARACTER(LEN = 50) :: buf
-    INTEGER :: io
-    INTEGER(KIND = 1), INTENT(IN) :: x
-    INTEGER :: y
-    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
-    LOGICAL :: cleanup_local, nline_local
-    cleanup_local = .TRUE.
-    nline_local = .TRUE.
-    IF (PRESENT(cleanup)) cleanup_local = cleanup
-    IF (PRESENT(nline)) nline_local = nline
-    WRITE(io, '(g0)', ADVANCE = 'no') x
-    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
-    IF (cleanup_local) CLOSE(UNIT = io)
-  END SUBROUTINE W_integer1
-  SUBROUTINE W_integer2(io, x, cleanup, nline)
-    CHARACTER(LEN = 50) :: buf
-    INTEGER :: io
-    INTEGER(KIND = 2), INTENT(IN) :: x
-    INTEGER :: y
-    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
-    LOGICAL :: cleanup_local, nline_local
-    cleanup_local = .TRUE.
-    nline_local = .TRUE.
-    IF (PRESENT(cleanup)) cleanup_local = cleanup
-    IF (PRESENT(nline)) nline_local = nline
-    WRITE(io, '(g0)', ADVANCE = 'no') x
-    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
-    IF (cleanup_local) CLOSE(UNIT = io)
-  END SUBROUTINE W_integer2
-  SUBROUTINE W_integer4(io, x, cleanup, nline)
-    CHARACTER(LEN = 50) :: buf
-    INTEGER :: io
-    INTEGER(KIND = 4), INTENT(IN) :: x
-    INTEGER :: y
-    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
-    LOGICAL :: cleanup_local, nline_local
-    cleanup_local = .TRUE.
-    nline_local = .TRUE.
-    IF (PRESENT(cleanup)) cleanup_local = cleanup
-    IF (PRESENT(nline)) nline_local = nline
-    WRITE(io, '(g0)', ADVANCE = 'no') x
-    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
-    IF (cleanup_local) CLOSE(UNIT = io)
-  END SUBROUTINE W_integer4
-  SUBROUTINE W_integer8(io, x, cleanup, nline)
-    CHARACTER(LEN = 50) :: buf
-    INTEGER :: io
-    INTEGER(KIND = 8), INTENT(IN) :: x
-    INTEGER :: y
-    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
-    LOGICAL :: cleanup_local, nline_local
-    cleanup_local = .TRUE.
-    nline_local = .TRUE.
-    IF (PRESENT(cleanup)) cleanup_local = cleanup
-    IF (PRESENT(nline)) nline_local = nline
-    WRITE(io, '(g0)', ADVANCE = 'no') x
-    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
-    IF (cleanup_local) CLOSE(UNIT = io)
-  END SUBROUTINE W_integer8
-  SUBROUTINE W_real4(io, x, cleanup, nline)
-    CHARACTER(LEN = 50) :: buf
-    INTEGER :: io
-    REAL(KIND = 4), INTENT(IN) :: x
-    INTEGER :: y
-    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
-    LOGICAL :: cleanup_local, nline_local
-    cleanup_local = .TRUE.
-    nline_local = .TRUE.
-    IF (PRESENT(cleanup)) cleanup_local = cleanup
-    IF (PRESENT(nline)) nline_local = nline
-    WRITE(buf, '(e28.20)') x
-    WRITE(io, '(A)', ADVANCE = 'no') TRIM(ADJUSTL(buf))
-    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
-    IF (cleanup_local) CLOSE(UNIT = io)
-  END SUBROUTINE W_real4
-  SUBROUTINE W_real8(io, x, cleanup, nline)
-    CHARACTER(LEN = 50) :: buf
-    INTEGER :: io
-    REAL(KIND = 8), INTENT(IN) :: x
-    INTEGER :: y
-    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
-    LOGICAL :: cleanup_local, nline_local
-    cleanup_local = .TRUE.
-    nline_local = .TRUE.
-    IF (PRESENT(cleanup)) cleanup_local = cleanup
-    IF (PRESENT(nline)) nline_local = nline
-    WRITE(buf, '(e28.20)') x
-    WRITE(io, '(A)', ADVANCE = 'no') TRIM(ADJUSTL(buf))
-    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
-    IF (cleanup_local) CLOSE(UNIT = io)
-  END SUBROUTINE W_real8
-
   SUBROUTINE W_t_grid_domain_decomp_info(io, x, cleanup, nline)
     USE mo_decomposition_tools, ONLY: t_grid_domain_decomp_info
     INTEGER :: io
@@ -1213,18 +64,20 @@ MODULE vt_serde
     IF (PRESENT(nline)) nline_local = nline
     CALL serialize(io, '# owner_mask', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 2, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, SIZE(x % owner_mask, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, LBOUND(x % owner_mask, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % owner_mask, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % owner_mask), cleanup = .FALSE.)
+    IF (ALLOCATED(x % owner_mask)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x % owner_mask, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x % owner_mask, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % owner_mask, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_t_grid_domain_decomp_info
@@ -1241,102 +94,116 @@ MODULE vt_serde
     IF (PRESENT(nline)) nline_local = nline
     CALL serialize(io, '# c_lin_e', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % c_lin_e, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % c_lin_e, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % c_lin_e, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % c_lin_e), cleanup = .FALSE.)
+    IF (ALLOCATED(x % c_lin_e)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % c_lin_e, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % c_lin_e, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % c_lin_e, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# e_bln_c_s', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % e_bln_c_s, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % e_bln_c_s, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % e_bln_c_s, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % e_bln_c_s), cleanup = .FALSE.)
+    IF (ALLOCATED(x % e_bln_c_s)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % e_bln_c_s, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % e_bln_c_s, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % e_bln_c_s, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# cells_aw_verts', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % cells_aw_verts, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % cells_aw_verts, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % cells_aw_verts, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % cells_aw_verts), cleanup = .FALSE.)
+    IF (ALLOCATED(x % cells_aw_verts)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % cells_aw_verts, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % cells_aw_verts, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % cells_aw_verts, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# rbf_vec_coeff_e', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % rbf_vec_coeff_e, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % rbf_vec_coeff_e, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % rbf_vec_coeff_e, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % rbf_vec_coeff_e), cleanup = .FALSE.)
+    IF (ALLOCATED(x % rbf_vec_coeff_e)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % rbf_vec_coeff_e, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % rbf_vec_coeff_e, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % rbf_vec_coeff_e, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# geofac_grdiv', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % geofac_grdiv, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % geofac_grdiv, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % geofac_grdiv, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % geofac_grdiv), cleanup = .FALSE.)
+    IF (ALLOCATED(x % geofac_grdiv)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % geofac_grdiv, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % geofac_grdiv, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % geofac_grdiv, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# geofac_rot', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % geofac_rot, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % geofac_rot, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % geofac_rot, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % geofac_rot), cleanup = .FALSE.)
+    IF (ALLOCATED(x % geofac_rot)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % geofac_rot, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % geofac_rot, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % geofac_rot, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# geofac_n2s', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % geofac_n2s, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % geofac_n2s, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % geofac_n2s, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % geofac_n2s), cleanup = .FALSE.)
+    IF (ALLOCATED(x % geofac_n2s)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % geofac_n2s, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % geofac_n2s, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % geofac_n2s, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_t_int_state
@@ -1353,60 +220,68 @@ MODULE vt_serde
     IF (PRESENT(nline)) nline_local = nline
     CALL serialize(io, '# neighbor_idx', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % neighbor_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % neighbor_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % neighbor_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % neighbor_idx), cleanup = .FALSE.)
+    IF (ALLOCATED(x % neighbor_idx)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % neighbor_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % neighbor_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % neighbor_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# neighbor_blk', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % neighbor_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % neighbor_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % neighbor_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % neighbor_blk), cleanup = .FALSE.)
+    IF (ALLOCATED(x % neighbor_blk)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % neighbor_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % neighbor_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % neighbor_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# edge_idx', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % edge_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % edge_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % edge_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % edge_idx), cleanup = .FALSE.)
+    IF (ALLOCATED(x % edge_idx)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % edge_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % edge_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % edge_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# edge_blk', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % edge_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % edge_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % edge_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % edge_blk), cleanup = .FALSE.)
+    IF (ALLOCATED(x % edge_blk)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % edge_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % edge_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % edge_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# area', cleanup = .FALSE.)
     CALL serialize(io, '# assoc', cleanup = .FALSE.)
     CALL serialize(io, ASSOCIATED(x % area), cleanup = .FALSE.)
@@ -1418,60 +293,68 @@ MODULE vt_serde
     END IF
     CALL serialize(io, '# start_index', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % start_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % start_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % start_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % start_index), cleanup = .FALSE.)
+    IF (ALLOCATED(x % start_index)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % start_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % start_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % start_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# end_index', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % end_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % end_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % end_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % end_index), cleanup = .FALSE.)
+    IF (ALLOCATED(x % end_index)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % end_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % end_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % end_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# start_block', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % start_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % start_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % start_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % start_block), cleanup = .FALSE.)
+    IF (ALLOCATED(x % start_block)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % start_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % start_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % start_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# end_block', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % end_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % end_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % end_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % end_block), cleanup = .FALSE.)
+    IF (ALLOCATED(x % end_block)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % end_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % end_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % end_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# decomp_info', cleanup = .FALSE.)
     CALL serialize(io, x % decomp_info, cleanup = .FALSE.)
     IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
@@ -1490,242 +373,276 @@ MODULE vt_serde
     IF (PRESENT(nline)) nline_local = nline
     CALL serialize(io, '# cell_idx', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % cell_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % cell_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % cell_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % cell_idx), cleanup = .FALSE.)
+    IF (ALLOCATED(x % cell_idx)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % cell_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % cell_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % cell_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# cell_blk', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % cell_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % cell_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % cell_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % cell_blk), cleanup = .FALSE.)
+    IF (ALLOCATED(x % cell_blk)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % cell_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % cell_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % cell_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# vertex_idx', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % vertex_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % vertex_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % vertex_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % vertex_idx), cleanup = .FALSE.)
+    IF (ALLOCATED(x % vertex_idx)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % vertex_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % vertex_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % vertex_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# vertex_blk', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % vertex_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % vertex_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % vertex_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % vertex_blk), cleanup = .FALSE.)
+    IF (ALLOCATED(x % vertex_blk)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % vertex_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % vertex_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % vertex_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# tangent_orientation', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 2, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, SIZE(x % tangent_orientation, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, LBOUND(x % tangent_orientation, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % tangent_orientation, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % tangent_orientation), cleanup = .FALSE.)
+    IF (ALLOCATED(x % tangent_orientation)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x % tangent_orientation, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x % tangent_orientation, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % tangent_orientation, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# quad_idx', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % quad_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % quad_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % quad_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % quad_idx), cleanup = .FALSE.)
+    IF (ALLOCATED(x % quad_idx)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % quad_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % quad_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % quad_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# quad_blk', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % quad_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % quad_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % quad_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % quad_blk), cleanup = .FALSE.)
+    IF (ALLOCATED(x % quad_blk)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % quad_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % quad_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % quad_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# inv_primal_edge_length', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 2, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, SIZE(x % inv_primal_edge_length, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, LBOUND(x % inv_primal_edge_length, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % inv_primal_edge_length, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % inv_primal_edge_length), cleanup = .FALSE.)
+    IF (ALLOCATED(x % inv_primal_edge_length)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x % inv_primal_edge_length, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x % inv_primal_edge_length, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % inv_primal_edge_length, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# inv_dual_edge_length', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 2, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, SIZE(x % inv_dual_edge_length, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, LBOUND(x % inv_dual_edge_length, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % inv_dual_edge_length, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % inv_dual_edge_length), cleanup = .FALSE.)
+    IF (ALLOCATED(x % inv_dual_edge_length)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x % inv_dual_edge_length, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x % inv_dual_edge_length, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % inv_dual_edge_length, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# area_edge', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 2, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, SIZE(x % area_edge, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, LBOUND(x % area_edge, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % area_edge, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % area_edge), cleanup = .FALSE.)
+    IF (ALLOCATED(x % area_edge)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x % area_edge, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x % area_edge, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % area_edge, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# f_e', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 2, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, SIZE(x % f_e, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, LBOUND(x % f_e, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % f_e, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % f_e), cleanup = .FALSE.)
+    IF (ALLOCATED(x % f_e)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x % f_e, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x % f_e, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % f_e, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# fn_e', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 2, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, SIZE(x % fn_e, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, LBOUND(x % fn_e, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % fn_e, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % fn_e), cleanup = .FALSE.)
+    IF (ALLOCATED(x % fn_e)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x % fn_e, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x % fn_e, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % fn_e, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# ft_e', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 2, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, SIZE(x % ft_e, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 2
-      CALL serialize(io, LBOUND(x % ft_e, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % ft_e, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % ft_e), cleanup = .FALSE.)
+    IF (ALLOCATED(x % ft_e)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x % ft_e, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x % ft_e, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % ft_e, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# start_index', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % start_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % start_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % start_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % start_index), cleanup = .FALSE.)
+    IF (ALLOCATED(x % start_index)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % start_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % start_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % start_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# end_index', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % end_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % end_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % end_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % end_index), cleanup = .FALSE.)
+    IF (ALLOCATED(x % end_index)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % end_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % end_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % end_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# start_block', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % start_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % start_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % start_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % start_block), cleanup = .FALSE.)
+    IF (ALLOCATED(x % start_block)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % start_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % start_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % start_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# end_block', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % end_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % end_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % end_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % end_block), cleanup = .FALSE.)
+    IF (ALLOCATED(x % end_block)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % end_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % end_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % end_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_t_grid_edges
@@ -1742,116 +659,132 @@ MODULE vt_serde
     IF (PRESENT(nline)) nline_local = nline
     CALL serialize(io, '# cell_idx', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % cell_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % cell_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % cell_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % cell_idx), cleanup = .FALSE.)
+    IF (ALLOCATED(x % cell_idx)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % cell_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % cell_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % cell_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# cell_blk', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % cell_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % cell_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % cell_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % cell_blk), cleanup = .FALSE.)
+    IF (ALLOCATED(x % cell_blk)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % cell_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % cell_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % cell_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# edge_idx', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % edge_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % edge_idx, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % edge_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % edge_idx), cleanup = .FALSE.)
+    IF (ALLOCATED(x % edge_idx)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % edge_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % edge_idx, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % edge_idx, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# edge_blk', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 3, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, SIZE(x % edge_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 3
-      CALL serialize(io, LBOUND(x % edge_blk, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % edge_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % edge_blk), cleanup = .FALSE.)
+    IF (ALLOCATED(x % edge_blk)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x % edge_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x % edge_blk, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % edge_blk, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# start_index', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % start_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % start_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % start_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % start_index), cleanup = .FALSE.)
+    IF (ALLOCATED(x % start_index)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % start_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % start_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % start_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# end_index', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % end_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % end_index, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % end_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % end_index), cleanup = .FALSE.)
+    IF (ALLOCATED(x % end_index)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % end_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % end_index, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % end_index, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# start_block', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % start_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % start_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % start_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % start_block), cleanup = .FALSE.)
+    IF (ALLOCATED(x % start_block)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % start_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % start_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % start_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     CALL serialize(io, '# end_block', cleanup = .FALSE.)
     CALL serialize(io, '# alloc', cleanup = .FALSE.)
-    CALL serialize(io, .TRUE., cleanup = .FALSE.)
-    CALL serialize(io, "# rank", cleanup = .FALSE.)
-    CALL serialize(io, 1, cleanup = .FALSE.)
-    CALL serialize(io, "# size", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, SIZE(x % end_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, "# lbound", cleanup = .FALSE.)
-    DO kmeta = 1, 1
-      CALL serialize(io, LBOUND(x % end_block, kmeta), cleanup = .FALSE.)
-    END DO
-    CALL serialize(io, x % end_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    CALL serialize(io, ALLOCATED(x % end_block), cleanup = .FALSE.)
+    IF (ALLOCATED(x % end_block)) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x % end_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x % end_block, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, x % end_block, cleanup = .FALSE., nline = .TRUE., meta = .FALSE.)
+    END IF
     IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_t_grid_vertices
@@ -1866,6 +799,12 @@ MODULE vt_serde
     nline_local = .TRUE.
     IF (PRESENT(cleanup)) cleanup_local = cleanup
     IF (PRESENT(nline)) nline_local = nline
+    CALL serialize(io, '# nblks_c', cleanup = .FALSE.)
+    CALL serialize(io, x % nblks_c, cleanup = .FALSE.)
+    CALL serialize(io, '# nblks_e', cleanup = .FALSE.)
+    CALL serialize(io, x % nblks_e, cleanup = .FALSE.)
+    CALL serialize(io, '# nblks_v', cleanup = .FALSE.)
+    CALL serialize(io, x % nblks_v, cleanup = .FALSE.)
     CALL serialize(io, '# cells', cleanup = .FALSE.)
     CALL serialize(io, x % cells, cleanup = .FALSE.)
     CALL serialize(io, '# edges', cleanup = .FALSE.)
@@ -2108,6 +1047,96 @@ MODULE vt_serde
     IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_t_nh_metrics
+  SUBROUTINE W_logical_R_1(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    LOGICAL, INTENT(IN) :: x(:)
+    INTEGER :: k, kmeta, k1
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+      CALL serialize(io, x(k1), cleanup = .FALSE.)
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_logical_R_1
+  SUBROUTINE W_integer__1_R_1(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 1), INTENT(IN) :: x(:)
+    INTEGER :: k, kmeta, k1
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+      CALL serialize(io, x(k1), cleanup = .FALSE.)
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__1_R_1
+  SUBROUTINE W_integer__2_R_1(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 2), INTENT(IN) :: x(:)
+    INTEGER :: k, kmeta, k1
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+      CALL serialize(io, x(k1), cleanup = .FALSE.)
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__2_R_1
   SUBROUTINE W_integer__4_R_1(io, x, cleanup, nline, meta)
     INTEGER :: io
     INTEGER(KIND = 4), INTENT(IN) :: x(:)
@@ -2138,6 +1167,96 @@ MODULE vt_serde
     END DO
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_integer__4_R_1
+  SUBROUTINE W_integer__8_R_1(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 8), INTENT(IN) :: x(:)
+    INTEGER :: k, kmeta, k1
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+      CALL serialize(io, x(k1), cleanup = .FALSE.)
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__8_R_1
+  SUBROUTINE W_real__4_R_1(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    REAL(KIND = 4), INTENT(IN) :: x(:)
+    INTEGER :: k, kmeta, k1
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+      CALL serialize(io, x(k1), cleanup = .FALSE.)
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_real__4_R_1
+  SUBROUTINE W_real__8_R_1(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    REAL(KIND = 8), INTENT(IN) :: x(:)
+    INTEGER :: k, kmeta, k1
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 1, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 1
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+      CALL serialize(io, x(k1), cleanup = .FALSE.)
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_real__8_R_1
   SUBROUTINE W_logical_R_2(io, x, cleanup, nline, meta)
     INTEGER :: io
     LOGICAL, INTENT(IN) :: x(:, :)
@@ -2170,9 +1289,201 @@ MODULE vt_serde
     END DO
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_logical_R_2
-  SUBROUTINE W_real__8_R_3(io, x, cleanup, nline, meta)
+  SUBROUTINE W_integer__1_R_2(io, x, cleanup, nline, meta)
     INTEGER :: io
-    REAL(KIND = 8), INTENT(IN) :: x(:, :, :)
+    INTEGER(KIND = 1), INTENT(IN) :: x(:, :)
+    INTEGER :: k, kmeta, k1, k2
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+      DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+        CALL serialize(io, x(k1, k2), cleanup = .FALSE.)
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__1_R_2
+  SUBROUTINE W_integer__2_R_2(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 2), INTENT(IN) :: x(:, :)
+    INTEGER :: k, kmeta, k1, k2
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+      DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+        CALL serialize(io, x(k1, k2), cleanup = .FALSE.)
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__2_R_2
+  SUBROUTINE W_integer__4_R_2(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 4), INTENT(IN) :: x(:, :)
+    INTEGER :: k, kmeta, k1, k2
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+      DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+        CALL serialize(io, x(k1, k2), cleanup = .FALSE.)
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__4_R_2
+  SUBROUTINE W_integer__8_R_2(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 8), INTENT(IN) :: x(:, :)
+    INTEGER :: k, kmeta, k1, k2
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+      DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+        CALL serialize(io, x(k1, k2), cleanup = .FALSE.)
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__8_R_2
+  SUBROUTINE W_real__4_R_2(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    REAL(KIND = 4), INTENT(IN) :: x(:, :)
+    INTEGER :: k, kmeta, k1, k2
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+      DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+        CALL serialize(io, x(k1, k2), cleanup = .FALSE.)
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_real__4_R_2
+  SUBROUTINE W_real__8_R_2(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    REAL(KIND = 8), INTENT(IN) :: x(:, :)
+    INTEGER :: k, kmeta, k1, k2
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 2
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+      DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+        CALL serialize(io, x(k1, k2), cleanup = .FALSE.)
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_real__8_R_2
+  SUBROUTINE W_logical_R_3(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    LOGICAL, INTENT(IN) :: x(:, :, :)
     INTEGER :: k, kmeta, k1, k2, k3
     LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
     LOGICAL :: cleanup_local, nline_local, meta_local
@@ -2203,7 +1514,75 @@ MODULE vt_serde
       END DO
     END DO
     IF (cleanup_local) CLOSE(UNIT = io)
-  END SUBROUTINE W_real__8_R_3
+  END SUBROUTINE W_logical_R_3
+  SUBROUTINE W_integer__1_R_3(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 1), INTENT(IN) :: x(:, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+      DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+        DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+          CALL serialize(io, x(k1, k2, k3), cleanup = .FALSE.)
+        END DO
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__1_R_3
+  SUBROUTINE W_integer__2_R_3(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 2), INTENT(IN) :: x(:, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+      DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+        DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+          CALL serialize(io, x(k1, k2, k3), cleanup = .FALSE.)
+        END DO
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__2_R_3
   SUBROUTINE W_integer__4_R_3(io, x, cleanup, nline, meta)
     INTEGER :: io
     INTEGER(KIND = 4), INTENT(IN) :: x(:, :, :)
@@ -2238,10 +1617,10 @@ MODULE vt_serde
     END DO
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_integer__4_R_3
-  SUBROUTINE W_real__8_R_2(io, x, cleanup, nline, meta)
+  SUBROUTINE W_integer__8_R_3(io, x, cleanup, nline, meta)
     INTEGER :: io
-    REAL(KIND = 8), INTENT(IN) :: x(:, :)
-    INTEGER :: k, kmeta, k1, k2
+    INTEGER(KIND = 8), INTENT(IN) :: x(:, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3
     LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
     LOGICAL :: cleanup_local, nline_local, meta_local
     cleanup_local = .TRUE.
@@ -2252,24 +1631,310 @@ MODULE vt_serde
     IF (PRESENT(meta)) meta_local = meta
     IF (meta_local) THEN
       CALL serialize(io, "# rank", cleanup = .FALSE.)
-      CALL serialize(io, 2, cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
       CALL serialize(io, "# size", cleanup = .FALSE.)
-      DO kmeta = 1, 2
+      DO kmeta = 1, 3
         CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
       END DO
       CALL serialize(io, "# lbound", cleanup = .FALSE.)
-      DO kmeta = 1, 2
+      DO kmeta = 1, 3
         CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
       END DO
     END IF
     CALL serialize(io, "# entries", cleanup = .FALSE.)
-    DO k2 = LBOUND(x, 2), UBOUND(x, 2)
-      DO k1 = LBOUND(x, 1), UBOUND(x, 1)
-        CALL serialize(io, x(k1, k2), cleanup = .FALSE.)
+    DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+      DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+        DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+          CALL serialize(io, x(k1, k2, k3), cleanup = .FALSE.)
+        END DO
       END DO
     END DO
     IF (cleanup_local) CLOSE(UNIT = io)
-  END SUBROUTINE W_real__8_R_2
+  END SUBROUTINE W_integer__8_R_3
+  SUBROUTINE W_real__4_R_3(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    REAL(KIND = 4), INTENT(IN) :: x(:, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+      DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+        DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+          CALL serialize(io, x(k1, k2, k3), cleanup = .FALSE.)
+        END DO
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_real__4_R_3
+  SUBROUTINE W_real__8_R_3(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    REAL(KIND = 8), INTENT(IN) :: x(:, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 3, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 3
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+      DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+        DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+          CALL serialize(io, x(k1, k2, k3), cleanup = .FALSE.)
+        END DO
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_real__8_R_3
+  SUBROUTINE W_logical_R_4(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    LOGICAL, INTENT(IN) :: x(:, :, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3, k4
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 4, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k4 = LBOUND(x, 4), UBOUND(x, 4)
+      DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+        DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+          DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+            CALL serialize(io, x(k1, k2, k3, k4), cleanup = .FALSE.)
+          END DO
+        END DO
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_logical_R_4
+  SUBROUTINE W_integer__1_R_4(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 1), INTENT(IN) :: x(:, :, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3, k4
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 4, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k4 = LBOUND(x, 4), UBOUND(x, 4)
+      DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+        DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+          DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+            CALL serialize(io, x(k1, k2, k3, k4), cleanup = .FALSE.)
+          END DO
+        END DO
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__1_R_4
+  SUBROUTINE W_integer__2_R_4(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 2), INTENT(IN) :: x(:, :, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3, k4
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 4, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k4 = LBOUND(x, 4), UBOUND(x, 4)
+      DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+        DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+          DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+            CALL serialize(io, x(k1, k2, k3, k4), cleanup = .FALSE.)
+          END DO
+        END DO
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__2_R_4
+  SUBROUTINE W_integer__4_R_4(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 4), INTENT(IN) :: x(:, :, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3, k4
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 4, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k4 = LBOUND(x, 4), UBOUND(x, 4)
+      DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+        DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+          DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+            CALL serialize(io, x(k1, k2, k3, k4), cleanup = .FALSE.)
+          END DO
+        END DO
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__4_R_4
+  SUBROUTINE W_integer__8_R_4(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    INTEGER(KIND = 8), INTENT(IN) :: x(:, :, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3, k4
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 4, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k4 = LBOUND(x, 4), UBOUND(x, 4)
+      DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+        DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+          DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+            CALL serialize(io, x(k1, k2, k3, k4), cleanup = .FALSE.)
+          END DO
+        END DO
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer__8_R_4
+  SUBROUTINE W_real__4_R_4(io, x, cleanup, nline, meta)
+    INTEGER :: io
+    REAL(KIND = 4), INTENT(IN) :: x(:, :, :, :)
+    INTEGER :: k, kmeta, k1, k2, k3, k4
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
+    LOGICAL :: cleanup_local, nline_local, meta_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    meta_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    IF (PRESENT(meta)) meta_local = meta
+    IF (meta_local) THEN
+      CALL serialize(io, "# rank", cleanup = .FALSE.)
+      CALL serialize(io, 4, cleanup = .FALSE.)
+      CALL serialize(io, "# size", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
+      END DO
+      CALL serialize(io, "# lbound", cleanup = .FALSE.)
+      DO kmeta = 1, 4
+        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
+      END DO
+    END IF
+    CALL serialize(io, "# entries", cleanup = .FALSE.)
+    DO k4 = LBOUND(x, 4), UBOUND(x, 4)
+      DO k3 = LBOUND(x, 3), UBOUND(x, 3)
+        DO k2 = LBOUND(x, 2), UBOUND(x, 2)
+          DO k1 = LBOUND(x, 1), UBOUND(x, 1)
+            CALL serialize(io, x(k1, k2, k3, k4), cleanup = .FALSE.)
+          END DO
+        END DO
+      END DO
+    END DO
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_real__4_R_4
   SUBROUTINE W_real__8_R_4(io, x, cleanup, nline, meta)
     INTEGER :: io
     REAL(KIND = 8), INTENT(IN) :: x(:, :, :, :)
@@ -2306,61 +1971,140 @@ MODULE vt_serde
     END DO
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_real__8_R_4
-  SUBROUTINE W_real__8_R_1(io, x, cleanup, nline, meta)
+  SUBROUTINE W_logical(io, x, cleanup, nline)
+    CHARACTER(LEN = 50) :: buf
     INTEGER :: io
-    REAL(KIND = 8), INTENT(IN) :: x(:)
-    INTEGER :: k, kmeta, k1
-    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
-    LOGICAL :: cleanup_local, nline_local, meta_local
+    LOGICAL, INTENT(IN) :: x
+    INTEGER :: y
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
+    LOGICAL :: cleanup_local, nline_local
     cleanup_local = .TRUE.
     nline_local = .TRUE.
-    meta_local = .TRUE.
     IF (PRESENT(cleanup)) cleanup_local = cleanup
     IF (PRESENT(nline)) nline_local = nline
-    IF (PRESENT(meta)) meta_local = meta
-    IF (meta_local) THEN
-      CALL serialize(io, "# rank", cleanup = .FALSE.)
-      CALL serialize(io, 1, cleanup = .FALSE.)
-      CALL serialize(io, "# size", cleanup = .FALSE.)
-      DO kmeta = 1, 1
-        CALL serialize(io, SIZE(x, kmeta), cleanup = .FALSE.)
-      END DO
-      CALL serialize(io, "# lbound", cleanup = .FALSE.)
-      DO kmeta = 1, 1
-        CALL serialize(io, LBOUND(x, kmeta), cleanup = .FALSE.)
-      END DO
-    END IF
-    CALL serialize(io, "# entries", cleanup = .FALSE.)
-    DO k1 = LBOUND(x, 1), UBOUND(x, 1)
-      CALL serialize(io, x(k1), cleanup = .FALSE.)
-    END DO
+    y = MERGE(1, 0, x)
+    WRITE(io, '(g0)', ADVANCE = 'no') y
+    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
     IF (cleanup_local) CLOSE(UNIT = io)
-  END SUBROUTINE W_real__8_R_1
-  SUBROUTINE serialize_global_data(io)
-    USE mo_init_vgrid, ONLY : nflatlev
-    USE mo_nonhydrostatic_config, ONLY : lextra_diffu
-    USE mo_parallel_config, ONLY : nproma
-    USE mo_run_config, ONLY : timers_level
-    USE mo_timer, ONLY : timer_solve_nh_veltend, timer_intp
-    USE mo_vertical_grid, ONLY : nrdmax
-    USE mo_mpi, ONLY : i_am_accel_node
+  END SUBROUTINE W_logical
+  SUBROUTINE W_integer1(io, x, cleanup, nline)
+    CHARACTER(LEN = 50) :: buf
     INTEGER :: io
-    CALL serialize(io, '# nflatlev', cleanup = .FALSE.)
+    INTEGER(KIND = 1), INTENT(IN) :: x
+    INTEGER :: y
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
+    LOGICAL :: cleanup_local, nline_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    WRITE(io, '(g0)', ADVANCE = 'no') x
+    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer1
+  SUBROUTINE W_integer2(io, x, cleanup, nline)
+    CHARACTER(LEN = 50) :: buf
+    INTEGER :: io
+    INTEGER(KIND = 2), INTENT(IN) :: x
+    INTEGER :: y
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
+    LOGICAL :: cleanup_local, nline_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    WRITE(io, '(g0)', ADVANCE = 'no') x
+    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer2
+  SUBROUTINE W_integer4(io, x, cleanup, nline)
+    CHARACTER(LEN = 50) :: buf
+    INTEGER :: io
+    INTEGER(KIND = 4), INTENT(IN) :: x
+    INTEGER :: y
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
+    LOGICAL :: cleanup_local, nline_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    WRITE(io, '(g0)', ADVANCE = 'no') x
+    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer4
+  SUBROUTINE W_integer8(io, x, cleanup, nline)
+    CHARACTER(LEN = 50) :: buf
+    INTEGER :: io
+    INTEGER(KIND = 8), INTENT(IN) :: x
+    INTEGER :: y
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
+    LOGICAL :: cleanup_local, nline_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    WRITE(io, '(g0)', ADVANCE = 'no') x
+    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_integer8
+  SUBROUTINE W_real4(io, x, cleanup, nline)
+    CHARACTER(LEN = 50) :: buf
+    INTEGER :: io
+    REAL(KIND = 4), INTENT(IN) :: x
+    INTEGER :: y
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
+    LOGICAL :: cleanup_local, nline_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    WRITE(buf, '(e28.20)') x
+    WRITE(io, '(A)', ADVANCE = 'no') TRIM(ADJUSTL(buf))
+    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_real4
+  SUBROUTINE W_real8(io, x, cleanup, nline)
+    CHARACTER(LEN = 50) :: buf
+    INTEGER :: io
+    REAL(KIND = 8), INTENT(IN) :: x
+    INTEGER :: y
+    LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline
+    LOGICAL :: cleanup_local, nline_local
+    cleanup_local = .TRUE.
+    nline_local = .TRUE.
+    IF (PRESENT(cleanup)) cleanup_local = cleanup
+    IF (PRESENT(nline)) nline_local = nline
+    WRITE(buf, '(e28.20)') x
+    WRITE(io, '(A)', ADVANCE = 'no') TRIM(ADJUSTL(buf))
+    IF (nline_local) WRITE(io, '(g0)', ADVANCE = 'no') NEW_LINE('A')
+    IF (cleanup_local) CLOSE(UNIT = io)
+  END SUBROUTINE W_real8
+  SUBROUTINE serialize_global_data(io)
+    USE mo_init_vgrid, ONLY: nflatlev => nflatlev
+    USE mo_mpi, ONLY: i_am_accel_node => i_am_accel_node
+    USE mo_nonhydrostatic_config, ONLY: lextra_diffu => lextra_diffu
+    USE mo_parallel_config, ONLY: nproma => nproma
+    USE mo_run_config, ONLY: timers_level => timers_level
+    USE mo_timer, ONLY: timer_solve_nh_veltend => timer_solve_nh_veltend
+    USE mo_timer, ONLY: timer_intp => timer_intp
+    USE mo_vertical_grid, ONLY: nrdmax => nrdmax
+    INTEGER :: io
+    CALL serialize(io, "# nflatlev", cleanup = .FALSE.)
     CALL serialize(io, nflatlev, cleanup = .FALSE.)
-    CALL serialize(io, '# lextra_diffu', cleanup = .FALSE.)
-    CALL serialize(io, lextra_diffu, cleanup = .FALSE.)
-    CALL serialize(io, '# nproma', cleanup = .FALSE.)
-    CALL serialize(io, nproma, cleanup = .FALSE.)
-    CALL serialize(io, '# timers_level', cleanup = .FALSE.)
-    CALL serialize(io, timers_level, cleanup = .FALSE.)
-    CALL serialize(io, '# timer_solve_nh_veltend', cleanup = .FALSE.)
-    CALL serialize(io, timer_solve_nh_veltend, cleanup = .FALSE.)
-    CALL serialize(io, '# timer_intp', cleanup = .FALSE.)
-    CALL serialize(io, timer_intp, cleanup = .FALSE.)
-    CALL serialize(io, '# nrdmax', cleanup = .FALSE.)
-    CALL serialize(io, nrdmax, cleanup = .FALSE.)
-    CALL serialize(io, '# i_am_accel_node', cleanup = .FALSE.)
+    CALL serialize(io, "# i_am_accel_node", cleanup = .FALSE.)
     CALL serialize(io, i_am_accel_node, cleanup = .FALSE.)
+    CALL serialize(io, "# lextra_diffu", cleanup = .FALSE.)
+    CALL serialize(io, lextra_diffu, cleanup = .FALSE.)
+    CALL serialize(io, "# nproma", cleanup = .FALSE.)
+    CALL serialize(io, nproma, cleanup = .FALSE.)
+    CALL serialize(io, "# timers_level", cleanup = .FALSE.)
+    CALL serialize(io, timers_level, cleanup = .FALSE.)
+    CALL serialize(io, "# timer_solve_nh_veltend", cleanup = .FALSE.)
+    CALL serialize(io, timer_solve_nh_veltend, cleanup = .FALSE.)
+    CALL serialize(io, "# timer_intp", cleanup = .FALSE.)
+    CALL serialize(io, timer_intp, cleanup = .FALSE.)
+    CALL serialize(io, "# nrdmax", cleanup = .FALSE.)
+    CALL serialize(io, nrdmax, cleanup = .FALSE.)
     CLOSE(UNIT = io)
   END SUBROUTINE serialize_global_data
 END MODULE vt_serde
