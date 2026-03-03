@@ -62,6 +62,10 @@ MODULE mo_velocity_advection
   SUBROUTINE velocity_tendencies (p_prog, p_patch, p_int, p_metrics, p_diag, z_w_concorr_me, z_kin_hor_e, &
                                   z_vt_ie, ntnd, istep, lvn_only, dtime, dt_linintp_ubc, ldeepatmo)
 
+    use vt_serde, only: tic, generation, at, serialize, serialize_global_data
+    use mo_exception, only: message, message_text
+    logical :: flag
+
     ! Passed variables
     TYPE(t_patch), TARGET, INTENT(IN)    :: p_patch
     TYPE(t_int_state), TARGET, INTENT(IN):: p_int
@@ -126,6 +130,28 @@ MODULE mo_velocity_advection
 !DIR$ ATTRIBUTES ALIGN :64 :: levmask,cfl_clipping
 #endif
     !--------------------------------------------------------------------------
+
+    ! --- START INSTRUMENTATION ---
+    if (istep == 1) then
+      write (message_text, *) "Starting velocity advection tendencies computation for generation ", generation, " (predictor step : before)"
+      call message('', message_text)
+      call serialize(at("p_patch"), p_patch)
+      call serialize(at("p_int"), p_int)
+      call serialize(at("ntnd"), ntnd)
+      call serialize(at("istep"), istep)
+      call serialize(at("lvn_only"), lvn_only)
+      call serialize(at("dtime"), dtime)
+      call serialize(at("dt_linintp_ubc"), dt_linintp_ubc)
+      call serialize(at("ldeepatmo"), ldeepatmo)
+      call serialize_global_data(at("global_data.t0"))
+      call serialize(at("p_prog.t0"), p_prog)
+      call serialize(at("p_metrics.t0"), p_metrics)
+      call serialize(at("p_diag.t0"), p_diag)
+      call serialize(at("z_w_concorr_me.t0"), z_w_concorr_me)
+      call serialize(at("z_kin_hor_e.t0"), z_kin_hor_e)
+      call serialize(at("z_vt_ie.t0"), z_vt_ie)
+    endif
+    ! --- END INSTRUMENTATION ---
 
     IF (timers_level > 5) CALL timer_start(timer_solve_nh_veltend)
 
@@ -866,6 +892,20 @@ MODULE mo_velocity_advection
     !$ACC END DATA
 
     IF (timers_level > 5) CALL timer_stop(timer_solve_nh_veltend)
+
+    ! --- START INSTRUMENTATION ---
+    if (istep == 1) then
+      write (message_text, *) "Starting velocity advection tendencies computation for generation ", generation, " (predictor step : after)"
+      call message('', message_text)
+      call serialize_global_data(at("global_data.t1"))
+      call serialize(at("p_prog.t1"), p_prog)
+      call serialize(at("p_metrics.t1"), p_metrics)
+      call serialize(at("p_diag.t1"), p_diag)
+      call serialize(at("z_w_concorr_me.t1"), z_w_concorr_me)
+      call serialize(at("z_kin_hor_e.t1"), z_kin_hor_e)
+      call serialize(at("z_vt_ie.t1"), z_vt_ie)
+    endif
+    ! --- END INSTRUMENTATION ---
 
   END SUBROUTINE velocity_tendencies
 

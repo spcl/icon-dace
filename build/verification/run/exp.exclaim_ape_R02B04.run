@@ -146,8 +146,8 @@ export NVCOMPILER_TERM=trace
 # (0) Basic model configuration
 # -----------------------------
 
-atmos_gridID="0002"
-atmos_refinement="R02B06"
+atmos_gridID="0010"
+atmos_refinement="R02B04"
 
 #
 #--------------------------------------------------------------------------------------------------
@@ -155,7 +155,7 @@ atmos_refinement="R02B06"
 # (1) Define the model time stepping
 # ----------------------------------
 
-atmTimeStep=2                  # atmosphere time step [s]
+atmTimeStep=32                  # atmosphere time step [s]
 
 dt_rad=`expr 6 \* $atmTimeStep`
 dt_conv=`expr 2 \* $atmTimeStep`
@@ -187,7 +187,7 @@ atmo_dyn_grid=${atmo_grid_folder}/icon_grid_${atmos_gridID}_${atmos_refinement}_
 
 # start and end date+time
 start_date=${start_date:="2000-01-01T00:00:00Z"}
-end_date=${end_date:="2000-01-01T00:00:30Z"}
+end_date=${end_date:="2000-01-01T00:00:32Z"}
 
 # restart intervals (set in master namelist)
 # ---------------------------
@@ -264,7 +264,7 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
  rain_n0_factor              =                        0.1         ! tuning factor for intercept parameter of raindrop size distr.
  inwp_convection             =                          1         ! convection
  lshallowconv_only           =                    .FALSE.         ! only shallow convection
- inwp_radiation              =                          4         ! 1: RRTM, 2: Ritter-Geleyn  4: ecRad:
+ inwp_radiation              =                          0         ! 1: RRTM, 2: Ritter-Geleyn  4: ecRad:
  latm_above_top              =                      .TRUE.        ! take into account atmosphere above model top for radiation computation
  inwp_cldcover               =                          1         ! cloud cover scheme for radiation 5: all or nothing
  inwp_turb                   =                          1         ! 1: Raschendorfer, 5: Smagorinsky diffusion (Dipankar et al.)
@@ -388,48 +388,6 @@ izenith                     =                          3         ! zenith angle 
  pinit_amplitude             =                               0.  ! amplitude of perturbation
 /
 
-! output namelist: specify output of 2D fields  ------------------------------
-&output_nml
- output_filename             =              '${EXPNAME}_atm_2d'  ! file name base
- filetype                    =                               5   ! output format 5:NetCDFv4
- filename_format             = "<output_filename>_<datetime2>"   ! Output filename format
- output_start                =          "2000-01-01T00:00:03Z"
- output_end                  =                   "${end_date}"
- output_interval             =     "${atm_output_interval_2d}"
- file_interval               =      "${atm_file_interval_2d}"
- include_last                =                          .TRUE.   ! flag whether to include the last time step
- remap                       =                               0   ! 0: no remapping 1: lat-lon grid
- reg_lat_def                 =                    -90,0.5,90.0
- reg_lon_def                 =                  -180,0.5,179.5
- output_grid                 =                          .TRUE.
- ml_varlist                  = 'pres_sfc',
-                               'tqv'     , 'tqc'     , 'tqi'     ,
-                               'tqr'     , 'tqs'     ,
-                               'clch'    , 'clcm'    , 'clcl'    , 'clct'   ,
-                               'tot_prec','prec_gsp',
-                               't_2m'    , 'qv_2m'   , 'u_10m'  , 'v_10m'   ,
-                               't_g'     , 'rh_2m' , 'qv_s', 'tcm','tch',
-                               'lhfl_s'  , 'shfl_s' , 'umfl_s', 'vmfl_s'
-                               'sob_s'   , 'sob_t' , 'sod_t',  'sou_s',
-                               'thb_s'   , 'thb_t' ,'thu_s','pres_sfc'
-/
-
-&output_nml
- output_filename             =             '${EXPNAME}_atm_3d_pl'! file name base
- filetype                    =                               5   ! output format: 2=GRIB2, 4=NetCDFv2, 5=NetCDFv4
- filename_format             = "<output_filename>_<datetime2>"
- output_start                =                 "${start_date}"
- output_end                  =                   "${end_date}"
- output_interval             =     "${atm_output_interval_pl}"
- file_interval               =       "${atm_file_interval_pl}"
- include_last                =                         .TRUE.    ! flag whether to include the last time step
- remap                       =                              0    ! 0: no remapping 1: lat-lon grid
- reg_lat_def                 =                   -90,0.5,90.0
- reg_lon_def                 =                 -180,0.5,179.5
- output_grid                 =                          .TRUE.
- p_levels                    = 10000,20000,25000,30000,50000,70000,85000,90000,95000,100000
- pl_varlist                  = 'geopot', 'temp','u', 'v', 'w', 'qv', 'qc', 'qi'
-/
 EOF
 #---------------------------------------------------------------
 # add standard atmo_non-hydrostatic_files
@@ -794,6 +752,7 @@ rm -f finish.status
 #
 date
 set -x
+ulimit -s unlimited
 ${START_MODEL} || exit 1
 set +x
 date

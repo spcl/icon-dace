@@ -99,6 +99,9 @@ MODULE mo_solve_nonhydro
   SUBROUTINE solve_nh (p_nh, p_patch, p_int, prep_adv, nnow, nnew, l_init, l_recompute, lsave_mflx, &
                        lprep_adv, lclean_mflx, idyn_timestep, jstep, dtime, lacc)
 
+    use vt_serde, only: tic, generation
+    use mo_exception, only: message, message_text
+
     TYPE(t_nh_state),    TARGET, INTENT(INOUT) :: p_nh
     TYPE(t_int_state),   TARGET, INTENT(IN)    :: p_int
     TYPE(t_patch),       TARGET, INTENT(INOUT) :: p_patch
@@ -425,6 +428,13 @@ MODULE mo_solve_nonhydro
     DO istep = 1, 2
 
       IF (istep == 1) THEN ! predictor step
+
+        ! --- START INSTRUMENTATION ---
+        call tic()
+        write (message_text, *) "Starting solve_nh for generation ", generation
+        call message('', message_text)
+        ! --- END INSTRUMENTATION ---
+
         IF (itime_scheme >= 6 .OR. l_init .OR. l_recompute) THEN
           IF (itime_scheme < 6 .AND. .NOT. l_init) THEN
             lvn_only = .TRUE. ! Recompute only vn tendency
