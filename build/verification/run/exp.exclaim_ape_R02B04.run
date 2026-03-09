@@ -89,7 +89,7 @@ export icon_data_rootFolder="/users/icontest/pool/data/ICON"
 
 # how to start the icon model
 # ---------------------------
-export START="srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS"
+export START="srun --time=02:00:00 -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS"
 export MODEL="/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon"
 
 set | grep SLURM
@@ -146,8 +146,8 @@ export NVCOMPILER_TERM=trace
 # (0) Basic model configuration
 # -----------------------------
 
-atmos_gridID="0010"
-atmos_refinement="R02B04"
+atmos_gridID="0050"
+atmos_refinement="R02B03"
 
 #
 #--------------------------------------------------------------------------------------------------
@@ -155,7 +155,7 @@ atmos_refinement="R02B04"
 # (1) Define the model time stepping
 # ----------------------------------
 
-atmTimeStep=32                  # atmosphere time step [s]
+atmTimeStep=15                  # atmosphere time step [s]
 
 dt_rad=`expr 6 \* $atmTimeStep`
 dt_conv=`expr 2 \* $atmTimeStep`
@@ -179,7 +179,6 @@ icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}"
 # horizontal grid(s)
 # ------------------
 atmo_grid_folder='/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/'
-# ${icon_data_poolFolder}/buildbot_data/nwp/grids/public/edzw/
 atmo_dyn_grid=${atmo_grid_folder}/icon_grid_${atmos_gridID}_${atmos_refinement}_G.nc
 
 
@@ -187,7 +186,7 @@ atmo_dyn_grid=${atmo_grid_folder}/icon_grid_${atmos_gridID}_${atmos_refinement}_
 
 # start and end date+time
 start_date=${start_date:="2000-01-01T00:00:00Z"}
-end_date=${end_date:="2000-01-01T00:00:32Z"}
+end_date=${end_date:="2000-01-01T00:32:00Z"}
 
 # restart intervals (set in master namelist)
 # ---------------------------
@@ -243,7 +242,7 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
 
 ! run_nml: general switches ---------------------------------------------------
 &run_nml
- num_lev                     =                         60         ! number of full levels of vertical grid
+ num_lev                     =                         90         ! number of full levels of vertical grid
  dtime                       =                   ${atmTimeStep}   ! [s] timestep in seconds
  ldynamics                   =                     .TRUE.         ! dynamics                     --> dynamics_ctl, diffusion_ctl
  ltransport                  =                     .TRUE.         ! switch on tracer transport   --> transport_ctl
@@ -384,7 +383,7 @@ izenith                     =                          3         ! zenith angle 
 ! initicon_nml: specify read-in of initial state ------------------------------
 ! Needed for probtest
 &initicon_nml
- pinit_seed                  =                               -1  ! seed for perturbation of initial model state. no perturbation by default
+ pinit_seed                  =                               0   ! seed for perturbation of initial model state. no perturbation by default
  pinit_amplitude             =                               0.  ! amplitude of perturbation
 /
 
