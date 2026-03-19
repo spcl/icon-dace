@@ -65,6 +65,7 @@ MODULE mo_velocity_advection
     use vt_serde, only: tic, generation, at, serialize, serialize_global_data
     use mo_exception, only: message, message_text
     logical :: flag
+    INTEGER(8) :: t_start, t_end, t_rate
 
     ! Passed variables
     TYPE(t_patch), TARGET, INTENT(IN)    :: p_patch
@@ -130,6 +131,8 @@ MODULE mo_velocity_advection
 !DIR$ ATTRIBUTES ALIGN :64 :: levmask,cfl_clipping
 #endif
     !--------------------------------------------------------------------------
+
+    CALL SYSTEM_CLOCK(t_start, t_rate)
 
     ! --- START INSTRUMENTATION ---
     ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
@@ -908,6 +911,10 @@ MODULE mo_velocity_advection
       call serialize(at("z_vt_ie.t1"), z_vt_ie)
     endif
     ! --- END INSTRUMENTATION ---
+
+    CALL SYSTEM_CLOCK(t_end)
+    write (message_text, *) "host side timing: ", REAL(t_end - t_start, wp) * 1000000.0_wp / REAL(t_rate, wp), "us, lvn_only: ", lvn_only, ", istep: ", istep
+    call message('', message_text)
 
   END SUBROUTINE velocity_tendencies
 
