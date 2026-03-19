@@ -11,21 +11,48 @@ MODULE f90_glue_vt_serde
   USE mo_nonhydro_types, ONLY: t_nh_prog
   IMPLICIT NONE
   TYPE, BIND(C) :: glue_global_data_type
+    REAL(KIND = c_double) :: m_divdamp_fac
+    REAL(KIND = c_double) :: m_divdamp_fac_o2
+    REAL(KIND = c_double) :: m_iau_wgt_dyn
+    INTEGER(KIND = c_int) :: m_divdamp_order
+    INTEGER(KIND = c_int) :: m_divdamp_type
+    INTEGER(KIND = c_int) :: m_grf_intmethod_e
     INTEGER(KIND = c_int) :: m_i_am_accel_node
+    INTEGER(KIND = c_int) :: m_iadv_rhotheta
+    INTEGER(KIND = c_int) :: m_igradp_method
+    INTEGER(KIND = c_int) :: m_is_iau_active
+    INTEGER(KIND = c_int) :: m_itime_scheme
+    INTEGER(KIND = c_int) :: m_l_limited_area
+    INTEGER(KIND = c_int) :: m_ldeepatmo
     INTEGER(KIND = c_int) :: m_lextra_diffu
-    TYPE(c_ptr) :: m_nflatlev
+    INTEGER(KIND = c_int) :: m_lvert_nest
     INTEGER(KIND = c_int) :: m_nproma
-    TYPE(c_ptr) :: m_nrdmax
+    INTEGER(KIND = c_int) :: m_rayleigh_type
     INTEGER(KIND = c_int) :: m_timer_intp
+    INTEGER(KIND = c_int) :: m_timer_solve_nh_cellcomp
+    INTEGER(KIND = c_int) :: m_timer_solve_nh_edgecomp
     INTEGER(KIND = c_int) :: m_timer_solve_nh_veltend
+    INTEGER(KIND = c_int) :: m_timer_solve_nh_vimpl
+    INTEGER(KIND = c_int) :: m_timer_solve_nh_vnupd
     INTEGER(KIND = c_int) :: m_timers_level
+    TYPE(c_ptr) :: m_kstart_dd3d
+    TYPE(c_ptr) :: m_kstart_moist
+    TYPE(c_ptr) :: m_ndyn_substeps_var
+    TYPE(c_ptr) :: m_nflat_gradp
+    TYPE(c_ptr) :: m_nflatlev
+    TYPE(c_ptr) :: m_nrdmax
   END TYPE glue_global_data_type
   TYPE, BIND(C) :: glue_t_patch
     TYPE(c_ptr) :: m_cells
     TYPE(c_ptr) :: m_edges
+    INTEGER(KIND = c_int) :: m_id
+    INTEGER(KIND = c_int) :: m_n_childdom
     INTEGER(KIND = c_int) :: m_nblks_c
     INTEGER(KIND = c_int) :: m_nblks_e
     INTEGER(KIND = c_int) :: m_nblks_v
+    INTEGER(KIND = c_int) :: m_nlev
+    INTEGER(KIND = c_int) :: m_nlevp1
+    INTEGER(KIND = c_int) :: m_nshift
     TYPE(c_ptr) :: m_verts
   END TYPE glue_t_patch
   TYPE, BIND(C) :: glue_t_int_state
@@ -74,28 +101,56 @@ MODULE f90_glue_vt_serde
     TYPE(c_ptr) :: m_c_lin_e
     TYPE(c_ptr) :: m_cells_aw_verts
     TYPE(c_ptr) :: m_e_bln_c_s
+    TYPE(c_ptr) :: m_e_flx_avg
+    TYPE(c_ptr) :: m_geofac_div
     TYPE(c_ptr) :: m_geofac_grdiv
+    TYPE(c_ptr) :: m_geofac_grg
     TYPE(c_ptr) :: m_geofac_n2s
     TYPE(c_ptr) :: m_geofac_rot
+    TYPE(c_ptr) :: m_nudgecoeff_e
+    TYPE(c_ptr) :: m_pos_on_tplane_e
     TYPE(c_ptr) :: m_rbf_vec_coeff_e
   END TYPE glue_t_int_state
   TYPE, BIND(C) :: glue_t_nh_prog
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_vn_d_0_s_288
     INTEGER(KIND = c_int) :: m___f2dace_SA_vn_d_1_s_289
     INTEGER(KIND = c_int) :: m___f2dace_SA_vn_d_2_s_290
     INTEGER(KIND = c_int) :: m___f2dace_SA_w_d_0_s_285
     INTEGER(KIND = c_int) :: m___f2dace_SA_w_d_1_s_286
     INTEGER(KIND = c_int) :: m___f2dace_SA_w_d_2_s_287
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_d_0_s_288
     INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_d_1_s_289
     INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_d_2_s_290
     INTEGER(KIND = c_int) :: m___f2dace_SOA_w_d_0_s_285
     INTEGER(KIND = c_int) :: m___f2dace_SOA_w_d_1_s_286
     INTEGER(KIND = c_int) :: m___f2dace_SOA_w_d_2_s_287
+    TYPE(c_ptr) :: m_exner
+    TYPE(c_ptr) :: m_rho
+    TYPE(c_ptr) :: m_theta_v
     TYPE(c_ptr) :: m_vn
     TYPE(c_ptr) :: m_w
   END TYPE glue_t_nh_prog
   TYPE, BIND(C) :: glue_t_nh_metrics
+    INTEGER(KIND = c_int) :: m___f2dace_SA_bdy_mflx_e_blk_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_bdy_mflx_e_idx_d_0_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_coeff1_dwdz_d_0_s_332
     INTEGER(KIND = c_int) :: m___f2dace_SA_coeff1_dwdz_d_1_s_333
     INTEGER(KIND = c_int) :: m___f2dace_SA_coeff1_dwdz_d_2_s_334
@@ -105,6 +160,19 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SA_coeff_gradekin_d_0_s_329
     INTEGER(KIND = c_int) :: m___f2dace_SA_coeff_gradekin_d_1_s_330
     INTEGER(KIND = c_int) :: m___f2dace_SA_coeff_gradekin_d_2_s_331
+    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff_gradp_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff_gradp_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff_gradp_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_coeff_gradp_d_3_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_d2dexdz2_fac1_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_d2dexdz2_fac1_mc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_d2dexdz2_fac1_mc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_d2dexdz2_fac2_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_d2dexdz2_fac2_mc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_d2dexdz2_fac2_mc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_d_exner_dz_ref_ic_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_d_exner_dz_ref_ic_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_d_exner_dz_ref_ic_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddqz_z_full_e_d_0_s_314
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddqz_z_full_e_d_1_s_315
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddqz_z_full_e_d_2_s_316
@@ -117,19 +185,75 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddxt_z_full_d_0_s_311
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddxt_z_full_d_1_s_312
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddxt_z_full_d_2_s_313
+    INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_divh_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_divzl_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_divzu_mc_d_0_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_gradh_ifc_d_0_s_340
     INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_gradh_mc_d_0_s_338
     INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_invr_ifc_d_0_s_341
     INTEGER(KIND = c_int) :: m___f2dace_SA_deepatmo_invr_mc_d_0_s_339
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_exfac_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_exfac_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_exfac_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_ref_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_ref_mc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_ref_mc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_hmask_dd3d_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_hmask_dd3d_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_inv_ddqz_z_full_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_inv_ddqz_z_full_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_inv_ddqz_z_full_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_pg_edgeblk_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_pg_edgeidx_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_pg_exdist_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_pg_vertidx_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rayleigh_vn_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rayleigh_w_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ref_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ref_mc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ref_mc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ref_me_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ref_me_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ref_me_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_scalfac_dd3d_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_ref_ic_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_ref_ic_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_ref_ic_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_ref_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_ref_mc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_ref_mc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_ref_me_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_ref_me_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_ref_me_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vertidx_gradp_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vertidx_gradp_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vertidx_gradp_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vertidx_gradp_d_3_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vwind_expl_wgt_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vwind_expl_wgt_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vwind_impl_wgt_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vwind_impl_wgt_d_1_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_c_d_0_s_320
     INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_c_d_1_s_321
     INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_c_d_2_s_322
     INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_e_d_0_s_323
     INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_e_d_1_s_324
     INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfac_e_d_2_s_325
+    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq1_c_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq1_c_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq1_c_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq_c_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq_c_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq_c_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq_e_d_0_s_326
     INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq_e_d_1_s_327
     INTEGER(KIND = c_int) :: m___f2dace_SA_wgtfacq_e_d_2_s_328
+    INTEGER(KIND = c_int) :: m___f2dace_SA_zdiff_gradp_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_zdiff_gradp_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_zdiff_gradp_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_zdiff_gradp_d_3_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_bdy_mflx_e_blk_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_bdy_mflx_e_idx_d_0_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff1_dwdz_d_0_s_332
     INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff1_dwdz_d_1_s_333
     INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff1_dwdz_d_2_s_334
@@ -139,6 +263,19 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff_gradekin_d_0_s_329
     INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff_gradekin_d_1_s_330
     INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff_gradekin_d_2_s_331
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff_gradp_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff_gradp_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff_gradp_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_coeff_gradp_d_3_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_d2dexdz2_fac1_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_d2dexdz2_fac1_mc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_d2dexdz2_fac1_mc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_d2dexdz2_fac2_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_d2dexdz2_fac2_mc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_d2dexdz2_fac2_mc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_d_exner_dz_ref_ic_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_d_exner_dz_ref_ic_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_d_exner_dz_ref_ic_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddqz_z_full_e_d_0_s_314
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddqz_z_full_e_d_1_s_315
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddqz_z_full_e_d_2_s_316
@@ -151,75 +288,436 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddxt_z_full_d_0_s_311
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddxt_z_full_d_1_s_312
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddxt_z_full_d_2_s_313
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_divh_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_divzl_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_divzu_mc_d_0_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_gradh_ifc_d_0_s_340
     INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_gradh_mc_d_0_s_338
     INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_invr_ifc_d_0_s_341
     INTEGER(KIND = c_int) :: m___f2dace_SOA_deepatmo_invr_mc_d_0_s_339
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_exfac_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_exfac_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_exfac_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_ref_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_ref_mc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_ref_mc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_hmask_dd3d_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_hmask_dd3d_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_inv_ddqz_z_full_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_inv_ddqz_z_full_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_inv_ddqz_z_full_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_pg_edgeblk_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_pg_edgeidx_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_pg_exdist_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_pg_vertidx_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rayleigh_vn_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rayleigh_w_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ref_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ref_mc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ref_mc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ref_me_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ref_me_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ref_me_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_scalfac_dd3d_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_ref_ic_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_ref_ic_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_ref_ic_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_ref_mc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_ref_mc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_ref_mc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_ref_me_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_ref_me_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_ref_me_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vertidx_gradp_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vertidx_gradp_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vertidx_gradp_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vertidx_gradp_d_3_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vwind_expl_wgt_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vwind_expl_wgt_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vwind_impl_wgt_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vwind_impl_wgt_d_1_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_c_d_0_s_320
     INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_c_d_1_s_321
     INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_c_d_2_s_322
     INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_e_d_0_s_323
     INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_e_d_1_s_324
     INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfac_e_d_2_s_325
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq1_c_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq1_c_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq1_c_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq_c_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq_c_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq_c_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq_e_d_0_s_326
     INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq_e_d_1_s_327
     INTEGER(KIND = c_int) :: m___f2dace_SOA_wgtfacq_e_d_2_s_328
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_zdiff_gradp_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_zdiff_gradp_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_zdiff_gradp_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_zdiff_gradp_d_3_s
+    TYPE(c_ptr) :: m_bdy_mflx_e_blk
+    INTEGER(KIND = c_int) :: m_bdy_mflx_e_dim
+    TYPE(c_ptr) :: m_bdy_mflx_e_idx
     TYPE(c_ptr) :: m_coeff1_dwdz
     TYPE(c_ptr) :: m_coeff2_dwdz
     TYPE(c_ptr) :: m_coeff_gradekin
+    TYPE(c_ptr) :: m_coeff_gradp
+    TYPE(c_ptr) :: m_d2dexdz2_fac1_mc
+    TYPE(c_ptr) :: m_d2dexdz2_fac1_mc_d_1_s
+    TYPE(c_ptr) :: m_d2dexdz2_fac1_mc_d_2_s
+    TYPE(c_ptr) :: m_d2dexdz2_fac2_mc
+    TYPE(c_ptr) :: m_d2dexdz2_fac2_mc_d_1_s
+    TYPE(c_ptr) :: m_d2dexdz2_fac2_mc_d_2_s
+    TYPE(c_ptr) :: m_d_exner_dz_ref_ic
     TYPE(c_ptr) :: m_ddqz_z_full_e
     TYPE(c_ptr) :: m_ddqz_z_half
     TYPE(c_ptr) :: m_ddxn_z_full
     TYPE(c_ptr) :: m_ddxt_z_full
+    TYPE(c_ptr) :: m_deepatmo_divh_mc
+    TYPE(c_ptr) :: m_deepatmo_divzl_mc
+    TYPE(c_ptr) :: m_deepatmo_divzu_mc
     TYPE(c_ptr) :: m_deepatmo_gradh_ifc
     TYPE(c_ptr) :: m_deepatmo_gradh_mc
     TYPE(c_ptr) :: m_deepatmo_invr_ifc
     TYPE(c_ptr) :: m_deepatmo_invr_mc
+    TYPE(c_ptr) :: m_exner_exfac
+    TYPE(c_ptr) :: m_exner_ref_mc
+    TYPE(c_ptr) :: m_hmask_dd3d
+    TYPE(c_ptr) :: m_inv_ddqz_z_full
+    TYPE(c_ptr) :: m_pg_edgeblk
+    TYPE(c_ptr) :: m_pg_edgeidx
+    TYPE(c_ptr) :: m_pg_exdist
+    INTEGER(KIND = c_int) :: m_pg_listdim
+    TYPE(c_ptr) :: m_pg_vertidx
+    TYPE(c_ptr) :: m_rayleigh_vn
+    TYPE(c_ptr) :: m_rayleigh_w
+    TYPE(c_ptr) :: m_rho_ref_mc
+    TYPE(c_ptr) :: m_rho_ref_me
+    TYPE(c_ptr) :: m_scalfac_dd3d
+    TYPE(c_ptr) :: m_theta_ref_ic
+    TYPE(c_ptr) :: m_theta_ref_mc
+    TYPE(c_ptr) :: m_theta_ref_me
+    TYPE(c_ptr) :: m_vertidx_gradp
+    TYPE(c_ptr) :: m_vwind_expl_wgt
+    TYPE(c_ptr) :: m_vwind_impl_wgt
     TYPE(c_ptr) :: m_wgtfac_c
     TYPE(c_ptr) :: m_wgtfac_e
+    TYPE(c_ptr) :: m_wgtfacq1_c
+    TYPE(c_ptr) :: m_wgtfacq_c
     TYPE(c_ptr) :: m_wgtfacq_e
+    TYPE(c_ptr) :: m_zdiff_gradp
   END TYPE glue_t_nh_metrics
   TYPE, BIND(C) :: glue_t_nh_diag
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_exner_phy_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_exner_phy_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_exner_phy_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_adv_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_adv_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_adv_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_apc_pc_d_0_s_300
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_apc_pc_d_1_s_301
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_apc_pc_d_2_s_302
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_apc_pc_d_3_s_303
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_cor_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_cor_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_cor_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_cor_pc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_cor_pc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_cor_pc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_cor_pc_d_3_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_dmp_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_dmp_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_dmp_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_dyn_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_dyn_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_dyn_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_grf_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_grf_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_grf_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_iau_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_iau_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_iau_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_pgr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_pgr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_pgr_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_phd_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_phd_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_phd_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_phy_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_phy_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_phy_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_ray_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_ray_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_vn_ray_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_w_adv_pc_d_0_s_304
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_w_adv_pc_d_1_s_305
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_w_adv_pc_d_2_s_306
     INTEGER(KIND = c_int) :: m___f2dace_SA_ddt_w_adv_pc_d_3_s_307
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_dyn_incr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_dyn_incr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_dyn_incr_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_incr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_incr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_incr_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_pr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_pr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_exner_pr_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_bdy_mflx_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_bdy_mflx_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_bdy_mflx_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_mflx_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_mflx_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_mflx_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_rho_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_rho_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_rho_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_thv_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_thv_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_thv_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_vn_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_vn_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_vn_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_w_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_w_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_grf_tend_w_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mass_fl_e_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mass_fl_e_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mass_fl_e_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mass_fl_e_sv_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mass_fl_e_sv_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mass_fl_e_sv_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mflx_ic_int_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mflx_ic_int_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mflx_ic_int_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mflx_ic_ubc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mflx_ic_ubc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_mflx_ic_ubc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ic_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ic_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ic_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ic_int_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ic_int_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ic_int_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ic_ubc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ic_ubc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_ic_ubc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_incr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_incr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_rho_incr_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_ic_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_ic_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_ic_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_ic_int_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_ic_int_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_ic_int_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_ic_ubc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_ic_ubc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_theta_v_ic_ubc_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_d_0_s_294
     INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_d_1_s_295
     INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_d_2_s_296
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_int_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_int_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_int_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_ubc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_ubc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_ie_ubc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_incr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_incr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_vn_incr_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_vt_d_0_s_291
     INTEGER(KIND = c_int) :: m___f2dace_SA_vt_d_1_s_292
     INTEGER(KIND = c_int) :: m___f2dace_SA_vt_d_2_s_293
     INTEGER(KIND = c_int) :: m___f2dace_SA_w_concorr_c_d_0_s_297
     INTEGER(KIND = c_int) :: m___f2dace_SA_w_concorr_c_d_1_s_298
     INTEGER(KIND = c_int) :: m___f2dace_SA_w_concorr_c_d_2_s_299
+    INTEGER(KIND = c_int) :: m___f2dace_SA_w_int_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_w_int_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_w_int_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_w_ubc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_w_ubc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_w_ubc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_exner_phy_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_exner_phy_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_exner_phy_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_adv_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_adv_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_adv_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_apc_pc_d_0_s_300
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_apc_pc_d_1_s_301
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_apc_pc_d_2_s_302
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_apc_pc_d_3_s_303
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_cor_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_cor_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_cor_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_cor_pc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_cor_pc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_cor_pc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_cor_pc_d_3_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_dmp_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_dmp_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_dmp_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_dyn_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_dyn_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_dyn_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_grf_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_grf_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_grf_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_iau_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_iau_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_iau_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_pgr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_pgr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_pgr_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_phd_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_phd_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_phd_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_phy_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_phy_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_phy_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_ray_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_ray_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_vn_ray_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_w_adv_pc_d_0_s_304
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_w_adv_pc_d_1_s_305
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_w_adv_pc_d_2_s_306
     INTEGER(KIND = c_int) :: m___f2dace_SOA_ddt_w_adv_pc_d_3_s_307
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_dyn_incr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_dyn_incr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_dyn_incr_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_incr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_incr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_incr_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_pr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_pr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_exner_pr_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_bdy_mflx_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_bdy_mflx_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_bdy_mflx_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_mflx_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_mflx_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_mflx_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_rho_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_rho_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_rho_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_thv_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_thv_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_thv_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_vn_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_vn_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_vn_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_w_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_w_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_grf_tend_w_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mass_fl_e_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mass_fl_e_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mass_fl_e_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mass_fl_e_sv_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mass_fl_e_sv_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mass_fl_e_sv_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mflx_ic_int_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mflx_ic_int_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mflx_ic_int_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mflx_ic_ubc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mflx_ic_ubc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_mflx_ic_ubc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ic_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ic_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ic_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ic_int_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ic_int_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ic_int_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ic_ubc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ic_ubc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_ic_ubc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_incr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_incr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_rho_incr_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_ic_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_ic_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_ic_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_ic_int_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_ic_int_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_ic_int_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_ic_ubc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_ic_ubc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_theta_v_ic_ubc_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_d_0_s_294
     INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_d_1_s_295
     INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_d_2_s_296
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_int_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_int_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_int_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_ubc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_ubc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_ie_ubc_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_incr_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_incr_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_vn_incr_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_vt_d_0_s_291
     INTEGER(KIND = c_int) :: m___f2dace_SOA_vt_d_1_s_292
     INTEGER(KIND = c_int) :: m___f2dace_SOA_vt_d_2_s_293
     INTEGER(KIND = c_int) :: m___f2dace_SOA_w_concorr_c_d_0_s_297
     INTEGER(KIND = c_int) :: m___f2dace_SOA_w_concorr_c_d_1_s_298
     INTEGER(KIND = c_int) :: m___f2dace_SOA_w_concorr_c_d_2_s_299
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_int_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_int_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_int_d_2_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_ubc_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_ubc_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_w_ubc_d_2_s
+    TYPE(c_ptr) :: m_ddt_exner_phy
+    TYPE(c_ptr) :: m_ddt_vn_adv
+    INTEGER(KIND = c_int) :: m_ddt_vn_adv_is_associated
     TYPE(c_ptr) :: m_ddt_vn_apc_pc
+    TYPE(c_ptr) :: m_ddt_vn_cor
+    INTEGER(KIND = c_int) :: m_ddt_vn_cor_is_associated
+    TYPE(c_ptr) :: m_ddt_vn_cor_pc
+    TYPE(c_ptr) :: m_ddt_vn_dmp
+    INTEGER(KIND = c_int) :: m_ddt_vn_dmp_is_associated
+    TYPE(c_ptr) :: m_ddt_vn_dyn
+    INTEGER(KIND = c_int) :: m_ddt_vn_dyn_is_associated
+    TYPE(c_ptr) :: m_ddt_vn_grf
+    INTEGER(KIND = c_int) :: m_ddt_vn_grf_is_associated
+    TYPE(c_ptr) :: m_ddt_vn_iau
+    INTEGER(KIND = c_int) :: m_ddt_vn_iau_is_associated
+    TYPE(c_ptr) :: m_ddt_vn_pgr
+    INTEGER(KIND = c_int) :: m_ddt_vn_pgr_is_associated
+    TYPE(c_ptr) :: m_ddt_vn_phd
+    INTEGER(KIND = c_int) :: m_ddt_vn_phd_is_associated
+    TYPE(c_ptr) :: m_ddt_vn_phy
+    TYPE(c_ptr) :: m_ddt_vn_ray
+    INTEGER(KIND = c_int) :: m_ddt_vn_ray_is_associated
     TYPE(c_ptr) :: m_ddt_w_adv_pc
+    TYPE(c_ptr) :: m_exner_dyn_incr
+    TYPE(c_ptr) :: m_exner_incr
+    TYPE(c_ptr) :: m_exner_pr
+    TYPE(c_ptr) :: m_grf_bdy_mflx
+    TYPE(c_ptr) :: m_grf_tend_mflx
+    TYPE(c_ptr) :: m_grf_tend_rho
+    TYPE(c_ptr) :: m_grf_tend_thv
+    TYPE(c_ptr) :: m_grf_tend_vn
+    TYPE(c_ptr) :: m_grf_tend_w
+    TYPE(c_ptr) :: m_mass_fl_e
+    TYPE(c_ptr) :: m_mass_fl_e_sv
     REAL(KIND = c_double) :: m_max_vcfl_dyn
+    TYPE(c_ptr) :: m_mflx_ic_int
+    TYPE(c_ptr) :: m_mflx_ic_ubc
+    TYPE(c_ptr) :: m_rho_ic
+    TYPE(c_ptr) :: m_rho_ic_int
+    TYPE(c_ptr) :: m_rho_ic_ubc
+    TYPE(c_ptr) :: m_rho_incr
+    TYPE(c_ptr) :: m_theta_v_ic
+    TYPE(c_ptr) :: m_theta_v_ic_int
+    TYPE(c_ptr) :: m_theta_v_ic_ubc
     TYPE(c_ptr) :: m_vn_ie
+    TYPE(c_ptr) :: m_vn_ie_int
+    TYPE(c_ptr) :: m_vn_ie_ubc
+    TYPE(c_ptr) :: m_vn_incr
     TYPE(c_ptr) :: m_vt
     TYPE(c_ptr) :: m_w_concorr_c
+    TYPE(c_ptr) :: m_w_int
+    TYPE(c_ptr) :: m_w_ubc
   END TYPE glue_t_nh_diag
   TYPE, BIND(C) :: glue_t_grid_edges
     INTEGER(KIND = c_int) :: m___f2dace_SA_area_edge_d_0_s_188
@@ -230,6 +728,9 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_0_s_164
     INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_1_s_165
     INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_2_s_166
+    INTEGER(KIND = c_int) :: m___f2dace_SA_dual_normal_cell_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_dual_normal_cell_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_dual_normal_cell_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_end_block_d_0_s_199
     INTEGER(KIND = c_int) :: m___f2dace_SA_end_index_d_0_s_197
     INTEGER(KIND = c_int) :: m___f2dace_SA_f_e_d_0_s_190
@@ -242,12 +743,17 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SA_inv_dual_edge_length_d_1_s_187
     INTEGER(KIND = c_int) :: m___f2dace_SA_inv_primal_edge_length_d_0_s_184
     INTEGER(KIND = c_int) :: m___f2dace_SA_inv_primal_edge_length_d_1_s_185
+    INTEGER(KIND = c_int) :: m___f2dace_SA_primal_normal_cell_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_primal_normal_cell_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_primal_normal_cell_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_quad_blk_d_0_s_181
     INTEGER(KIND = c_int) :: m___f2dace_SA_quad_blk_d_1_s_182
     INTEGER(KIND = c_int) :: m___f2dace_SA_quad_blk_d_2_s_183
     INTEGER(KIND = c_int) :: m___f2dace_SA_quad_idx_d_0_s_178
     INTEGER(KIND = c_int) :: m___f2dace_SA_quad_idx_d_1_s_179
     INTEGER(KIND = c_int) :: m___f2dace_SA_quad_idx_d_2_s_180
+    INTEGER(KIND = c_int) :: m___f2dace_SA_refin_ctrl_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_refin_ctrl_d_1_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_start_block_d_0_s_198
     INTEGER(KIND = c_int) :: m___f2dace_SA_start_index_d_0_s_196
     INTEGER(KIND = c_int) :: m___f2dace_SA_tangent_orientation_d_0_s_176
@@ -266,6 +772,9 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_0_s_164
     INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_1_s_165
     INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_2_s_166
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_dual_normal_cell_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_dual_normal_cell_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_dual_normal_cell_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_end_block_d_0_s_199
     INTEGER(KIND = c_int) :: m___f2dace_SOA_end_index_d_0_s_197
     INTEGER(KIND = c_int) :: m___f2dace_SOA_f_e_d_0_s_190
@@ -278,12 +787,17 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SOA_inv_dual_edge_length_d_1_s_187
     INTEGER(KIND = c_int) :: m___f2dace_SOA_inv_primal_edge_length_d_0_s_184
     INTEGER(KIND = c_int) :: m___f2dace_SOA_inv_primal_edge_length_d_1_s_185
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_primal_normal_cell_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_primal_normal_cell_d_1_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_primal_normal_cell_d_2_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_blk_d_0_s_181
     INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_blk_d_1_s_182
     INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_blk_d_2_s_183
     INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_idx_d_0_s_178
     INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_idx_d_1_s_179
     INTEGER(KIND = c_int) :: m___f2dace_SOA_quad_idx_d_2_s_180
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_refin_ctrl_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_refin_ctrl_d_1_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_start_block_d_0_s_198
     INTEGER(KIND = c_int) :: m___f2dace_SOA_start_index_d_0_s_196
     INTEGER(KIND = c_int) :: m___f2dace_SOA_tangent_orientation_d_0_s_176
@@ -297,6 +811,7 @@ MODULE f90_glue_vt_serde
     TYPE(c_ptr) :: m_area_edge
     TYPE(c_ptr) :: m_cell_blk
     TYPE(c_ptr) :: m_cell_idx
+    TYPE(c_ptr) :: m_dual_normal_cell
     TYPE(c_ptr) :: m_end_block
     TYPE(c_ptr) :: m_end_index
     TYPE(c_ptr) :: m_f_e
@@ -304,8 +819,10 @@ MODULE f90_glue_vt_serde
     TYPE(c_ptr) :: m_ft_e
     TYPE(c_ptr) :: m_inv_dual_edge_length
     TYPE(c_ptr) :: m_inv_primal_edge_length
+    TYPE(c_ptr) :: m_primal_normal_cell
     TYPE(c_ptr) :: m_quad_blk
     TYPE(c_ptr) :: m_quad_idx
+    TYPE(c_ptr) :: m_refin_ctrl
     TYPE(c_ptr) :: m_start_block
     TYPE(c_ptr) :: m_start_index
     TYPE(c_ptr) :: m_tangent_orientation
@@ -321,6 +838,8 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_0_s_152
     INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_1_s_153
     INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_2_s_154
+    INTEGER(KIND = c_int) :: m___f2dace_SA_end_blk_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_end_blk_d_1_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_end_block_d_0_s_163
     INTEGER(KIND = c_int) :: m___f2dace_SA_end_index_d_0_s_161
     INTEGER(KIND = c_int) :: m___f2dace_SA_neighbor_blk_d_0_s_149
@@ -329,6 +848,8 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SA_neighbor_idx_d_0_s_146
     INTEGER(KIND = c_int) :: m___f2dace_SA_neighbor_idx_d_1_s_147
     INTEGER(KIND = c_int) :: m___f2dace_SA_neighbor_idx_d_2_s_148
+    INTEGER(KIND = c_int) :: m___f2dace_SA_start_blk_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SA_start_blk_d_1_s
     INTEGER(KIND = c_int) :: m___f2dace_SA_start_block_d_0_s_162
     INTEGER(KIND = c_int) :: m___f2dace_SA_start_index_d_0_s_160
     INTEGER(KIND = c_int) :: m___f2dace_SOA_area_d_0_s_158
@@ -339,6 +860,8 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_0_s_152
     INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_1_s_153
     INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_2_s_154
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_blk_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_blk_d_1_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_end_block_d_0_s_163
     INTEGER(KIND = c_int) :: m___f2dace_SOA_end_index_d_0_s_161
     INTEGER(KIND = c_int) :: m___f2dace_SOA_neighbor_blk_d_0_s_149
@@ -347,16 +870,20 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int) :: m___f2dace_SOA_neighbor_idx_d_0_s_146
     INTEGER(KIND = c_int) :: m___f2dace_SOA_neighbor_idx_d_1_s_147
     INTEGER(KIND = c_int) :: m___f2dace_SOA_neighbor_idx_d_2_s_148
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_blk_d_0_s
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_blk_d_1_s
     INTEGER(KIND = c_int) :: m___f2dace_SOA_start_block_d_0_s_162
     INTEGER(KIND = c_int) :: m___f2dace_SOA_start_index_d_0_s_160
     TYPE(c_ptr) :: m_area
     TYPE(c_ptr) :: m_decomp_info
     TYPE(c_ptr) :: m_edge_blk
     TYPE(c_ptr) :: m_edge_idx
+    TYPE(c_ptr) :: m_end_blk
     TYPE(c_ptr) :: m_end_block
     TYPE(c_ptr) :: m_end_index
     TYPE(c_ptr) :: m_neighbor_blk
     TYPE(c_ptr) :: m_neighbor_idx
+    TYPE(c_ptr) :: m_start_blk
     TYPE(c_ptr) :: m_start_block
     TYPE(c_ptr) :: m_start_index
   END TYPE glue_t_grid_cells
@@ -368,38 +895,38 @@ MODULE f90_glue_vt_serde
     TYPE(c_ptr) :: m_owner_mask
   END TYPE glue_t_grid_domain_decomp_info
   TYPE, BIND(C) :: glue_t_grid_vertices
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_0_s_203
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_1_s_204
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_2_s_205
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_0_s_200
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_1_s_201
-    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_2_s_202
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_0_s_209
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_1_s_210
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_2_s_211
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_0_s_206
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_1_s_207
-    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_2_s_208
-    INTEGER(KIND = c_int) :: m___f2dace_SA_end_block_d_0_s_215
-    INTEGER(KIND = c_int) :: m___f2dace_SA_end_index_d_0_s_213
-    INTEGER(KIND = c_int) :: m___f2dace_SA_start_block_d_0_s_214
-    INTEGER(KIND = c_int) :: m___f2dace_SA_start_index_d_0_s_212
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_0_s_203
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_1_s_204
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_2_s_205
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_0_s_200
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_1_s_201
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_2_s_202
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_0_s_209
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_1_s_210
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_2_s_211
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_0_s_206
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_1_s_207
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_2_s_208
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_block_d_0_s_215
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_index_d_0_s_213
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_block_d_0_s_214
-    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_index_d_0_s_212
+    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_0_s_167
+    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_1_s_168
+    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_blk_d_2_s_169
+    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_0_s_164
+    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_1_s_165
+    INTEGER(KIND = c_int) :: m___f2dace_SA_cell_idx_d_2_s_166
+    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_0_s_155
+    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_1_s_156
+    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_blk_d_2_s_157
+    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_0_s_152
+    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_1_s_153
+    INTEGER(KIND = c_int) :: m___f2dace_SA_edge_idx_d_2_s_154
+    INTEGER(KIND = c_int) :: m___f2dace_SA_end_block_d_0_s_163
+    INTEGER(KIND = c_int) :: m___f2dace_SA_end_index_d_0_s_161
+    INTEGER(KIND = c_int) :: m___f2dace_SA_start_block_d_0_s_162
+    INTEGER(KIND = c_int) :: m___f2dace_SA_start_index_d_0_s_160
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_0_s_167
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_1_s_168
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_blk_d_2_s_169
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_0_s_164
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_1_s_165
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_cell_idx_d_2_s_166
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_0_s_155
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_1_s_156
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_blk_d_2_s_157
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_0_s_152
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_1_s_153
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_edge_idx_d_2_s_154
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_block_d_0_s_163
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_end_index_d_0_s_161
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_block_d_0_s_162
+    INTEGER(KIND = c_int) :: m___f2dace_SOA_start_index_d_0_s_160
     TYPE(c_ptr) :: m_cell_blk
     TYPE(c_ptr) :: m_cell_idx
     TYPE(c_ptr) :: m_edge_blk
@@ -425,19 +952,24 @@ MODULE f90_glue_vt_serde
     TYPE(t_patch), INTENT(IN) :: inp
     TYPE(glue_t_patch), INTENT(INOUT) :: out
     LOGICAL, INTENT(IN) :: initalloc
-    TYPE(glue_t_grid_cells), ALLOCATABLE, TARGET :: a_cells
-    TYPE(glue_t_grid_edges), ALLOCATABLE, TARGET :: a_edges
-    TYPE(glue_t_grid_vertices), ALLOCATABLE, TARGET :: a_verts
-    IF (initalloc) ALLOCATE(a_cells)
+    TYPE(glue_t_grid_cells), ALLOCATABLE, TARGET, SAVE :: a_cells
+    TYPE(glue_t_grid_edges), ALLOCATABLE, TARGET, SAVE :: a_edges
+    TYPE(glue_t_grid_vertices), ALLOCATABLE, TARGET, SAVE :: a_verts
+    out % m_id = 0
+    out % m_n_childdom = 0
+    out % m_nlev = 0
+    out % m_nlevp1 = 0
+    out % m_nshift = 0
+    IF (initalloc .AND. .NOT. ALLOCATED(a_cells)) ALLOCATE(a_cells)
     CALL ctor(inp % cells, a_cells, initalloc)
     out % m_cells = c_loc(a_cells)
-    IF (initalloc) ALLOCATE(a_edges)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_edges)) ALLOCATE(a_edges)
     CALL ctor(inp % edges, a_edges, initalloc)
     out % m_edges = c_loc(a_edges)
     out % m_nblks_c = inp % nblks_c
     out % m_nblks_e = inp % nblks_e
     out % m_nblks_v = inp % nblks_v
-    IF (initalloc) ALLOCATE(a_verts)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_verts)) ALLOCATE(a_verts)
     CALL ctor(inp % verts, a_verts, initalloc)
     out % m_verts = c_loc(a_verts)
   END SUBROUTINE ctor_t_patch
@@ -445,14 +977,19 @@ MODULE f90_glue_vt_serde
     TYPE(t_int_state), INTENT(IN) :: inp
     TYPE(glue_t_int_state), INTENT(INOUT) :: out
     LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_c_lin_e(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_cells_aw_verts(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_e_bln_c_s(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_geofac_grdiv(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_geofac_n2s(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_geofac_rot(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_rbf_vec_coeff_e(:, :, :)
-    IF (initalloc) ALLOCATE(a_c_lin_e(SIZE(inp % c_lin_e, 1), SIZE(inp % c_lin_e, 2), SIZE(inp % c_lin_e, 3)))
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_c_lin_e(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_cells_aw_verts(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_e_bln_c_s(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_geofac_grdiv(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_geofac_n2s(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_geofac_rot(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_rbf_vec_coeff_e(:, :, :)
+    out % m_e_flx_avg = c_null_ptr
+    out % m_geofac_div = c_null_ptr
+    out % m_geofac_grg = c_null_ptr
+    out % m_nudgecoeff_e = c_null_ptr
+    out % m_pos_on_tplane_e = c_null_ptr
+    IF (initalloc .AND. .NOT. ALLOCATED(a_c_lin_e)) ALLOCATE(a_c_lin_e(SIZE(inp % c_lin_e, 1), SIZE(inp % c_lin_e, 2), SIZE(inp % c_lin_e, 3)))
     a_c_lin_e = inp % c_lin_e
     out % m_c_lin_e = c_loc(a_c_lin_e)
     out % m___f2dace_SA_c_lin_e_d_0_s_25 = SIZE(inp % c_lin_e, 1)
@@ -461,7 +998,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_c_lin_e_d_0_s_25 = LBOUND(inp % c_lin_e, 1)
     out % m___f2dace_SOA_c_lin_e_d_1_s_26 = LBOUND(inp % c_lin_e, 2)
     out % m___f2dace_SOA_c_lin_e_d_2_s_27 = LBOUND(inp % c_lin_e, 3)
-    IF (initalloc) ALLOCATE(a_cells_aw_verts(SIZE(inp % cells_aw_verts, 1), SIZE(inp % cells_aw_verts, 2), SIZE(inp % cells_aw_verts, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_cells_aw_verts)) ALLOCATE(a_cells_aw_verts(SIZE(inp % cells_aw_verts, 1), SIZE(inp % cells_aw_verts, 2), SIZE(inp % cells_aw_verts, 3)))
     a_cells_aw_verts = inp % cells_aw_verts
     out % m_cells_aw_verts = c_loc(a_cells_aw_verts)
     out % m___f2dace_SA_cells_aw_verts_d_0_s_31 = SIZE(inp % cells_aw_verts, 1)
@@ -470,7 +1007,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_cells_aw_verts_d_0_s_31 = LBOUND(inp % cells_aw_verts, 1)
     out % m___f2dace_SOA_cells_aw_verts_d_1_s_32 = LBOUND(inp % cells_aw_verts, 2)
     out % m___f2dace_SOA_cells_aw_verts_d_2_s_33 = LBOUND(inp % cells_aw_verts, 3)
-    IF (initalloc) ALLOCATE(a_e_bln_c_s(SIZE(inp % e_bln_c_s, 1), SIZE(inp % e_bln_c_s, 2), SIZE(inp % e_bln_c_s, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_e_bln_c_s)) ALLOCATE(a_e_bln_c_s(SIZE(inp % e_bln_c_s, 1), SIZE(inp % e_bln_c_s, 2), SIZE(inp % e_bln_c_s, 3)))
     a_e_bln_c_s = inp % e_bln_c_s
     out % m_e_bln_c_s = c_loc(a_e_bln_c_s)
     out % m___f2dace_SA_e_bln_c_s_d_0_s_28 = SIZE(inp % e_bln_c_s, 1)
@@ -479,7 +1016,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_e_bln_c_s_d_0_s_28 = LBOUND(inp % e_bln_c_s, 1)
     out % m___f2dace_SOA_e_bln_c_s_d_1_s_29 = LBOUND(inp % e_bln_c_s, 2)
     out % m___f2dace_SOA_e_bln_c_s_d_2_s_30 = LBOUND(inp % e_bln_c_s, 3)
-    IF (initalloc) ALLOCATE(a_geofac_grdiv(SIZE(inp % geofac_grdiv, 1), SIZE(inp % geofac_grdiv, 2), SIZE(inp % geofac_grdiv, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_geofac_grdiv)) ALLOCATE(a_geofac_grdiv(SIZE(inp % geofac_grdiv, 1), SIZE(inp % geofac_grdiv, 2), SIZE(inp % geofac_grdiv, 3)))
     a_geofac_grdiv = inp % geofac_grdiv
     out % m_geofac_grdiv = c_loc(a_geofac_grdiv)
     out % m___f2dace_SA_geofac_grdiv_d_0_s_37 = SIZE(inp % geofac_grdiv, 1)
@@ -488,7 +1025,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_geofac_grdiv_d_0_s_37 = LBOUND(inp % geofac_grdiv, 1)
     out % m___f2dace_SOA_geofac_grdiv_d_1_s_38 = LBOUND(inp % geofac_grdiv, 2)
     out % m___f2dace_SOA_geofac_grdiv_d_2_s_39 = LBOUND(inp % geofac_grdiv, 3)
-    IF (initalloc) ALLOCATE(a_geofac_n2s(SIZE(inp % geofac_n2s, 1), SIZE(inp % geofac_n2s, 2), SIZE(inp % geofac_n2s, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_geofac_n2s)) ALLOCATE(a_geofac_n2s(SIZE(inp % geofac_n2s, 1), SIZE(inp % geofac_n2s, 2), SIZE(inp % geofac_n2s, 3)))
     a_geofac_n2s = inp % geofac_n2s
     out % m_geofac_n2s = c_loc(a_geofac_n2s)
     out % m___f2dace_SA_geofac_n2s_d_0_s_43 = SIZE(inp % geofac_n2s, 1)
@@ -497,7 +1034,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_geofac_n2s_d_0_s_43 = LBOUND(inp % geofac_n2s, 1)
     out % m___f2dace_SOA_geofac_n2s_d_1_s_44 = LBOUND(inp % geofac_n2s, 2)
     out % m___f2dace_SOA_geofac_n2s_d_2_s_45 = LBOUND(inp % geofac_n2s, 3)
-    IF (initalloc) ALLOCATE(a_geofac_rot(SIZE(inp % geofac_rot, 1), SIZE(inp % geofac_rot, 2), SIZE(inp % geofac_rot, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_geofac_rot)) ALLOCATE(a_geofac_rot(SIZE(inp % geofac_rot, 1), SIZE(inp % geofac_rot, 2), SIZE(inp % geofac_rot, 3)))
     a_geofac_rot = inp % geofac_rot
     out % m_geofac_rot = c_loc(a_geofac_rot)
     out % m___f2dace_SA_geofac_rot_d_0_s_40 = SIZE(inp % geofac_rot, 1)
@@ -506,7 +1043,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_geofac_rot_d_0_s_40 = LBOUND(inp % geofac_rot, 1)
     out % m___f2dace_SOA_geofac_rot_d_1_s_41 = LBOUND(inp % geofac_rot, 2)
     out % m___f2dace_SOA_geofac_rot_d_2_s_42 = LBOUND(inp % geofac_rot, 3)
-    IF (initalloc) ALLOCATE(a_rbf_vec_coeff_e(SIZE(inp % rbf_vec_coeff_e, 1), SIZE(inp % rbf_vec_coeff_e, 2), SIZE(inp % rbf_vec_coeff_e, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_rbf_vec_coeff_e)) ALLOCATE(a_rbf_vec_coeff_e(SIZE(inp % rbf_vec_coeff_e, 1), SIZE(inp % rbf_vec_coeff_e, 2), SIZE(inp % rbf_vec_coeff_e, 3)))
     a_rbf_vec_coeff_e = inp % rbf_vec_coeff_e
     out % m_rbf_vec_coeff_e = c_loc(a_rbf_vec_coeff_e)
     out % m___f2dace_SA_rbf_vec_coeff_e_d_0_s_34 = SIZE(inp % rbf_vec_coeff_e, 1)
@@ -520,9 +1057,30 @@ MODULE f90_glue_vt_serde
     TYPE(t_nh_prog), INTENT(IN) :: inp
     TYPE(glue_t_nh_prog), INTENT(INOUT) :: out
     LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_vn(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_w(:, :, :)
-    IF (initalloc) ALLOCATE(a_vn(SIZE(inp % vn, 1), SIZE(inp % vn, 2), SIZE(inp % vn, 3)))
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_vn(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_w(:, :, :)
+    out % m___f2dace_SA_exner_d_0_s = 0
+    out % m___f2dace_SA_exner_d_1_s = 0
+    out % m___f2dace_SA_exner_d_2_s = 0
+    out % m___f2dace_SA_rho_d_0_s = 0
+    out % m___f2dace_SA_rho_d_1_s = 0
+    out % m___f2dace_SA_rho_d_2_s = 0
+    out % m___f2dace_SA_theta_v_d_0_s = 0
+    out % m___f2dace_SA_theta_v_d_1_s = 0
+    out % m___f2dace_SA_theta_v_d_2_s = 0
+    out % m___f2dace_SOA_exner_d_0_s = 0
+    out % m___f2dace_SOA_exner_d_1_s = 0
+    out % m___f2dace_SOA_exner_d_2_s = 0
+    out % m___f2dace_SOA_rho_d_0_s = 0
+    out % m___f2dace_SOA_rho_d_1_s = 0
+    out % m___f2dace_SOA_rho_d_2_s = 0
+    out % m___f2dace_SOA_theta_v_d_0_s = 0
+    out % m___f2dace_SOA_theta_v_d_1_s = 0
+    out % m___f2dace_SOA_theta_v_d_2_s = 0
+    out % m_exner = c_null_ptr
+    out % m_rho = c_null_ptr
+    out % m_theta_v = c_null_ptr
+    IF (initalloc .AND. .NOT. ALLOCATED(a_vn)) ALLOCATE(a_vn(SIZE(inp % vn, 1), SIZE(inp % vn, 2), SIZE(inp % vn, 3)))
     a_vn = inp % vn
     out % m_vn = c_loc(a_vn)
     out % m___f2dace_SA_vn_d_0_s_288 = SIZE(inp % vn, 1)
@@ -531,7 +1089,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_vn_d_0_s_288 = LBOUND(inp % vn, 1)
     out % m___f2dace_SOA_vn_d_1_s_289 = LBOUND(inp % vn, 2)
     out % m___f2dace_SOA_vn_d_2_s_290 = LBOUND(inp % vn, 3)
-    IF (initalloc) ALLOCATE(a_w(SIZE(inp % w, 1), SIZE(inp % w, 2), SIZE(inp % w, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_w)) ALLOCATE(a_w(SIZE(inp % w, 1), SIZE(inp % w, 2), SIZE(inp % w, 3)))
     a_w = inp % w
     out % m_w = c_loc(a_w)
     out % m___f2dace_SA_w_d_0_s_285 = SIZE(inp % w, 1)
@@ -545,21 +1103,196 @@ MODULE f90_glue_vt_serde
     TYPE(t_nh_metrics), INTENT(IN) :: inp
     TYPE(glue_t_nh_metrics), INTENT(INOUT) :: out
     LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_coeff1_dwdz(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_coeff2_dwdz(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_coeff_gradekin(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddqz_z_full_e(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddqz_z_half(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddxn_z_full(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddxt_z_full(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_deepatmo_gradh_ifc(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_deepatmo_gradh_mc(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_deepatmo_invr_ifc(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_deepatmo_invr_mc(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_wgtfac_c(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_wgtfac_e(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_wgtfacq_e(:, :, :)
-    IF (initalloc) ALLOCATE(a_coeff1_dwdz(SIZE(inp % coeff1_dwdz, 1), SIZE(inp % coeff1_dwdz, 2), SIZE(inp % coeff1_dwdz, 3)))
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_coeff1_dwdz(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_coeff2_dwdz(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_coeff_gradekin(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_ddqz_z_full_e(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_ddqz_z_half(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_ddxn_z_full(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_ddxt_z_full(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_deepatmo_gradh_ifc(:)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_deepatmo_gradh_mc(:)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_deepatmo_invr_ifc(:)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_deepatmo_invr_mc(:)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_wgtfac_c(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_wgtfac_e(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_wgtfacq_e(:, :, :)
+    out % m___f2dace_SA_bdy_mflx_e_blk_d_0_s = 0
+    out % m___f2dace_SA_bdy_mflx_e_idx_d_0_s = 0
+    out % m___f2dace_SA_coeff_gradp_d_0_s = 0
+    out % m___f2dace_SA_coeff_gradp_d_1_s = 0
+    out % m___f2dace_SA_coeff_gradp_d_2_s = 0
+    out % m___f2dace_SA_coeff_gradp_d_3_s = 0
+    out % m___f2dace_SA_d2dexdz2_fac1_mc_d_0_s = 0
+    out % m___f2dace_SA_d2dexdz2_fac1_mc_d_1_s = 0
+    out % m___f2dace_SA_d2dexdz2_fac1_mc_d_2_s = 0
+    out % m___f2dace_SA_d2dexdz2_fac2_mc_d_0_s = 0
+    out % m___f2dace_SA_d2dexdz2_fac2_mc_d_1_s = 0
+    out % m___f2dace_SA_d2dexdz2_fac2_mc_d_2_s = 0
+    out % m___f2dace_SA_d_exner_dz_ref_ic_d_0_s = 0
+    out % m___f2dace_SA_d_exner_dz_ref_ic_d_1_s = 0
+    out % m___f2dace_SA_d_exner_dz_ref_ic_d_2_s = 0
+    out % m___f2dace_SA_deepatmo_divh_mc_d_0_s = 0
+    out % m___f2dace_SA_deepatmo_divzl_mc_d_0_s = 0
+    out % m___f2dace_SA_deepatmo_divzu_mc_d_0_s = 0
+    out % m___f2dace_SA_exner_exfac_d_0_s = 0
+    out % m___f2dace_SA_exner_exfac_d_1_s = 0
+    out % m___f2dace_SA_exner_exfac_d_2_s = 0
+    out % m___f2dace_SA_exner_ref_mc_d_0_s = 0
+    out % m___f2dace_SA_exner_ref_mc_d_1_s = 0
+    out % m___f2dace_SA_exner_ref_mc_d_2_s = 0
+    out % m___f2dace_SA_hmask_dd3d_d_0_s = 0
+    out % m___f2dace_SA_hmask_dd3d_d_1_s = 0
+    out % m___f2dace_SA_inv_ddqz_z_full_d_0_s = 0
+    out % m___f2dace_SA_inv_ddqz_z_full_d_1_s = 0
+    out % m___f2dace_SA_inv_ddqz_z_full_d_2_s = 0
+    out % m___f2dace_SA_pg_edgeblk_d_0_s = 0
+    out % m___f2dace_SA_pg_edgeidx_d_0_s = 0
+    out % m___f2dace_SA_pg_exdist_d_0_s = 0
+    out % m___f2dace_SA_pg_vertidx_d_0_s = 0
+    out % m___f2dace_SA_rayleigh_vn_d_0_s = 0
+    out % m___f2dace_SA_rayleigh_w_d_0_s = 0
+    out % m___f2dace_SA_rho_ref_mc_d_0_s = 0
+    out % m___f2dace_SA_rho_ref_mc_d_1_s = 0
+    out % m___f2dace_SA_rho_ref_mc_d_2_s = 0
+    out % m___f2dace_SA_rho_ref_me_d_0_s = 0
+    out % m___f2dace_SA_rho_ref_me_d_1_s = 0
+    out % m___f2dace_SA_rho_ref_me_d_2_s = 0
+    out % m___f2dace_SA_scalfac_dd3d_d_0_s = 0
+    out % m___f2dace_SA_theta_ref_ic_d_0_s = 0
+    out % m___f2dace_SA_theta_ref_ic_d_1_s = 0
+    out % m___f2dace_SA_theta_ref_ic_d_2_s = 0
+    out % m___f2dace_SA_theta_ref_mc_d_0_s = 0
+    out % m___f2dace_SA_theta_ref_mc_d_1_s = 0
+    out % m___f2dace_SA_theta_ref_mc_d_2_s = 0
+    out % m___f2dace_SA_theta_ref_me_d_0_s = 0
+    out % m___f2dace_SA_theta_ref_me_d_1_s = 0
+    out % m___f2dace_SA_theta_ref_me_d_2_s = 0
+    out % m___f2dace_SA_vertidx_gradp_d_0_s = 0
+    out % m___f2dace_SA_vertidx_gradp_d_1_s = 0
+    out % m___f2dace_SA_vertidx_gradp_d_2_s = 0
+    out % m___f2dace_SA_vertidx_gradp_d_3_s = 0
+    out % m___f2dace_SA_vwind_expl_wgt_d_0_s = 0
+    out % m___f2dace_SA_vwind_expl_wgt_d_1_s = 0
+    out % m___f2dace_SA_vwind_impl_wgt_d_0_s = 0
+    out % m___f2dace_SA_vwind_impl_wgt_d_1_s = 0
+    out % m___f2dace_SA_wgtfacq1_c_d_0_s = 0
+    out % m___f2dace_SA_wgtfacq1_c_d_1_s = 0
+    out % m___f2dace_SA_wgtfacq1_c_d_2_s = 0
+    out % m___f2dace_SA_wgtfacq_c_d_0_s = 0
+    out % m___f2dace_SA_wgtfacq_c_d_1_s = 0
+    out % m___f2dace_SA_wgtfacq_c_d_2_s = 0
+    out % m___f2dace_SA_zdiff_gradp_d_0_s = 0
+    out % m___f2dace_SA_zdiff_gradp_d_1_s = 0
+    out % m___f2dace_SA_zdiff_gradp_d_2_s = 0
+    out % m___f2dace_SA_zdiff_gradp_d_3_s = 0
+    out % m___f2dace_SOA_bdy_mflx_e_blk_d_0_s = 0
+    out % m___f2dace_SOA_bdy_mflx_e_idx_d_0_s = 0
+    out % m___f2dace_SOA_coeff_gradp_d_0_s = 0
+    out % m___f2dace_SOA_coeff_gradp_d_1_s = 0
+    out % m___f2dace_SOA_coeff_gradp_d_2_s = 0
+    out % m___f2dace_SOA_coeff_gradp_d_3_s = 0
+    out % m___f2dace_SOA_d2dexdz2_fac1_mc_d_0_s = 0
+    out % m___f2dace_SOA_d2dexdz2_fac1_mc_d_1_s = 0
+    out % m___f2dace_SOA_d2dexdz2_fac1_mc_d_2_s = 0
+    out % m___f2dace_SOA_d2dexdz2_fac2_mc_d_0_s = 0
+    out % m___f2dace_SOA_d2dexdz2_fac2_mc_d_1_s = 0
+    out % m___f2dace_SOA_d2dexdz2_fac2_mc_d_2_s = 0
+    out % m___f2dace_SOA_d_exner_dz_ref_ic_d_0_s = 0
+    out % m___f2dace_SOA_d_exner_dz_ref_ic_d_1_s = 0
+    out % m___f2dace_SOA_d_exner_dz_ref_ic_d_2_s = 0
+    out % m___f2dace_SOA_deepatmo_divh_mc_d_0_s = 0
+    out % m___f2dace_SOA_deepatmo_divzl_mc_d_0_s = 0
+    out % m___f2dace_SOA_deepatmo_divzu_mc_d_0_s = 0
+    out % m___f2dace_SOA_exner_exfac_d_0_s = 0
+    out % m___f2dace_SOA_exner_exfac_d_1_s = 0
+    out % m___f2dace_SOA_exner_exfac_d_2_s = 0
+    out % m___f2dace_SOA_exner_ref_mc_d_0_s = 0
+    out % m___f2dace_SOA_exner_ref_mc_d_1_s = 0
+    out % m___f2dace_SOA_exner_ref_mc_d_2_s = 0
+    out % m___f2dace_SOA_hmask_dd3d_d_0_s = 0
+    out % m___f2dace_SOA_hmask_dd3d_d_1_s = 0
+    out % m___f2dace_SOA_inv_ddqz_z_full_d_0_s = 0
+    out % m___f2dace_SOA_inv_ddqz_z_full_d_1_s = 0
+    out % m___f2dace_SOA_inv_ddqz_z_full_d_2_s = 0
+    out % m___f2dace_SOA_pg_edgeblk_d_0_s = 0
+    out % m___f2dace_SOA_pg_edgeidx_d_0_s = 0
+    out % m___f2dace_SOA_pg_exdist_d_0_s = 0
+    out % m___f2dace_SOA_pg_vertidx_d_0_s = 0
+    out % m___f2dace_SOA_rayleigh_vn_d_0_s = 0
+    out % m___f2dace_SOA_rayleigh_w_d_0_s = 0
+    out % m___f2dace_SOA_rho_ref_mc_d_0_s = 0
+    out % m___f2dace_SOA_rho_ref_mc_d_1_s = 0
+    out % m___f2dace_SOA_rho_ref_mc_d_2_s = 0
+    out % m___f2dace_SOA_rho_ref_me_d_0_s = 0
+    out % m___f2dace_SOA_rho_ref_me_d_1_s = 0
+    out % m___f2dace_SOA_rho_ref_me_d_2_s = 0
+    out % m___f2dace_SOA_scalfac_dd3d_d_0_s = 0
+    out % m___f2dace_SOA_theta_ref_ic_d_0_s = 0
+    out % m___f2dace_SOA_theta_ref_ic_d_1_s = 0
+    out % m___f2dace_SOA_theta_ref_ic_d_2_s = 0
+    out % m___f2dace_SOA_theta_ref_mc_d_0_s = 0
+    out % m___f2dace_SOA_theta_ref_mc_d_1_s = 0
+    out % m___f2dace_SOA_theta_ref_mc_d_2_s = 0
+    out % m___f2dace_SOA_theta_ref_me_d_0_s = 0
+    out % m___f2dace_SOA_theta_ref_me_d_1_s = 0
+    out % m___f2dace_SOA_theta_ref_me_d_2_s = 0
+    out % m___f2dace_SOA_vertidx_gradp_d_0_s = 0
+    out % m___f2dace_SOA_vertidx_gradp_d_1_s = 0
+    out % m___f2dace_SOA_vertidx_gradp_d_2_s = 0
+    out % m___f2dace_SOA_vertidx_gradp_d_3_s = 0
+    out % m___f2dace_SOA_vwind_expl_wgt_d_0_s = 0
+    out % m___f2dace_SOA_vwind_expl_wgt_d_1_s = 0
+    out % m___f2dace_SOA_vwind_impl_wgt_d_0_s = 0
+    out % m___f2dace_SOA_vwind_impl_wgt_d_1_s = 0
+    out % m___f2dace_SOA_wgtfacq1_c_d_0_s = 0
+    out % m___f2dace_SOA_wgtfacq1_c_d_1_s = 0
+    out % m___f2dace_SOA_wgtfacq1_c_d_2_s = 0
+    out % m___f2dace_SOA_wgtfacq_c_d_0_s = 0
+    out % m___f2dace_SOA_wgtfacq_c_d_1_s = 0
+    out % m___f2dace_SOA_wgtfacq_c_d_2_s = 0
+    out % m___f2dace_SOA_zdiff_gradp_d_0_s = 0
+    out % m___f2dace_SOA_zdiff_gradp_d_1_s = 0
+    out % m___f2dace_SOA_zdiff_gradp_d_2_s = 0
+    out % m___f2dace_SOA_zdiff_gradp_d_3_s = 0
+    out % m_bdy_mflx_e_blk = c_null_ptr
+    out % m_bdy_mflx_e_dim = 0
+    out % m_bdy_mflx_e_idx = c_null_ptr
+    out % m_coeff_gradp = c_null_ptr
+    out % m_d2dexdz2_fac1_mc = c_null_ptr
+    out % m_d2dexdz2_fac1_mc_d_1_s = c_null_ptr
+    out % m_d2dexdz2_fac1_mc_d_2_s = c_null_ptr
+    out % m_d2dexdz2_fac2_mc = c_null_ptr
+    out % m_d2dexdz2_fac2_mc_d_1_s = c_null_ptr
+    out % m_d2dexdz2_fac2_mc_d_2_s = c_null_ptr
+    out % m_d_exner_dz_ref_ic = c_null_ptr
+    out % m_deepatmo_divh_mc = c_null_ptr
+    out % m_deepatmo_divzl_mc = c_null_ptr
+    out % m_deepatmo_divzu_mc = c_null_ptr
+    out % m_exner_exfac = c_null_ptr
+    out % m_exner_ref_mc = c_null_ptr
+    out % m_hmask_dd3d = c_null_ptr
+    out % m_inv_ddqz_z_full = c_null_ptr
+    out % m_pg_edgeblk = c_null_ptr
+    out % m_pg_edgeidx = c_null_ptr
+    out % m_pg_exdist = c_null_ptr
+    out % m_pg_listdim = 0
+    out % m_pg_vertidx = c_null_ptr
+    out % m_rayleigh_vn = c_null_ptr
+    out % m_rayleigh_w = c_null_ptr
+    out % m_rho_ref_mc = c_null_ptr
+    out % m_rho_ref_me = c_null_ptr
+    out % m_scalfac_dd3d = c_null_ptr
+    out % m_theta_ref_ic = c_null_ptr
+    out % m_theta_ref_mc = c_null_ptr
+    out % m_theta_ref_me = c_null_ptr
+    out % m_vertidx_gradp = c_null_ptr
+    out % m_vwind_expl_wgt = c_null_ptr
+    out % m_vwind_impl_wgt = c_null_ptr
+    out % m_wgtfacq1_c = c_null_ptr
+    out % m_wgtfacq_c = c_null_ptr
+    out % m_zdiff_gradp = c_null_ptr
+    IF (initalloc .AND. .NOT. ALLOCATED(a_coeff1_dwdz)) ALLOCATE(a_coeff1_dwdz(SIZE(inp % coeff1_dwdz, 1), SIZE(inp % coeff1_dwdz, 2), SIZE(inp % coeff1_dwdz, 3)))
     a_coeff1_dwdz = inp % coeff1_dwdz
     out % m_coeff1_dwdz = c_loc(a_coeff1_dwdz)
     out % m___f2dace_SA_coeff1_dwdz_d_0_s_332 = SIZE(inp % coeff1_dwdz, 1)
@@ -568,7 +1301,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_coeff1_dwdz_d_0_s_332 = LBOUND(inp % coeff1_dwdz, 1)
     out % m___f2dace_SOA_coeff1_dwdz_d_1_s_333 = LBOUND(inp % coeff1_dwdz, 2)
     out % m___f2dace_SOA_coeff1_dwdz_d_2_s_334 = LBOUND(inp % coeff1_dwdz, 3)
-    IF (initalloc) ALLOCATE(a_coeff2_dwdz(SIZE(inp % coeff2_dwdz, 1), SIZE(inp % coeff2_dwdz, 2), SIZE(inp % coeff2_dwdz, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_coeff2_dwdz)) ALLOCATE(a_coeff2_dwdz(SIZE(inp % coeff2_dwdz, 1), SIZE(inp % coeff2_dwdz, 2), SIZE(inp % coeff2_dwdz, 3)))
     a_coeff2_dwdz = inp % coeff2_dwdz
     out % m_coeff2_dwdz = c_loc(a_coeff2_dwdz)
     out % m___f2dace_SA_coeff2_dwdz_d_0_s_335 = SIZE(inp % coeff2_dwdz, 1)
@@ -577,7 +1310,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_coeff2_dwdz_d_0_s_335 = LBOUND(inp % coeff2_dwdz, 1)
     out % m___f2dace_SOA_coeff2_dwdz_d_1_s_336 = LBOUND(inp % coeff2_dwdz, 2)
     out % m___f2dace_SOA_coeff2_dwdz_d_2_s_337 = LBOUND(inp % coeff2_dwdz, 3)
-    IF (initalloc) ALLOCATE(a_coeff_gradekin(SIZE(inp % coeff_gradekin, 1), SIZE(inp % coeff_gradekin, 2), SIZE(inp % coeff_gradekin, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_coeff_gradekin)) ALLOCATE(a_coeff_gradekin(SIZE(inp % coeff_gradekin, 1), SIZE(inp % coeff_gradekin, 2), SIZE(inp % coeff_gradekin, 3)))
     a_coeff_gradekin = inp % coeff_gradekin
     out % m_coeff_gradekin = c_loc(a_coeff_gradekin)
     out % m___f2dace_SA_coeff_gradekin_d_0_s_329 = SIZE(inp % coeff_gradekin, 1)
@@ -586,7 +1319,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_coeff_gradekin_d_0_s_329 = LBOUND(inp % coeff_gradekin, 1)
     out % m___f2dace_SOA_coeff_gradekin_d_1_s_330 = LBOUND(inp % coeff_gradekin, 2)
     out % m___f2dace_SOA_coeff_gradekin_d_2_s_331 = LBOUND(inp % coeff_gradekin, 3)
-    IF (initalloc) ALLOCATE(a_ddqz_z_full_e(SIZE(inp % ddqz_z_full_e, 1), SIZE(inp % ddqz_z_full_e, 2), SIZE(inp % ddqz_z_full_e, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_ddqz_z_full_e)) ALLOCATE(a_ddqz_z_full_e(SIZE(inp % ddqz_z_full_e, 1), SIZE(inp % ddqz_z_full_e, 2), SIZE(inp % ddqz_z_full_e, 3)))
     a_ddqz_z_full_e = inp % ddqz_z_full_e
     out % m_ddqz_z_full_e = c_loc(a_ddqz_z_full_e)
     out % m___f2dace_SA_ddqz_z_full_e_d_0_s_314 = SIZE(inp % ddqz_z_full_e, 1)
@@ -595,7 +1328,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddqz_z_full_e_d_0_s_314 = LBOUND(inp % ddqz_z_full_e, 1)
     out % m___f2dace_SOA_ddqz_z_full_e_d_1_s_315 = LBOUND(inp % ddqz_z_full_e, 2)
     out % m___f2dace_SOA_ddqz_z_full_e_d_2_s_316 = LBOUND(inp % ddqz_z_full_e, 3)
-    IF (initalloc) ALLOCATE(a_ddqz_z_half(SIZE(inp % ddqz_z_half, 1), SIZE(inp % ddqz_z_half, 2), SIZE(inp % ddqz_z_half, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_ddqz_z_half)) ALLOCATE(a_ddqz_z_half(SIZE(inp % ddqz_z_half, 1), SIZE(inp % ddqz_z_half, 2), SIZE(inp % ddqz_z_half, 3)))
     a_ddqz_z_half = inp % ddqz_z_half
     out % m_ddqz_z_half = c_loc(a_ddqz_z_half)
     out % m___f2dace_SA_ddqz_z_half_d_0_s_317 = SIZE(inp % ddqz_z_half, 1)
@@ -604,7 +1337,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddqz_z_half_d_0_s_317 = LBOUND(inp % ddqz_z_half, 1)
     out % m___f2dace_SOA_ddqz_z_half_d_1_s_318 = LBOUND(inp % ddqz_z_half, 2)
     out % m___f2dace_SOA_ddqz_z_half_d_2_s_319 = LBOUND(inp % ddqz_z_half, 3)
-    IF (initalloc) ALLOCATE(a_ddxn_z_full(SIZE(inp % ddxn_z_full, 1), SIZE(inp % ddxn_z_full, 2), SIZE(inp % ddxn_z_full, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_ddxn_z_full)) ALLOCATE(a_ddxn_z_full(SIZE(inp % ddxn_z_full, 1), SIZE(inp % ddxn_z_full, 2), SIZE(inp % ddxn_z_full, 3)))
     a_ddxn_z_full = inp % ddxn_z_full
     out % m_ddxn_z_full = c_loc(a_ddxn_z_full)
     out % m___f2dace_SA_ddxn_z_full_d_0_s_308 = SIZE(inp % ddxn_z_full, 1)
@@ -613,7 +1346,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddxn_z_full_d_0_s_308 = LBOUND(inp % ddxn_z_full, 1)
     out % m___f2dace_SOA_ddxn_z_full_d_1_s_309 = LBOUND(inp % ddxn_z_full, 2)
     out % m___f2dace_SOA_ddxn_z_full_d_2_s_310 = LBOUND(inp % ddxn_z_full, 3)
-    IF (initalloc) ALLOCATE(a_ddxt_z_full(SIZE(inp % ddxt_z_full, 1), SIZE(inp % ddxt_z_full, 2), SIZE(inp % ddxt_z_full, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_ddxt_z_full)) ALLOCATE(a_ddxt_z_full(SIZE(inp % ddxt_z_full, 1), SIZE(inp % ddxt_z_full, 2), SIZE(inp % ddxt_z_full, 3)))
     a_ddxt_z_full = inp % ddxt_z_full
     out % m_ddxt_z_full = c_loc(a_ddxt_z_full)
     out % m___f2dace_SA_ddxt_z_full_d_0_s_311 = SIZE(inp % ddxt_z_full, 1)
@@ -622,27 +1355,27 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddxt_z_full_d_0_s_311 = LBOUND(inp % ddxt_z_full, 1)
     out % m___f2dace_SOA_ddxt_z_full_d_1_s_312 = LBOUND(inp % ddxt_z_full, 2)
     out % m___f2dace_SOA_ddxt_z_full_d_2_s_313 = LBOUND(inp % ddxt_z_full, 3)
-    IF (initalloc) ALLOCATE(a_deepatmo_gradh_ifc(SIZE(inp % deepatmo_gradh_ifc, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_deepatmo_gradh_ifc)) ALLOCATE(a_deepatmo_gradh_ifc(SIZE(inp % deepatmo_gradh_ifc, 1)))
     a_deepatmo_gradh_ifc = inp % deepatmo_gradh_ifc
     out % m_deepatmo_gradh_ifc = c_loc(a_deepatmo_gradh_ifc)
     out % m___f2dace_SA_deepatmo_gradh_ifc_d_0_s_340 = SIZE(inp % deepatmo_gradh_ifc, 1)
     out % m___f2dace_SOA_deepatmo_gradh_ifc_d_0_s_340 = LBOUND(inp % deepatmo_gradh_ifc, 1)
-    IF (initalloc) ALLOCATE(a_deepatmo_gradh_mc(SIZE(inp % deepatmo_gradh_mc, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_deepatmo_gradh_mc)) ALLOCATE(a_deepatmo_gradh_mc(SIZE(inp % deepatmo_gradh_mc, 1)))
     a_deepatmo_gradh_mc = inp % deepatmo_gradh_mc
     out % m_deepatmo_gradh_mc = c_loc(a_deepatmo_gradh_mc)
     out % m___f2dace_SA_deepatmo_gradh_mc_d_0_s_338 = SIZE(inp % deepatmo_gradh_mc, 1)
     out % m___f2dace_SOA_deepatmo_gradh_mc_d_0_s_338 = LBOUND(inp % deepatmo_gradh_mc, 1)
-    IF (initalloc) ALLOCATE(a_deepatmo_invr_ifc(SIZE(inp % deepatmo_invr_ifc, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_deepatmo_invr_ifc)) ALLOCATE(a_deepatmo_invr_ifc(SIZE(inp % deepatmo_invr_ifc, 1)))
     a_deepatmo_invr_ifc = inp % deepatmo_invr_ifc
     out % m_deepatmo_invr_ifc = c_loc(a_deepatmo_invr_ifc)
     out % m___f2dace_SA_deepatmo_invr_ifc_d_0_s_341 = SIZE(inp % deepatmo_invr_ifc, 1)
     out % m___f2dace_SOA_deepatmo_invr_ifc_d_0_s_341 = LBOUND(inp % deepatmo_invr_ifc, 1)
-    IF (initalloc) ALLOCATE(a_deepatmo_invr_mc(SIZE(inp % deepatmo_invr_mc, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_deepatmo_invr_mc)) ALLOCATE(a_deepatmo_invr_mc(SIZE(inp % deepatmo_invr_mc, 1)))
     a_deepatmo_invr_mc = inp % deepatmo_invr_mc
     out % m_deepatmo_invr_mc = c_loc(a_deepatmo_invr_mc)
     out % m___f2dace_SA_deepatmo_invr_mc_d_0_s_339 = SIZE(inp % deepatmo_invr_mc, 1)
     out % m___f2dace_SOA_deepatmo_invr_mc_d_0_s_339 = LBOUND(inp % deepatmo_invr_mc, 1)
-    IF (initalloc) ALLOCATE(a_wgtfac_c(SIZE(inp % wgtfac_c, 1), SIZE(inp % wgtfac_c, 2), SIZE(inp % wgtfac_c, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_wgtfac_c)) ALLOCATE(a_wgtfac_c(SIZE(inp % wgtfac_c, 1), SIZE(inp % wgtfac_c, 2), SIZE(inp % wgtfac_c, 3)))
     a_wgtfac_c = inp % wgtfac_c
     out % m_wgtfac_c = c_loc(a_wgtfac_c)
     out % m___f2dace_SA_wgtfac_c_d_0_s_320 = SIZE(inp % wgtfac_c, 1)
@@ -651,7 +1384,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_wgtfac_c_d_0_s_320 = LBOUND(inp % wgtfac_c, 1)
     out % m___f2dace_SOA_wgtfac_c_d_1_s_321 = LBOUND(inp % wgtfac_c, 2)
     out % m___f2dace_SOA_wgtfac_c_d_2_s_322 = LBOUND(inp % wgtfac_c, 3)
-    IF (initalloc) ALLOCATE(a_wgtfac_e(SIZE(inp % wgtfac_e, 1), SIZE(inp % wgtfac_e, 2), SIZE(inp % wgtfac_e, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_wgtfac_e)) ALLOCATE(a_wgtfac_e(SIZE(inp % wgtfac_e, 1), SIZE(inp % wgtfac_e, 2), SIZE(inp % wgtfac_e, 3)))
     a_wgtfac_e = inp % wgtfac_e
     out % m_wgtfac_e = c_loc(a_wgtfac_e)
     out % m___f2dace_SA_wgtfac_e_d_0_s_323 = SIZE(inp % wgtfac_e, 1)
@@ -660,7 +1393,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_wgtfac_e_d_0_s_323 = LBOUND(inp % wgtfac_e, 1)
     out % m___f2dace_SOA_wgtfac_e_d_1_s_324 = LBOUND(inp % wgtfac_e, 2)
     out % m___f2dace_SOA_wgtfac_e_d_2_s_325 = LBOUND(inp % wgtfac_e, 3)
-    IF (initalloc) ALLOCATE(a_wgtfacq_e(SIZE(inp % wgtfacq_e, 1), SIZE(inp % wgtfacq_e, 2), SIZE(inp % wgtfacq_e, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_wgtfacq_e)) ALLOCATE(a_wgtfacq_e(SIZE(inp % wgtfacq_e, 1), SIZE(inp % wgtfacq_e, 2), SIZE(inp % wgtfacq_e, 3)))
     a_wgtfacq_e = inp % wgtfacq_e
     out % m_wgtfacq_e = c_loc(a_wgtfacq_e)
     out % m___f2dace_SA_wgtfacq_e_d_0_s_326 = SIZE(inp % wgtfacq_e, 1)
@@ -674,12 +1407,282 @@ MODULE f90_glue_vt_serde
     TYPE(t_nh_diag), INTENT(IN) :: inp
     TYPE(glue_t_nh_diag), INTENT(INOUT) :: out
     LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddt_vn_apc_pc(:, :, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ddt_w_adv_pc(:, :, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_vn_ie(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_vt(:, :, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_w_concorr_c(:, :, :)
-    IF (initalloc) ALLOCATE(a_ddt_vn_apc_pc(SIZE(inp % ddt_vn_apc_pc, 1), SIZE(inp % ddt_vn_apc_pc, 2), SIZE(inp % ddt_vn_apc_pc, 3), SIZE(inp % ddt_vn_apc_pc, 4)))
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_ddt_vn_apc_pc(:, :, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_ddt_w_adv_pc(:, :, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_vn_ie(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_vt(:, :, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_w_concorr_c(:, :, :)
+    out % m___f2dace_SA_ddt_exner_phy_d_0_s = 0
+    out % m___f2dace_SA_ddt_exner_phy_d_1_s = 0
+    out % m___f2dace_SA_ddt_exner_phy_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_adv_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_adv_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_adv_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_cor_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_cor_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_cor_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_cor_pc_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_cor_pc_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_cor_pc_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_cor_pc_d_3_s = 0
+    out % m___f2dace_SA_ddt_vn_dmp_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_dmp_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_dmp_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_dyn_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_dyn_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_dyn_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_grf_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_grf_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_grf_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_iau_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_iau_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_iau_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_pgr_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_pgr_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_pgr_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_phd_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_phd_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_phd_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_phy_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_phy_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_phy_d_2_s = 0
+    out % m___f2dace_SA_ddt_vn_ray_d_0_s = 0
+    out % m___f2dace_SA_ddt_vn_ray_d_1_s = 0
+    out % m___f2dace_SA_ddt_vn_ray_d_2_s = 0
+    out % m___f2dace_SA_exner_dyn_incr_d_0_s = 0
+    out % m___f2dace_SA_exner_dyn_incr_d_1_s = 0
+    out % m___f2dace_SA_exner_dyn_incr_d_2_s = 0
+    out % m___f2dace_SA_exner_incr_d_0_s = 0
+    out % m___f2dace_SA_exner_incr_d_1_s = 0
+    out % m___f2dace_SA_exner_incr_d_2_s = 0
+    out % m___f2dace_SA_exner_pr_d_0_s = 0
+    out % m___f2dace_SA_exner_pr_d_1_s = 0
+    out % m___f2dace_SA_exner_pr_d_2_s = 0
+    out % m___f2dace_SA_grf_bdy_mflx_d_0_s = 0
+    out % m___f2dace_SA_grf_bdy_mflx_d_1_s = 0
+    out % m___f2dace_SA_grf_bdy_mflx_d_2_s = 0
+    out % m___f2dace_SA_grf_tend_mflx_d_0_s = 0
+    out % m___f2dace_SA_grf_tend_mflx_d_1_s = 0
+    out % m___f2dace_SA_grf_tend_mflx_d_2_s = 0
+    out % m___f2dace_SA_grf_tend_rho_d_0_s = 0
+    out % m___f2dace_SA_grf_tend_rho_d_1_s = 0
+    out % m___f2dace_SA_grf_tend_rho_d_2_s = 0
+    out % m___f2dace_SA_grf_tend_thv_d_0_s = 0
+    out % m___f2dace_SA_grf_tend_thv_d_1_s = 0
+    out % m___f2dace_SA_grf_tend_thv_d_2_s = 0
+    out % m___f2dace_SA_grf_tend_vn_d_0_s = 0
+    out % m___f2dace_SA_grf_tend_vn_d_1_s = 0
+    out % m___f2dace_SA_grf_tend_vn_d_2_s = 0
+    out % m___f2dace_SA_grf_tend_w_d_0_s = 0
+    out % m___f2dace_SA_grf_tend_w_d_1_s = 0
+    out % m___f2dace_SA_grf_tend_w_d_2_s = 0
+    out % m___f2dace_SA_mass_fl_e_d_0_s = 0
+    out % m___f2dace_SA_mass_fl_e_d_1_s = 0
+    out % m___f2dace_SA_mass_fl_e_d_2_s = 0
+    out % m___f2dace_SA_mass_fl_e_sv_d_0_s = 0
+    out % m___f2dace_SA_mass_fl_e_sv_d_1_s = 0
+    out % m___f2dace_SA_mass_fl_e_sv_d_2_s = 0
+    out % m___f2dace_SA_mflx_ic_int_d_0_s = 0
+    out % m___f2dace_SA_mflx_ic_int_d_1_s = 0
+    out % m___f2dace_SA_mflx_ic_int_d_2_s = 0
+    out % m___f2dace_SA_mflx_ic_ubc_d_0_s = 0
+    out % m___f2dace_SA_mflx_ic_ubc_d_1_s = 0
+    out % m___f2dace_SA_mflx_ic_ubc_d_2_s = 0
+    out % m___f2dace_SA_rho_ic_d_0_s = 0
+    out % m___f2dace_SA_rho_ic_d_1_s = 0
+    out % m___f2dace_SA_rho_ic_d_2_s = 0
+    out % m___f2dace_SA_rho_ic_int_d_0_s = 0
+    out % m___f2dace_SA_rho_ic_int_d_1_s = 0
+    out % m___f2dace_SA_rho_ic_int_d_2_s = 0
+    out % m___f2dace_SA_rho_ic_ubc_d_0_s = 0
+    out % m___f2dace_SA_rho_ic_ubc_d_1_s = 0
+    out % m___f2dace_SA_rho_ic_ubc_d_2_s = 0
+    out % m___f2dace_SA_rho_incr_d_0_s = 0
+    out % m___f2dace_SA_rho_incr_d_1_s = 0
+    out % m___f2dace_SA_rho_incr_d_2_s = 0
+    out % m___f2dace_SA_theta_v_ic_d_0_s = 0
+    out % m___f2dace_SA_theta_v_ic_d_1_s = 0
+    out % m___f2dace_SA_theta_v_ic_d_2_s = 0
+    out % m___f2dace_SA_theta_v_ic_int_d_0_s = 0
+    out % m___f2dace_SA_theta_v_ic_int_d_1_s = 0
+    out % m___f2dace_SA_theta_v_ic_int_d_2_s = 0
+    out % m___f2dace_SA_theta_v_ic_ubc_d_0_s = 0
+    out % m___f2dace_SA_theta_v_ic_ubc_d_1_s = 0
+    out % m___f2dace_SA_theta_v_ic_ubc_d_2_s = 0
+    out % m___f2dace_SA_vn_ie_int_d_0_s = 0
+    out % m___f2dace_SA_vn_ie_int_d_1_s = 0
+    out % m___f2dace_SA_vn_ie_int_d_2_s = 0
+    out % m___f2dace_SA_vn_ie_ubc_d_0_s = 0
+    out % m___f2dace_SA_vn_ie_ubc_d_1_s = 0
+    out % m___f2dace_SA_vn_ie_ubc_d_2_s = 0
+    out % m___f2dace_SA_vn_incr_d_0_s = 0
+    out % m___f2dace_SA_vn_incr_d_1_s = 0
+    out % m___f2dace_SA_vn_incr_d_2_s = 0
+    out % m___f2dace_SA_w_int_d_0_s = 0
+    out % m___f2dace_SA_w_int_d_1_s = 0
+    out % m___f2dace_SA_w_int_d_2_s = 0
+    out % m___f2dace_SA_w_ubc_d_0_s = 0
+    out % m___f2dace_SA_w_ubc_d_1_s = 0
+    out % m___f2dace_SA_w_ubc_d_2_s = 0
+    out % m___f2dace_SOA_ddt_exner_phy_d_0_s = 0
+    out % m___f2dace_SOA_ddt_exner_phy_d_1_s = 0
+    out % m___f2dace_SOA_ddt_exner_phy_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_adv_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_adv_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_adv_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_cor_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_cor_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_cor_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_cor_pc_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_cor_pc_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_cor_pc_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_cor_pc_d_3_s = 0
+    out % m___f2dace_SOA_ddt_vn_dmp_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_dmp_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_dmp_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_dyn_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_dyn_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_dyn_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_grf_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_grf_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_grf_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_iau_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_iau_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_iau_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_pgr_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_pgr_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_pgr_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_phd_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_phd_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_phd_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_phy_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_phy_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_phy_d_2_s = 0
+    out % m___f2dace_SOA_ddt_vn_ray_d_0_s = 0
+    out % m___f2dace_SOA_ddt_vn_ray_d_1_s = 0
+    out % m___f2dace_SOA_ddt_vn_ray_d_2_s = 0
+    out % m___f2dace_SOA_exner_dyn_incr_d_0_s = 0
+    out % m___f2dace_SOA_exner_dyn_incr_d_1_s = 0
+    out % m___f2dace_SOA_exner_dyn_incr_d_2_s = 0
+    out % m___f2dace_SOA_exner_incr_d_0_s = 0
+    out % m___f2dace_SOA_exner_incr_d_1_s = 0
+    out % m___f2dace_SOA_exner_incr_d_2_s = 0
+    out % m___f2dace_SOA_exner_pr_d_0_s = 0
+    out % m___f2dace_SOA_exner_pr_d_1_s = 0
+    out % m___f2dace_SOA_exner_pr_d_2_s = 0
+    out % m___f2dace_SOA_grf_bdy_mflx_d_0_s = 0
+    out % m___f2dace_SOA_grf_bdy_mflx_d_1_s = 0
+    out % m___f2dace_SOA_grf_bdy_mflx_d_2_s = 0
+    out % m___f2dace_SOA_grf_tend_mflx_d_0_s = 0
+    out % m___f2dace_SOA_grf_tend_mflx_d_1_s = 0
+    out % m___f2dace_SOA_grf_tend_mflx_d_2_s = 0
+    out % m___f2dace_SOA_grf_tend_rho_d_0_s = 0
+    out % m___f2dace_SOA_grf_tend_rho_d_1_s = 0
+    out % m___f2dace_SOA_grf_tend_rho_d_2_s = 0
+    out % m___f2dace_SOA_grf_tend_thv_d_0_s = 0
+    out % m___f2dace_SOA_grf_tend_thv_d_1_s = 0
+    out % m___f2dace_SOA_grf_tend_thv_d_2_s = 0
+    out % m___f2dace_SOA_grf_tend_vn_d_0_s = 0
+    out % m___f2dace_SOA_grf_tend_vn_d_1_s = 0
+    out % m___f2dace_SOA_grf_tend_vn_d_2_s = 0
+    out % m___f2dace_SOA_grf_tend_w_d_0_s = 0
+    out % m___f2dace_SOA_grf_tend_w_d_1_s = 0
+    out % m___f2dace_SOA_grf_tend_w_d_2_s = 0
+    out % m___f2dace_SOA_mass_fl_e_d_0_s = 0
+    out % m___f2dace_SOA_mass_fl_e_d_1_s = 0
+    out % m___f2dace_SOA_mass_fl_e_d_2_s = 0
+    out % m___f2dace_SOA_mass_fl_e_sv_d_0_s = 0
+    out % m___f2dace_SOA_mass_fl_e_sv_d_1_s = 0
+    out % m___f2dace_SOA_mass_fl_e_sv_d_2_s = 0
+    out % m___f2dace_SOA_mflx_ic_int_d_0_s = 0
+    out % m___f2dace_SOA_mflx_ic_int_d_1_s = 0
+    out % m___f2dace_SOA_mflx_ic_int_d_2_s = 0
+    out % m___f2dace_SOA_mflx_ic_ubc_d_0_s = 0
+    out % m___f2dace_SOA_mflx_ic_ubc_d_1_s = 0
+    out % m___f2dace_SOA_mflx_ic_ubc_d_2_s = 0
+    out % m___f2dace_SOA_rho_ic_d_0_s = 0
+    out % m___f2dace_SOA_rho_ic_d_1_s = 0
+    out % m___f2dace_SOA_rho_ic_d_2_s = 0
+    out % m___f2dace_SOA_rho_ic_int_d_0_s = 0
+    out % m___f2dace_SOA_rho_ic_int_d_1_s = 0
+    out % m___f2dace_SOA_rho_ic_int_d_2_s = 0
+    out % m___f2dace_SOA_rho_ic_ubc_d_0_s = 0
+    out % m___f2dace_SOA_rho_ic_ubc_d_1_s = 0
+    out % m___f2dace_SOA_rho_ic_ubc_d_2_s = 0
+    out % m___f2dace_SOA_rho_incr_d_0_s = 0
+    out % m___f2dace_SOA_rho_incr_d_1_s = 0
+    out % m___f2dace_SOA_rho_incr_d_2_s = 0
+    out % m___f2dace_SOA_theta_v_ic_d_0_s = 0
+    out % m___f2dace_SOA_theta_v_ic_d_1_s = 0
+    out % m___f2dace_SOA_theta_v_ic_d_2_s = 0
+    out % m___f2dace_SOA_theta_v_ic_int_d_0_s = 0
+    out % m___f2dace_SOA_theta_v_ic_int_d_1_s = 0
+    out % m___f2dace_SOA_theta_v_ic_int_d_2_s = 0
+    out % m___f2dace_SOA_theta_v_ic_ubc_d_0_s = 0
+    out % m___f2dace_SOA_theta_v_ic_ubc_d_1_s = 0
+    out % m___f2dace_SOA_theta_v_ic_ubc_d_2_s = 0
+    out % m___f2dace_SOA_vn_ie_int_d_0_s = 0
+    out % m___f2dace_SOA_vn_ie_int_d_1_s = 0
+    out % m___f2dace_SOA_vn_ie_int_d_2_s = 0
+    out % m___f2dace_SOA_vn_ie_ubc_d_0_s = 0
+    out % m___f2dace_SOA_vn_ie_ubc_d_1_s = 0
+    out % m___f2dace_SOA_vn_ie_ubc_d_2_s = 0
+    out % m___f2dace_SOA_vn_incr_d_0_s = 0
+    out % m___f2dace_SOA_vn_incr_d_1_s = 0
+    out % m___f2dace_SOA_vn_incr_d_2_s = 0
+    out % m___f2dace_SOA_w_int_d_0_s = 0
+    out % m___f2dace_SOA_w_int_d_1_s = 0
+    out % m___f2dace_SOA_w_int_d_2_s = 0
+    out % m___f2dace_SOA_w_ubc_d_0_s = 0
+    out % m___f2dace_SOA_w_ubc_d_1_s = 0
+    out % m___f2dace_SOA_w_ubc_d_2_s = 0
+    out % m_ddt_exner_phy = c_null_ptr
+    out % m_ddt_vn_adv = c_null_ptr
+    out % m_ddt_vn_adv_is_associated = 0
+    out % m_ddt_vn_cor = c_null_ptr
+    out % m_ddt_vn_cor_is_associated = 0
+    out % m_ddt_vn_cor_pc = c_null_ptr
+    out % m_ddt_vn_dmp = c_null_ptr
+    out % m_ddt_vn_dmp_is_associated = 0
+    out % m_ddt_vn_dyn = c_null_ptr
+    out % m_ddt_vn_dyn_is_associated = 0
+    out % m_ddt_vn_grf = c_null_ptr
+    out % m_ddt_vn_grf_is_associated = 0
+    out % m_ddt_vn_iau = c_null_ptr
+    out % m_ddt_vn_iau_is_associated = 0
+    out % m_ddt_vn_pgr = c_null_ptr
+    out % m_ddt_vn_pgr_is_associated = 0
+    out % m_ddt_vn_phd = c_null_ptr
+    out % m_ddt_vn_phd_is_associated = 0
+    out % m_ddt_vn_phy = c_null_ptr
+    out % m_ddt_vn_ray = c_null_ptr
+    out % m_ddt_vn_ray_is_associated = 0
+    out % m_exner_dyn_incr = c_null_ptr
+    out % m_exner_incr = c_null_ptr
+    out % m_exner_pr = c_null_ptr
+    out % m_grf_bdy_mflx = c_null_ptr
+    out % m_grf_tend_mflx = c_null_ptr
+    out % m_grf_tend_rho = c_null_ptr
+    out % m_grf_tend_thv = c_null_ptr
+    out % m_grf_tend_vn = c_null_ptr
+    out % m_grf_tend_w = c_null_ptr
+    out % m_mass_fl_e = c_null_ptr
+    out % m_mass_fl_e_sv = c_null_ptr
+    out % m_mflx_ic_int = c_null_ptr
+    out % m_mflx_ic_ubc = c_null_ptr
+    out % m_rho_ic = c_null_ptr
+    out % m_rho_ic_int = c_null_ptr
+    out % m_rho_ic_ubc = c_null_ptr
+    out % m_rho_incr = c_null_ptr
+    out % m_theta_v_ic = c_null_ptr
+    out % m_theta_v_ic_int = c_null_ptr
+    out % m_theta_v_ic_ubc = c_null_ptr
+    out % m_vn_ie_int = c_null_ptr
+    out % m_vn_ie_ubc = c_null_ptr
+    out % m_vn_incr = c_null_ptr
+    out % m_w_int = c_null_ptr
+    out % m_w_ubc = c_null_ptr
+    IF (initalloc .AND. .NOT. ALLOCATED(a_ddt_vn_apc_pc)) ALLOCATE(a_ddt_vn_apc_pc(SIZE(inp % ddt_vn_apc_pc, 1), SIZE(inp % ddt_vn_apc_pc, 2), SIZE(inp % ddt_vn_apc_pc, 3), SIZE(inp % ddt_vn_apc_pc, 4)))
     a_ddt_vn_apc_pc = inp % ddt_vn_apc_pc
     out % m_ddt_vn_apc_pc = c_loc(a_ddt_vn_apc_pc)
     out % m___f2dace_SA_ddt_vn_apc_pc_d_0_s_300 = SIZE(inp % ddt_vn_apc_pc, 1)
@@ -690,7 +1693,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddt_vn_apc_pc_d_1_s_301 = LBOUND(inp % ddt_vn_apc_pc, 2)
     out % m___f2dace_SOA_ddt_vn_apc_pc_d_2_s_302 = LBOUND(inp % ddt_vn_apc_pc, 3)
     out % m___f2dace_SOA_ddt_vn_apc_pc_d_3_s_303 = LBOUND(inp % ddt_vn_apc_pc, 4)
-    IF (initalloc) ALLOCATE(a_ddt_w_adv_pc(SIZE(inp % ddt_w_adv_pc, 1), SIZE(inp % ddt_w_adv_pc, 2), SIZE(inp % ddt_w_adv_pc, 3), SIZE(inp % ddt_w_adv_pc, 4)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_ddt_w_adv_pc)) ALLOCATE(a_ddt_w_adv_pc(SIZE(inp % ddt_w_adv_pc, 1), SIZE(inp % ddt_w_adv_pc, 2), SIZE(inp % ddt_w_adv_pc, 3), SIZE(inp % ddt_w_adv_pc, 4)))
     a_ddt_w_adv_pc = inp % ddt_w_adv_pc
     out % m_ddt_w_adv_pc = c_loc(a_ddt_w_adv_pc)
     out % m___f2dace_SA_ddt_w_adv_pc_d_0_s_304 = SIZE(inp % ddt_w_adv_pc, 1)
@@ -702,7 +1705,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddt_w_adv_pc_d_2_s_306 = LBOUND(inp % ddt_w_adv_pc, 3)
     out % m___f2dace_SOA_ddt_w_adv_pc_d_3_s_307 = LBOUND(inp % ddt_w_adv_pc, 4)
     out % m_max_vcfl_dyn = inp % max_vcfl_dyn
-    IF (initalloc) ALLOCATE(a_vn_ie(SIZE(inp % vn_ie, 1), SIZE(inp % vn_ie, 2), SIZE(inp % vn_ie, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_vn_ie)) ALLOCATE(a_vn_ie(SIZE(inp % vn_ie, 1), SIZE(inp % vn_ie, 2), SIZE(inp % vn_ie, 3)))
     a_vn_ie = inp % vn_ie
     out % m_vn_ie = c_loc(a_vn_ie)
     out % m___f2dace_SA_vn_ie_d_0_s_294 = SIZE(inp % vn_ie, 1)
@@ -711,7 +1714,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_vn_ie_d_0_s_294 = LBOUND(inp % vn_ie, 1)
     out % m___f2dace_SOA_vn_ie_d_1_s_295 = LBOUND(inp % vn_ie, 2)
     out % m___f2dace_SOA_vn_ie_d_2_s_296 = LBOUND(inp % vn_ie, 3)
-    IF (initalloc) ALLOCATE(a_vt(SIZE(inp % vt, 1), SIZE(inp % vt, 2), SIZE(inp % vt, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_vt)) ALLOCATE(a_vt(SIZE(inp % vt, 1), SIZE(inp % vt, 2), SIZE(inp % vt, 3)))
     a_vt = inp % vt
     out % m_vt = c_loc(a_vt)
     out % m___f2dace_SA_vt_d_0_s_291 = SIZE(inp % vt, 1)
@@ -720,7 +1723,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_vt_d_0_s_291 = LBOUND(inp % vt, 1)
     out % m___f2dace_SOA_vt_d_1_s_292 = LBOUND(inp % vt, 2)
     out % m___f2dace_SOA_vt_d_2_s_293 = LBOUND(inp % vt, 3)
-    IF (initalloc) ALLOCATE(a_w_concorr_c(SIZE(inp % w_concorr_c, 1), SIZE(inp % w_concorr_c, 2), SIZE(inp % w_concorr_c, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_w_concorr_c)) ALLOCATE(a_w_concorr_c(SIZE(inp % w_concorr_c, 1), SIZE(inp % w_concorr_c, 2), SIZE(inp % w_concorr_c, 3)))
     a_w_concorr_c = inp % w_concorr_c
     out % m_w_concorr_c = c_loc(a_w_concorr_c)
     out % m___f2dace_SA_w_concorr_c_d_0_s_297 = SIZE(inp % w_concorr_c, 1)
@@ -734,31 +1737,50 @@ MODULE f90_glue_vt_serde
     TYPE(t_grid_edges), INTENT(IN) :: inp
     TYPE(glue_t_grid_edges), INTENT(INOUT) :: out
     LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_area_edge(:, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_cell_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_cell_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_index(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_f_e(:, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_fn_e(:, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_ft_e(:, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_inv_dual_edge_length(:, :)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_inv_primal_edge_length(:, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_quad_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_quad_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_index(:)
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_tangent_orientation(:, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_vertex_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_vertex_idx(:, :, :)
-    IF (initalloc) ALLOCATE(a_area_edge(SIZE(inp % area_edge, 1), SIZE(inp % area_edge, 2)))
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_area_edge(:, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_cell_blk(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_cell_idx(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_end_block(:)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_end_index(:)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_f_e(:, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_fn_e(:, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_ft_e(:, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_inv_dual_edge_length(:, :)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_inv_primal_edge_length(:, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_quad_blk(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_quad_idx(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_start_block(:)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_start_index(:)
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_tangent_orientation(:, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_vertex_blk(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_vertex_idx(:, :, :)
+    out % m___f2dace_SA_dual_normal_cell_d_0_s = 0
+    out % m___f2dace_SA_dual_normal_cell_d_1_s = 0
+    out % m___f2dace_SA_dual_normal_cell_d_2_s = 0
+    out % m___f2dace_SA_primal_normal_cell_d_0_s = 0
+    out % m___f2dace_SA_primal_normal_cell_d_1_s = 0
+    out % m___f2dace_SA_primal_normal_cell_d_2_s = 0
+    out % m___f2dace_SA_refin_ctrl_d_0_s = 0
+    out % m___f2dace_SA_refin_ctrl_d_1_s = 0
+    out % m___f2dace_SOA_dual_normal_cell_d_0_s = 0
+    out % m___f2dace_SOA_dual_normal_cell_d_1_s = 0
+    out % m___f2dace_SOA_dual_normal_cell_d_2_s = 0
+    out % m___f2dace_SOA_primal_normal_cell_d_0_s = 0
+    out % m___f2dace_SOA_primal_normal_cell_d_1_s = 0
+    out % m___f2dace_SOA_primal_normal_cell_d_2_s = 0
+    out % m___f2dace_SOA_refin_ctrl_d_0_s = 0
+    out % m___f2dace_SOA_refin_ctrl_d_1_s = 0
+    out % m_dual_normal_cell = c_null_ptr
+    out % m_primal_normal_cell = c_null_ptr
+    out % m_refin_ctrl = c_null_ptr
+    IF (initalloc .AND. .NOT. ALLOCATED(a_area_edge)) ALLOCATE(a_area_edge(SIZE(inp % area_edge, 1), SIZE(inp % area_edge, 2)))
     a_area_edge = inp % area_edge
     out % m_area_edge = c_loc(a_area_edge)
     out % m___f2dace_SA_area_edge_d_0_s_188 = SIZE(inp % area_edge, 1)
     out % m___f2dace_SA_area_edge_d_1_s_189 = SIZE(inp % area_edge, 2)
     out % m___f2dace_SOA_area_edge_d_0_s_188 = LBOUND(inp % area_edge, 1)
     out % m___f2dace_SOA_area_edge_d_1_s_189 = LBOUND(inp % area_edge, 2)
-    IF (initalloc) ALLOCATE(a_cell_blk(SIZE(inp % cell_blk, 1), SIZE(inp % cell_blk, 2), SIZE(inp % cell_blk, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_cell_blk)) ALLOCATE(a_cell_blk(SIZE(inp % cell_blk, 1), SIZE(inp % cell_blk, 2), SIZE(inp % cell_blk, 3)))
     a_cell_blk = inp % cell_blk
     out % m_cell_blk = c_loc(a_cell_blk)
     out % m___f2dace_SA_cell_blk_d_0_s_167 = SIZE(inp % cell_blk, 1)
@@ -767,7 +1789,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_cell_blk_d_0_s_167 = LBOUND(inp % cell_blk, 1)
     out % m___f2dace_SOA_cell_blk_d_1_s_168 = LBOUND(inp % cell_blk, 2)
     out % m___f2dace_SOA_cell_blk_d_2_s_169 = LBOUND(inp % cell_blk, 3)
-    IF (initalloc) ALLOCATE(a_cell_idx(SIZE(inp % cell_idx, 1), SIZE(inp % cell_idx, 2), SIZE(inp % cell_idx, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_cell_idx)) ALLOCATE(a_cell_idx(SIZE(inp % cell_idx, 1), SIZE(inp % cell_idx, 2), SIZE(inp % cell_idx, 3)))
     a_cell_idx = inp % cell_idx
     out % m_cell_idx = c_loc(a_cell_idx)
     out % m___f2dace_SA_cell_idx_d_0_s_164 = SIZE(inp % cell_idx, 1)
@@ -776,52 +1798,52 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_cell_idx_d_0_s_164 = LBOUND(inp % cell_idx, 1)
     out % m___f2dace_SOA_cell_idx_d_1_s_165 = LBOUND(inp % cell_idx, 2)
     out % m___f2dace_SOA_cell_idx_d_2_s_166 = LBOUND(inp % cell_idx, 3)
-    IF (initalloc) ALLOCATE(a_end_block(SIZE(inp % end_block, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_end_block)) ALLOCATE(a_end_block(SIZE(inp % end_block, 1)))
     a_end_block = inp % end_block
     out % m_end_block = c_loc(a_end_block)
     out % m___f2dace_SA_end_block_d_0_s_199 = SIZE(inp % end_block, 1)
     out % m___f2dace_SOA_end_block_d_0_s_199 = LBOUND(inp % end_block, 1)
-    IF (initalloc) ALLOCATE(a_end_index(SIZE(inp % end_index, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_end_index)) ALLOCATE(a_end_index(SIZE(inp % end_index, 1)))
     a_end_index = inp % end_index
     out % m_end_index = c_loc(a_end_index)
     out % m___f2dace_SA_end_index_d_0_s_197 = SIZE(inp % end_index, 1)
     out % m___f2dace_SOA_end_index_d_0_s_197 = LBOUND(inp % end_index, 1)
-    IF (initalloc) ALLOCATE(a_f_e(SIZE(inp % f_e, 1), SIZE(inp % f_e, 2)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_f_e)) ALLOCATE(a_f_e(SIZE(inp % f_e, 1), SIZE(inp % f_e, 2)))
     a_f_e = inp % f_e
     out % m_f_e = c_loc(a_f_e)
     out % m___f2dace_SA_f_e_d_0_s_190 = SIZE(inp % f_e, 1)
     out % m___f2dace_SA_f_e_d_1_s_191 = SIZE(inp % f_e, 2)
     out % m___f2dace_SOA_f_e_d_0_s_190 = LBOUND(inp % f_e, 1)
     out % m___f2dace_SOA_f_e_d_1_s_191 = LBOUND(inp % f_e, 2)
-    IF (initalloc) ALLOCATE(a_fn_e(SIZE(inp % fn_e, 1), SIZE(inp % fn_e, 2)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_fn_e)) ALLOCATE(a_fn_e(SIZE(inp % fn_e, 1), SIZE(inp % fn_e, 2)))
     a_fn_e = inp % fn_e
     out % m_fn_e = c_loc(a_fn_e)
     out % m___f2dace_SA_fn_e_d_0_s_192 = SIZE(inp % fn_e, 1)
     out % m___f2dace_SA_fn_e_d_1_s_193 = SIZE(inp % fn_e, 2)
     out % m___f2dace_SOA_fn_e_d_0_s_192 = LBOUND(inp % fn_e, 1)
     out % m___f2dace_SOA_fn_e_d_1_s_193 = LBOUND(inp % fn_e, 2)
-    IF (initalloc) ALLOCATE(a_ft_e(SIZE(inp % ft_e, 1), SIZE(inp % ft_e, 2)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_ft_e)) ALLOCATE(a_ft_e(SIZE(inp % ft_e, 1), SIZE(inp % ft_e, 2)))
     a_ft_e = inp % ft_e
     out % m_ft_e = c_loc(a_ft_e)
     out % m___f2dace_SA_ft_e_d_0_s_194 = SIZE(inp % ft_e, 1)
     out % m___f2dace_SA_ft_e_d_1_s_195 = SIZE(inp % ft_e, 2)
     out % m___f2dace_SOA_ft_e_d_0_s_194 = LBOUND(inp % ft_e, 1)
     out % m___f2dace_SOA_ft_e_d_1_s_195 = LBOUND(inp % ft_e, 2)
-    IF (initalloc) ALLOCATE(a_inv_dual_edge_length(SIZE(inp % inv_dual_edge_length, 1), SIZE(inp % inv_dual_edge_length, 2)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_inv_dual_edge_length)) ALLOCATE(a_inv_dual_edge_length(SIZE(inp % inv_dual_edge_length, 1), SIZE(inp % inv_dual_edge_length, 2)))
     a_inv_dual_edge_length = inp % inv_dual_edge_length
     out % m_inv_dual_edge_length = c_loc(a_inv_dual_edge_length)
     out % m___f2dace_SA_inv_dual_edge_length_d_0_s_186 = SIZE(inp % inv_dual_edge_length, 1)
     out % m___f2dace_SA_inv_dual_edge_length_d_1_s_187 = SIZE(inp % inv_dual_edge_length, 2)
     out % m___f2dace_SOA_inv_dual_edge_length_d_0_s_186 = LBOUND(inp % inv_dual_edge_length, 1)
     out % m___f2dace_SOA_inv_dual_edge_length_d_1_s_187 = LBOUND(inp % inv_dual_edge_length, 2)
-    IF (initalloc) ALLOCATE(a_inv_primal_edge_length(SIZE(inp % inv_primal_edge_length, 1), SIZE(inp % inv_primal_edge_length, 2)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_inv_primal_edge_length)) ALLOCATE(a_inv_primal_edge_length(SIZE(inp % inv_primal_edge_length, 1), SIZE(inp % inv_primal_edge_length, 2)))
     a_inv_primal_edge_length = inp % inv_primal_edge_length
     out % m_inv_primal_edge_length = c_loc(a_inv_primal_edge_length)
     out % m___f2dace_SA_inv_primal_edge_length_d_0_s_184 = SIZE(inp % inv_primal_edge_length, 1)
     out % m___f2dace_SA_inv_primal_edge_length_d_1_s_185 = SIZE(inp % inv_primal_edge_length, 2)
     out % m___f2dace_SOA_inv_primal_edge_length_d_0_s_184 = LBOUND(inp % inv_primal_edge_length, 1)
     out % m___f2dace_SOA_inv_primal_edge_length_d_1_s_185 = LBOUND(inp % inv_primal_edge_length, 2)
-    IF (initalloc) ALLOCATE(a_quad_blk(SIZE(inp % quad_blk, 1), SIZE(inp % quad_blk, 2), SIZE(inp % quad_blk, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_quad_blk)) ALLOCATE(a_quad_blk(SIZE(inp % quad_blk, 1), SIZE(inp % quad_blk, 2), SIZE(inp % quad_blk, 3)))
     a_quad_blk = inp % quad_blk
     out % m_quad_blk = c_loc(a_quad_blk)
     out % m___f2dace_SA_quad_blk_d_0_s_181 = SIZE(inp % quad_blk, 1)
@@ -830,7 +1852,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_quad_blk_d_0_s_181 = LBOUND(inp % quad_blk, 1)
     out % m___f2dace_SOA_quad_blk_d_1_s_182 = LBOUND(inp % quad_blk, 2)
     out % m___f2dace_SOA_quad_blk_d_2_s_183 = LBOUND(inp % quad_blk, 3)
-    IF (initalloc) ALLOCATE(a_quad_idx(SIZE(inp % quad_idx, 1), SIZE(inp % quad_idx, 2), SIZE(inp % quad_idx, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_quad_idx)) ALLOCATE(a_quad_idx(SIZE(inp % quad_idx, 1), SIZE(inp % quad_idx, 2), SIZE(inp % quad_idx, 3)))
     a_quad_idx = inp % quad_idx
     out % m_quad_idx = c_loc(a_quad_idx)
     out % m___f2dace_SA_quad_idx_d_0_s_178 = SIZE(inp % quad_idx, 1)
@@ -839,24 +1861,24 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_quad_idx_d_0_s_178 = LBOUND(inp % quad_idx, 1)
     out % m___f2dace_SOA_quad_idx_d_1_s_179 = LBOUND(inp % quad_idx, 2)
     out % m___f2dace_SOA_quad_idx_d_2_s_180 = LBOUND(inp % quad_idx, 3)
-    IF (initalloc) ALLOCATE(a_start_block(SIZE(inp % start_block, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_start_block)) ALLOCATE(a_start_block(SIZE(inp % start_block, 1)))
     a_start_block = inp % start_block
     out % m_start_block = c_loc(a_start_block)
     out % m___f2dace_SA_start_block_d_0_s_198 = SIZE(inp % start_block, 1)
     out % m___f2dace_SOA_start_block_d_0_s_198 = LBOUND(inp % start_block, 1)
-    IF (initalloc) ALLOCATE(a_start_index(SIZE(inp % start_index, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_start_index)) ALLOCATE(a_start_index(SIZE(inp % start_index, 1)))
     a_start_index = inp % start_index
     out % m_start_index = c_loc(a_start_index)
     out % m___f2dace_SA_start_index_d_0_s_196 = SIZE(inp % start_index, 1)
     out % m___f2dace_SOA_start_index_d_0_s_196 = LBOUND(inp % start_index, 1)
-    IF (initalloc) ALLOCATE(a_tangent_orientation(SIZE(inp % tangent_orientation, 1), SIZE(inp % tangent_orientation, 2)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_tangent_orientation)) ALLOCATE(a_tangent_orientation(SIZE(inp % tangent_orientation, 1), SIZE(inp % tangent_orientation, 2)))
     a_tangent_orientation = inp % tangent_orientation
     out % m_tangent_orientation = c_loc(a_tangent_orientation)
     out % m___f2dace_SA_tangent_orientation_d_0_s_176 = SIZE(inp % tangent_orientation, 1)
     out % m___f2dace_SA_tangent_orientation_d_1_s_177 = SIZE(inp % tangent_orientation, 2)
     out % m___f2dace_SOA_tangent_orientation_d_0_s_176 = LBOUND(inp % tangent_orientation, 1)
     out % m___f2dace_SOA_tangent_orientation_d_1_s_177 = LBOUND(inp % tangent_orientation, 2)
-    IF (initalloc) ALLOCATE(a_vertex_blk(SIZE(inp % vertex_blk, 1), SIZE(inp % vertex_blk, 2), SIZE(inp % vertex_blk, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_vertex_blk)) ALLOCATE(a_vertex_blk(SIZE(inp % vertex_blk, 1), SIZE(inp % vertex_blk, 2), SIZE(inp % vertex_blk, 3)))
     a_vertex_blk = inp % vertex_blk
     out % m_vertex_blk = c_loc(a_vertex_blk)
     out % m___f2dace_SA_vertex_blk_d_0_s_173 = SIZE(inp % vertex_blk, 1)
@@ -865,7 +1887,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_vertex_blk_d_0_s_173 = LBOUND(inp % vertex_blk, 1)
     out % m___f2dace_SOA_vertex_blk_d_1_s_174 = LBOUND(inp % vertex_blk, 2)
     out % m___f2dace_SOA_vertex_blk_d_2_s_175 = LBOUND(inp % vertex_blk, 3)
-    IF (initalloc) ALLOCATE(a_vertex_idx(SIZE(inp % vertex_idx, 1), SIZE(inp % vertex_idx, 2), SIZE(inp % vertex_idx, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_vertex_idx)) ALLOCATE(a_vertex_idx(SIZE(inp % vertex_idx, 1), SIZE(inp % vertex_idx, 2), SIZE(inp % vertex_idx, 3)))
     a_vertex_idx = inp % vertex_idx
     out % m_vertex_idx = c_loc(a_vertex_idx)
     out % m___f2dace_SA_vertex_idx_d_0_s_170 = SIZE(inp % vertex_idx, 1)
@@ -879,27 +1901,37 @@ MODULE f90_glue_vt_serde
     TYPE(t_grid_cells), INTENT(IN) :: inp
     TYPE(glue_t_grid_cells), INTENT(INOUT) :: out
     LOGICAL, INTENT(IN) :: initalloc
-    REAL(KIND = c_double), ALLOCATABLE, TARGET :: a_area(:, :)
-    TYPE(glue_t_grid_domain_decomp_info), ALLOCATABLE, TARGET :: a_decomp_info
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_edge_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_edge_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_index(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_neighbor_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_neighbor_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_index(:)
-    IF (initalloc) ALLOCATE(a_area(SIZE(inp % area, 1), SIZE(inp % area, 2)))
+    REAL(KIND = c_double), ALLOCATABLE, TARGET, SAVE :: a_area(:, :)
+    TYPE(glue_t_grid_domain_decomp_info), ALLOCATABLE, TARGET, SAVE :: a_decomp_info
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_edge_blk(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_edge_idx(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_end_block(:)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_end_index(:)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_neighbor_blk(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_neighbor_idx(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_start_block(:)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_start_index(:)
+    out % m___f2dace_SA_end_blk_d_0_s = 0
+    out % m___f2dace_SA_end_blk_d_1_s = 0
+    out % m___f2dace_SA_start_blk_d_0_s = 0
+    out % m___f2dace_SA_start_blk_d_1_s = 0
+    out % m___f2dace_SOA_end_blk_d_0_s = 0
+    out % m___f2dace_SOA_end_blk_d_1_s = 0
+    out % m___f2dace_SOA_start_blk_d_0_s = 0
+    out % m___f2dace_SOA_start_blk_d_1_s = 0
+    out % m_end_blk = c_null_ptr
+    out % m_start_blk = c_null_ptr
+    IF (initalloc .AND. .NOT. ALLOCATED(a_area)) ALLOCATE(a_area(SIZE(inp % area, 1), SIZE(inp % area, 2)))
     a_area = inp % area
     out % m_area = c_loc(a_area)
     out % m___f2dace_SA_area_d_0_s_158 = SIZE(inp % area, 1)
     out % m___f2dace_SA_area_d_1_s_159 = SIZE(inp % area, 2)
     out % m___f2dace_SOA_area_d_0_s_158 = LBOUND(inp % area, 1)
     out % m___f2dace_SOA_area_d_1_s_159 = LBOUND(inp % area, 2)
-    IF (initalloc) ALLOCATE(a_decomp_info)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_decomp_info)) ALLOCATE(a_decomp_info)
     CALL ctor(inp % decomp_info, a_decomp_info, initalloc)
     out % m_decomp_info = c_loc(a_decomp_info)
-    IF (initalloc) ALLOCATE(a_edge_blk(SIZE(inp % edge_blk, 1), SIZE(inp % edge_blk, 2), SIZE(inp % edge_blk, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_edge_blk)) ALLOCATE(a_edge_blk(SIZE(inp % edge_blk, 1), SIZE(inp % edge_blk, 2), SIZE(inp % edge_blk, 3)))
     a_edge_blk = inp % edge_blk
     out % m_edge_blk = c_loc(a_edge_blk)
     out % m___f2dace_SA_edge_blk_d_0_s_155 = SIZE(inp % edge_blk, 1)
@@ -908,7 +1940,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_edge_blk_d_0_s_155 = LBOUND(inp % edge_blk, 1)
     out % m___f2dace_SOA_edge_blk_d_1_s_156 = LBOUND(inp % edge_blk, 2)
     out % m___f2dace_SOA_edge_blk_d_2_s_157 = LBOUND(inp % edge_blk, 3)
-    IF (initalloc) ALLOCATE(a_edge_idx(SIZE(inp % edge_idx, 1), SIZE(inp % edge_idx, 2), SIZE(inp % edge_idx, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_edge_idx)) ALLOCATE(a_edge_idx(SIZE(inp % edge_idx, 1), SIZE(inp % edge_idx, 2), SIZE(inp % edge_idx, 3)))
     a_edge_idx = inp % edge_idx
     out % m_edge_idx = c_loc(a_edge_idx)
     out % m___f2dace_SA_edge_idx_d_0_s_152 = SIZE(inp % edge_idx, 1)
@@ -917,17 +1949,17 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_edge_idx_d_0_s_152 = LBOUND(inp % edge_idx, 1)
     out % m___f2dace_SOA_edge_idx_d_1_s_153 = LBOUND(inp % edge_idx, 2)
     out % m___f2dace_SOA_edge_idx_d_2_s_154 = LBOUND(inp % edge_idx, 3)
-    IF (initalloc) ALLOCATE(a_end_block(SIZE(inp % end_block, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_end_block)) ALLOCATE(a_end_block(SIZE(inp % end_block, 1)))
     a_end_block = inp % end_block
     out % m_end_block = c_loc(a_end_block)
     out % m___f2dace_SA_end_block_d_0_s_163 = SIZE(inp % end_block, 1)
     out % m___f2dace_SOA_end_block_d_0_s_163 = LBOUND(inp % end_block, 1)
-    IF (initalloc) ALLOCATE(a_end_index(SIZE(inp % end_index, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_end_index)) ALLOCATE(a_end_index(SIZE(inp % end_index, 1)))
     a_end_index = inp % end_index
     out % m_end_index = c_loc(a_end_index)
     out % m___f2dace_SA_end_index_d_0_s_161 = SIZE(inp % end_index, 1)
     out % m___f2dace_SOA_end_index_d_0_s_161 = LBOUND(inp % end_index, 1)
-    IF (initalloc) ALLOCATE(a_neighbor_blk(SIZE(inp % neighbor_blk, 1), SIZE(inp % neighbor_blk, 2), SIZE(inp % neighbor_blk, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_neighbor_blk)) ALLOCATE(a_neighbor_blk(SIZE(inp % neighbor_blk, 1), SIZE(inp % neighbor_blk, 2), SIZE(inp % neighbor_blk, 3)))
     a_neighbor_blk = inp % neighbor_blk
     out % m_neighbor_blk = c_loc(a_neighbor_blk)
     out % m___f2dace_SA_neighbor_blk_d_0_s_149 = SIZE(inp % neighbor_blk, 1)
@@ -936,7 +1968,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_neighbor_blk_d_0_s_149 = LBOUND(inp % neighbor_blk, 1)
     out % m___f2dace_SOA_neighbor_blk_d_1_s_150 = LBOUND(inp % neighbor_blk, 2)
     out % m___f2dace_SOA_neighbor_blk_d_2_s_151 = LBOUND(inp % neighbor_blk, 3)
-    IF (initalloc) ALLOCATE(a_neighbor_idx(SIZE(inp % neighbor_idx, 1), SIZE(inp % neighbor_idx, 2), SIZE(inp % neighbor_idx, 3)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_neighbor_idx)) ALLOCATE(a_neighbor_idx(SIZE(inp % neighbor_idx, 1), SIZE(inp % neighbor_idx, 2), SIZE(inp % neighbor_idx, 3)))
     a_neighbor_idx = inp % neighbor_idx
     out % m_neighbor_idx = c_loc(a_neighbor_idx)
     out % m___f2dace_SA_neighbor_idx_d_0_s_146 = SIZE(inp % neighbor_idx, 1)
@@ -945,12 +1977,12 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_neighbor_idx_d_0_s_146 = LBOUND(inp % neighbor_idx, 1)
     out % m___f2dace_SOA_neighbor_idx_d_1_s_147 = LBOUND(inp % neighbor_idx, 2)
     out % m___f2dace_SOA_neighbor_idx_d_2_s_148 = LBOUND(inp % neighbor_idx, 3)
-    IF (initalloc) ALLOCATE(a_start_block(SIZE(inp % start_block, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_start_block)) ALLOCATE(a_start_block(SIZE(inp % start_block, 1)))
     a_start_block = inp % start_block
     out % m_start_block = c_loc(a_start_block)
     out % m___f2dace_SA_start_block_d_0_s_162 = SIZE(inp % start_block, 1)
     out % m___f2dace_SOA_start_block_d_0_s_162 = LBOUND(inp % start_block, 1)
-    IF (initalloc) ALLOCATE(a_start_index(SIZE(inp % start_index, 1)))
+    IF (initalloc .AND. .NOT. ALLOCATED(a_start_index)) ALLOCATE(a_start_index(SIZE(inp % start_index, 1)))
     a_start_index = inp % start_index
     out % m_start_index = c_loc(a_start_index)
     out % m___f2dace_SA_start_index_d_0_s_160 = SIZE(inp % start_index, 1)
@@ -960,8 +1992,8 @@ MODULE f90_glue_vt_serde
     TYPE(t_grid_domain_decomp_info), INTENT(IN) :: inp
     TYPE(glue_t_grid_domain_decomp_info), INTENT(INOUT) :: out
     LOGICAL, INTENT(IN) :: initalloc
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_owner_mask(:, :)
-    IF (initalloc) ALLOCATE(a_owner_mask(SIZE(inp % owner_mask, 1), SIZE(inp % owner_mask, 2)))
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_owner_mask(:, :)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_owner_mask)) ALLOCATE(a_owner_mask(SIZE(inp % owner_mask, 1), SIZE(inp % owner_mask, 2)))
     a_owner_mask = inp % owner_mask
     out % m_owner_mask = c_loc(a_owner_mask)
     out % m___f2dace_SA_owner_mask_d_0_s_2 = SIZE(inp % owner_mask, 1)
@@ -973,70 +2005,70 @@ MODULE f90_glue_vt_serde
     TYPE(t_grid_vertices), INTENT(IN) :: inp
     TYPE(glue_t_grid_vertices), INTENT(INOUT) :: out
     LOGICAL, INTENT(IN) :: initalloc
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_cell_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_cell_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_edge_blk(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_edge_idx(:, :, :)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_end_index(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_block(:)
-    INTEGER(KIND = c_int), ALLOCATABLE, TARGET :: a_start_index(:)
-    IF (initalloc) ALLOCATE(a_cell_blk(SIZE(inp % cell_blk, 1), SIZE(inp % cell_blk, 2), SIZE(inp % cell_blk, 3)))
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_cell_blk(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_cell_idx(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_edge_blk(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_edge_idx(:, :, :)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_end_block(:)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_end_index(:)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_start_block(:)
+    INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_start_index(:)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_cell_blk)) ALLOCATE(a_cell_blk(SIZE(inp % cell_blk, 1), SIZE(inp % cell_blk, 2), SIZE(inp % cell_blk, 3)))
     a_cell_blk = inp % cell_blk
     out % m_cell_blk = c_loc(a_cell_blk)
-    out % m___f2dace_SA_cell_blk_d_0_s_203 = SIZE(inp % cell_blk, 1)
-    out % m___f2dace_SA_cell_blk_d_1_s_204 = SIZE(inp % cell_blk, 2)
-    out % m___f2dace_SA_cell_blk_d_2_s_205 = SIZE(inp % cell_blk, 3)
-    out % m___f2dace_SOA_cell_blk_d_0_s_203 = LBOUND(inp % cell_blk, 1)
-    out % m___f2dace_SOA_cell_blk_d_1_s_204 = LBOUND(inp % cell_blk, 2)
-    out % m___f2dace_SOA_cell_blk_d_2_s_205 = LBOUND(inp % cell_blk, 3)
-    IF (initalloc) ALLOCATE(a_cell_idx(SIZE(inp % cell_idx, 1), SIZE(inp % cell_idx, 2), SIZE(inp % cell_idx, 3)))
+    out % m___f2dace_SA_cell_blk_d_0_s_167 = SIZE(inp % cell_blk, 1)
+    out % m___f2dace_SA_cell_blk_d_1_s_168 = SIZE(inp % cell_blk, 2)
+    out % m___f2dace_SA_cell_blk_d_2_s_169 = SIZE(inp % cell_blk, 3)
+    out % m___f2dace_SOA_cell_blk_d_0_s_167 = LBOUND(inp % cell_blk, 1)
+    out % m___f2dace_SOA_cell_blk_d_1_s_168 = LBOUND(inp % cell_blk, 2)
+    out % m___f2dace_SOA_cell_blk_d_2_s_169 = LBOUND(inp % cell_blk, 3)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_cell_idx)) ALLOCATE(a_cell_idx(SIZE(inp % cell_idx, 1), SIZE(inp % cell_idx, 2), SIZE(inp % cell_idx, 3)))
     a_cell_idx = inp % cell_idx
     out % m_cell_idx = c_loc(a_cell_idx)
-    out % m___f2dace_SA_cell_idx_d_0_s_200 = SIZE(inp % cell_idx, 1)
-    out % m___f2dace_SA_cell_idx_d_1_s_201 = SIZE(inp % cell_idx, 2)
-    out % m___f2dace_SA_cell_idx_d_2_s_202 = SIZE(inp % cell_idx, 3)
-    out % m___f2dace_SOA_cell_idx_d_0_s_200 = LBOUND(inp % cell_idx, 1)
-    out % m___f2dace_SOA_cell_idx_d_1_s_201 = LBOUND(inp % cell_idx, 2)
-    out % m___f2dace_SOA_cell_idx_d_2_s_202 = LBOUND(inp % cell_idx, 3)
-    IF (initalloc) ALLOCATE(a_edge_blk(SIZE(inp % edge_blk, 1), SIZE(inp % edge_blk, 2), SIZE(inp % edge_blk, 3)))
+    out % m___f2dace_SA_cell_idx_d_0_s_164 = SIZE(inp % cell_idx, 1)
+    out % m___f2dace_SA_cell_idx_d_1_s_165 = SIZE(inp % cell_idx, 2)
+    out % m___f2dace_SA_cell_idx_d_2_s_166 = SIZE(inp % cell_idx, 3)
+    out % m___f2dace_SOA_cell_idx_d_0_s_164 = LBOUND(inp % cell_idx, 1)
+    out % m___f2dace_SOA_cell_idx_d_1_s_165 = LBOUND(inp % cell_idx, 2)
+    out % m___f2dace_SOA_cell_idx_d_2_s_166 = LBOUND(inp % cell_idx, 3)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_edge_blk)) ALLOCATE(a_edge_blk(SIZE(inp % edge_blk, 1), SIZE(inp % edge_blk, 2), SIZE(inp % edge_blk, 3)))
     a_edge_blk = inp % edge_blk
     out % m_edge_blk = c_loc(a_edge_blk)
-    out % m___f2dace_SA_edge_blk_d_0_s_209 = SIZE(inp % edge_blk, 1)
-    out % m___f2dace_SA_edge_blk_d_1_s_210 = SIZE(inp % edge_blk, 2)
-    out % m___f2dace_SA_edge_blk_d_2_s_211 = SIZE(inp % edge_blk, 3)
-    out % m___f2dace_SOA_edge_blk_d_0_s_209 = LBOUND(inp % edge_blk, 1)
-    out % m___f2dace_SOA_edge_blk_d_1_s_210 = LBOUND(inp % edge_blk, 2)
-    out % m___f2dace_SOA_edge_blk_d_2_s_211 = LBOUND(inp % edge_blk, 3)
-    IF (initalloc) ALLOCATE(a_edge_idx(SIZE(inp % edge_idx, 1), SIZE(inp % edge_idx, 2), SIZE(inp % edge_idx, 3)))
+    out % m___f2dace_SA_edge_blk_d_0_s_155 = SIZE(inp % edge_blk, 1)
+    out % m___f2dace_SA_edge_blk_d_1_s_156 = SIZE(inp % edge_blk, 2)
+    out % m___f2dace_SA_edge_blk_d_2_s_157 = SIZE(inp % edge_blk, 3)
+    out % m___f2dace_SOA_edge_blk_d_0_s_155 = LBOUND(inp % edge_blk, 1)
+    out % m___f2dace_SOA_edge_blk_d_1_s_156 = LBOUND(inp % edge_blk, 2)
+    out % m___f2dace_SOA_edge_blk_d_2_s_157 = LBOUND(inp % edge_blk, 3)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_edge_idx)) ALLOCATE(a_edge_idx(SIZE(inp % edge_idx, 1), SIZE(inp % edge_idx, 2), SIZE(inp % edge_idx, 3)))
     a_edge_idx = inp % edge_idx
     out % m_edge_idx = c_loc(a_edge_idx)
-    out % m___f2dace_SA_edge_idx_d_0_s_206 = SIZE(inp % edge_idx, 1)
-    out % m___f2dace_SA_edge_idx_d_1_s_207 = SIZE(inp % edge_idx, 2)
-    out % m___f2dace_SA_edge_idx_d_2_s_208 = SIZE(inp % edge_idx, 3)
-    out % m___f2dace_SOA_edge_idx_d_0_s_206 = LBOUND(inp % edge_idx, 1)
-    out % m___f2dace_SOA_edge_idx_d_1_s_207 = LBOUND(inp % edge_idx, 2)
-    out % m___f2dace_SOA_edge_idx_d_2_s_208 = LBOUND(inp % edge_idx, 3)
-    IF (initalloc) ALLOCATE(a_end_block(SIZE(inp % end_block, 1)))
+    out % m___f2dace_SA_edge_idx_d_0_s_152 = SIZE(inp % edge_idx, 1)
+    out % m___f2dace_SA_edge_idx_d_1_s_153 = SIZE(inp % edge_idx, 2)
+    out % m___f2dace_SA_edge_idx_d_2_s_154 = SIZE(inp % edge_idx, 3)
+    out % m___f2dace_SOA_edge_idx_d_0_s_152 = LBOUND(inp % edge_idx, 1)
+    out % m___f2dace_SOA_edge_idx_d_1_s_153 = LBOUND(inp % edge_idx, 2)
+    out % m___f2dace_SOA_edge_idx_d_2_s_154 = LBOUND(inp % edge_idx, 3)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_end_block)) ALLOCATE(a_end_block(SIZE(inp % end_block, 1)))
     a_end_block = inp % end_block
     out % m_end_block = c_loc(a_end_block)
-    out % m___f2dace_SA_end_block_d_0_s_215 = SIZE(inp % end_block, 1)
-    out % m___f2dace_SOA_end_block_d_0_s_215 = LBOUND(inp % end_block, 1)
-    IF (initalloc) ALLOCATE(a_end_index(SIZE(inp % end_index, 1)))
+    out % m___f2dace_SA_end_block_d_0_s_163 = SIZE(inp % end_block, 1)
+    out % m___f2dace_SOA_end_block_d_0_s_163 = LBOUND(inp % end_block, 1)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_end_index)) ALLOCATE(a_end_index(SIZE(inp % end_index, 1)))
     a_end_index = inp % end_index
     out % m_end_index = c_loc(a_end_index)
-    out % m___f2dace_SA_end_index_d_0_s_213 = SIZE(inp % end_index, 1)
-    out % m___f2dace_SOA_end_index_d_0_s_213 = LBOUND(inp % end_index, 1)
-    IF (initalloc) ALLOCATE(a_start_block(SIZE(inp % start_block, 1)))
+    out % m___f2dace_SA_end_index_d_0_s_161 = SIZE(inp % end_index, 1)
+    out % m___f2dace_SOA_end_index_d_0_s_161 = LBOUND(inp % end_index, 1)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_start_block)) ALLOCATE(a_start_block(SIZE(inp % start_block, 1)))
     a_start_block = inp % start_block
     out % m_start_block = c_loc(a_start_block)
-    out % m___f2dace_SA_start_block_d_0_s_214 = SIZE(inp % start_block, 1)
-    out % m___f2dace_SOA_start_block_d_0_s_214 = LBOUND(inp % start_block, 1)
-    IF (initalloc) ALLOCATE(a_start_index(SIZE(inp % start_index, 1)))
+    out % m___f2dace_SA_start_block_d_0_s_162 = SIZE(inp % start_block, 1)
+    out % m___f2dace_SOA_start_block_d_0_s_162 = LBOUND(inp % start_block, 1)
+    IF (initalloc .AND. .NOT. ALLOCATED(a_start_index)) ALLOCATE(a_start_index(SIZE(inp % start_index, 1)))
     a_start_index = inp % start_index
     out % m_start_index = c_loc(a_start_index)
-    out % m___f2dace_SA_start_index_d_0_s_212 = SIZE(inp % start_index, 1)
-    out % m___f2dace_SOA_start_index_d_0_s_212 = LBOUND(inp % start_index, 1)
+    out % m___f2dace_SA_start_index_d_0_s_160 = SIZE(inp % start_index, 1)
+    out % m___f2dace_SOA_start_index_d_0_s_160 = LBOUND(inp % start_index, 1)
   END SUBROUTINE ctor_t_grid_vertices
 END MODULE f90_glue_vt_serde
 MODULE vt_serde

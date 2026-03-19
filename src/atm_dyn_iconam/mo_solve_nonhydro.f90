@@ -39,6 +39,7 @@ MODULE mo_solve_nonhydro
   USE mo_physical_constants,ONLY: rd, cpd, cvd, grav, p0ref
   USE mo_math_gradients,    ONLY: grad_green_gauss_cell
   USE mo_velocity_advection,ONLY: velocity_tendencies
+  USE vt_wrapper,           ONLY: velocity_tendencies_gpu
   USE mo_math_constants,    ONLY: dbl_eps
   USE mo_vertical_grid,     ONLY: nrdmax, nflat_gradp
   USE mo_init_vgrid,        ONLY: nflatlev
@@ -441,13 +442,13 @@ MODULE mo_solve_nonhydro
           ELSE
             lvn_only = .FALSE.
           ENDIF
-          CALL velocity_tendencies(p_nh%prog(nnow),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
+          CALL velocity_tendencies_gpu(p_nh%prog(nnow),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
             z_kin_hor_e,z_vt_ie,ntl1,istep,lvn_only,dtime,dt_linintp_ubc_nnow,ldeepatmo)
         ENDIF
         nvar = nnow
       ELSE                 ! corrector step
         lvn_only = .FALSE.
-        CALL velocity_tendencies(p_nh%prog(nnew),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
+        CALL velocity_tendencies_gpu(p_nh%prog(nnew),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
           z_kin_hor_e,z_vt_ie,ntl2,istep,lvn_only,dtime,dt_linintp_ubc_nnew,ldeepatmo)
         nvar = nnew
       ENDIF

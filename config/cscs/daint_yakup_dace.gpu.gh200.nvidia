@@ -16,6 +16,9 @@ unset CDPATH
 script_dir=$(cd "$(dirname "$0")"; pwd)
 icon_dir=$(cd "${script_dir}/../.."; pwd)
 
+DACE_LDFLAGS="-L/capstor/scratch/cscs/pmazumde/gitspace/ico2/velocity/ -Wl,-rpath,/capstor/scratch/cscs/pmazumde/gitspace/ico2/velocity/"
+DACE_LIBS="-lvelocity"
+
 # NOTE: maybe we should enable mpi-gpu
 
 "${icon_dir}/configure" \
@@ -23,7 +26,7 @@ icon_dir=$(cd "${script_dir}/../.."; pwd)
   '--enable-atmo' \
   '--enable-les' \
   '--enable-nwp' \
-  '--enable-ecrad' \
+  '--disable-ecrad' \
   '--enable-aes' \
   '--enable-jsbach' \
   '--enable-rte-rrtmgp' \
