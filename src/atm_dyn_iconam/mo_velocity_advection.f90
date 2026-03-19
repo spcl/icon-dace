@@ -132,6 +132,7 @@ MODULE mo_velocity_advection
     !--------------------------------------------------------------------------
 
     ! --- START INSTRUMENTATION ---
+    ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
     if (istep == 1) then
       write (message_text, *) "Starting velocity advection tendencies computation for generation ", generation, " (predictor step : before)"
       call message('', message_text)
@@ -894,6 +895,7 @@ MODULE mo_velocity_advection
     IF (timers_level > 5) CALL timer_stop(timer_solve_nh_veltend)
 
     ! --- START INSTRUMENTATION ---
+    ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
     if (istep == 1) then
       write (message_text, *) "Starting velocity advection tendencies computation for generation ", generation, " (predictor step : after)"
       call message('', message_text)
