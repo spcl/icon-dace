@@ -665,7 +665,7 @@ CONTAINS
   SUBROUTINE velocity_tendencies_gpu(p_prog, p_patch, p_int, p_metrics, p_diag, &
       z_w_concorr_me, z_kin_hor_e, z_vt_ie, ntnd, istep, lvn_only, &
       dtime, dt_linintp_ubc, ldeepatmo)
-    use vt_serde, only: tic, generation, at, serialize, serialize_global_data
+    use vt_serde, only: vt_tic, vt_generation, at, serialize, serialize_global_data
     use mo_exception, only: message, message_text
     TYPE(t_nh_prog), INTENT(INOUT), TARGET :: p_prog
     TYPE(t_patch), INTENT(IN), TARGET :: p_patch
@@ -696,12 +696,18 @@ CONTAINS
     REAL(c_double), POINTER :: ptr_vt(:,:,:)
     REAL(c_double), POINTER :: ptr_w_concorr_c(:,:,:)
 
-    CALL timer_start(timer_solve_nh_veltend)
+    ! --- START INSTRUMENTATION ---
+    call vt_tic()
+    write (message_text, *) "Starting velocity_tendencies WRAPPER for vt_generation ", vt_generation
+    call message('', message_text)
+    write (message_text, *) "Input parameters: istep=", istep, " lvn_only=", lvn_only, " dtime=", dtime, &
+         " dt_linintp_ubc=", dt_linintp_ubc, " ldeepatmo=", ldeepatmo
+    call message('', message_text)
+    ! --- END INSTRUMENTATION ---
 
     ! --- START INSTRUMENTATION ---
-    ! NOTE: Keep in sync with velocity_tendencies in mo_velocity_advection.f90
+    ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
     if (istep == 1) then
-      write (message_text, *) "Starting velocity advection tendencies computation for generation ", generation, " (predictor step : before)"
       call message('', message_text)
       call serialize(at("p_patch"), p_patch)
       call serialize(at("p_int"), p_int)
@@ -720,6 +726,8 @@ CONTAINS
       call serialize(at("z_vt_ie.t0"), z_vt_ie)
     endif
     ! --- END INSTRUMENTATION ---
+
+    CALL timer_start(timer_solve_nh_veltend)
 
     ! Pack Fortran structs into C-compatible glue types
     CALL ctor(p_patch, g_patch, .TRUE.)
@@ -1046,9 +1054,9 @@ CONTAINS
     CALL timer_stop(timer_solve_nh_veltend)
 
     ! --- START INSTRUMENTATION ---
-    ! NOTE: Keep in sync with velocity_tendencies in mo_velocity_advection.f90
+    ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
     if (istep == 1) then
-      write (message_text, *) "Starting velocity advection tendencies computation for generation ", generation, " (predictor step : after)"
+      write (message_text, *) "Stopping velocity_tendencies WRAPPER for vt_generation ", vt_generation
       call message('', message_text)
       call serialize_global_data(at("global_data.t1"))
       call serialize(at("p_prog.t1"), p_prog)

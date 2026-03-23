@@ -10,6 +10,8 @@
 #SBATCH --error=/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/./run/LOG.exp.exclaim_ape_R02B04.run.%j.o
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
+#SBATCH --time=02:00:00
+#SBATCH --partition=normal
 #
 
 #-----------------------------------------------------------------------------
@@ -68,9 +70,12 @@ then
   . /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/setting
 fi
 
+: ${XTSTEP:? "Error: XTSTEP is not set. Please provide a time step value."}
+
 # environment variables for the experiment and the target system
 # --------------------------------------------------------------
 export EXPNAME="exclaim_ape_R02B04"
+export EXPNAME="exclaim_ape_R02B04_dt${XTSTEP}"
 # load profile
 # ------------
 if [[ -a "/opt/modules/default/etc/modules.sh" ]]
@@ -89,7 +94,8 @@ export icon_data_rootFolder="/users/icontest/pool/data/ICON"
 
 # how to start the icon model
 # ---------------------------
-export START="srun --time=02:00:00 -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS"
+export START=""
+# export START="srun --time=02:00:00 -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task ${OMP_NUM_THREADS}"
 export MODEL="/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon"
 
 set | grep SLURM
@@ -146,8 +152,8 @@ export NVCOMPILER_TERM=trace
 # (0) Basic model configuration
 # -----------------------------
 
-atmos_gridID="0050"
-atmos_refinement="R02B03"
+atmos_gridID="0008"
+atmos_refinement="R02B05"
 
 #
 #--------------------------------------------------------------------------------------------------
@@ -155,7 +161,8 @@ atmos_refinement="R02B03"
 # (1) Define the model time stepping
 # ----------------------------------
 
-atmTimeStep=15                  # atmosphere time step [s]
+# atmTimeStep=2                  # atmosphere time step [s]
+atmTimeStep=${XTSTEP}
 
 dt_rad=`expr 6 \* $atmTimeStep`
 dt_conv=`expr 2 \* $atmTimeStep`
@@ -186,7 +193,7 @@ atmo_dyn_grid=${atmo_grid_folder}/icon_grid_${atmos_gridID}_${atmos_refinement}_
 
 # start and end date+time
 start_date=${start_date:="2000-01-01T00:00:00Z"}
-end_date=${end_date:="2000-01-01T00:32:00Z"}
+end_date=${end_date:="2000-01-01T00:30:00Z"}
 
 # restart intervals (set in master namelist)
 # ---------------------------
@@ -745,6 +752,7 @@ ICON_COMPONENT1_VH_procs=$(( ${num_restart_procs:-0} + ${num_io_procs:-0} + ${nu
 # START_MODEL is used to ease the execution of a machine that uses a complex
 # mpirun command with multiple binaries
 START_MODEL="${START_MODEL:=$START $MODEL}"
+# START_MODEL="${START_MODEL:=$START compute-sanitizer --force-blocking-launches --generate-coredump $MODEL}"
 
 
 rm -f finish.status

@@ -2939,7 +2939,7 @@ MODULE mo_nh_stepping
   !!
   SUBROUTINE perform_dyn_substepping (time_config, p_patch, p_nh_state, p_int_state, prep_adv, &
     &                                 jstep, iau_iter, dt_phy, mtime_current)
-
+use vt_serde, only: do_serialize, physics_tic, physics_generation, dyn_substeps
     TYPE(t_time_config), INTENT(IN)    :: time_config
 
     TYPE(t_patch)       ,INTENT(INOUT) :: p_patch
@@ -2979,8 +2979,23 @@ MODULE mo_nh_stepping
     ! get domain ID
     jg = p_patch%id
 
-    ! compute dynamics timestep
-    dt_dyn = dt_phy/ndyn_substeps_var(jg)
+    ! START INSTRUMENT
+    call physics_tic()
+    write(message_text, *) "perform_dyn_substepping: physics_generation = ", physics_generation, " iau_iter = ", iau_iter, " dt_phy = ", dt_phy
+    call message('', message_text)
+    if (physics_generation == 100) then
+      do_serialize = .true.
+      ndyn_substeps_var(jg) = ndyn_substeps_var(jg) * 1
+      dyn_substeps = ndyn_substeps_var(jg)
+      write(message_text, *) "At physics_generation = ", physics_generation, " switching to dynamics substeps = ", ndyn_substeps_var(jg)
+      call message('', message_text)
+      ! compute dynamics timestep
+      dt_dyn = dt_phy / REAL(ndyn_substeps_var(jg), wp)
+    endif
+    if (physics_generation == 151) then
+      do_serialize = .false.
+    endif
+    ! END INSTRUMENT
 
     IF ( ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e == 6 ) THEN
       lprep_adv = .TRUE. ! do computations for preparing tracer advection in solve_nh

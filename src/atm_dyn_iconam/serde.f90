@@ -2077,10 +2077,26 @@ MODULE vt_serde
     MODULE PROCEDURE W_integer1, W_integer2, W_integer4, W_integer8, W_integer__4_R_1, W_integer__4_R_3, W_logical, W_logical_R_2, W_real4, W_real8, W_real__8_R_1, W_real__8_R_2, W_real__8_R_3, W_real__8_R_4, W_string, W_t_grid_cells, W_t_grid_domain_decomp_info, W_t_grid_edges, W_t_grid_vertices, W_t_int_state, W_t_nh_diag, W_t_nh_metrics, W_t_nh_prog, W_t_patch
   END INTERFACE serialize
   INTEGER :: generation = 0
+  INTEGER :: vt_generation = 0
+  INTEGER :: dycore_generation = 0
+  INTEGER :: physics_generation = 0
+  INTEGER :: dyn_substeps = 0
+  LOGICAL :: do_serialize = .false.
   CONTAINS
-  SUBROUTINE tic
-    generation = generation + 1
-  END SUBROUTINE tic
+  ! SUBROUTINE tic
+  !   generation = generation + 1
+  ! END SUBROUTINE tic
+  SUBROUTINE vt_tic
+    vt_generation = vt_generation + 1
+  END SUBROUTINE vt_tic
+  SUBROUTINE dycore_tic
+    dycore_generation = dycore_generation + 1
+    vt_generation = 0
+  END SUBROUTINE dycore_tic
+  SUBROUTINE physics_tic
+    physics_generation = physics_generation + 1
+    dycore_generation = 0
+  END SUBROUTINE physics_tic
   FUNCTION cat(prefix, asis) RESULT(path)
     CHARACTER(LEN = *), INTENT(IN) :: prefix
     CHARACTER(LEN = :), ALLOCATABLE :: path
@@ -2089,7 +2105,7 @@ MODULE vt_serde
     IF (asis) THEN
       path = prefix
     ELSE
-      WRITE(gen, '(g0)') generation
+      WRITE(gen, '(A,I0,A,I0,A,I0,A,I0)') 'p', physics_generation, '.d', dycore_generation, '.vt', vt_generation, '.ss', dyn_substeps
       path = prefix // '.' // TRIM(gen) // ".data"
     END IF
   END FUNCTION cat
@@ -3177,12 +3193,39 @@ MODULE vt_serde
     END DO
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_logical_R_2
+  SUBROUTINE write_real8_bulk(io, arr, n)
+    INTEGER, INTENT(IN) :: io, n
+    REAL(KIND = 8), INTENT(IN) :: arr(n)
+    INTEGER, PARAMETER :: CHUNK = 4096
+    INTEGER, PARAMETER :: LINELEN = 29  ! "e28.20" + newline
+    CHARACTER(LEN = CHUNK * LINELEN) :: buf
+    CHARACTER(LEN = 50) :: tmp
+    INTEGER :: i, pos, blk_end
+    i = 1
+    DO WHILE (i <= n)
+      blk_end = MIN(i + CHUNK - 1, n)
+      pos = 1
+      DO WHILE (i <= blk_end)
+        WRITE(tmp, '(e28.20)') arr(i)
+        buf(pos:pos+27) = ADJUSTL(tmp(1:28))
+        ! Find actual length after ADJUSTL and place newline
+        pos = pos + LEN_TRIM(buf(pos:pos+27))
+        buf(pos:pos) = NEW_LINE('A')
+        pos = pos + 1
+        i = i + 1
+      END DO
+      WRITE(io, '(A)', ADVANCE = 'no') buf(1:pos-1)
+    END DO
+  END SUBROUTINE write_real8_bulk
+
   SUBROUTINE W_real__8_R_3(io, x, cleanup, nline, meta)
     INTEGER :: io
     REAL(KIND = 8), INTENT(IN) :: x(:, :, :)
     INTEGER :: k, kmeta, k1, k2, k3
     LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
     LOGICAL :: cleanup_local, nline_local, meta_local
+    REAL(KIND = 8), ALLOCATABLE :: flat(:)
+    INTEGER :: ntotal, idx
     cleanup_local = .TRUE.
     nline_local = .TRUE.
     meta_local = .TRUE.
@@ -3202,13 +3245,19 @@ MODULE vt_serde
       END DO
     END IF
     CALL serialize(io, "# entries", cleanup = .FALSE.)
+    ntotal = SIZE(x)
+    ALLOCATE(flat(ntotal))
+    idx = 0
     DO k3 = LBOUND(x, 3), UBOUND(x, 3)
       DO k2 = LBOUND(x, 2), UBOUND(x, 2)
         DO k1 = LBOUND(x, 1), UBOUND(x, 1)
-          CALL serialize(io, x(k1, k2, k3), cleanup = .FALSE.)
+          idx = idx + 1
+          flat(idx) = x(k1, k2, k3)
         END DO
       END DO
     END DO
+    CALL write_real8_bulk(io, flat, ntotal)
+    DEALLOCATE(flat)
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_real__8_R_3
   SUBROUTINE W_integer__4_R_3(io, x, cleanup, nline, meta)
@@ -3251,6 +3300,8 @@ MODULE vt_serde
     INTEGER :: k, kmeta, k1, k2
     LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
     LOGICAL :: cleanup_local, nline_local, meta_local
+    REAL(KIND = 8), ALLOCATABLE :: flat(:)
+    INTEGER :: ntotal, idx
     cleanup_local = .TRUE.
     nline_local = .TRUE.
     meta_local = .TRUE.
@@ -3270,11 +3321,17 @@ MODULE vt_serde
       END DO
     END IF
     CALL serialize(io, "# entries", cleanup = .FALSE.)
+    ntotal = SIZE(x)
+    ALLOCATE(flat(ntotal))
+    idx = 0
     DO k2 = LBOUND(x, 2), UBOUND(x, 2)
       DO k1 = LBOUND(x, 1), UBOUND(x, 1)
-        CALL serialize(io, x(k1, k2), cleanup = .FALSE.)
+        idx = idx + 1
+        flat(idx) = x(k1, k2)
       END DO
     END DO
+    CALL write_real8_bulk(io, flat, ntotal)
+    DEALLOCATE(flat)
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_real__8_R_2
   SUBROUTINE W_integer__4_R_1(io, x, cleanup, nline, meta)
@@ -3313,6 +3370,8 @@ MODULE vt_serde
     INTEGER :: k, kmeta, k1, k2, k3, k4
     LOGICAL, OPTIONAL, INTENT(IN) :: cleanup, nline, meta
     LOGICAL :: cleanup_local, nline_local, meta_local
+    REAL(KIND = 8), ALLOCATABLE :: flat(:)
+    INTEGER :: ntotal, idx
     cleanup_local = .TRUE.
     nline_local = .TRUE.
     meta_local = .TRUE.
@@ -3332,15 +3391,21 @@ MODULE vt_serde
       END DO
     END IF
     CALL serialize(io, "# entries", cleanup = .FALSE.)
+    ntotal = SIZE(x)
+    ALLOCATE(flat(ntotal))
+    idx = 0
     DO k4 = LBOUND(x, 4), UBOUND(x, 4)
       DO k3 = LBOUND(x, 3), UBOUND(x, 3)
         DO k2 = LBOUND(x, 2), UBOUND(x, 2)
           DO k1 = LBOUND(x, 1), UBOUND(x, 1)
-            CALL serialize(io, x(k1, k2, k3, k4), cleanup = .FALSE.)
+            idx = idx + 1
+            flat(idx) = x(k1, k2, k3, k4)
           END DO
         END DO
       END DO
     END DO
+    CALL write_real8_bulk(io, flat, ntotal)
+    DEALLOCATE(flat)
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_real__8_R_4
   SUBROUTINE W_real__8_R_1(io, x, cleanup, nline, meta)
@@ -3368,9 +3433,7 @@ MODULE vt_serde
       END DO
     END IF
     CALL serialize(io, "# entries", cleanup = .FALSE.)
-    DO k1 = LBOUND(x, 1), UBOUND(x, 1)
-      CALL serialize(io, x(k1), cleanup = .FALSE.)
-    END DO
+    CALL write_real8_bulk(io, x, SIZE(x))
     IF (cleanup_local) CLOSE(UNIT = io)
   END SUBROUTINE W_real__8_R_1
   SUBROUTINE serialize_global_data(io)

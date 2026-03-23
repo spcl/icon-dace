@@ -62,7 +62,7 @@ MODULE mo_velocity_advection
   SUBROUTINE velocity_tendencies (p_prog, p_patch, p_int, p_metrics, p_diag, z_w_concorr_me, z_kin_hor_e, &
                                   z_vt_ie, ntnd, istep, lvn_only, dtime, dt_linintp_ubc, ldeepatmo)
 
-    use vt_serde, only: tic, generation, at, serialize, serialize_global_data
+    use vt_serde, only: vt_tic, do_serialize, dycore_generation, vt_generation, at, serialize, serialize_global_data
     use mo_exception, only: message, message_text
     logical :: flag
     INTEGER(8) :: t_start, t_end, t_rate
@@ -135,9 +135,18 @@ MODULE mo_velocity_advection
     CALL SYSTEM_CLOCK(t_start, t_rate)
 
     ! --- START INSTRUMENTATION ---
+    call vt_tic()
+    ! write (message_text, *) "Starting velocity_tendencies for vt_generation ", vt_generation
+    ! call message('', message_text)
+    ! write (message_text, *) "Input parameters: istep=", istep, " lvn_only=", lvn_only, " dtime=", dtime, &
+    !      " dt_linintp_ubc=", dt_linintp_ubc, " ldeepatmo=", ldeepatmo
+    ! call message('', message_text)
+    ! --- END INSTRUMENTATION ---
+
+    ! --- START INSTRUMENTATION ---
     ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
-    if (istep == 1) then
-      write (message_text, *) "Starting velocity advection tendencies computation for generation ", generation, " (predictor step : before)"
+    if (do_serialize .AND. dycore_generation == 1 .AND. vt_generation == 1) then
+      write (message_text, *) "Starting velocity_tendencies for vt_generation ", vt_generation
       call message('', message_text)
       call serialize(at("p_patch"), p_patch)
       call serialize(at("p_int"), p_int)
@@ -899,16 +908,16 @@ MODULE mo_velocity_advection
 
     ! --- START INSTRUMENTATION ---
     ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
-    if (istep == 1) then
-      write (message_text, *) "Starting velocity advection tendencies computation for generation ", generation, " (predictor step : after)"
+    if (do_serialize .AND. dycore_generation == 1 .AND. vt_generation == 1) then
+      write (message_text, *) "Stopping velocity_tendencies for vt_generation ", vt_generation
       call message('', message_text)
-      call serialize_global_data(at("global_data.t1"))
-      call serialize(at("p_prog.t1"), p_prog)
-      call serialize(at("p_metrics.t1"), p_metrics)
-      call serialize(at("p_diag.t1"), p_diag)
-      call serialize(at("z_w_concorr_me.t1"), z_w_concorr_me)
-      call serialize(at("z_kin_hor_e.t1"), z_kin_hor_e)
-      call serialize(at("z_vt_ie.t1"), z_vt_ie)
+      ! call serialize_global_data(at("global_data.t1"))
+      ! call serialize(at("p_prog.t1"), p_prog)
+      ! call serialize(at("p_metrics.t1"), p_metrics)
+      ! call serialize(at("p_diag.t1"), p_diag)
+      ! call serialize(at("z_w_concorr_me.t1"), z_w_concorr_me)
+      ! call serialize(at("z_kin_hor_e.t1"), z_kin_hor_e)
+      ! call serialize(at("z_vt_ie.t1"), z_vt_ie)
     endif
     ! --- END INSTRUMENTATION ---
 
