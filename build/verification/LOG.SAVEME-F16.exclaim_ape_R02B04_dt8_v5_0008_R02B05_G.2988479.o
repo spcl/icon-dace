@@ -1,0 +1,1830 @@
+SLURMD_NODENAME=nid005687
+SLURM_CLUSTER_NAME=alps-daint
+SLURM_CONF=/var/spool/slurmd/conf-cache/slurm.conf
+SLURM_CPUS_ON_NODE=288
+SLURM_EXPORT_ENV=ALL,XTSTEP=8,XICONV=5
+SLURM_GET_USER_ENV=1
+SLURM_GPUS_ON_NODE=4
+SLURM_GTIDS=0
+SLURM_JOBID=2988479
+SLURM_JOB_ACCOUNT=g34
+SLURM_JOB_CPUS_PER_NODE=288
+SLURM_JOB_END_TIME=1774385836
+SLURM_JOB_GID=30905
+SLURM_JOB_GPUS=0,1,2,3
+SLURM_JOB_ID=2988479
+SLURM_JOB_NAME=exclaim_ape_R02B04_dt8_v5_0008_R02B05_G
+SLURM_JOB_NODELIST=nid005687
+SLURM_JOB_NUM_NODES=1
+SLURM_JOB_PARTITION=normal
+SLURM_JOB_QOS=normal
+SLURM_JOB_START_TIME=1774371436
+SLURM_JOB_UID=30293
+SLURM_JOB_USER=pmazumde
+SLURM_LOCALID=0
+SLURM_NNODES=1
+SLURM_NODEID=0
+SLURM_NODELIST=nid005687
+SLURM_NPROCS=1
+SLURM_NTASKS=1
+SLURM_NTASKS_PER_NODE=1
+SLURM_OOM_KILL_STEP=0
+SLURM_PRIO_PROCESS=0
+SLURM_PROCID=0
+SLURM_SCRIPT_CONTEXT=prolog_task
+SLURM_SUBMIT_DIR=/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/run
+SLURM_SUBMIT_HOST=daint-ln002
+SLURM_TASKS_PER_NODE=1
+SLURM_TASK_PID=87953
+SLURM_TIME_FORMAT=relative
+SLURM_TOPOLOGY_ADDR=global.group20.nid005687
+SLURM_TOPOLOGY_ADDR_PATTERN=switch.switch.node
+drwxr-xr-x+ 2 pmazumde g34 4096 Mar 24 17:57 /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/experiments/exclaim_ape_R02B04_dt8_g0008_R02B05
+cp: cannot stat '/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/data/pmod.txt': No such file or directory
+no_of_models=1
+-rwxr-xr-x+ 1 pmazumde g34 169583560 Mar 24 17:31 /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon
+	linux-vdso.so.1 (0x00004000367f0000)
+	libvelocity.so => /capstor/scratch/cscs/pmazumde/gitspace/ico2/velocity/libvelocity.so (0x0000400036800000)
+	libblas_lp64.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libblas_lp64.so.0 (0x0000400036df0000)
+	liblapack_lp64.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/liblapack_lp64.so.0 (0x00004000385b0000)
+	libnvf.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libnvf.so (0x0000400038f40000)
+	libnetcdff.so.7 => /user-environment/env/default/lib/libnetcdff.so.7 (0x0000400039520000)
+	libnetcdf.so.19 => /user-environment/env/default/lib64/libnetcdf.so.19 (0x0000400039780000)
+	libcudart.so.12 => /user-environment/env/default/lib64/libcudart.so.12 (0x00004000399a0000)
+	libmpifort_nvidia.so.12 => /user-environment/linux-sles15-neoverse_v2/nvhpc-25.1/cray-mpich-8.1.30-cnnzosnxkgvcmu5qs6vxjnrtknkqwz4k/lib/libmpifort_nvidia.so.12 (0x0000400039a60000)
+	libmpi_nvidia.so.12 => /user-environment/linux-sles15-neoverse_v2/nvhpc-25.1/cray-mpich-8.1.30-cnnzosnxkgvcmu5qs6vxjnrtknkqwz4k/lib/libmpi_nvidia.so.12 (0x0000400039b00000)
+	libmpi_gtl_cuda.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/cray-gtl-8.1.30-6fjppprta32hd7giepmvzo7dnq2bartv/lib/libmpi_gtl_cuda.so.0 (0x000040003beb0000)
+	libacchost.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libacchost.so (0x000040003bf40000)
+	libaccdevaux.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libaccdevaux.so (0x000040003bfd0000)
+	libaccdevice.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libaccdevice.so (0x000040003c020000)
+	libdl.so.2 => /lib64/libdl.so.2 (0x000040003c1a0000)
+	libcudadevice.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libcudadevice.so (0x000040003c1d0000)
+	libnvhpcatm.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libnvhpcatm.so (0x000040003c210000)
+	libatomic.so.1 => /user-environment/linux-sles15-neoverse_v2/gcc-12.3.0/gcc-13.2.0-iyisbcrs7nsbhcwcncsk52zmo3zjf33i/lib64/libatomic.so.1 (0x000040003c240000)
+	libgcc_s.so.1 => /user-environment/linux-sles15-neoverse_v2/gcc-12.3.0/gcc-13.2.0-iyisbcrs7nsbhcwcncsk52zmo3zjf33i/lib64/libgcc_s.so.1 (0x000040003c270000)
+	libstdc++.so.6 => /user-environment/linux-sles15-neoverse_v2/gcc-12.3.0/gcc-13.2.0-iyisbcrs7nsbhcwcncsk52zmo3zjf33i/lib64/libstdc++.so.6 (0x000040003c2b0000)
+	libnvomp.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libnvomp.so (0x000040003c530000)
+	libpthread.so.0 => /lib64/libpthread.so.0 (0x000040003c750000)
+	libnvcpumath.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libnvcpumath.so (0x000040003c790000)
+	libnvc.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libnvc.so (0x000040003c920000)
+	librt.so.1 => /lib64/librt.so.1 (0x000040003c980000)
+	libc.so.6 => /lib64/libc.so.6 (0x000040003c9b0000)
+	libm.so.6 => /lib64/libm.so.6 (0x000040003cb40000)
+	libsqlite3.so.0 => /usr/lib64/libsqlite3.so.0 (0x000040003cc00000)
+	libz.so.1 => /user-environment/env/default/lib/libz.so.1 (0x000040003cd70000)
+	libzstd.so.1 => /usr/lib64/libzstd.so.1 (0x000040003cdb0000)
+	libhdf5_hl.so.310 => /user-environment/linux-sles15-neoverse_v2/nvhpc-25.1/hdf5-1.14.3-mxg3go5iddgib4czep6izlcfs4p2xfl4/lib/libhdf5_hl.so.310 (0x000040003cee0000)
+	libhdf5.so.310 => /user-environment/linux-sles15-neoverse_v2/nvhpc-25.1/hdf5-1.14.3-mxg3go5iddgib4czep6izlcfs4p2xfl4/lib/libhdf5.so.310 (0x000040003cf30000)
+	libbz2.so.1.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/bzip2-1.0.8-hlyoytvplt53xoyu6do2cxjhesoeute6/lib/libbz2.so.1.0 (0x000040003d6a0000)
+	libcurl.so.4 => /usr/lib64/libcurl.so.4 (0x000040003d6d0000)
+	libxml2.so.2 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/libxml2-2.10.3-ihfbk4peh3wjud75x2cp7qnouzwjuyeh/lib/libxml2.so.2 (0x000040003d7a0000)
+	libxpmem.so => /usr/lib64/libxpmem.so (0x000040003d920000)
+	libfabric.so.1 => /opt/cray/libfabric/1.15.2.0/lib64/libfabric.so.1 (0x000040003d950000)
+	libpmi.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/cray-pmi-6.1.15-r7hsp4m43hwm3hkcks6xj42nnc2qcrpo/lib/libpmi.so.0 (0x000040003da40000)
+	libpmi2.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/cray-pmi-6.1.15-r7hsp4m43hwm3hkcks6xj42nnc2qcrpo/lib/libpmi2.so.0 (0x000040003da90000)
+	libcuda.so.1 => /usr/lib64/libcuda.so.1 (0x000040003dae0000)
+	/lib/ld-linux-aarch64.so.1 (0x0000400036780000)
+	libsz.so.2 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/libaec-1.0.6-tznkmn42xscpqqvlqj4dyiyj6f37m64s/lib64/libsz.so.2 (0x000040003f640000)
+	libnghttp2.so.14 => /usr/lib64/libnghttp2.so.14 (0x000040003f670000)
+	libidn2.so.0 => /usr/lib64/libidn2.so.0 (0x000040003f6c0000)
+	libssh.so.4 => /usr/lib64/libssh.so.4 (0x000040003f700000)
+	libpsl.so.5 => /usr/lib64/libpsl.so.5 (0x000040003f790000)
+	libssl.so.1.1 => /usr/lib64/libssl.so.1.1 (0x000040003f7d0000)
+	libcrypto.so.1.1 => /usr/lib64/libcrypto.so.1.1 (0x000040003f880000)
+	libgssapi_krb5.so.2 => /usr/lib64/libgssapi_krb5.so.2 (0x000040003fb60000)
+	libldap_r-2.4.so.2 => /usr/lib64/libldap_r-2.4.so.2 (0x000040003fbd0000)
+	liblber-2.4.so.2 => /usr/lib64/liblber-2.4.so.2 (0x000040003fc50000)
+	libbrotlidec.so.1 => /usr/lib64/libbrotlidec.so.1 (0x000040003fc80000)
+	liblzma.so.5 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/xz-5.4.6-7daqevxuwzodwltjnlv4gad47nidziab/lib/liblzma.so.5 (0x000040003fcb0000)
+	libiconv.so.2 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/libiconv-1.17-tc3rjyqgjewwwd255hhoae5egdwwart2/lib/libiconv.so.2 (0x000040003fd00000)
+	libcxi.so.1 => /usr/lib64/libcxi.so.1 (0x000040003fe30000)
+	libjson-c.so.3 => /usr/lib64/libjson-c.so.3 (0x000040003fe70000)
+	libpals.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/cray-pals-1.3.2-doui6s26ymv2ehsyff6mag3rb3x3ynbq/lib/libpals.so.0 (0x000040003fea0000)
+	libunistring.so.2 => /usr/lib64/libunistring.so.2 (0x000040003fee0000)
+	libjitterentropy.so.3 => /usr/lib64/libjitterentropy.so.3 (0x0000400040080000)
+	libkrb5.so.3 => /usr/lib64/libkrb5.so.3 (0x00004000400b0000)
+	libk5crypto.so.3 => /usr/lib64/libk5crypto.so.3 (0x00004000401b0000)
+	libcom_err.so.2 => /lib64/libcom_err.so.2 (0x00004000401f0000)
+	libkrb5support.so.0 => /usr/lib64/libkrb5support.so.0 (0x0000400040220000)
+	libresolv.so.2 => /lib64/libresolv.so.2 (0x0000400040250000)
+	libsasl2.so.3 => /usr/lib64/libsasl2.so.3 (0x0000400040290000)
+	libbrotlicommon.so.1 => /usr/lib64/libbrotlicommon.so.1 (0x00004000402d0000)
+	libnl-3.so.200 => /usr/lib64/libnl-3.so.200 (0x0000400040310000)
+	libjansson.so.4 => /usr/lib64/libjansson.so.4 (0x0000400040360000)
+	libkeyutils.so.1 => /usr/lib64/libkeyutils.so.1 (0x0000400040390000)
+	libselinux.so.1 => /lib64/libselinux.so.1 (0x00004000403c0000)
+	libpcre.so.1 => /usr/lib64/libpcre.so.1 (0x0000400040410000)
+Tue 24 Mar 2026 05:57:31 PM CET
++ ulimit -s unlimited
++ /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon
+
+ ICON MPI interface runtime information:
+ mo_mpi::start_mpi Used MPI version: 3.1
+ mo_mpi::start_mpi ICON: Globally run on 1 mpi processes.
+
+ Single processor run.
+
+ executable: /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon
+ date: 20260324
+ time: 175734
+ user: Pratyai Mazumder, ETHZ (pmazumde)
+ host: nid005687 (Linux 5.14.21-150500.55.65_13.0.74-cray_shasta_c_64k aarch64)
+ version: 2024.10
+ revision: 00197f91f1988e6d30859d9ca30cd6d58227f3a2-dirty
+ repository: git@github.com:spcl/icon-dace.git
+ local branch: sc2026
+ model components:
+   JSBACH: 00197f91f1988e6d30859d9ca30cd6d58227f3a2-dirty
+ application libraries:
+   RTE-RRTMGP: 00197f91f1988e6d30859d9ca30cd6d58227f3a2-dirty
+ infrastructure and support libraries:
+   MATH-INTERPOLATION: 00197f91f1988e6d30859d9ca30cd6d58227f3a2-dirty
+   MATH-SUPPORT: 00197f91f1988e6d30859d9ca30cd6d58227f3a2-dirty
+   FORTRAN-SUPPORT: 00197f91f1988e6d30859d9ca30cd6d58227f3a2-dirty
+   MTIME: 00197f91f1988e6d30859d9ca30cd6d58227f3a2-dirty
+   CDI:
+     version: 2.4.0
+     revision: 00197f91f1988e6d30859d9ca30cd6d58227f3a2-dirty
+ other libraries:
+   NetCDF-C: 4.9.2
+   MPI: MPI VERSION    : CRAY MPICH version 8.1.30.9 (ANL base 3.4a2)...
+ compilers:
+   Fortran: NVHPC 25.1.0 (nvfortran 25.1-0)
+   C: NVHPC 25.1.0 (GNU 13.2.0)
+ probtest metadata:
+   Revision: 00197f91f1988e6d30859d9ca30cd6d58227f3a2-dirty
+   Branch: sc2026
+ 
+ master_control: start model initialization.
+
+ Single processor run.
+
+ set_nproma_nblocks: Will recompute nproma based on nblocks_c
+ set_nproma_nblocks_sub: Using namelist nproma_sub=    800
+ mo_name_list_output_init::read_name_list_output_namelists: No output definition found; disabling output.
+ mo_dbg_nml/read_dbg_namelist:: read debug namelist dbg_index_nml
+ 
+ mo_advection_nml: read_transport_nml: Evaluate the number of names in transport_nml/tracer_names
+ ---                                      number of named tracers :         0
+ mo_advection_nml: read_transport_nml: Setting default names for tracers without names.
+ ---                              number of tracers without names :         5
+ ---                                   tracer name q1 in position :         1
+ ---                                   tracer name q2 in position :         2
+ ---                                   tracer name q3 in position :         3
+ ---                                   tracer name q4 in position :         4
+ ---                                   tracer name q5 in position :         5
+ 
+ mo_nwp_phy_nml:read_nwp_phy_namelist: Warning: itype_z0 is reset to 1 because surface scheme is turned off
+ 
+ Model time step          : PT08.000S
+ 
+ 
+ Checkpoint interval      : P1D
+ Restart interval         : P1D
+ 
+ This is not a RESTART run ...
+ IAU time shift: PT00.000S
+ 
+ Calendar: Proleptic Gregorian
+ 
+ Experiment reference date: 2000-01-01T00:00:00Z
+ Experiment start date    : 2000-01-01T00:00:00Z
+ Experiment stop date     : 2000-01-01T00:10:00.000
+ 
+ Experiment stop date     : 2000-01-01T00:10:00.000
+ Start date    : 2000-01-01T00:00:00Z
+ Stop date     : 2000-01-01T00:10:00.000
+ 
+ mo_nml_crosscheck::atm_crosscheck:  WARNING! num_prefetch_proc reset to 0 !
+ mo_nml_crosscheck::atm_crosscheck: NetCDF output of floating point variables will be in 64-bit accuracy
+ mo_nml_crosscheck::atm_crosscheck: --> use_dp_mpi2io is changed to .TRUE. to allow 64-bit accuracy in the NetCDF output.
+ mo_nml_crosscheck::atm_crosscheck: namelist parameter 'activate_sync_timers' has been set to .TRUE., because global 'timers_level' is > 9.
+ set_mpi_work_communicators: num_io_procs_radar has no effect if there are no radar-active domains!
+ set_mpi_work_communicators: --> num_io_procs_radar set to 0
+ set_mpi_work_communicators: num_io_procs cannot be > 0 in seq run
+ set_mpi_work_communicators: --> num_io_procs set to 0
+ set_mpi_work_communicators: Number of procs for test: 0, work: 1, I/O: 0, Restart: 0, Prefetching: 0
+ set_mpi_work_communicators:  0 <=             0  test procs <             0  <=             1  work procs <             1  <=             0  io procs <             1  <=             0  restart procs <             1  <=             0  pref procs <             1  <=             0  radario procs <             1
+ mo_model_domimp_patches:import_pre_patches: start to import patches
+ mo_model_domimp_patches:read_pre_patch: start to init patch_pre
+ Read grid file /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification//icon_grid_0008_R02B05_G.nc
+ mo_model_domimp_patches:read_pre_patch: grid uuid: 0df795de-1dce-11b2-8c3f-4f045d5627af
+ mo_model_domimp_patches:read_pre_patch: generating center of patch    1:   78
+ mo_model_domimp_patches:read_pre_patch: generating subcenter of patch    1:  255
+ mo_model_domimp_patches:read_pre_patch: number_of_grid_used of patch    1:    8
+ mo_model_domimp_patches:read_pre_patch: URI of patch    1: http://icon-downloads.mpimet.mpg.de/grids/public/icon_grid_0008_R02B05_G.nc
+ mo_model_domimp_patches:read_pre_patch: read_patches finished
+ mo_subdivision:decompose_domain: start of domain decomposition
+ mo_subdivision:decompose_domain: Is this taking a long time? Consider adding macro definition HAVE_SLOW_PASSIVE_TARGET_ONESIDED to compile time settings.
+ No splitting of processor grid
+ mo_setup_subdivision::divide_patch: dividing patch
+ New nproma::   81920
+ Secondary nproma (nproma_sub)::     800
+ mo_setup_subdivision: divide_patch: erase negative refin_ctrl flags in patch 1
+ mo_model_domimp_patches:read_remaining_patch: Read gridmap file /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification//icon_grid_0008_R02B05_G.nc
+ mo_read_netcdf_distributed::distrib_nf_open: /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification//icon_grid_0008_R02B05_G.nc
+ mo_model_domimp_patches:read_remaining_patch: read finished
+ build_decomposition: Done.
+ RBF scale factors for cells/edges/vertices, domain   1:  0.50000 0.50000 0.50000
+ RBF scale factors for velocity boundary interpolation   1:  0.50000
+ mo_intp_state:construct_2d_interpol_state: start to construct int_state
+ mo_intp_state:construct_2d_interpol_state: constructing int_state for patch 1
+ mo_intp_state:allocate_int_state: memory allocation finished
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_cell: 
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_vertex: 
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_edge: 
+ mo_interpolation:tri_quadrature_pts: 
+ mo_intp_coeffs:calculate_tangent_plane_at_edge: 
+ mo_interpolation:init_tplane_c_sphere: 
+ mo_intp_coeffs_lsq_bln:lsq_stencil_create: 
+ mo_intp_coeffs_lsq_bln:create_stencil_c3: create 3-point stencil
+ mo_interpolation:lsq_compute_coeff_cell_sphere: 
+ mo_intp_coeffs_lsq_bln:lsq_stencil_create: 
+ mo_intp_coeffs_lsq_bln:create_stencil_c9: create 9-point stencil
+ mo_interpolation:lsq_compute_coeff_cell_sphere: 
+ mo_intp_state:construct_2d_interpol_state: construction of interpolation state finished
+ setup_phys_patches: Physical domain    1 belongs to logical domain    1
+ mo_dynamics_config:setup_dynamics_config: Set time level indices
+ ldynamics  =  .TRUE.: 2 time levels used for progn. dynamics  variables -> nnew /= nnow
+ ltransport =  .TRUE.: 2 time levels used for progn. transport variables -> nnew_rcf /= nnow_rcf
+ ---                                                 nnow    (01) :         1
+ ---                                                 nnew    (01) :         2
+ ---                                                 nold    (01) :         3
+ ---                                                 nnow_rcf(01) :         1
+ ---                                                 nnew_rcf(01) :         2
+ mo_lnd_nwp_config::configure_lnd_nwp: Number of hydrological active soil layers ibot_w_so is set to:  6
+ Surface tile setup
+ 
+ tileName | GRIB2 tileId | tileAtts | ICON tile Ids |  
+ -------- | ------------ | -------- | ------------- |  
+ 
+ undef    | 0            | 0,       | 1,            |  
+  
+ mo_ext_data_state:construct_ext_data: Construction of data structure for external data started
+ 
+ adding new var_list ext_data_atm_D01
+ 
+ adding new var_list ext_data_atm_td_D01
+ mo_ext_data_state:construct_ext_data: Construction of data structure for external data finished
+ mo_ext_data_init:init_ext_data: Start
+ mo_ext_data_init:init_ext_data: Running with analytical topography
+ (mo_nh_testcases) init_nh_testtopo:: running Aqua-Planet Experiment with non-hydrostatic atm. dynamics and NWP physics
+ SLEVE coord: Coordinate setup finished
+ flat coordinate surfaces starting at level  50
+ Nominal heights of coordinate half levels and layer thicknesses (m):
+ jk, vct_a, dvct:    1   75000.000    2500.062
+ jk, vct_a, dvct:    2   72499.938    2120.077
+ jk, vct_a, dvct:    3   70379.861    1973.825
+ jk, vct_a, dvct:    4   68406.037    1873.407
+ jk, vct_a, dvct:    5   66532.630    1794.666
+ jk, vct_a, dvct:    6   64737.964    1728.783
+ jk, vct_a, dvct:    7   63009.181    1671.503
+ jk, vct_a, dvct:    8   61337.677    1620.434
+ jk, vct_a, dvct:    9   59717.243    1574.090
+ jk, vct_a, dvct:   10   58143.153    1531.483
+ jk, vct_a, dvct:   11   56611.670    1491.918
+ jk, vct_a, dvct:   12   55119.752    1454.889
+ jk, vct_a, dvct:   13   53664.863    1420.013
+ jk, vct_a, dvct:   14   52244.850    1386.992
+ jk, vct_a, dvct:   15   50857.858    1355.591
+ jk, vct_a, dvct:   16   49502.267    1325.621
+ jk, vct_a, dvct:   17   48176.646    1296.923
+ jk, vct_a, dvct:   18   46879.723    1269.369
+ jk, vct_a, dvct:   19   45610.354    1242.848
+ jk, vct_a, dvct:   20   44367.505    1217.266
+ jk, vct_a, dvct:   21   43150.239    1192.543
+ jk, vct_a, dvct:   22   41957.696    1168.609
+ jk, vct_a, dvct:   23   40789.087    1145.401
+ jk, vct_a, dvct:   24   39643.685    1122.866
+ jk, vct_a, dvct:   25   38520.819    1100.956
+ jk, vct_a, dvct:   26   37419.863    1079.627
+ jk, vct_a, dvct:   27   36340.236    1058.842
+ jk, vct_a, dvct:   28   35281.394    1038.564
+ jk, vct_a, dvct:   29   34242.830    1018.763
+ jk, vct_a, dvct:   30   33224.066     999.410
+ jk, vct_a, dvct:   31   32224.657     980.478
+ jk, vct_a, dvct:   32   31244.179     961.942
+ jk, vct_a, dvct:   33   30282.237     943.782
+ jk, vct_a, dvct:   34   29338.455     925.976
+ jk, vct_a, dvct:   35   28412.479     908.504
+ jk, vct_a, dvct:   36   27503.975     891.350
+ jk, vct_a, dvct:   37   26612.625     874.495
+ jk, vct_a, dvct:   38   25738.129     857.926
+ jk, vct_a, dvct:   39   24880.204     841.626
+ jk, vct_a, dvct:   40   24038.578     825.582
+ jk, vct_a, dvct:   41   23212.996     809.781
+ jk, vct_a, dvct:   42   22403.215     794.210
+ jk, vct_a, dvct:   43   21609.005     778.857
+ jk, vct_a, dvct:   44   20830.148     763.712
+ jk, vct_a, dvct:   45   20066.437     748.762
+ jk, vct_a, dvct:   46   19317.674     733.999
+ jk, vct_a, dvct:   47   18583.676     719.411
+ jk, vct_a, dvct:   48   17864.265     704.988
+ jk, vct_a, dvct:   49   17159.277     690.723
+ jk, vct_a, dvct:   50   16468.554     676.605
+ jk, vct_a, dvct:   51   15791.949     662.625
+ jk, vct_a, dvct:   52   15129.325     648.774
+ jk, vct_a, dvct:   53   14480.551     635.044
+ jk, vct_a, dvct:   54   13845.507     621.427
+ jk, vct_a, dvct:   55   13224.080     607.913
+ jk, vct_a, dvct:   56   12616.167     594.494
+ jk, vct_a, dvct:   57   12021.673     581.162
+ jk, vct_a, dvct:   58   11440.510     567.908
+ jk, vct_a, dvct:   59   10872.602     554.724
+ jk, vct_a, dvct:   60   10317.878     541.600
+ jk, vct_a, dvct:   61    9776.278     528.528
+ jk, vct_a, dvct:   62    9247.750     515.497
+ jk, vct_a, dvct:   63    8732.253     502.500
+ jk, vct_a, dvct:   64    8229.754     489.524
+ jk, vct_a, dvct:   65    7740.229     476.561
+ jk, vct_a, dvct:   66    7263.668     463.599
+ jk, vct_a, dvct:   67    6800.069     450.625
+ jk, vct_a, dvct:   68    6349.444     437.629
+ jk, vct_a, dvct:   69    5911.815     424.595
+ jk, vct_a, dvct:   70    5487.221     411.508
+ jk, vct_a, dvct:   71    5075.712     398.354
+ jk, vct_a, dvct:   72    4677.358     385.114
+ jk, vct_a, dvct:   73    4292.244     371.768
+ jk, vct_a, dvct:   74    3920.476     358.293
+ jk, vct_a, dvct:   75    3562.183     344.665
+ jk, vct_a, dvct:   76    3217.518     330.853
+ jk, vct_a, dvct:   77    2886.665     316.825
+ jk, vct_a, dvct:   78    2569.840     302.539
+ jk, vct_a, dvct:   79    2267.301     287.948
+ jk, vct_a, dvct:   80    1979.353     272.995
+ jk, vct_a, dvct:   81    1706.358     257.606
+ jk, vct_a, dvct:   82    1448.753     241.690
+ jk, vct_a, dvct:   83    1207.063     225.130
+ jk, vct_a, dvct:   84     981.933     207.763
+ jk, vct_a, dvct:   85     774.170     189.367
+ jk, vct_a, dvct:   86     584.802     169.607
+ jk, vct_a, dvct:   87     415.195     147.947
+ jk, vct_a, dvct:   88     267.248     123.415
+ jk, vct_a, dvct:   89     143.833      93.833
+ jk, vct_a, dvct:   90      50.000      50.000
+ jk, vct_a, dvct:   91       0.000       0.000
+ parallel calculation of vgrid UUID. Generated UUID: 
+ f08f898f-cefc-ae1a-6e39-021969f522a0
+ mo_advection_utils::init_tracer_settings: Attention: NWP physics is used, ntracer is automatically reset to   6
+ mo_nonhydrostatic_config:configure_nonhydrostatic: Domain   1; computation of moist physics processes starts in layer   42
+ mo_nonhydrostatic_config:configure_nonhydrostatic: Domain   1; high- and mid-level clouds in layers above   66  80
+ Index list generation - number of land tiles:    1
+ Total number of tiles:    1
+ Number of land points in domain  1:         0
+ Number of sea points in domain  1:     81920
+ Number of lake points in domain  1:         0
+ Number of points in tile 1:         0
+ Number of corrected false glacier points in domain  1:         0
+ Time intervals for calling NWP physics on patch             1
+ 
+ Process | dt user [=> final] |  
+ ------- | ------------------ |  
+ 
+ conv    |   16.00            |  
+ ccov    |   16.00            |  
+ gwd     |   32.00            |  
+ fastphy |    8.00            |  
+  
+ mo_atm_phy_nwp_config:configure_atm_phy_nwp: itune_o3 is reset to 0 because irad_o3 is not 7, 79 or 97
+ Event-setup for phyNwpEventGroup on patch  1
+ 
+ eventName | enabled | startDate                | endDate                  | intvl     |  
+ --------- | ------- | ------------------------ | ------------------------ | --------- |  
+ 
+ conv      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT16.000S |  
+ ccov      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT16.000S |  
+ rad       | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT48.000S |  
+ sso       | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT20M     |  
+ gwd       | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT32.000S |  
+ satad     | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT08.000S |  
+ turb      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT08.000S |  
+ gscp      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT08.000S |  
+ sfc       | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT08.000S |  
+ radheat   | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT08.000S |  
+  
+ atm_phy_nwp:configure_ww: Domain   1; ih_500hPa, ihb500hPa, ih_700hPa, ih_850hPa, ih_950hPa, ihb950hPa   70  70  76  82  86  87
+ atm_phy_nwp:configure_ww: Domain   1; ifog_temp, ifog_wind   84  87
+ mo_nonhydro_state::construct_nh_state: Construction of NH state started
+ 
+ adding new var_list nh_state_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list nh_state_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list nh_state_diag_of_domain_01
+ 
+ adding new var_list nh_state_metrics_of_domain_01
+ 
+ adding new var_list nh_state_ref_of_domain_01
+ mo_nonhydro_state::construct_nh_state: NH state construction completed
+ 
+ adding new var_list nh_state_opt_diag_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_z_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_p_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_i_of_domain_01
+ 
+ adding new var_list nh_accumulation_for_ProgAndDiag_of_domain_01
+ 
+ adding new var_list prepadv_of_domain_01
+ mo_prepadv_state:construct_prepadv_state: construction of prep_adv state finished
+ mo_nwp_phy_state:construct_nwp_state: start to construct 3D state vector
+ 
+ adding new var_list prm_diag_of_domain_01
+ mo_nwp_phy_state:construct_nwp_phy_diag: construction of NWP physical fields finished
+ 
+ adding new var_list prm_tend_of_domain_01
+ mo_nwp_phy_state:construct_nwp_phy_tend: construction of NWP physical tendency fields finished
+ 
+ adding new var_list prm_stch_of_domain_01
+ mo_nwp_phy_state:construct_nwp_state: construction of state vector finished
+ mo_nwp_lnd_state:construct_nwp_lnd_state: land state construction started
+ 
+ adding new var_list lnd_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list wtr_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list lnd_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list wtr_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list lnd_diag_of_domain_01
+ mo_nwp_lnd_state:construct_nwp_lnd_state: land state construction completed
+ 
+ adding new var_list nh_state_tracer_of_domain_01_and_timelev_01
+ 
+ adding new var_list nh_state_tracer_of_domain_01_and_timelev_02
+ Tracer meta-information for patch             1
+ 
+ VarName | Tracer ID | feedback | in list trAdvect | in list trNotAdvect | in list trHydroMass | slev | substep range | nadv_substeps |  
+ ------- | --------- | -------- | ---------------- | ------------------- | ------------------- | ---- | ------------- | ------------- |  
+ 
+ qv.TL1  |   1       | X        | X                |                     |                     |   1  |   1/ 41       |   3           |  
+ qc.TL1  |   2       | X        | X                |                     | X                   |  42  | -- / --       | --            |  
+ qi.TL1  |   3       | X        | X                |                     | X                   |  42  | -- / --       | --            |  
+ qr.TL1  |   4       |          | X                |                     | X                   |  42  | -- / --       | --            |  
+ qs.TL1  |   5       |          | X                |                     | X                   |  42  | -- / --       | --            |  
+ qg.TL1  |   6       |          | X                |                     | X                   |  42  | -- / --       | --            |  
+  
+ mo_vertical_grid:set_nh_metrics: Domain   1; end index of Rayleigh damping layer for w:   15
+ mo_vertical_grid: Damping coefficient for w; diffusion enhancement coefficient:
+ mo_vertical_grid: level    1, half-level height 75000.0  0.10000E+00  0.24000E+02
+ mo_vertical_grid: level    2, half-level height 72499.9  0.63728E-01  0.15866E+02
+ mo_vertical_grid: level    3, half-level height 70379.9  0.39420E-01  0.10142E+02
+ mo_vertical_grid: level    4, half-level height 68406.0  0.23745E-01  0.64362E+01
+ mo_vertical_grid: level    5, half-level height 66532.6  0.14165E-01  0.41902E+01
+ mo_vertical_grid: level    6, half-level height 64738.0  0.84607E-02  0.28713E+01
+ mo_vertical_grid: level    7, half-level height 63009.2  0.50903E-02  0.21050E+01
+ mo_vertical_grid: level    8, half-level height 61337.7  0.30937E-02  0.16590E+01
+ mo_vertical_grid: level    9, half-level height 59717.2  0.19018E-02  0.13976E+01
+ mo_vertical_grid: level   10, half-level height 58143.2  0.11828E-02  0.12427E+01
+ mo_vertical_grid: level   11, half-level height 56611.7  0.74419E-03  0.11499E+01
+ mo_vertical_grid: level   12, half-level height 55119.8  0.47348E-03  0.10937E+01
+ mo_vertical_grid: level   13, half-level height 53664.9  0.30450E-03  0.10592E+01
+ mo_vertical_grid: level   14, half-level height 52244.9  0.19785E-03  0.10378E+01
+ mo_vertical_grid: level   15, half-level height 50857.9  0.12983E-03  0.10244E+01
+ mo_vertical_grid:set_nh_metrics: Maximum vertical wind offcentering:   0.1500
+ mo_vertical_grid:set_nh_metrics: Maximum slope:   0.0000
+ mo_vertical_grid:set_nh_metrics: Maximum height difference between adjacent points:      0.0
+ (mo_nh_testcases) init_nh_testcase:: End setup non-hydrostatic APE test (APE_nwp, APE_aes, APE_nh, APEc_nh)
+ Variables assigned to action RESET: rain_gsp, snow_gsp, graupel_gsp, ice_gsp, prec_gsp, rain_con, snow_con, prec_con, tot_prec, tot_prec_d, prec_gsp_d, prec_con_d, prec_con_rate_avg, prec_gsp_rate_avg, tot_prec_rate_avg, gust10, tmax_2m, tmin_2m
+ 
+ VarName           | PID | Ref date                | Start date              | End date                | Interval |  
+ ----------------- | --- | ----------------------- | ----------------------- | ----------------------- | -------- |  
+ 
+ rain_gsp          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ snow_gsp          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ graupel_gsp       |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ ice_gsp           |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ prec_gsp          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ rain_con          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ snow_con          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ prec_con          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ tot_prec          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ tot_prec_d        |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ prec_gsp_d        |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ prec_con_d        |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ prec_con_rate_avg |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ prec_gsp_rate_avg |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ tot_prec_rate_avg |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ gust10            |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ tmax_2m           |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT06H    |  
+ tmin_2m           |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT06H    |  
+  
+ multifile restart writing selected, joint proc mode.
+ mo_nwp_phy_init:: initialize sea-ice lists, call init_sea_lists
+ Number of (partly) seaice covered points in domain  1:         0
+ Number of (partly) ice-free sea points in domain  1:     81920
+ Number of sea points in domain  1:     81920
+ mo_nwp_phy_init: initialized surface temp and humidity
+ mo_nwp_phy_init: init microphysics
+ gscp_set_coefficients: microphysical values initialized
+ mo_nwp_phy_init: init convection
+ mo_cuparameters, sucumf: NJKT1, NJKT2, KSMAX
+ mo_cuparameters, sucumf:      64     46 0.78910E+05
+ mo_cuparameters, sucumf: LMFMID, LMFDD, LMFDUDV, RTAU, ENTRORG, TEXC, QEXC
+ mo_cuparameters, sucumf:          T     T     T  1.6576 0.1950E-02 0.12500 0.01250
+ mo_cuparameters, sucumf: RHEBC_LND, RHEBC_LND_TROP, RHEBC_OCE, RHEBC_OCE_TROP, RCUCOV, RCUCOV_TROP
+ mo_cuparameters, sucumf:       0.7500  0.7000  0.8500  0.7600  0.0500  0.0300
+ mo_nwp_phy_init: convection initialized
+ mo_nwp_phy_init: init roughness length
+ mo_nwp_phy_init: init COSMO turbulence
+ mo_nwp_phy_init: Cosmo turbulence initialized
+ mo_nwp_phy_init: non-orog GWs initialized
+ mo_cuparameters, sugwd: nktopg, ngwdlim, ngwdtop
+ mo_cuparameters, sugwd:     78    44     8
+ mo_nh_stepping:init_slowphysics: initial call of (slow) physics, domain  1
+ 
+ added event group: checkpointEventGroup
+ Event list: checkpointEventGroup
+        1          checkpoint
+        2          restart
+ 
+ Start date of this run: 2000-01-01T00:00:00.000
+ Stop date of this run:  2000-01-01T00:10:00.000
+ 
+ 
+ Time step:        1, model time: 2000-01-01 00:00:08.000 forecast time 00D 00H00M08S
+  perform_dyn_substepping: physics_generation =             1  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3498862523E+02 at level  60,   0.0000000000E+00 at level   1,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 304730 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3498843027E+02 at level  60,   0.1216175862E-01 at level  51,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3498825800E+02 at level  60,   0.3205224115E-01 at level  51,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3498810206E+02 at level  60,   0.5368435780E-01 at level  51,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3498795789E+02 at level  60,   0.7550445242E-01 at level  51,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =   18.658364 Pa/s in domain  1
+ 
+ Time step:        2, model time: 2000-01-01 00:00:16.000 forecast time 00D 00H00M16S
+  perform_dyn_substepping: physics_generation =             2  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3498780607E+02 at level  60,   0.9788702533E-01 at level  51,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 32299 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ MAXABS VN, W in domain  1:  0.3498771815E+02 at level  60,   0.2842425216E+00 at level  85,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3498782453E+02 at level  60,   0.2197752437E+00 at level  82,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 788 us
+ MAXABS VN, W in domain  1:  0.3498793334E+02 at level  60,   0.5018399668E+00 at level  86,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3498804399E+02 at level  60,   0.6815024305E+00 at level  85,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =   10.098085 Pa/s in domain  1
+ 
+ Time step:        3, model time: 2000-01-01 00:00:24.000 forecast time 00D 00H00M24S
+  perform_dyn_substepping: physics_generation =             3  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3498814163E+02 at level  60,   0.7612541525E+00 at level  84,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 580 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ MAXABS VN, W in domain  1:  0.3498825654E+02 at level  60,   0.6490772329E+00 at level  87,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3498837177E+02 at level  60,   0.5979098146E+00 at level  79,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 779 us
+ MAXABS VN, W in domain  1:  0.3498848731E+02 at level  60,   0.5686768164E+00 at level  77,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3498860315E+02 at level  60,   0.7467427619E+00 at level  85,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    2.608176 Pa/s in domain  1
+ 
+ Time step:        4, model time: 2000-01-01 00:00:32.000 forecast time 00D 00H00M32S
+  perform_dyn_substepping: physics_generation =             4  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3498870509E+02 at level  60,   0.8260088285E+00 at level  84,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 579 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3498882143E+02 at level  60,   0.1055853827E+01 at level  87,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3498893805E+02 at level  60,   0.8420858987E+00 at level  85,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ MAXABS VN, W in domain  1:  0.3498905498E+02 at level  60,   0.6796389525E+00 at level  83,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3498917228E+02 at level  60,   0.5878928809E+00 at level  81,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =   19.362532 Pa/s in domain  1
+ 
+ Time step:        5, model time: 2000-01-01 00:00:40.000 forecast time 00D 00H00M40S
+  perform_dyn_substepping: physics_generation =             5  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3498927573E+02 at level  60,   0.5142368465E+00 at level  80,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 581 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3498939203E+02 at level  60,   0.5215997780E+00 at level  50,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3498950913E+02 at level  60,   0.5455831833E+00 at level  50,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 800 us
+ MAXABS VN, W in domain  1:  0.3498962664E+02 at level  60,   0.5664749681E+00 at level  50,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3498974419E+02 at level  60,   0.5841753674E+00 at level  50,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    3.514788 Pa/s in domain  1
+ 
+ Time step:        6, model time: 2000-01-01 00:00:48.000 forecast time 00D 00H00M48S
+  perform_dyn_substepping: physics_generation =             6  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3498984711E+02 at level  60,   0.6026252425E+00 at level  49,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 582 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3498996156E+02 at level  60,   0.6180607863E+00 at level  48,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 782 us
+ MAXABS VN, W in domain  1:  0.3499007645E+02 at level  60,   0.6376200540E+00 at level  48,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3499019196E+02 at level  60,   0.6562594221E+00 at level  47,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3499030842E+02 at level  60,   0.6748588810E+00 at level  47,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.880434 Pa/s in domain  1
+ 
+ Time step:        7, model time: 2000-01-01 00:00:56.000 forecast time 00D 00H00M56S
+  perform_dyn_substepping: physics_generation =             7  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499041135E+02 at level  60,   0.6957985988E+00 at level  46,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 586 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3499052622E+02 at level  60,   0.7164265648E+00 at level  45,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3499064251E+02 at level  60,   0.7370976901E+00 at level  44,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3499075960E+02 at level  60,   0.7593126445E+00 at level  44,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3499087713E+02 at level  60,   0.7820701071E+00 at level  43,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.652462 Pa/s in domain  1
+ 
+ Time step:        8, model time: 2000-01-01 00:01:04.000 forecast time 00D 00H01M04S
+  perform_dyn_substepping: physics_generation =             8  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499098037E+02 at level  60,   0.8047482404E+00 at level  42,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 577 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3499109433E+02 at level  60,   0.8283890347E+00 at level  42,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 784 us
+ MAXABS VN, W in domain  1:  0.3499121039E+02 at level  60,   0.8531748509E+00 at level  41,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3499132792E+02 at level  60,   0.8777291982E+00 at level  40,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 788 us
+ MAXABS VN, W in domain  1:  0.3499144617E+02 at level  60,   0.9031529357E+00 at level  40,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    1.004766 Pa/s in domain  1
+ 
+ Time step:        9, model time: 2000-01-01 00:01:12.000 forecast time 00D 00H01M12S
+  perform_dyn_substepping: physics_generation =             9  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499155046E+02 at level  60,   0.9298508318E+00 at level  39,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 582 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3499166638E+02 at level  60,   0.9560801094E+00 at level  38,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 783 us
+ MAXABS VN, W in domain  1:  0.3499178305E+02 at level  60,   0.9838017443E+00 at level  38,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3499190046E+02 at level  60,   0.1012399994E+01 at level  37,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3499201856E+02 at level  60,   0.1040043881E+01 at level  36,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 782 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    1.115652 Pa/s in domain  1
+ 
+ Time step:       10, model time: 2000-01-01 00:01:20.000 forecast time 00D 00H01M20S
+  perform_dyn_substepping: physics_generation =            10  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499212262E+02 at level  60,   0.1070657299E+01 at level  36,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 591 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ MAXABS VN, W in domain  1:  0.3499223720E+02 at level  60,   0.1100770132E+01 at level  35,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 788 us
+ MAXABS VN, W in domain  1:  0.3499235279E+02 at level  60,   0.1131246988E+01 at level  35,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3499246904E+02 at level  60,   0.1164053573E+01 at level  34,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3499258582E+02 at level  60,   0.1195098642E+01 at level  33,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.963940 Pa/s in domain  1
+ 
+ Time step:       11, model time: 2000-01-01 00:01:28.000 forecast time 00D 00H01M28S
+  perform_dyn_substepping: physics_generation =            11  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499268875E+02 at level  60,   0.1229762480E+01 at level  33,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 585 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3499280300E+02 at level  60,   0.1263519502E+01 at level  32,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3499291850E+02 at level  60,   0.1298471159E+01 at level  32,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 788 us
+ MAXABS VN, W in domain  1:  0.3499303489E+02 at level  60,   0.1335165298E+01 at level  31,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3499315191E+02 at level  60,   0.1370276178E+01 at level  31,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.718262 Pa/s in domain  1
+ 
+ Time step:       12, model time: 2000-01-01 00:01:36.000 forecast time 00D 00H01M36S
+  perform_dyn_substepping: physics_generation =            12  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499325514E+02 at level  60,   0.1409839541E+01 at level  30,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 581 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3499336961E+02 at level  60,   0.1446087561E+01 at level  29,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3499348535E+02 at level  60,   0.1488288896E+01 at level  29,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 781 us
+ MAXABS VN, W in domain  1:  0.3499360205E+02 at level  60,   0.1527413331E+01 at level  28,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ MAXABS VN, W in domain  1:  0.3499371944E+02 at level  60,   0.1570611377E+01 at level  28,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.555918 Pa/s in domain  1
+ 
+ Time step:       13, model time: 2000-01-01 00:01:44.000 forecast time 00D 00H01M44S
+  perform_dyn_substepping: physics_generation =            13  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499382308E+02 at level  60,   0.1612345640E+01 at level  27,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 584 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3499393792E+02 at level  60,   0.1656785653E+01 at level  27,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 798 us
+ MAXABS VN, W in domain  1:  0.3499405371E+02 at level  60,   0.1701772892E+01 at level  26,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3499417016E+02 at level  60,   0.1747756681E+01 at level  26,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 788 us
+ MAXABS VN, W in domain  1:  0.3499428712E+02 at level  60,   0.1795685428E+01 at level  25,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.380967 Pa/s in domain  1
+ 
+ Time step:       14, model time: 2000-01-01 00:01:52.000 forecast time 00D 00H01M52S
+  perform_dyn_substepping: physics_generation =            14  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499439040E+02 at level  60,   0.1843216717E+01 at level  25,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 585 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3499450528E+02 at level  60,   0.1893855536E+01 at level  24,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3499462126E+02 at level  60,   0.1944104374E+01 at level  24,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 800 us
+ MAXABS VN, W in domain  1:  0.3499473806E+02 at level  60,   0.1997269953E+01 at level  23,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ MAXABS VN, W in domain  1:  0.3499485546E+02 at level  60,   0.2050424854E+01 at level  23,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.260953 Pa/s in domain  1
+ 
+ Time step:       15, model time: 2000-01-01 00:02:00.000 forecast time 00D 00H02M00S
+  perform_dyn_substepping: physics_generation =            15  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499495919E+02 at level  60,   0.2105267613E+01 at level  22,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 586 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3499507447E+02 at level  60,   0.2162035393E+01 at level  22,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3499519067E+02 at level  60,   0.2218927154E+01 at level  21,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3499530758E+02 at level  60,   0.2280225188E+01 at level  21,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 788 us
+ MAXABS VN, W in domain  1:  0.3499542504E+02 at level  60,   0.2338178619E+01 at level  20,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 788 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.158924 Pa/s in domain  1
+ 
+ Time step:       16, model time: 2000-01-01 00:02:08.000 forecast time 00D 00H02M08S
+  perform_dyn_substepping: physics_generation =            16  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499552882E+02 at level  60,   0.2404674567E+01 at level  20,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 586 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3499564440E+02 at level  60,   0.2462592506E+01 at level  19,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3499576075E+02 at level  60,   0.2536649433E+01 at level  19,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3499587759E+02 at level  60,   0.2598086388E+01 at level  19,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ MAXABS VN, W in domain  1:  0.3499599474E+02 at level  60,   0.2675596313E+01 at level  18,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.085150 Pa/s in domain  1
+ 
+ Time step:       17, model time: 2000-01-01 00:02:16.000 forecast time 00D 00H02M16S
+  perform_dyn_substepping: physics_generation =            17  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499609804E+02 at level  60,   0.2744131594E+01 at level  18,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 586 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3499621337E+02 at level  60,   0.2820114563E+01 at level  17,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 805 us
+ MAXABS VN, W in domain  1:  0.3499632946E+02 at level  60,   0.2898713746E+01 at level  17,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ MAXABS VN, W in domain  1:  0.3499644614E+02 at level  60,   0.2969896474E+01 at level  16,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3499656326E+02 at level  60,   0.3060533322E+01 at level  16,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.058066 Pa/s in domain  1
+ 
+ Time step:       18, model time: 2000-01-01 00:02:24.000 forecast time 00D 00H02M24S
+  perform_dyn_substepping: physics_generation =            18  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499666669E+02 at level  60,   0.3134045028E+01 at level  16,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 581 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3499678238E+02 at level  60,   0.3227228392E+01 at level  15,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3499689869E+02 at level  60,   0.3314798260E+01 at level  15,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 784 us
+ MAXABS VN, W in domain  1:  0.3499701542E+02 at level  60,   0.3396955837E+01 at level  14,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3499713242E+02 at level  60,   0.3501759021E+01 at level  14,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.114406 Pa/s in domain  1
+ 
+ Time step:       19, model time: 2000-01-01 00:02:32.000 forecast time 00D 00H02M32S
+  perform_dyn_substepping: physics_generation =            19  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499723563E+02 at level  60,   0.3585688706E+01 at level  14,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 586 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 798 us
+ MAXABS VN, W in domain  1:  0.3499735126E+02 at level  60,   0.3689919647E+01 at level  13,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3499746744E+02 at level  60,   0.3794167044E+01 at level  13,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3499758405E+02 at level  60,   0.3875920291E+01 at level  13,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 788 us
+ MAXABS VN, W in domain  1:  0.3499770099E+02 at level  60,   0.4002976373E+01 at level  12,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 781 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.188948 Pa/s in domain  1
+ 
+ Time step:       20, model time: 2000-01-01 00:02:40.000 forecast time 00D 00H02M40S
+  perform_dyn_substepping: physics_generation =            20  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499780424E+02 at level  60,   0.4106739193E+01 at level  12,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 576 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 806 us
+ MAXABS VN, W in domain  1:  0.3499792014E+02 at level  60,   0.4201295502E+01 at level  11,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3499803650E+02 at level  60,   0.4335187292E+01 at level  11,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ MAXABS VN, W in domain  1:  0.3499815317E+02 at level  60,   0.4440974708E+01 at level  11,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ MAXABS VN, W in domain  1:  0.3499827006E+02 at level  60,   0.4546173995E+01 at level  10,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.260003 Pa/s in domain  1
+ 
+ Time step:       21, model time: 2000-01-01 00:02:48.000 forecast time 00D 00H02M48S
+  perform_dyn_substepping: physics_generation =            21  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499837322E+02 at level  60,   0.4685581276E+01 at level  10,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 571 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 781 us
+ MAXABS VN, W in domain  1:  0.3499848915E+02 at level  60,   0.4794306632E+01 at level  10,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3499860546E+02 at level  60,   0.4900435727E+01 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 784 us
+ MAXABS VN, W in domain  1:  0.3499872206E+02 at level  60,   0.5049598306E+01 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3499883889E+02 at level  60,   0.5163313465E+01 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.292902 Pa/s in domain  1
+ 
+ Time step:       22, model time: 2000-01-01 00:02:56.000 forecast time 00D 00H02M56S
+  perform_dyn_substepping: physics_generation =            22  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499894205E+02 at level  60,   0.5251680185E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 588 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3499905818E+02 at level  60,   0.5413069260E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3499917462E+02 at level  60,   0.5534622996E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3499929127E+02 at level  60,   0.5616098033E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3499940806E+02 at level  60,   0.5754124451E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.336767 Pa/s in domain  1
+ 
+ Time step:       23, model time: 2000-01-01 00:03:04.000 forecast time 00D 00H03M04S
+  perform_dyn_substepping: physics_generation =            23  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499951115E+02 at level  60,   0.5885823172E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 594 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3499962730E+02 at level  60,   0.5973585923E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3499974364E+02 at level  60,   0.6028822479E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3499986011E+02 at level  60,   0.6177808585E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3499997670E+02 at level  60,   0.6276239628E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.342545 Pa/s in domain  1
+ 
+ Time step:       24, model time: 2000-01-01 00:03:12.000 forecast time 00D 00H03M12S
+  perform_dyn_substepping: physics_generation =            24  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500007970E+02 at level  60,   0.6322585521E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 568 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ MAXABS VN, W in domain  1:  0.3500019592E+02 at level  60,   0.6340876986E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 806 us
+ MAXABS VN, W in domain  1:  0.3500031236E+02 at level  60,   0.6456217317E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 784 us
+ MAXABS VN, W in domain  1:  0.3500042903E+02 at level  60,   0.6515132187E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 779 us
+ MAXABS VN, W in domain  1:  0.3500054590E+02 at level  60,   0.6517796446E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 783 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.335532 Pa/s in domain  1
+ 
+ Time step:       25, model time: 2000-01-01 00:03:20.000 forecast time 00D 00H03M20S
+  perform_dyn_substepping: physics_generation =            25  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500064925E+02 at level  60,   0.6474001025E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 590 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3500076592E+02 at level  60,   0.6476549904E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3500088274E+02 at level  60,   0.6489944492E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 780 us
+ MAXABS VN, W in domain  1:  0.3500099970E+02 at level  60,   0.6442012987E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3500111677E+02 at level  60,   0.6354263974E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 781 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.302309 Pa/s in domain  1
+ 
+ Time step:       26, model time: 2000-01-01 00:03:28.000 forecast time 00D 00H03M28S
+  perform_dyn_substepping: physics_generation =            26  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500122000E+02 at level  60,   0.6211943771E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 586 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3500133712E+02 at level  60,   0.6016603705E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3500145419E+02 at level  60,   0.5804960057E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3500157110E+02 at level  60,   0.5640471436E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3500168778E+02 at level  60,   0.5415355277E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.257614 Pa/s in domain  1
+ 
+ Time step:       27, model time: 2000-01-01 00:03:36.000 forecast time 00D 00H03M36S
+  perform_dyn_substepping: physics_generation =            27  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500179032E+02 at level  60,   0.5132872882E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 585 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ MAXABS VN, W in domain  1:  0.3500190712E+02 at level  60,   0.4797692477E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3500202381E+02 at level  60,   0.4414516393E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3500214039E+02 at level  60,   0.3988583779E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3500225687E+02 at level  60,   0.3548724292E+01 at level  11,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 781 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.184983 Pa/s in domain  1
+ 
+ Time step:       28, model time: 2000-01-01 00:03:44.000 forecast time 00D 00H03M44S
+  perform_dyn_substepping: physics_generation =            28  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500235975E+02 at level  60,   0.3621968850E+01 at level  10,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 584 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ MAXABS VN, W in domain  1:  0.3500247589E+02 at level  60,   0.3732833923E+01 at level  10,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3500259208E+02 at level  60,   0.3682686569E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3500270852E+02 at level  60,   0.3875640012E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3500282529E+02 at level  60,   0.4233901538E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 806 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.101969 Pa/s in domain  1
+ 
+ Time step:       29, model time: 2000-01-01 00:03:52.000 forecast time 00D 00H03M52S
+  perform_dyn_substepping: physics_generation =            29  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500292907E+02 at level  60,   0.4448567051E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 583 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3500304601E+02 at level  60,   0.4507736675E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3500316283E+02 at level  60,   0.4949300573E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3500327956E+02 at level  60,   0.5289696407E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 798 us
+ MAXABS VN, W in domain  1:  0.3500339625E+02 at level  60,   0.5477410157E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.090183 Pa/s in domain  1
+ 
+ Time step:       30, model time: 2000-01-01 00:04:00.000 forecast time 00D 00H04M00S
+  perform_dyn_substepping: physics_generation =            30  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500349946E+02 at level  60,   0.5487836745E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 577 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3500361691E+02 at level  60,   0.5726161569E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3500373404E+02 at level  60,   0.5944472653E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3500385076E+02 at level  60,   0.6001792613E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3500396708E+02 at level  60,   0.5882583804E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.066956 Pa/s in domain  1
+ 
+ Time step:       31, model time: 2000-01-01 00:04:08.000 forecast time 00D 00H04M08S
+  perform_dyn_substepping: physics_generation =            31  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500406962E+02 at level  60,   0.5570245198E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 586 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 808 us
+ MAXABS VN, W in domain  1:  0.3500418634E+02 at level  60,   0.5073643813E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3500430292E+02 at level  60,   0.4537231486E+01 at level   2,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3500441948E+02 at level  60,   0.4436743704E+01 at level  12,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3500453601E+02 at level  60,   0.4690448975E+01 at level  11,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.035486 Pa/s in domain  1
+ 
+ Time step:       32, model time: 2000-01-01 00:04:16.000 forecast time 00D 00H04M16S
+  perform_dyn_substepping: physics_generation =            32  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500463929E+02 at level  60,   0.4930098492E+01 at level  11,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 589 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3500475629E+02 at level  60,   0.5198455215E+01 at level  10,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3500487300E+02 at level  60,   0.5471656029E+01 at level  10,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3500498956E+02 at level  60,   0.5749459337E+01 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3500510608E+02 at level  60,   0.6044387187E+01 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.100114 Pa/s in domain  1
+ 
+ Time step:       33, model time: 2000-01-01 00:04:24.000 forecast time 00D 00H04M24S
+  perform_dyn_substepping: physics_generation =            33  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500520953E+02 at level  60,   0.6321671873E+01 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 581 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3500532687E+02 at level  60,   0.6576104147E+01 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3500544392E+02 at level  60,   0.6843193881E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ MAXABS VN, W in domain  1:  0.3500556076E+02 at level  60,   0.7092295672E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3500567745E+02 at level  60,   0.7314127062E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.123502 Pa/s in domain  1
+ 
+ Time step:       34, model time: 2000-01-01 00:04:32.000 forecast time 00D 00H04M32S
+  perform_dyn_substepping: physics_generation =            34  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500578080E+02 at level  60,   0.7503476575E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 585 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ MAXABS VN, W in domain  1:  0.3500589840E+02 at level  60,   0.7655974311E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3500601564E+02 at level  60,   0.7767883551E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3500613262E+02 at level  60,   0.7837051990E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3500624937E+02 at level  60,   0.7935745522E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 784 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.162978 Pa/s in domain  1
+ 
+ Time step:       35, model time: 2000-01-01 00:04:40.000 forecast time 00D 00H04M40S
+  perform_dyn_substepping: physics_generation =            35  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500635260E+02 at level  60,   0.7996106283E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 589 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3500647019E+02 at level  60,   0.8016220892E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3500658727E+02 at level  60,   0.7997925246E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 810 us
+ MAXABS VN, W in domain  1:  0.3500670401E+02 at level  60,   0.7937606854E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3500682053E+02 at level  60,   0.7836530527E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 800 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.163782 Pa/s in domain  1
+ 
+ Time step:       36, model time: 2000-01-01 00:04:48.000 forecast time 00D 00H04M48S
+  perform_dyn_substepping: physics_generation =            36  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500692362E+02 at level  60,   0.7793479812E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 578 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ MAXABS VN, W in domain  1:  0.3500704111E+02 at level  60,   0.7724449052E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ MAXABS VN, W in domain  1:  0.3500715823E+02 at level  60,   0.7617051875E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3500727512E+02 at level  60,   0.7491889234E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3500739186E+02 at level  60,   0.7375754390E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.176103 Pa/s in domain  1
+ 
+ Time step:       37, model time: 2000-01-01 00:04:56.000 forecast time 00D 00H04M56S
+  perform_dyn_substepping: physics_generation =            37  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500749513E+02 at level  60,   0.7309910421E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 582 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 806 us
+ MAXABS VN, W in domain  1:  0.3500761305E+02 at level  60,   0.7214220307E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3500773040E+02 at level  60,   0.7228531543E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3500784733E+02 at level  60,   0.7310398925E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3500796400E+02 at level  60,   0.7368618643E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.172500 Pa/s in domain  1
+ 
+ Time step:       38, model time: 2000-01-01 00:05:04.000 forecast time 00D 00H05M04S
+  perform_dyn_substepping: physics_generation =            38  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500806723E+02 at level  60,   0.7382656168E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 584 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3500818526E+02 at level  60,   0.7318935901E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ MAXABS VN, W in domain  1:  0.3500830270E+02 at level  60,   0.7166860488E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3500841968E+02 at level  60,   0.6927065777E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3500853626E+02 at level  60,   0.6602712215E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 804 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.180031 Pa/s in domain  1
+ 
+ Time step:       39, model time: 2000-01-01 00:05:12.000 forecast time 00D 00H05M12S
+  perform_dyn_substepping: physics_generation =            39  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500863944E+02 at level  60,   0.6200186759E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 585 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3500875689E+02 at level  60,   0.5735955587E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3500887376E+02 at level  60,   0.5217665405E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 788 us
+ MAXABS VN, W in domain  1:  0.3500899024E+02 at level  60,   0.4687581339E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3500910646E+02 at level  60,   0.4273367807E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.151524 Pa/s in domain  1
+ 
+ Time step:       40, model time: 2000-01-01 00:05:20.000 forecast time 00D 00H05M20S
+  perform_dyn_substepping: physics_generation =            40  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500920945E+02 at level  60,   0.3826869979E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 590 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3500932713E+02 at level  60,   0.3358355230E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3500944429E+02 at level  60,   0.2873066766E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ MAXABS VN, W in domain  1:  0.3500957733E+02 at level  60,   0.2377267435E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3500981306E+02 at level  60,   0.2069394412E+01 at level  12,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 805 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.135609 Pa/s in domain  1
+ 
+ Time step:       41, model time: 2000-01-01 00:05:28.000 forecast time 00D 00H05M28S
+  perform_dyn_substepping: physics_generation =            41  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501003625E+02 at level  60,   0.2312025768E+01 at level  12,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 585 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3501027274E+02 at level  60,   0.2575664898E+01 at level  11,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3501050823E+02 at level  60,   0.2829402530E+01 at level  11,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 800 us
+ MAXABS VN, W in domain  1:  0.3501074299E+02 at level  60,   0.3070744395E+01 at level  11,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3501097725E+02 at level  60,   0.3321200257E+01 at level  10,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.106040 Pa/s in domain  1
+ 
+ Time step:       42, model time: 2000-01-01 00:05:36.000 forecast time 00D 00H05M36S
+  perform_dyn_substepping: physics_generation =            42  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501119954E+02 at level  60,   0.3569135721E+01 at level  10,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 580 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3501143470E+02 at level  60,   0.3831497300E+01 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 778 us
+ MAXABS VN, W in domain  1:  0.3501166942E+02 at level  60,   0.4132067933E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3501190408E+02 at level  60,   0.4487868712E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 805 us
+ MAXABS VN, W in domain  1:  0.3501213896E+02 at level  60,   0.4866189935E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.082356 Pa/s in domain  1
+ 
+ Time step:       43, model time: 2000-01-01 00:05:44.000 forecast time 00D 00H05M44S
+  perform_dyn_substepping: physics_generation =            43  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501236234E+02 at level  60,   0.5222624381E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 603 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 815 us
+ MAXABS VN, W in domain  1:  0.3501259844E+02 at level  60,   0.5584865175E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 813 us
+ MAXABS VN, W in domain  1:  0.3501283416E+02 at level  60,   0.5937383999E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 815 us
+ MAXABS VN, W in domain  1:  0.3501306948E+02 at level  60,   0.6266533882E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3501330440E+02 at level  60,   0.6571513625E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.051618 Pa/s in domain  1
+ 
+ Time step:       44, model time: 2000-01-01 00:05:52.000 forecast time 00D 00H05M52S
+  perform_dyn_substepping: physics_generation =            44  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501352739E+02 at level  60,   0.6841624823E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 596 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 816 us
+ MAXABS VN, W in domain  1:  0.3501376323E+02 at level  60,   0.7096255033E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3501399824E+02 at level  60,   0.7324542499E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 810 us
+ MAXABS VN, W in domain  1:  0.3501423247E+02 at level  60,   0.7525736002E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 810 us
+ MAXABS VN, W in domain  1:  0.3501446609E+02 at level  60,   0.7699111084E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.031356 Pa/s in domain  1
+ 
+ Time step:       45, model time: 2000-01-01 00:06:00.000 forecast time 00D 00H06M00S
+  perform_dyn_substepping: physics_generation =            45  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501468825E+02 at level  60,   0.7833368163E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 598 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3501492373E+02 at level  60,   0.7949560410E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3501515880E+02 at level  60,   0.8036525988E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 806 us
+ MAXABS VN, W in domain  1:  0.3501539365E+02 at level  60,   0.8094163455E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 800 us
+ MAXABS VN, W in domain  1:  0.3501562833E+02 at level  60,   0.8122651224E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 800 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.032772 Pa/s in domain  1
+ 
+ Time step:       46, model time: 2000-01-01 00:06:08.000 forecast time 00D 00H06M08S
+  perform_dyn_substepping: physics_generation =            46  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501585160E+02 at level  60,   0.8114237684E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 600 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3501608713E+02 at level  60,   0.8086418058E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 814 us
+ MAXABS VN, W in domain  1:  0.3501632217E+02 at level  60,   0.8031889948E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ MAXABS VN, W in domain  1:  0.3501655699E+02 at level  60,   0.7953928213E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3501679179E+02 at level  60,   0.7865365033E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.057857 Pa/s in domain  1
+ 
+ Time step:       47, model time: 2000-01-01 00:06:16.000 forecast time 00D 00H06M16S
+  perform_dyn_substepping: physics_generation =            47  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501701533E+02 at level  60,   0.7769405347E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 593 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 809 us
+ MAXABS VN, W in domain  1:  0.3501725167E+02 at level  60,   0.7653637407E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ MAXABS VN, W in domain  1:  0.3501748723E+02 at level  60,   0.7519804795E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ MAXABS VN, W in domain  1:  0.3501772216E+02 at level  60,   0.7381766547E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3501795664E+02 at level  60,   0.7224986360E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 814 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.067747 Pa/s in domain  1
+ 
+ Time step:       48, model time: 2000-01-01 00:06:24.000 forecast time 00D 00H06M24S
+  perform_dyn_substepping: physics_generation =            48  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501817948E+02 at level  60,   0.7050031851E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 602 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 821 us
+ MAXABS VN, W in domain  1:  0.3501841535E+02 at level  60,   0.6859649825E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 820 us
+ MAXABS VN, W in domain  1:  0.3501865060E+02 at level  60,   0.6654375857E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 812 us
+ MAXABS VN, W in domain  1:  0.3501888544E+02 at level  60,   0.6435473297E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ MAXABS VN, W in domain  1:  0.3501912003E+02 at level  60,   0.6204380634E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 808 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.074274 Pa/s in domain  1
+ 
+ Time step:       49, model time: 2000-01-01 00:06:32.000 forecast time 00D 00H06M32S
+  perform_dyn_substepping: physics_generation =            49  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501934299E+02 at level  60,   0.5961359524E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 596 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 812 us
+ MAXABS VN, W in domain  1:  0.3501957928E+02 at level  60,   0.5709191928E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 812 us
+ MAXABS VN, W in domain  1:  0.3501981482E+02 at level  60,   0.5448323179E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3502004977E+02 at level  60,   0.5179378048E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3502028429E+02 at level  60,   0.4903348041E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 776 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.079480 Pa/s in domain  1
+ 
+ Time step:       50, model time: 2000-01-01 00:06:40.000 forecast time 00D 00H06M40S
+  perform_dyn_substepping: physics_generation =            50  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502050703E+02 at level  60,   0.4619957981E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 581 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3502074304E+02 at level  60,   0.4332617182E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3502097829E+02 at level  60,   0.4040914018E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 775 us
+ MAXABS VN, W in domain  1:  0.3502121299E+02 at level  60,   0.3751150353E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 798 us
+ MAXABS VN, W in domain  1:  0.3502144730E+02 at level  60,   0.3465637950E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.057446 Pa/s in domain  1
+ 
+ Time step:       51, model time: 2000-01-01 00:06:48.000 forecast time 00D 00H06M48S
+  perform_dyn_substepping: physics_generation =            51  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502166988E+02 at level  60,   0.3176487973E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 591 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3502190576E+02 at level  60,   0.2887971300E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3502214091E+02 at level  60,   0.2598695164E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3502237556E+02 at level  60,   0.2309071504E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3502260987E+02 at level  60,   0.2036441668E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 776 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.070113 Pa/s in domain  1
+ 
+ Time step:       52, model time: 2000-01-01 00:06:56.000 forecast time 00D 00H06M56S
+  perform_dyn_substepping: physics_generation =            52  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502283256E+02 at level  60,   0.1770284238E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 586 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3502306866E+02 at level  60,   0.1507711399E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3502330402E+02 at level  60,   0.1246338318E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3502353883E+02 at level  60,   0.1006391626E+01 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3502380961E+02 at level  59,   0.7928883769E+00 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.069659 Pa/s in domain  1
+ 
+ Time step:       53, model time: 2000-01-01 00:07:04.000 forecast time 00D 00H07M04S
+  perform_dyn_substepping: physics_generation =            53  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502413920E+02 at level  59,   0.7336075711E+00 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 586 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3502448336E+02 at level  59,   0.1012758919E+01 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3502482675E+02 at level  59,   0.1300367995E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3502516960E+02 at level  59,   0.1585187711E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3502551207E+02 at level  59,   0.1857000547E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 784 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.057505 Pa/s in domain  1
+ 
+ Time step:       54, model time: 2000-01-01 00:07:12.000 forecast time 00D 00H07M12S
+  perform_dyn_substepping: physics_generation =            54  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502584159E+02 at level  59,   0.2108464535E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 577 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3502618582E+02 at level  59,   0.2352332854E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3502652933E+02 at level  59,   0.2601773712E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3502687234E+02 at level  59,   0.2842005285E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3502721501E+02 at level  59,   0.3066111487E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 813 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.041101 Pa/s in domain  1
+ 
+ Time step:       55, model time: 2000-01-01 00:07:20.000 forecast time 00D 00H07M20S
+  perform_dyn_substepping: physics_generation =            55  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502754475E+02 at level  59,   0.3266184368E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 582 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3502788916E+02 at level  59,   0.3457980948E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3502823276E+02 at level  59,   0.3634235439E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3502857576E+02 at level  59,   0.3795707216E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3502891832E+02 at level  59,   0.3943311664E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 798 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.030647 Pa/s in domain  1
+ 
+ Time step:       56, model time: 2000-01-01 00:07:28.000 forecast time 00D 00H07M28S
+  perform_dyn_substepping: physics_generation =            56  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502924800E+02 at level  59,   0.4072440367E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 578 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3502959228E+02 at level  59,   0.4204183774E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 782 us
+ MAXABS VN, W in domain  1:  0.3502993575E+02 at level  59,   0.4321120654E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ MAXABS VN, W in domain  1:  0.3503027861E+02 at level  59,   0.4424394673E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3503062101E+02 at level  59,   0.4515175624E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.077032 Pa/s in domain  1
+ 
+ Time step:       57, model time: 2000-01-01 00:07:36.000 forecast time 00D 00H07M36S
+  perform_dyn_substepping: physics_generation =            57  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503095047E+02 at level  59,   0.4588031483E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 587 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3503129485E+02 at level  59,   0.4657041367E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3503163849E+02 at level  59,   0.4716359112E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3503198159E+02 at level  59,   0.4781330341E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3503232430E+02 at level  59,   0.4838528349E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.140083 Pa/s in domain  1
+ 
+ Time step:       58, model time: 2000-01-01 00:07:44.000 forecast time 00D 00H07M44S
+  perform_dyn_substepping: physics_generation =            58  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503265381E+02 at level  59,   0.4884323728E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 580 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 780 us
+ MAXABS VN, W in domain  1:  0.3503299840E+02 at level  59,   0.4940968681E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ MAXABS VN, W in domain  1:  0.3503334214E+02 at level  59,   0.4986466839E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ MAXABS VN, W in domain  1:  0.3503368532E+02 at level  59,   0.5020588863E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3503402809E+02 at level  59,   0.5043187874E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.201504 Pa/s in domain  1
+ 
+ Time step:       59, model time: 2000-01-01 00:07:52.000 forecast time 00D 00H07M52S
+  perform_dyn_substepping: physics_generation =            59  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503435765E+02 at level  59,   0.5054129431E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 593 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3503470211E+02 at level  59,   0.5053509168E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 796 us
+ MAXABS VN, W in domain  1:  0.3503504556E+02 at level  59,   0.5041320158E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3503538826E+02 at level  59,   0.5019167383E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3503573045E+02 at level  59,   0.4985746645E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.238658 Pa/s in domain  1
+ 
+ Time step:       60, model time: 2000-01-01 00:08:00.000 forecast time 00D 00H08M00S
+  perform_dyn_substepping: physics_generation =            60  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503605973E+02 at level  59,   0.4941324828E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 587 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3503640402E+02 at level  59,   0.4893325466E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3503674748E+02 at level  59,   0.4835395893E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3503709031E+02 at level  59,   0.4766593040E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3503743267E+02 at level  59,   0.4687044627E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.215917 Pa/s in domain  1
+ 
+ Time step:       61, model time: 2000-01-01 00:08:08.000 forecast time 00D 00H08M08S
+  perform_dyn_substepping: physics_generation =            61  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503776220E+02 at level  59,   0.4595551083E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 589 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 810 us
+ MAXABS VN, W in domain  1:  0.3503810645E+02 at level  59,   0.4495071611E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 788 us
+ MAXABS VN, W in domain  1:  0.3503844981E+02 at level  59,   0.4384547185E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3503879254E+02 at level  59,   0.4264379543E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3503913482E+02 at level  59,   0.4135074850E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.132850 Pa/s in domain  1
+ 
+ Time step:       62, model time: 2000-01-01 00:08:16.000 forecast time 00D 00H08M16S
+  perform_dyn_substepping: physics_generation =            62  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503946434E+02 at level  59,   0.3996097365E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 587 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 803 us
+ MAXABS VN, W in domain  1:  0.3503980864E+02 at level  59,   0.3850443640E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 799 us
+ MAXABS VN, W in domain  1:  0.3504015206E+02 at level  59,   0.3697754114E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3504049486E+02 at level  59,   0.3538864850E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3504083722E+02 at level  59,   0.3374625587E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 789 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.046499 Pa/s in domain  1
+ 
+ Time step:       63, model time: 2000-01-01 00:08:24.000 forecast time 00D 00H08M24S
+  perform_dyn_substepping: physics_generation =            63  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3504116683E+02 at level  59,   0.3204908916E+01 at level   6,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 583 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3504151113E+02 at level  59,   0.3038943893E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 785 us
+ MAXABS VN, W in domain  1:  0.3504185448E+02 at level  59,   0.2870441812E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3504219714E+02 at level  59,   0.2698880835E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3504253933E+02 at level  59,   0.2525029454E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.136878 Pa/s in domain  1
+ 
+ Time step:       64, model time: 2000-01-01 00:08:32.000 forecast time 00D 00H08M32S
+  perform_dyn_substepping: physics_generation =            64  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3504286886E+02 at level  59,   0.2348180849E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 580 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 806 us
+ MAXABS VN, W in domain  1:  0.3504321312E+02 at level  59,   0.2171693680E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 786 us
+ MAXABS VN, W in domain  1:  0.3504355651E+02 at level  59,   0.1994599972E+01 at level   5,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3504389930E+02 at level  59,   0.1819519391E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3504424167E+02 at level  59,   0.1655538682E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 787 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.189879 Pa/s in domain  1
+ 
+ Time step:       65, model time: 2000-01-01 00:08:40.000 forecast time 00D 00H08M40S
+  perform_dyn_substepping: physics_generation =            65  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3504457124E+02 at level  59,   0.1486953245E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 583 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 790 us
+ MAXABS VN, W in domain  1:  0.3504491560E+02 at level  59,   0.1322441459E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 804 us
+ MAXABS VN, W in domain  1:  0.3504525896E+02 at level  59,   0.1168809127E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3504560158E+02 at level  59,   0.1021755708E+01 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3504594369E+02 at level  59,   0.8748061602E+00 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.173435 Pa/s in domain  1
+ 
+ Time step:       66, model time: 2000-01-01 00:08:48.000 forecast time 00D 00H08M48S
+  perform_dyn_substepping: physics_generation =            66  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3504627300E+02 at level  59,   0.7320959890E+00 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 588 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3504661742E+02 at level  59,   0.5960010640E+00 at level   4,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 807 us
+ MAXABS VN, W in domain  1:  0.3504696085E+02 at level  59,   0.4767815967E+00 at level   3,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 800 us
+ MAXABS VN, W in domain  1:  0.3504730354E+02 at level  59,   0.4704597583E+00 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 800 us
+ MAXABS VN, W in domain  1:  0.3504764567E+02 at level  59,   0.6239730611E+00 at level   9,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 813 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.150465 Pa/s in domain  1
+ 
+ Time step:       67, model time: 2000-01-01 00:08:56.000 forecast time 00D 00H08M56S
+  perform_dyn_substepping: physics_generation =            67  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3504797500E+02 at level  59,   0.7713026694E+00 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 603 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 812 us
+ MAXABS VN, W in domain  1:  0.3504831894E+02 at level  59,   0.9212348520E+00 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 813 us
+ MAXABS VN, W in domain  1:  0.3504866194E+02 at level  59,   0.1067007866E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 804 us
+ MAXABS VN, W in domain  1:  0.3504900433E+02 at level  59,   0.1208417067E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 792 us
+ MAXABS VN, W in domain  1:  0.3504934630E+02 at level  59,   0.1345281187E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 816 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.159254 Pa/s in domain  1
+ 
+ Time step:       68, model time: 2000-01-01 00:09:04.000 forecast time 00D 00H09M04S
+  perform_dyn_substepping: physics_generation =            68  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3504967558E+02 at level  59,   0.1475024186E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 591 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 804 us
+ MAXABS VN, W in domain  1:  0.3505001975E+02 at level  59,   0.1602382683E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 808 us
+ MAXABS VN, W in domain  1:  0.3505036290E+02 at level  59,   0.1724832520E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 809 us
+ MAXABS VN, W in domain  1:  0.3505070532E+02 at level  59,   0.1842813126E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 798 us
+ MAXABS VN, W in domain  1:  0.3505104724E+02 at level  59,   0.1958042118E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 808 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.153823 Pa/s in domain  1
+ 
+ Time step:       69, model time: 2000-01-01 00:09:12.000 forecast time 00D 00H09M12S
+  perform_dyn_substepping: physics_generation =            69  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3505137643E+02 at level  59,   0.2070977077E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 606 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 816 us
+ MAXABS VN, W in domain  1:  0.3505172061E+02 at level  59,   0.2183183101E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 818 us
+ MAXABS VN, W in domain  1:  0.3505206373E+02 at level  59,   0.2290071092E+01 at level   8,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 794 us
+ MAXABS VN, W in domain  1:  0.3505240609E+02 at level  59,   0.2394114812E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 806 us
+ MAXABS VN, W in domain  1:  0.3505274790E+02 at level  59,   0.2495340211E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 810 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.238716 Pa/s in domain  1
+ 
+ Time step:       70, model time: 2000-01-01 00:09:20.000 forecast time 00D 00H09M20S
+  perform_dyn_substepping: physics_generation =            70  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3505307698E+02 at level  59,   0.2588034085E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 600 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 815 us
+ MAXABS VN, W in domain  1:  0.3505342093E+02 at level  59,   0.2677110452E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 812 us
+ MAXABS VN, W in domain  1:  0.3505376381E+02 at level  59,   0.2760146270E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 817 us
+ MAXABS VN, W in domain  1:  0.3505410596E+02 at level  59,   0.2837164083E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 812 us
+ MAXABS VN, W in domain  1:  0.3505444767E+02 at level  59,   0.2908172294E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 823 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.281525 Pa/s in domain  1
+ 
+ Time step:       71, model time: 2000-01-01 00:09:28.000 forecast time 00D 00H09M28S
+  perform_dyn_substepping: physics_generation =            71  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3505477670E+02 at level  59,   0.2970986186E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 603 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 802 us
+ MAXABS VN, W in domain  1:  0.3505512113E+02 at level  59,   0.3029954234E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 811 us
+ MAXABS VN, W in domain  1:  0.3505546461E+02 at level  59,   0.3082862939E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 791 us
+ MAXABS VN, W in domain  1:  0.3505580740E+02 at level  59,   0.3129653714E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 807 us
+ MAXABS VN, W in domain  1:  0.3505614962E+02 at level  59,   0.3174830511E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 806 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.287622 Pa/s in domain  1
+ 
+ Time step:       72, model time: 2000-01-01 00:09:36.000 forecast time 00D 00H09M36S
+  perform_dyn_substepping: physics_generation =            72  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3505647905E+02 at level  59,   0.3213688499E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 600 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 800 us
+ MAXABS VN, W in domain  1:  0.3505682301E+02 at level  59,   0.3247188088E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 795 us
+ MAXABS VN, W in domain  1:  0.3505716571E+02 at level  59,   0.3274966933E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ MAXABS VN, W in domain  1:  0.3505750749E+02 at level  59,   0.3296433781E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3505784864E+02 at level  59,   0.3311418645E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 806 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.229316 Pa/s in domain  1
+ 
+ Time step:       73, model time: 2000-01-01 00:09:44.000 forecast time 00D 00H09M44S
+  perform_dyn_substepping: physics_generation =            73  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3505817764E+02 at level  59,   0.3318643897E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 606 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 824 us
+ MAXABS VN, W in domain  1:  0.3505852154E+02 at level  59,   0.3320086432E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 814 us
+ MAXABS VN, W in domain  1:  0.3505886450E+02 at level  59,   0.3314440355E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 793 us
+ MAXABS VN, W in domain  1:  0.3505922152E+02 at level  60,   0.3301522326E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 804 us
+ MAXABS VN, W in domain  1:  0.3505968443E+02 at level  60,   0.3281194067E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 816 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.134381 Pa/s in domain  1
+ 
+ Time step:       74, model time: 2000-01-01 00:09:52.000 forecast time 00D 00H09M52S
+  perform_dyn_substepping: physics_generation =            74  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3506013614E+02 at level  60,   0.3252434818E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 603 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 797 us
+ MAXABS VN, W in domain  1:  0.3506060049E+02 at level  60,   0.3217195563E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 809 us
+ MAXABS VN, W in domain  1:  0.3506106421E+02 at level  60,   0.3174651775E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 816 us
+ MAXABS VN, W in domain  1:  0.3506152731E+02 at level  60,   0.3127741461E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 808 us
+ MAXABS VN, W in domain  1:  0.3506198983E+02 at level  60,   0.3088468963E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 801 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.040900 Pa/s in domain  1
+ 
+ Time step:       75, model time: 2000-01-01 00:10:00.000 forecast time 00D 00H10M00S
+  perform_dyn_substepping: physics_generation =            75  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3506244117E+02 at level  60,   0.3043350914E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 601 us
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 811 us
+ MAXABS VN, W in domain  1:  0.3506290471E+02 at level  60,   0.2996049632E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 816 us
+ MAXABS VN, W in domain  1:  0.3506336768E+02 at level  60,   0.2945346436E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 811 us
+ MAXABS VN, W in domain  1:  0.3506383041E+02 at level  60,   0.2889958891E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 811 us
+ MAXABS VN, W in domain  1:  0.3506429311E+02 at level  60,   0.2829896279E+01 at level   7,
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 806 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.157634 Pa/s in domain  1
+ destruct_atmo_nonhydrostatic: start to clean up
+ mo_pp_scheduler::pp_scheduler_finalize: 
+ mo_nonhydro_state::destruct_nh_state: Destruction of NH state started
+ mo_nonhydro_state::destruct_nh_state: NH state destruction completed
+ mo_prepadv_state:destruct_prepadv_state: destruction of prep_adv state finished
+ mo_nwp_phy_state:destruct_nwp_phy_state: start to destruct 3D state vector
+ mo_nwp_phy_state:destruct_nwp_phy_state: destruction of 3D state vector finished
+ mo_nwp_lnd_state:destruct_nwp_lnd_state: Destruction of nwp land state started
+ mo_nwp_lnd_state:destruct_nwp_lnd_state: Destruction of nwp land state completed
+ destruct_atmo_nonhydrostatic: clean-up finished
+ 
+ Timer report
+ 
+ ------------------------------   -------   ------------   ------------   ------------   -------------   -------------   -------------    
+ name                             # calls   t_min          t_avg          t_max          total min (s)   total max (s)   total avg (s)    
+ ------------------------------   -------   ------------   ------------   ------------   -------------   -------------   -------------    
+ 
+ total                            1               20m06s         20m06s         20m06s       1206.250        1206.250        1206.250     
+  L integrate_nh                  75            15.0395s       16.0832s       19.4175s       1206.236        1206.236        1206.236     
+     L nh_solve                   375            2.5155s        3.1949s        6.2254s       1198.095        1198.095        1198.095     
+        L nh_solve.veltend        450            2.2272s        2.6567s        3.9575s       1195.515        1195.515        1195.515     
+        L nh_solve.cellcomp       750           0.00041s       0.00049s       0.00387s          0.370           0.370           0.370     
+        L nh_solve.edgecomp       750           0.00049s       0.00066s       0.00081s          0.494           0.494           0.494     
+        L nh_solve.vnupd          750           0.00051s       0.00076s       0.00139s          0.569           0.569           0.569     
+        L nh_solve.vimpl          750           0.00133s       0.00139s       0.00148s          1.045           1.045           1.045     
+        L nh_solve.exch           1500          0.00000s       0.00000s       0.00001s          0.006           0.006           0.006     
+     L nh_hdiff                   75            0.00175s       0.00177s       0.00309s          0.133           0.133           0.133     
+     L transport                  75            0.06142s       0.06413s       0.14351s          4.809           4.809           4.809     
+        L adv_horiz               75            0.05752s       0.06017s       0.13962s          4.512           4.512           4.512     
+           L adv_hflx             75            0.05675s       0.05939s       0.13884s          4.454           4.454           4.454     
+              L back_traj         225           0.00012s       0.00026s       0.00203s          0.058           0.058           0.058     
+        L adv_vert                75            0.00367s       0.00374s       0.00505s          0.281           0.281           0.281     
+           L adv_vflx             75            0.00321s       0.00328s       0.00459s          0.246           0.246           0.246     
+  L action                        75            0.00003s       0.00003s       0.00005s          0.003           0.003           0.003     
+ global_sum                       84            0.00000s       0.00000s       0.00000s          0.000           0.000           0.000     
+ ordglb_sum                       78            0.00001s       0.00009s       0.00547s          0.007           0.007           0.007     
+ physics                          76            0.01944s       0.03582s       0.08983s          2.722           2.722           2.722     
+  L phys_acc_sync                 76            0.00037s       0.00125s       0.01915s          0.095           0.095           0.095     
+  L satad                         76            0.00155s       0.00158s       0.00221s          0.120           0.120           0.120     
+  L phys_u_v                      76            0.00029s       0.00031s       0.00117s          0.023           0.023           0.023     
+  L nwp_turbulence                151           0.00113s       0.00754s       0.02733s          1.139           1.139           1.139     
+     L nwp_turbtrans              76            0.00112s       0.00130s       0.00749s          0.098           0.098           0.098     
+     L nwp_turbdiff               75            0.00952s       0.00975s       0.02157s          0.731           0.731           0.731     
+  L nwp_surface                   75            0.00011s       0.00014s       0.00135s          0.011           0.011           0.011     
+  L nwp_microphysics              75            0.00180s       0.00185s       0.00258s          0.139           0.139           0.139     
+  L rediag_prog_vars              76            0.00015s       0.00047s       0.00053s          0.036           0.036           0.036     
+  L nwp_convection                39            0.01762s       0.01840s       0.04114s          0.717           0.717           0.717     
+  L sso                           20            0.01628s       0.01760s       0.02864s          0.352           0.352           0.352     
+  L cloud_cover                   39            0.00179s       0.00180s       0.00193s          0.070           0.070           0.070     
+ nh_diagnostics                   230           0.00000s       0.00147s       0.26328s          0.338           0.338           0.338     
+ diagnose_pres_temp               51            0.00001s       0.02760s       0.11763s          1.408           1.408           1.408     
+ model_init                       3              1.9989s       16.3150s       42.5464s         48.945          48.945          48.945     
+  L compute_domain_decomp         1             0.72079s       0.72079s       0.72079s          0.721           0.721           0.721     
+  L compute_intp_coeffs           1              3.3453s        3.3453s        3.3453s          3.345           3.345           3.345     
+  L init_ext_data                 1             0.05619s       0.05619s       0.05619s          0.056           0.056           0.056     
+  L init_nwp_phy                  1             0.85483s       0.85483s       0.85483s          0.855           0.855           0.855     
+ upper_atmosphere                 2             0.00001s       0.00003s       0.00005s          0.000           0.000           0.000     
+  L upatmo_construction           1             0.00005s       0.00005s       0.00005s          0.000           0.000           0.000     
+  L upatmo_destruction            1             0.00001s       0.00001s       0.00001s          0.000           0.000           0.000     
+ write_restart                    2             0.00013s       0.00662s       0.01311s          0.013           0.013           0.013     
+  L write_restart_setup           1             0.01305s       0.01305s       0.01305s          0.013           0.013           0.013     
+     L write_restart_collectors   208           0.00000s       0.00001s       0.00277s          0.003           0.003           0.003     
+        L write_restart_indices   3             0.00045s       0.00092s       0.00141s          0.003           0.003           0.003     
+ -------------------------------------------------------------------------------------------------------------------------------------    
+ 
+ mo_ext_data_state:destruct_ext_data: Destruction of data structure for external data started
+ mo_ext_data_state:destruct_ext_data: Destruction of data structure for external data finished
+ mo_interpolation:destruct_int_state: start to destruct int state
+ mo_interpolation:destruct_int_state: destruction of interpolation state finished
+ mo_atmo_model:destruct_atmo_model: destruct_2d_interpol_state is done
+ mo_alloc_patches:destruct_comm_patterns: start
+ mo_alloc_patches:destruct_comm_patterns: destruct_comm_patterns finished
+ mo_alloc_patches:destruct_patches: start
+ mo_alloc_patches:destruct_patches: destruct_patches finished
+ mo_alloc_patches:destruct_patches: start
+ mo_alloc_patches:destruct_patches: destruct_patches finished
+ mo_atmo_model:destruct_atmo_model: destruct_patches is done
+ mo_atmo_model:destruct_atmo_model: clean-up finished
++ set +x
+Tue 24 Mar 2026 06:18:34 PM CET
+OK
+============================
+Script run successfully:  OK
+============================

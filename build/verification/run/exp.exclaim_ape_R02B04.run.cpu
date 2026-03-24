@@ -1,15 +1,15 @@
 #! /bin/bash
 #-----------------------------------------------------------------------------
 
-# daint gpu batch job parameters
+# daint cpu batch job parameters
 # ------------------------------
 #SBATCH --constraint=gpu
 #SBATCH --account=g34
 #SBATCH --job-name=exp.exclaim_ape_R02B04.run
-#SBATCH --output=/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/./run/LOG.exp.exclaim_ape_R02B04.run.%j.o
-#SBATCH --error=/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/./run/LOG.exp.exclaim_ape_R02B04.run.%j.o
+#SBATCH --output=/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/run/LOG.exp.exclaim_ape_R02B04.run.%j.o
+#SBATCH --error=/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/run/LOG.exp.exclaim_ape_R02B04.run.%j.o
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
+#SBATCH --ntasks-per-node=12
 #SBATCH --time=04:00:00
 #SBATCH --partition=normal
 #
@@ -23,27 +23,27 @@ ulimit -s unlimited
 # !ATTENTION! Do not change the format of the following lines.
 #             They are evaluated by checksuite scripts.
 # created by /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/run/make_target_runscript
-# target machine is daint_gpu
-# target use_compiler is pgi
-# with_mpi=yes
-# with_openmp=no
+# target machine is daint_cpu
+# target use_compiler is gcc
+# with_mpi=no
+# with_openmp=yes
 # memory_model=large
 # submit with sbatch
 #
-builder=daint_gpu_pgi
+builder=daint_cpu_gcc
 #-----------------------------------------------------------------------------
 #
 # OpenMP environment variables
 # ----------------------------
-export OMP_NUM_THREADS=1
-export ICON_THREADS=1
-export OMP_SCHEDULE=static,1
+export OMP_NUM_THREADS=288
+export ICON_THREADS=288
+export OMP_SCHEDULE=static,12
 export OMP_DYNAMIC="false"
-export OMP_STACKSIZE=200M
+export OMP_STACKSIZE=4G
 #
 # MPI variables
 # -------------
-: ${no_of_nodes:=1} ${mpi_procs_pernode:=1}
+: ${no_of_nodes:=1} ${mpi_procs_pernode:=12}
 export no_of_nodes
 export mpi_procs_pernode
 num_io_procs=
@@ -76,7 +76,7 @@ fi
 # environment variables for the experiment and the target system
 # --------------------------------------------------------------
 export EXPNAME="exclaim_ape_R02B04"
-export EXPNAME="exclaim_ape_R02B04_dt${XTSTEP}"
+export EXPNAME="exclaim_ape_R02B04_dt${XTSTEP}_g0008_R02B03"
 # load profile
 # ------------
 if [[ -a "/opt/modules/default/etc/modules.sh" ]]
@@ -117,9 +117,6 @@ cdo_diff="cdo diffn"
 
 #-----------------------------------------------------------------------------
 
-export CRAY_CUDA_MPS=1
-export MPICH_RDMA_ENABLED_CUDA=1
-#export PGI_ACC_SYNCHRONOUS=1
 export ECCODES_DEFINITION_PATH=/users/icontest/pool/data/ICON/mch/eccodes_definitions
 export NVCOMPILER_TERM=trace
 #!/bin/ksh
@@ -153,8 +150,8 @@ export NVCOMPILER_TERM=trace
 # (0) Basic model configuration
 # -----------------------------
 
-atmos_gridID="0008"
-atmos_refinement="R02B05"
+atmos_gridID="0050"
+atmos_refinement="R02B03"
 
 #
 #--------------------------------------------------------------------------------------------------
@@ -194,7 +191,7 @@ atmo_dyn_grid=${atmo_grid_folder}/icon_grid_${atmos_gridID}_${atmos_refinement}_
 
 # start and end date+time
 start_date=${start_date:="2000-01-01T00:00:00Z"}
-end_date=${end_date:="2000-01-01T00:30:00Z"}
+end_date=${end_date:="2000-01-01T00:10:00Z"}
 
 # restart intervals (set in master namelist)
 # ---------------------------
