@@ -1,0 +1,9 @@
+export OPENBLAS_HOME=$(spack location -i openblas)
+export NETCDFC_HOME=$(spack location -i netcdf-c)
+export NETCDFF_HOME=$(spack location -i netcdf-fortran)
+export C_INCLUDE_PATH=$OPENBLAS_HOME/include:$NETCDFC_HOME/include:$C_INCLUDE_PATH
+export CPLUS_INCLUDE_PATH=$OPENBLAS_HOME/include:$NETCDFC_HOME/include:$CPLUS_INCLUDE_PATH
+export LIBRARY_PATH=$OPENBLAS_HOME/lib:$OPENBLAS_HOME/lib64:$NETCDFC_HOME/lib:$NETCDFF_HOME/lib:$LIBRARY_PATH
+export LD_LIBRARY_PATH=$OPENBLAS_HOME/lib:$OPENBLAS_HOME/lib64:$NETCDFC_HOME/lib:$NETCDFF_HOME/lib:$LD_LIBRARY_PATH
+export PATH=$OPENBLAS_HOME/bin:$PATH
+export FCFLAGS="-I${NETCDFF_HOME}/include ${FCFLAGS}"

@@ -1,0 +1,1818 @@
+SLURMD_NODENAME=nid005328
+SLURM_CLUSTER_NAME=alps-daint
+SLURM_CONF=/var/spool/slurmd/conf-cache/slurm.conf
+SLURM_CPUS_ON_NODE=288
+SLURM_EXPORT_ENV=ALL,XTSTEP=8,XICONV=5
+SLURM_GET_USER_ENV=1
+SLURM_GPUS_ON_NODE=4
+SLURM_GTIDS=0
+SLURM_JOBID=2984637
+SLURM_JOB_ACCOUNT=g34
+SLURM_JOB_CPUS_PER_NODE=288
+SLURM_JOB_END_TIME=1774367732
+SLURM_JOB_GID=30905
+SLURM_JOB_GPUS=0,1,2,3
+SLURM_JOB_ID=2984637
+SLURM_JOB_NAME=exclaim_ape_R02B04_dt8_v5_0008_R02B05_G
+SLURM_JOB_NODELIST=nid005328
+SLURM_JOB_NUM_NODES=1
+SLURM_JOB_PARTITION=normal
+SLURM_JOB_QOS=normal
+SLURM_JOB_START_TIME=1774353332
+SLURM_JOB_UID=30293
+SLURM_JOB_USER=pmazumde
+SLURM_LOCALID=0
+SLURM_NNODES=1
+SLURM_NODEID=0
+SLURM_NODELIST=nid005328
+SLURM_NPROCS=12
+SLURM_NTASKS=12
+SLURM_NTASKS_PER_NODE=12
+SLURM_OOM_KILL_STEP=0
+SLURM_PRIO_PROCESS=0
+SLURM_PROCID=0
+SLURM_SCRIPT_CONTEXT=prolog_task
+SLURM_SUBMIT_DIR=/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/run
+SLURM_SUBMIT_HOST=daint-ln004
+SLURM_TASKS_PER_NODE=12
+SLURM_TASK_PID=243225
+SLURM_TIME_FORMAT=relative
+SLURM_TOPOLOGY_ADDR=global.group16.nid005328
+SLURM_TOPOLOGY_ADDR_PATTERN=switch.switch.node
+drwxr-xr-x+ 2 pmazumde g34 4096 Mar 24 12:55 /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/experiments/exclaim_ape_R02B04_dt8_g0008_R02B05
+cp: cannot stat '/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/data/pmod.txt': No such file or directory
+no_of_models=1
+-rwxr-xr-x+ 1 pmazumde g34 50121368 Mar 24 12:44 /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon-5
+	linux-vdso.so.1 (0x0000400010af0000)
+	libstdc++.so.6 => /user-environment/linux-sles15-neoverse_v2/gcc-12.3.0/gcc-13.2.0-iyisbcrs7nsbhcwcncsk52zmo3zjf33i/lib64/libstdc++.so.6 (0x0000400010b00000)
+	libopenblas.so.0 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/openblas-0.3.30-zi6iisqvyag3votc3f2e4knqtry6kp5c/lib/libopenblas.so.0 (0x0000400010d80000)
+	libgfortran.so.5 => /user-environment/linux-sles15-neoverse_v2/gcc-12.3.0/gcc-13.2.0-iyisbcrs7nsbhcwcncsk52zmo3zjf33i/lib64/libgfortran.so.5 (0x0000400012110000)
+	libm.so.6 => /lib64/libm.so.6 (0x00004000124c0000)
+	libnetcdf.so.19 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/netcdf-c-4.9.2-gmup5zszcah2wfb4n4y4h2m3g677xcxj/lib/libnetcdf.so.19 (0x0000400012580000)
+	libnetcdff.so.7 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/netcdf-fortran-4.6.1-thgbtb5pairvf6mvjen7s2isjxv5vgbm/lib/libnetcdff.so.7 (0x0000400012750000)
+	libgomp.so.1 => /user-environment/linux-sles15-neoverse_v2/gcc-12.3.0/gcc-13.2.0-iyisbcrs7nsbhcwcncsk52zmo3zjf33i/lib64/libgomp.so.1 (0x00004000127f0000)
+	libgcc_s.so.1 => /user-environment/linux-sles15-neoverse_v2/gcc-12.3.0/gcc-13.2.0-iyisbcrs7nsbhcwcncsk52zmo3zjf33i/lib64/libgcc_s.so.1 (0x0000400012870000)
+	libpthread.so.0 => /lib64/libpthread.so.0 (0x00004000128b0000)
+	libc.so.6 => /lib64/libc.so.6 (0x00004000128f0000)
+	/lib/ld-linux-aarch64.so.1 (0x0000400010a80000)
+	libhdf5_hl.so.310 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/hdf5-1.14.6-7qkbcdgjgapbwklk3rsmae623vljrpng/lib/libhdf5_hl.so.310 (0x0000400012a80000)
+	libhdf5.so.310 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/hdf5-1.14.6-7qkbcdgjgapbwklk3rsmae623vljrpng/lib/libhdf5.so.310 (0x0000400012ac0000)
+	libz.so.1 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/zlib-ng-2.2.4-4wkwwyjxzslco2vunk7gycfgj5ge5xer/lib/libz.so.1 (0x0000400012f30000)
+	libdl.so.2 => /lib64/libdl.so.2 (0x0000400012f70000)
+	libsz.so.2 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/libaec-1.0.6-7yiorjqubshhevwhldeqdf374vopnyfd/lib64/libsz.so.2 (0x0000400012fa0000)
+	libbz2.so.1.0 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/bzip2-1.0.8-v4pddxuz6g7oybwurnpspkq2u3w5i4e6/lib/libbz2.so.1.0 (0x0000400012fd0000)
+	libzstd.so.1 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/zstd-1.5.7-vhmz5j57iarr5ijiose2wtsz7unutnoi/lib/libzstd.so.1 (0x0000400013000000)
+	libblosc.so.1 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/c-blosc-1.21.6-ft2sbxuhmibsmrkrms6yd43vwucm5ocq/lib64/libblosc.so.1 (0x00004000130f0000)
+	libmpi.so.40 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/openmpi-5.0.8-wvzwg2ggsh4jc6ajpydtlp2yujaclfg7/lib/libmpi.so.40 (0x0000400013120000)
+	liblz4.so.1 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/lz4-1.10.0-xs5rhd6qrkg57wdhshjcyz6vo3uybrfk/lib/liblz4.so.1 (0x0000400013400000)
+	libopen-pal.so.80 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/openmpi-5.0.8-wvzwg2ggsh4jc6ajpydtlp2yujaclfg7/lib/libopen-pal.so.80 (0x0000400013460000)
+	librt.so.1 => /lib64/librt.so.1 (0x0000400013580000)
+	libutil.so.1 => /lib64/libutil.so.1 (0x00004000135b0000)
+	libevent_core-2.1.so.7 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/libevent-2.1.12-cven3pb43yxeivn5spphypw6ygs5ofio/lib/libevent_core-2.1.so.7 (0x00004000135e0000)
+	libevent_pthreads-2.1.so.7 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/libevent-2.1.12-cven3pb43yxeivn5spphypw6ygs5ofio/lib/libevent_pthreads-2.1.so.7 (0x0000400013640000)
+	libhwloc.so.15 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/hwloc-2.11.1-m66ihob3uvwbhnfykbvz3bki35bf5ml4/lib/libhwloc.so.15 (0x0000400013670000)
+	libpmix.so.2 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/pmix-6.0.0-gf5xabkc4ifdoldqessrrosusq3kpgmq/lib/libpmix.so.2 (0x0000400013710000)
+	libpciaccess.so.0 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/libpciaccess-0.17-cjce2arnm5bovhq6tfo3d7vy2vgrhgzf/lib/libpciaccess.so.0 (0x0000400013960000)
+	libxml2.so.2 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/libxml2-2.13.5-7wi3lgcmqahahxxifvwdfr65tjf2fzil/lib/libxml2.so.2 (0x0000400013990000)
+	liblzma.so.5 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/xz-5.6.3-bwigzstyjhxl3v5yxw3p4wpiijrimyfv/lib/liblzma.so.5 (0x0000400013b00000)
+	libiconv.so.2 => /capstor/scratch/cscs/pmazumde/spack/opt/spack/linux-neoverse_v2/libiconv-1.18-zopu46cznlugwbm3dca6rguklgh6mhva/lib/libiconv.so.2 (0x0000400013b50000)
+Tue 24 Mar 2026 12:55:43 PM CET
++ ulimit -s unlimited
++ /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon-5
+mo_mpi::start_mpi No MPI: Single processor run.
+ mo_mpi::start_mpi: Running globally OpenMP mode.
+ mo_mpi::start_mpi global_no_of_threads is 288
+
+ Single processor run.
+
+ executable: /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon-5
+ date: 20260324
+ time: 125543
+ user: Pratyai Mazumder, ETHZ (pmazumde)
+ host: nid005328 (Linux 5.14.21-150500.55.65_13.0.74-cray_shasta_c_64k aarch64)
+ version: 2024.10
+ revision: 4a54137e856f186ab01cbf710044777c500df043-dirty
+ repository: git@github.com:spcl/icon-dace.git
+ local branch: sc2026
+ infrastructure and support libraries:
+   MATH-INTERPOLATION: 4a54137e856f186ab01cbf710044777c500df043-dirty
+   MATH-SUPPORT: 4a54137e856f186ab01cbf710044777c500df043-dirty
+   FORTRAN-SUPPORT: 4a54137e856f186ab01cbf710044777c500df043-dirty
+   MTIME: 4a54137e856f186ab01cbf710044777c500df043-dirty
+   CDI:
+     version: 2.4.0
+     revision: 4a54137e856f186ab01cbf710044777c500df043-dirty
+ other libraries:
+   NetCDF-C: 4.9.2
+ compilers:
+   Fortran: GNU 13.2.0 (GCC version 13.2.0)
+   C: GNU 13.2.0
+ probtest metadata:
+   Revision: 4a54137e856f186ab01cbf710044777c500df043-dirty
+   Branch: sc2026
+ 
+ master_control: start model initialization.
+ set_nproma_nblocks: Will recompute nproma based on nblocks_c
+ set_nproma_nblocks_sub: Using namelist nproma_sub=    800
+ check_parallel_configuration: num_io_procs has no effect if the model is compiled with the NOMPI compiler directive
+ check_parallel_configuration: --> num_io_procs set to 0
+ check_parallel_configuration: num_prefetch_proc has no effect if the model is compiled with the NOMPI compiler directive
+ check_parallel_configuration: --> num_prefetch_proc set to 0
+ mo_name_list_output_init::read_name_list_output_namelists: No output definition found; disabling output.
+ mo_dbg_nml/read_dbg_namelist:: read debug namelist dbg_index_nml
+ 
+ mo_advection_nml: read_transport_nml: Evaluate the number of names in transport_nml/tracer_names
+ ---                                      number of named tracers :         0
+ mo_advection_nml: read_transport_nml: Setting default names for tracers without names.
+ ---                              number of tracers without names :         5
+ ---                                   tracer name q1 in position :         1
+ ---                                   tracer name q2 in position :         2
+ ---                                   tracer name q3 in position :         3
+ ---                                   tracer name q4 in position :         4
+ ---                                   tracer name q5 in position :         5
+ 
+ mo_nwp_phy_nml:read_nwp_phy_namelist: Warning: itype_z0 is reset to 1 because surface scheme is turned off
+ 
+ Model time step          : PT08.000S
+ 
+ 
+ Checkpoint interval      : P1D
+ Restart interval         : P1D
+ 
+ This is not a RESTART run ...
+ IAU time shift: PT00.000S
+ 
+ Calendar: Proleptic Gregorian
+ 
+ Experiment reference date: 2000-01-01T00:00:00Z
+ Experiment start date    : 2000-01-01T00:00:00Z
+ Experiment stop date     : 2000-01-01T00:10:00.000
+ 
+ Experiment stop date     : 2000-01-01T00:10:00.000
+ Start date    : 2000-01-01T00:00:00Z
+ Stop date     : 2000-01-01T00:10:00.000
+ 
+ mo_nml_crosscheck::atm_crosscheck: NetCDF output of floating point variables will be in 64-bit accuracy
+ mo_nml_crosscheck::atm_crosscheck: --> use_dp_mpi2io is changed to .TRUE. to allow 64-bit accuracy in the NetCDF output.
+ mo_nml_crosscheck::atm_crosscheck: namelist parameter 'activate_sync_timers' has been set to .TRUE., because global 'timers_level' is > 9.
+ set_mpi_work_communicators: num_io_procs_radar has no effect if there are no radar-active domains!
+ set_mpi_work_communicators: --> num_io_procs_radar set to 0
+ mo_model_domimp_patches:import_pre_patches: start to import patches
+ mo_model_domimp_patches:read_pre_patch: start to init patch_pre
+ Read grid file /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification//icon_grid_0008_R02B05_G.nc
+ mo_model_domimp_patches:read_pre_patch: grid uuid: 0df795de-1dce-11b2-8c3f-4f045d5627af
+ mo_model_domimp_patches:read_pre_patch: generating center of patch    1:   78
+ mo_model_domimp_patches:read_pre_patch: generating subcenter of patch    1:  255
+ mo_model_domimp_patches:read_pre_patch: number_of_grid_used of patch    1:    8
+ mo_model_domimp_patches:read_pre_patch: URI of patch    1: http://icon-downloads.mpimet.mpg.de/grids/public/icon_grid_0008_R02B05_G.nc
+ mo_model_domimp_patches:read_pre_patch: read_patches finished
+ mo_subdivision:decompose_domain: start of domain decomposition
+ mo_subdivision:decompose_domain: Is this taking a long time? Consider adding macro definition HAVE_SLOW_PASSIVE_TARGET_ONESIDED to compile time settings.
+ No splitting of processor grid
+ mo_setup_subdivision::divide_patch: dividing patch
+ New nproma::   81920
+ Secondary nproma (nproma_sub)::     800
+ mo_setup_subdivision: divide_patch: erase negative refin_ctrl flags in patch 1
+ mo_model_domimp_patches:read_remaining_patch: Read gridmap file /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification//icon_grid_0008_R02B05_G.nc
+ mo_read_netcdf_distributed::distrib_nf_open: /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification//icon_grid_0008_R02B05_G.nc
+ mo_model_domimp_patches:read_remaining_patch: read finished
+ build_decomposition: Done.
+ RBF scale factors for cells/edges/vertices, domain   1:  0.50000 0.50000 0.50000
+ RBF scale factors for velocity boundary interpolation   1:  0.50000
+ mo_intp_state:construct_2d_interpol_state: start to construct int_state
+ mo_intp_state:construct_2d_interpol_state: constructing int_state for patch 1
+ mo_intp_state:allocate_int_state: memory allocation finished
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_cell: 
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_vertex: 
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_edge: 
+ mo_interpolation:tri_quadrature_pts: 
+ mo_intp_coeffs:calculate_tangent_plane_at_edge: 
+ mo_interpolation:init_tplane_c_sphere: 
+ mo_intp_coeffs_lsq_bln:lsq_stencil_create: 
+ mo_intp_coeffs_lsq_bln:create_stencil_c3: create 3-point stencil
+ mo_interpolation:lsq_compute_coeff_cell_sphere: 
+ mo_intp_coeffs_lsq_bln:lsq_stencil_create: 
+ mo_intp_coeffs_lsq_bln:create_stencil_c9: create 9-point stencil
+ mo_interpolation:lsq_compute_coeff_cell_sphere: 
+ mo_intp_state:construct_2d_interpol_state: construction of interpolation state finished
+ setup_phys_patches: Physical domain    1 belongs to logical domain    1
+ mo_dynamics_config:setup_dynamics_config: Set time level indices
+ ldynamics  =  .TRUE.: 2 time levels used for progn. dynamics  variables -> nnew /= nnow
+ ltransport =  .TRUE.: 2 time levels used for progn. transport variables -> nnew_rcf /= nnow_rcf
+ ---                                                 nnow    (01) :         1
+ ---                                                 nnew    (01) :         2
+ ---                                                 nold    (01) :         3
+ ---                                                 nnow_rcf(01) :         1
+ ---                                                 nnew_rcf(01) :         2
+ mo_lnd_nwp_config::configure_lnd_nwp: Number of hydrological active soil layers ibot_w_so is set to:  6
+ Surface tile setup
+ 
+ tileName | GRIB2 tileId | tileAtts | ICON tile Ids |  
+ -------- | ------------ | -------- | ------------- |  
+ 
+ undef    | 0            | 0,       | 1,            |  
+  
+ mo_ext_data_state:construct_ext_data: Construction of data structure for external data started
+ 
+ adding new var_list ext_data_atm_D01
+ 
+ adding new var_list ext_data_atm_td_D01
+ mo_ext_data_state:construct_ext_data: Construction of data structure for external data finished
+ mo_ext_data_init:init_ext_data: Start
+ mo_ext_data_init:init_ext_data: Running with analytical topography
+ (mo_nh_testcases) init_nh_testtopo:: running Aqua-Planet Experiment with non-hydrostatic atm. dynamics and NWP physics
+ SLEVE coord: Coordinate setup finished
+ flat coordinate surfaces starting at level  50
+ Nominal heights of coordinate half levels and layer thicknesses (m):
+ jk, vct_a, dvct:    1   75000.000    2500.062
+ jk, vct_a, dvct:    2   72499.938    2120.077
+ jk, vct_a, dvct:    3   70379.861    1973.825
+ jk, vct_a, dvct:    4   68406.037    1873.407
+ jk, vct_a, dvct:    5   66532.630    1794.666
+ jk, vct_a, dvct:    6   64737.964    1728.783
+ jk, vct_a, dvct:    7   63009.181    1671.503
+ jk, vct_a, dvct:    8   61337.677    1620.434
+ jk, vct_a, dvct:    9   59717.243    1574.090
+ jk, vct_a, dvct:   10   58143.153    1531.483
+ jk, vct_a, dvct:   11   56611.670    1491.918
+ jk, vct_a, dvct:   12   55119.752    1454.889
+ jk, vct_a, dvct:   13   53664.863    1420.013
+ jk, vct_a, dvct:   14   52244.850    1386.992
+ jk, vct_a, dvct:   15   50857.858    1355.591
+ jk, vct_a, dvct:   16   49502.267    1325.621
+ jk, vct_a, dvct:   17   48176.646    1296.923
+ jk, vct_a, dvct:   18   46879.723    1269.369
+ jk, vct_a, dvct:   19   45610.354    1242.848
+ jk, vct_a, dvct:   20   44367.505    1217.266
+ jk, vct_a, dvct:   21   43150.239    1192.543
+ jk, vct_a, dvct:   22   41957.696    1168.609
+ jk, vct_a, dvct:   23   40789.087    1145.401
+ jk, vct_a, dvct:   24   39643.685    1122.866
+ jk, vct_a, dvct:   25   38520.819    1100.956
+ jk, vct_a, dvct:   26   37419.863    1079.627
+ jk, vct_a, dvct:   27   36340.236    1058.842
+ jk, vct_a, dvct:   28   35281.394    1038.564
+ jk, vct_a, dvct:   29   34242.830    1018.763
+ jk, vct_a, dvct:   30   33224.066     999.410
+ jk, vct_a, dvct:   31   32224.657     980.478
+ jk, vct_a, dvct:   32   31244.179     961.942
+ jk, vct_a, dvct:   33   30282.237     943.782
+ jk, vct_a, dvct:   34   29338.455     925.976
+ jk, vct_a, dvct:   35   28412.479     908.504
+ jk, vct_a, dvct:   36   27503.975     891.350
+ jk, vct_a, dvct:   37   26612.625     874.495
+ jk, vct_a, dvct:   38   25738.129     857.926
+ jk, vct_a, dvct:   39   24880.204     841.626
+ jk, vct_a, dvct:   40   24038.578     825.582
+ jk, vct_a, dvct:   41   23212.996     809.781
+ jk, vct_a, dvct:   42   22403.215     794.210
+ jk, vct_a, dvct:   43   21609.005     778.857
+ jk, vct_a, dvct:   44   20830.148     763.712
+ jk, vct_a, dvct:   45   20066.437     748.762
+ jk, vct_a, dvct:   46   19317.674     733.999
+ jk, vct_a, dvct:   47   18583.676     719.411
+ jk, vct_a, dvct:   48   17864.265     704.988
+ jk, vct_a, dvct:   49   17159.277     690.723
+ jk, vct_a, dvct:   50   16468.554     676.605
+ jk, vct_a, dvct:   51   15791.949     662.625
+ jk, vct_a, dvct:   52   15129.325     648.774
+ jk, vct_a, dvct:   53   14480.551     635.044
+ jk, vct_a, dvct:   54   13845.507     621.427
+ jk, vct_a, dvct:   55   13224.080     607.913
+ jk, vct_a, dvct:   56   12616.167     594.494
+ jk, vct_a, dvct:   57   12021.673     581.162
+ jk, vct_a, dvct:   58   11440.510     567.908
+ jk, vct_a, dvct:   59   10872.602     554.724
+ jk, vct_a, dvct:   60   10317.878     541.600
+ jk, vct_a, dvct:   61    9776.278     528.528
+ jk, vct_a, dvct:   62    9247.750     515.497
+ jk, vct_a, dvct:   63    8732.253     502.500
+ jk, vct_a, dvct:   64    8229.754     489.524
+ jk, vct_a, dvct:   65    7740.229     476.561
+ jk, vct_a, dvct:   66    7263.668     463.599
+ jk, vct_a, dvct:   67    6800.069     450.625
+ jk, vct_a, dvct:   68    6349.444     437.629
+ jk, vct_a, dvct:   69    5911.815     424.595
+ jk, vct_a, dvct:   70    5487.221     411.508
+ jk, vct_a, dvct:   71    5075.712     398.354
+ jk, vct_a, dvct:   72    4677.358     385.114
+ jk, vct_a, dvct:   73    4292.244     371.768
+ jk, vct_a, dvct:   74    3920.476     358.293
+ jk, vct_a, dvct:   75    3562.183     344.665
+ jk, vct_a, dvct:   76    3217.518     330.853
+ jk, vct_a, dvct:   77    2886.665     316.825
+ jk, vct_a, dvct:   78    2569.840     302.539
+ jk, vct_a, dvct:   79    2267.301     287.948
+ jk, vct_a, dvct:   80    1979.353     272.995
+ jk, vct_a, dvct:   81    1706.358     257.606
+ jk, vct_a, dvct:   82    1448.753     241.690
+ jk, vct_a, dvct:   83    1207.063     225.130
+ jk, vct_a, dvct:   84     981.933     207.763
+ jk, vct_a, dvct:   85     774.170     189.367
+ jk, vct_a, dvct:   86     584.802     169.607
+ jk, vct_a, dvct:   87     415.195     147.947
+ jk, vct_a, dvct:   88     267.248     123.415
+ jk, vct_a, dvct:   89     143.833      93.833
+ jk, vct_a, dvct:   90      50.000      50.000
+ jk, vct_a, dvct:   91       0.000       0.000
+ parallel calculation of vgrid UUID. Generated UUID: 99890509-bc35-2c1a-6e39-021969f52220
+ mo_advection_utils::init_tracer_settings: Attention: NWP physics is used, ntracer is automatically reset to   6
+ mo_nonhydrostatic_config:configure_nonhydrostatic: Domain   1; computation of moist physics processes starts in layer   42
+ mo_nonhydrostatic_config:configure_nonhydrostatic: Domain   1; high- and mid-level clouds in layers above   66  80
+ Index list generation - number of land tiles:    1
+ Total number of tiles:    1
+ Number of land points in domain  1:         0
+ Number of sea points in domain  1:     81920
+ Number of lake points in domain  1:         0
+ Number of points in tile 1:         0
+ Number of corrected false glacier points in domain  1:         0
+ Time intervals for calling NWP physics on patch            1
+ 
+ Process | dt user [=> final] |  
+ ------- | ------------------ |  
+ 
+ conv    |   16.00            |  
+ ccov    |   16.00            |  
+ gwd     |   32.00            |  
+ fastphy |    8.00            |  
+  
+ mo_atm_phy_nwp_config:configure_atm_phy_nwp: itune_o3 is reset to 0 because irad_o3 is not 7, 79 or 97
+ Event-setup for phyNwpEventGroup on patch  1
+ 
+ eventName | enabled | startDate                | endDate                  | intvl     |  
+ --------- | ------- | ------------------------ | ------------------------ | --------- |  
+ 
+ conv      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT16.000S |  
+ ccov      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT16.000S |  
+ rad       | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT48.000S |  
+ sso       | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT20M     |  
+ gwd       | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT32.000S |  
+ satad     | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT08.000S |  
+ turb      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT08.000S |  
+ gscp      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT08.000S |  
+ sfc       | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT08.000S |  
+ radheat   | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT08.000S |  
+  
+ atm_phy_nwp:configure_ww: Domain   1; ih_500hPa, ihb500hPa, ih_700hPa, ih_850hPa, ih_950hPa, ihb950hPa   70  70  76  82  86  87
+ atm_phy_nwp:configure_ww: Domain   1; ifog_temp, ifog_wind   84  87
+ mo_nonhydro_state::construct_nh_state: Construction of NH state started
+ 
+ adding new var_list nh_state_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list nh_state_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list nh_state_diag_of_domain_01
+ 
+ adding new var_list nh_state_metrics_of_domain_01
+ 
+ adding new var_list nh_state_ref_of_domain_01
+ mo_nonhydro_state::construct_nh_state: NH state construction completed
+ 
+ adding new var_list nh_state_opt_diag_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_z_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_p_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_i_of_domain_01
+ 
+ adding new var_list nh_accumulation_for_ProgAndDiag_of_domain_01
+ 
+ adding new var_list prepadv_of_domain_01
+ mo_prepadv_state:construct_prepadv_state: construction of prep_adv state finished
+ mo_nwp_phy_state:construct_nwp_state: start to construct 3D state vector
+ 
+ adding new var_list prm_diag_of_domain_01
+ mo_nwp_phy_state:construct_nwp_phy_diag: construction of NWP physical fields finished
+ 
+ adding new var_list prm_tend_of_domain_01
+ mo_nwp_phy_state:construct_nwp_phy_tend: construction of NWP physical tendency fields finished
+ 
+ adding new var_list prm_stch_of_domain_01
+ mo_nwp_phy_state:construct_nwp_state: construction of state vector finished
+ mo_nwp_lnd_state:construct_nwp_lnd_state: land state construction started
+ 
+ adding new var_list lnd_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list wtr_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list lnd_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list wtr_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list lnd_diag_of_domain_01
+ mo_nwp_lnd_state:construct_nwp_lnd_state: land state construction completed
+ 
+ adding new var_list nh_state_tracer_of_domain_01_and_timelev_01
+ 
+ adding new var_list nh_state_tracer_of_domain_01_and_timelev_02
+ Tracer meta-information for patch            1
+ 
+ VarName | Tracer ID | feedback | in list trAdvect | in list trNotAdvect | in list trHydroMass | slev | substep range | nadv_substeps |  
+ ------- | --------- | -------- | ---------------- | ------------------- | ------------------- | ---- | ------------- | ------------- |  
+ 
+ qv.TL1  |   1       | X        | X                |                     |                     |   1  |   1/ 41       |   3           |  
+ qc.TL1  |   2       | X        | X                |                     | X                   |  42  | -- / --       | --            |  
+ qi.TL1  |   3       | X        | X                |                     | X                   |  42  | -- / --       | --            |  
+ qr.TL1  |   4       |          | X                |                     | X                   |  42  | -- / --       | --            |  
+ qs.TL1  |   5       |          | X                |                     | X                   |  42  | -- / --       | --            |  
+ qg.TL1  |   6       |          | X                |                     | X                   |  42  | -- / --       | --            |  
+  
+ mo_vertical_grid:set_nh_metrics: Domain   1; end index of Rayleigh damping layer for w:   15
+ mo_vertical_grid: Damping coefficient for w; diffusion enhancement coefficient:
+ mo_vertical_grid: level    1, half-level height 75000.0  0.10000E+00  0.24000E+02
+ mo_vertical_grid: level    2, half-level height 72499.9  0.63728E-01  0.15866E+02
+ mo_vertical_grid: level    3, half-level height 70379.9  0.39420E-01  0.10142E+02
+ mo_vertical_grid: level    4, half-level height 68406.0  0.23745E-01  0.64362E+01
+ mo_vertical_grid: level    5, half-level height 66532.6  0.14165E-01  0.41902E+01
+ mo_vertical_grid: level    6, half-level height 64738.0  0.84607E-02  0.28713E+01
+ mo_vertical_grid: level    7, half-level height 63009.2  0.50903E-02  0.21050E+01
+ mo_vertical_grid: level    8, half-level height 61337.7  0.30937E-02  0.16590E+01
+ mo_vertical_grid: level    9, half-level height 59717.2  0.19018E-02  0.13976E+01
+ mo_vertical_grid: level   10, half-level height 58143.2  0.11828E-02  0.12427E+01
+ mo_vertical_grid: level   11, half-level height 56611.7  0.74419E-03  0.11499E+01
+ mo_vertical_grid: level   12, half-level height 55119.8  0.47348E-03  0.10937E+01
+ mo_vertical_grid: level   13, half-level height 53664.9  0.30450E-03  0.10592E+01
+ mo_vertical_grid: level   14, half-level height 52244.9  0.19785E-03  0.10378E+01
+ mo_vertical_grid: level   15, half-level height 50857.9  0.12983E-03  0.10244E+01
+ mo_vertical_grid:set_nh_metrics: Maximum vertical wind offcentering:   0.1500
+ mo_vertical_grid:set_nh_metrics: Maximum slope:   0.0000
+ mo_vertical_grid:set_nh_metrics: Maximum height difference between adjacent points:      0.0
+ (mo_nh_testcases) init_nh_testcase:: End setup non-hydrostatic APE test (APE_nwp, APE_aes, APE_nh, APEc_nh)
+ Variables assigned to action RESET: rain_gsp, snow_gsp, graupel_gsp, ice_gsp, prec_gsp, rain_con, snow_con, prec_con, tot_prec, tot_prec_d, prec_gsp_d, prec_con_d, prec_con_rate_avg, prec_gsp_rate_avg, tot_prec_rate_avg, gust10, tmax_2m, tmin_2m
+ 
+ VarName           | PID | Ref date                | Start date              | End date                | Interval |  
+ ----------------- | --- | ----------------------- | ----------------------- | ----------------------- | -------- |  
+ 
+ rain_gsp          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ snow_gsp          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ graupel_gsp       |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ ice_gsp           |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ prec_gsp          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ rain_con          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ snow_con          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ prec_con          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ tot_prec          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ tot_prec_d        |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ prec_gsp_d        |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ prec_con_d        |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ prec_con_rate_avg |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ prec_gsp_rate_avg |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ tot_prec_rate_avg |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ gust10            |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ tmax_2m           |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT06H    |  
+ tmin_2m           |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT06H    |  
+  
+ multifile restart writing selected, joint proc mode.
+ mo_nwp_phy_init:: initialize sea-ice lists, call init_sea_lists
+ Number of (partly) seaice covered points in domain  1:         0
+ Number of (partly) ice-free sea points in domain  1:     81920
+ Number of sea points in domain  1:     81920
+ mo_nwp_phy_init: initialized surface temp and humidity
+ mo_nwp_phy_init: init microphysics
+ gscp_set_coefficients: microphysical values initialized
+ mo_nwp_phy_init: init convection
+ mo_cuparameters, sucumf: NJKT1, NJKT2, KSMAX
+ mo_cuparameters, sucumf:      64     46 0.78910E+05
+ mo_cuparameters, sucumf: LMFMID, LMFDD, LMFDUDV, RTAU, ENTRORG, TEXC, QEXC
+ mo_cuparameters, sucumf:          T     T     T  1.6576 0.1950E-02 0.12500 0.01250
+ mo_cuparameters, sucumf: RHEBC_LND, RHEBC_LND_TROP, RHEBC_OCE, RHEBC_OCE_TROP, RCUCOV, RCUCOV_TROP
+ mo_cuparameters, sucumf:       0.7500  0.7000  0.8500  0.7600  0.0500  0.0300
+ mo_nwp_phy_init: convection initialized
+ mo_nwp_phy_init: init roughness length
+ mo_nwp_phy_init: init COSMO turbulence
+ mo_nwp_phy_init: Cosmo turbulence initialized
+ mo_nwp_phy_init: non-orog GWs initialized
+ mo_cuparameters, sugwd: nktopg, ngwdlim, ngwdtop
+ mo_cuparameters, sugwd:     78    44     8
+ mo_nh_stepping:init_slowphysics: initial call of (slow) physics, domain  1
+ 
+ added event group: checkpointEventGroup
+ Event list: checkpointEventGroup
+        1          checkpoint
+        2          restart
+ 
+ Start date of this run: 2000-01-01T00:00:00.000
+ Stop date of this run:  2000-01-01T00:10:00.000
+ 
+ 
+ Time step:        1, model time: 2000-01-01 00:00:08.000 forecast time 00D 00H00M08S
+  perform_dyn_substepping: physics_generation =            1  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498862523E+02 at level  60,   0.0000000000E+00 at level   1,
+  host side timing:    559295.70400000003      us, lvn_only:  F , istep:            1
+  host side timing:    343858.16700000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498854442E+02 at level  60,   0.1468397643E-17 at level  91,
+  host side timing:    389662.00300000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498848629E+02 at level  60,   0.1468397665E-17 at level  91,
+  host side timing:    352296.48700000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498844445E+02 at level  60,   0.1468397677E-17 at level  91,
+  host side timing:    377546.29700000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498841432E+02 at level  60,   0.1468397683E-17 at level  91,
+  host side timing:    386366.20600000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =   18.354365 Pa/s in domain  1
+ 
+ Time step:        2, model time: 2000-01-01 00:00:16.000 forecast time 00D 00H00M16S
+  perform_dyn_substepping: physics_generation =            2  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498837643E+02 at level  60,   0.1468397687E-17 at level  91,
+  host side timing:    322905.56199999998      us, lvn_only:  T , istep:            1
+  host side timing:    405164.60700000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498836438E+02 at level  60,   0.5713124312E-16 at level  91,
+  host side timing:    393508.91800000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498835565E+02 at level  60,   0.5713141456E-16 at level  91,
+  host side timing:    343121.02600000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498834931E+02 at level  60,   0.5713077913E-16 at level  91,
+  host side timing:    343651.89000000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498834467E+02 at level  60,   0.5712960453E-16 at level  91,
+  host side timing:    429849.90000000002      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521268E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.116498 Pa/s in domain  1
+ 
+ Time step:        3, model time: 2000-01-01 00:00:24.000 forecast time 00D 00H00M24S
+  perform_dyn_substepping: physics_generation =            3  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498832723E+02 at level  60,   0.5712809808E-16 at level  91,
+  host side timing:    363241.15100000001      us, lvn_only:  T , istep:            1
+  host side timing:    344114.91399999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498832782E+02 at level  60,   0.8812745897E-16 at level  91,
+  host side timing:    358766.31800000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498832816E+02 at level  60,   0.8812789748E-16 at level  91,
+  host side timing:    393750.92700000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498832834E+02 at level  60,   0.8812809547E-16 at level  91,
+  host side timing:    386604.24300000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498832839E+02 at level  60,   0.8812814936E-16 at level  91,
+  host side timing:    399161.50599999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.116846 Pa/s in domain  1
+ 
+ Time step:        4, model time: 2000-01-01 00:00:32.000 forecast time 00D 00H00M32S
+  perform_dyn_substepping: physics_generation =            4  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498831470E+02 at level  60,   0.8812811960E-16 at level  91,
+  host side timing:    356842.98800000001      us, lvn_only:  T , istep:            1
+  host side timing:    347896.07400000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498831761E+02 at level  60,   0.1253752882E-15 at level  91,
+  host side timing:    393261.08600000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498831963E+02 at level  60,   0.1253723246E-15 at level  91,
+  host side timing:    390143.36300000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498832100E+02 at level  60,   0.1253698122E-15 at level  91,
+  host side timing:    387395.35499999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498832191E+02 at level  60,   0.1253676762E-15 at level  91,
+  host side timing:    425804.75000000000      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521268E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.110825 Pa/s in domain  1
+ 
+ Time step:        5, model time: 2000-01-01 00:00:40.000 forecast time 00D 00H00M40S
+  perform_dyn_substepping: physics_generation =            5  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498830891E+02 at level  60,   0.1253658521E-15 at level  91,
+  host side timing:    397866.18800000002      us, lvn_only:  T , istep:            1
+  host side timing:    383165.50500000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498831224E+02 at level  60,   0.1570972699E-15 at level  91,
+  host side timing:    394373.69099999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498831457E+02 at level  60,   0.1570975569E-15 at level  91,
+  host side timing:    356314.51000000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498831616E+02 at level  60,   0.1570974755E-15 at level  91,
+  host side timing:    391223.04499999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498831722E+02 at level  60,   0.1570972058E-15 at level  91,
+  host side timing:    365513.66899999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.114421 Pa/s in domain  1
+ 
+ Time step:        6, model time: 2000-01-01 00:00:48.000 forecast time 00D 00H00M48S
+  perform_dyn_substepping: physics_generation =            6  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498830435E+02 at level  60,   0.1570968551E-15 at level  91,
+  host side timing:    357675.80200000003      us, lvn_only:  T , istep:            1
+  host side timing:    388537.42900000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498830777E+02 at level  60,   0.1888656036E-15 at level  91,
+  host side timing:    393832.33000000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498831015E+02 at level  60,   0.1888667655E-15 at level  91,
+  host side timing:    389724.90999999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498831178E+02 at level  60,   0.1888672145E-15 at level  91,
+  host side timing:    399602.06300000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498831287E+02 at level  60,   0.1888672421E-15 at level  91,
+  host side timing:    420938.78200000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521269E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.112511 Pa/s in domain  1
+ 
+ Time step:        7, model time: 2000-01-01 00:00:56.000 forecast time 00D 00H00M56S
+  perform_dyn_substepping: physics_generation =            7  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498830002E+02 at level  60,   0.1888670292E-15 at level  91,
+  host side timing:    388511.41399999999      us, lvn_only:  T , istep:            1
+  host side timing:    416025.46999999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498830345E+02 at level  60,   0.2194554027E-15 at level  91,
+  host side timing:    425456.30099999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498830584E+02 at level  60,   0.2194561038E-15 at level  91,
+  host side timing:    387611.70000000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498830748E+02 at level  60,   0.2194562390E-15 at level  91,
+  host side timing:    350331.94500000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498830858E+02 at level  60,   0.2194560572E-15 at level  91,
+  host side timing:    434227.72999999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.113767 Pa/s in domain  1
+ 
+ Time step:        8, model time: 2000-01-01 00:01:04.000 forecast time 00D 00H01M04S
+  perform_dyn_substepping: physics_generation =            8  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498829574E+02 at level  60,   0.2194557097E-15 at level  91,
+  host side timing:    398909.15800000000      us, lvn_only:  T , istep:            1
+  host side timing:    382087.71799999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498829917E+02 at level  60,   0.2494592003E-15 at level  91,
+  host side timing:    375955.91600000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498830156E+02 at level  60,   0.2494599510E-15 at level  91,
+  host side timing:    387571.12500000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498830320E+02 at level  60,   0.2494601324E-15 at level  91,
+  host side timing:    379671.98800000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498830430E+02 at level  60,   0.2494599929E-15 at level  91,
+  host side timing:    348400.45400000003      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521269E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.112053 Pa/s in domain  1
+ 
+ Time step:        9, model time: 2000-01-01 00:01:12.000 forecast time 00D 00H01M12S
+  perform_dyn_substepping: physics_generation =            9  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498829146E+02 at level  60,   0.2494596832E-15 at level  91,
+  host side timing:    399339.09600000002      us, lvn_only:  T , istep:            1
+  host side timing:    415221.81199999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498829489E+02 at level  60,   0.2786914888E-15 at level  91,
+  host side timing:    386896.01299999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498829728E+02 at level  60,   0.2786921367E-15 at level  91,
+  host side timing:    348380.07900000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498829892E+02 at level  60,   0.2786922492E-15 at level  91,
+  host side timing:    427745.78999999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498830002E+02 at level  60,   0.2786920683E-15 at level  91,
+  host side timing:    349821.98400000000      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.112546 Pa/s in domain  1
+ 
+ Time step:       10, model time: 2000-01-01 00:01:20.000 forecast time 00D 00H01M20S
+  perform_dyn_substepping: physics_generation =           10  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498828718E+02 at level  60,   0.2786917385E-15 at level  91,
+  host side timing:    395666.63900000002      us, lvn_only:  T , istep:            1
+  host side timing:    386376.38199999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498829061E+02 at level  60,   0.3071999747E-15 at level  91,
+  host side timing:    388109.15800000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498829300E+02 at level  60,   0.3072005222E-15 at level  91,
+  host side timing:    361064.65999999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498829464E+02 at level  60,   0.3072005352E-15 at level  91,
+  host side timing:    339358.77200000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498829574E+02 at level  60,   0.3072002646E-15 at level  91,
+  host side timing:    390551.12599999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521269E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.111809 Pa/s in domain  1
+ 
+ Time step:       11, model time: 2000-01-01 00:01:28.000 forecast time 00D 00H01M28S
+  perform_dyn_substepping: physics_generation =           11  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498828290E+02 at level  60,   0.3071998572E-15 at level  91,
+  host side timing:    354230.89799999999      us, lvn_only:  T , istep:            1
+  host side timing:    382305.98599999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498828633E+02 at level  60,   0.3350115437E-15 at level  91,
+  host side timing:    346589.38600000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498828872E+02 at level  60,   0.3350119782E-15 at level  91,
+  host side timing:    392624.69000000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498829036E+02 at level  60,   0.3350118733E-15 at level  91,
+  host side timing:    425248.33500000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498829147E+02 at level  60,   0.3350114919E-15 at level  91,
+  host side timing:    383232.64399999997      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.111914 Pa/s in domain  1
+ 
+ Time step:       12, model time: 2000-01-01 00:01:36.000 forecast time 00D 00H01M36S
+  perform_dyn_substepping: physics_generation =           12  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498827862E+02 at level  60,   0.3350109854E-15 at level  91,
+  host side timing:    324266.81500000000      us, lvn_only:  T , istep:            1
+  host side timing:    357014.90200000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498828206E+02 at level  60,   0.3621130768E-15 at level  91,
+  host side timing:    378619.44400000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498828445E+02 at level  60,   0.3621133050E-15 at level  91,
+  host side timing:    351648.75500000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498828609E+02 at level  60,   0.3621130619E-15 at level  91,
+  host side timing:    419370.18800000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498828719E+02 at level  60,   0.3621125934E-15 at level  91,
+  host side timing:    392496.42400000000      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521270E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.106366 Pa/s in domain  1
+ 
+ Time step:       13, model time: 2000-01-01 00:01:44.000 forecast time 00D 00H01M44S
+  perform_dyn_substepping: physics_generation =           13  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498827434E+02 at level  60,   0.3621120367E-15 at level  91,
+  host side timing:    384064.57500000001      us, lvn_only:  T , istep:            1
+  host side timing:    388041.78700000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498827778E+02 at level  60,   0.3885555512E-15 at level  91,
+  host side timing:    382590.92800000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498828017E+02 at level  60,   0.3885554173E-15 at level  91,
+  host side timing:    427700.66399999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498828181E+02 at level  60,   0.3885550003E-15 at level  91,
+  host side timing:    392898.13799999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498828291E+02 at level  60,   0.3885544745E-15 at level  91,
+  host side timing:    359533.38799999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.106337 Pa/s in domain  1
+ 
+ Time step:       14, model time: 2000-01-01 00:01:52.000 forecast time 00D 00H01M52S
+  perform_dyn_substepping: physics_generation =           14  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498827006E+02 at level  60,   0.3885539304E-15 at level  91,
+  host side timing:    397641.34000000003      us, lvn_only:  T , istep:            1
+  host side timing:    388220.53399999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498827350E+02 at level  60,   0.4143317558E-15 at level  91,
+  host side timing:    424922.86800000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498827589E+02 at level  60,   0.4143317074E-15 at level  91,
+  host side timing:    385989.83799999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498827753E+02 at level  60,   0.4143314433E-15 at level  91,
+  host side timing:    420072.15800000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498827863E+02 at level  60,   0.4143310962E-15 at level  91,
+  host side timing:    342123.51400000002      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521270E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.104111 Pa/s in domain  1
+ 
+ Time step:       15, model time: 2000-01-01 00:02:00.000 forecast time 00D 00H02M00S
+  perform_dyn_substepping: physics_generation =           15  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498826578E+02 at level  60,   0.4143307328E-15 at level  91,
+  host side timing:    380705.01600000000      us, lvn_only:  T , istep:            1
+  host side timing:    347934.55800000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498826922E+02 at level  60,   0.4394892648E-15 at level  91,
+  host side timing:    419470.03300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498827161E+02 at level  60,   0.4394892586E-15 at level  91,
+  host side timing:    438751.61700000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498827325E+02 at level  60,   0.4394890924E-15 at level  91,
+  host side timing:    383311.46500000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498827435E+02 at level  60,   0.4394888640E-15 at level  91,
+  host side timing:    395600.19000000000      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.104014 Pa/s in domain  1
+ 
+ Time step:       16, model time: 2000-01-01 00:02:08.000 forecast time 00D 00H02M08S
+  perform_dyn_substepping: physics_generation =           16  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498826150E+02 at level  60,   0.4394886205E-15 at level  91,
+  host side timing:    363623.81599999999      us, lvn_only:  T , istep:            1
+  host side timing:    456196.85900000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498826494E+02 at level  60,   0.4640307313E-15 at level  91,
+  host side timing:    377011.14500000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498826733E+02 at level  60,   0.4640307622E-15 at level  91,
+  host side timing:    391247.91899999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498826897E+02 at level  60,   0.4640306534E-15 at level  91,
+  host side timing:    392715.87099999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498827007E+02 at level  60,   0.4640304833E-15 at level  91,
+  host side timing:    436309.45699999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521270E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.101750 Pa/s in domain  1
+ 
+ Time step:       17, model time: 2000-01-01 00:02:16.000 forecast time 00D 00H02M16S
+  perform_dyn_substepping: physics_generation =           17  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498825722E+02 at level  60,   0.4640302906E-15 at level  91,
+  host side timing:    376189.44400000002      us, lvn_only:  T , istep:            1
+  host side timing:    366186.70600000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498826066E+02 at level  60,   0.4879971234E-15 at level  91,
+  host side timing:    371971.89100000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498826305E+02 at level  60,   0.4879972224E-15 at level  91,
+  host side timing:    357161.69500000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498826469E+02 at level  60,   0.4879971652E-15 at level  91,
+  host side timing:    387137.91300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498826579E+02 at level  60,   0.4879970279E-15 at level  91,
+  host side timing:    375350.68900000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.101519 Pa/s in domain  1
+ 
+ Time step:       18, model time: 2000-01-01 00:02:24.000 forecast time 00D 00H02M24S
+  perform_dyn_substepping: physics_generation =           18  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498825294E+02 at level  60,   0.4879968518E-15 at level  91,
+  host side timing:    395720.67200000002      us, lvn_only:  T , istep:            1
+  host side timing:    440069.66300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498825637E+02 at level  60,   0.5113972904E-15 at level  91,
+  host side timing:    387076.79300000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498825876E+02 at level  60,   0.5113974043E-15 at level  91,
+  host side timing:    392414.95500000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498826040E+02 at level  60,   0.5113973533E-15 at level  91,
+  host side timing:    422392.70100000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498826150E+02 at level  60,   0.5113972131E-15 at level  91,
+  host side timing:    396353.49300000002      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521271E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.100149 Pa/s in domain  1
+ 
+ Time step:       19, model time: 2000-01-01 00:02:32.000 forecast time 00D 00H02M32S
+  perform_dyn_substepping: physics_generation =           19  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498824866E+02 at level  60,   0.5113970263E-15 at level  91,
+  host side timing:    356940.58700000000      us, lvn_only:  T , istep:            1
+  host side timing:    386415.42099999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498825209E+02 at level  60,   0.5342676795E-15 at level  91,
+  host side timing:    433436.81199999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498825448E+02 at level  60,   0.5342677482E-15 at level  91,
+  host side timing:    392240.28499999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498825612E+02 at level  60,   0.5342676608E-15 at level  91,
+  host side timing:    410881.36400000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498825722E+02 at level  60,   0.5342674891E-15 at level  91,
+  host side timing:    380516.25699999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.100024 Pa/s in domain  1
+ 
+ Time step:       20, model time: 2000-01-01 00:02:40.000 forecast time 00D 00H02M40S
+  perform_dyn_substepping: physics_generation =           20  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498824438E+02 at level  60,   0.5342672739E-15 at level  91,
+  host side timing:    401962.68400000001      us, lvn_only:  T , istep:            1
+  host side timing:    408008.17999999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498824781E+02 at level  60,   0.5566196457E-15 at level  91,
+  host side timing:    353081.83500000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498825020E+02 at level  60,   0.5566196665E-15 at level  91,
+  host side timing:    385003.11700000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498825184E+02 at level  60,   0.5566195439E-15 at level  91,
+  host side timing:    385549.46600000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498825294E+02 at level  60,   0.5566193445E-15 at level  91,
+  host side timing:    395008.45000000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521271E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.097717 Pa/s in domain  1
+ 
+ Time step:       21, model time: 2000-01-01 00:02:48.000 forecast time 00D 00H02M48S
+  perform_dyn_substepping: physics_generation =           21  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498824009E+02 at level  60,   0.5566191065E-15 at level  91,
+  host side timing:    403711.58600000001      us, lvn_only:  T , istep:            1
+  host side timing:    395236.25000000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498824353E+02 at level  60,   0.5784848838E-15 at level  91,
+  host side timing:    348801.11300000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498824592E+02 at level  60,   0.5784848400E-15 at level  91,
+  host side timing:    355608.79200000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498824756E+02 at level  60,   0.5784846732E-15 at level  91,
+  host side timing:    397376.65899999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498824866E+02 at level  60,   0.5784844418E-15 at level  91,
+  host side timing:    351101.48400000000      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.097570 Pa/s in domain  1
+ 
+ Time step:       22, model time: 2000-01-01 00:02:56.000 forecast time 00D 00H02M56S
+  perform_dyn_substepping: physics_generation =           22  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498823581E+02 at level  60,   0.5784841792E-15 at level  91,
+  host side timing:    384695.19600000000      us, lvn_only:  T , istep:            1
+  host side timing:    366181.91399999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498823924E+02 at level  60,   0.5998759343E-15 at level  91,
+  host side timing:    438196.80699999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498824163E+02 at level  60,   0.5998758254E-15 at level  91,
+  host side timing:    394087.91300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498824327E+02 at level  60,   0.5998756145E-15 at level  91,
+  host side timing:    389323.74800000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498824437E+02 at level  60,   0.5998753513E-15 at level  91,
+  host side timing:    434132.71500000003      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521272E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.100619 Pa/s in domain  1
+ 
+ Time step:       23, model time: 2000-01-01 00:03:04.000 forecast time 00D 00H03M04S
+  perform_dyn_substepping: physics_generation =           23  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498823153E+02 at level  60,   0.5998750644E-15 at level  91,
+  host side timing:    356685.96799999999      us, lvn_only:  T , istep:            1
+  host side timing:    381417.99200000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498823496E+02 at level  60,   0.6208204082E-15 at level  91,
+  host side timing:    406040.80200000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498823735E+02 at level  60,   0.6208202253E-15 at level  91,
+  host side timing:    383201.42099999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498823899E+02 at level  60,   0.6208199662E-15 at level  91,
+  host side timing:    401017.60700000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498824009E+02 at level  60,   0.6208196709E-15 at level  91,
+  host side timing:    416050.84200000000      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.100427 Pa/s in domain  1
+ 
+ Time step:       24, model time: 2000-01-01 00:03:12.000 forecast time 00D 00H03M12S
+  perform_dyn_substepping: physics_generation =           24  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498822724E+02 at level  60,   0.6208193615E-15 at level  91,
+  host side timing:    401544.69300000003      us, lvn_only:  T , istep:            1
+  host side timing:    425071.21999999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498823067E+02 at level  60,   0.6413309137E-15 at level  91,
+  host side timing:    436421.21600000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498823306E+02 at level  60,   0.6413306616E-15 at level  91,
+  host side timing:    389923.28100000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498823470E+02 at level  60,   0.6413303587E-15 at level  91,
+  host side timing:    397969.92999999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498823580E+02 at level  60,   0.6413300351E-15 at level  91,
+  host side timing:    412364.40299999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521272E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.101454 Pa/s in domain  1
+ 
+ Time step:       25, model time: 2000-01-01 00:03:20.000 forecast time 00D 00H03M20S
+  perform_dyn_substepping: physics_generation =           25  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498822295E+02 at level  60,   0.6413297068E-15 at level  91,
+  host side timing:    325255.76799999998      us, lvn_only:  T , istep:            1
+  host side timing:    356646.32600000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498822639E+02 at level  60,   0.6614308424E-15 at level  91,
+  host side timing:    396465.24900000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498822878E+02 at level  60,   0.6614305214E-15 at level  91,
+  host side timing:    380696.32400000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498823042E+02 at level  60,   0.6614301745E-15 at level  91,
+  host side timing:    345517.53700000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498823152E+02 at level  60,   0.6614298218E-15 at level  91,
+  host side timing:    342136.65600000002      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.101256 Pa/s in domain  1
+ 
+ Time step:       26, model time: 2000-01-01 00:03:28.000 forecast time 00D 00H03M28S
+  perform_dyn_substepping: physics_generation =           26  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498821867E+02 at level  60,   0.6614294735E-15 at level  91,
+  host side timing:    327652.07400000002      us, lvn_only:  T , istep:            1
+  host side timing:    451178.14799999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498822210E+02 at level  60,   0.6811324074E-15 at level  91,
+  host side timing:    394034.35100000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498822449E+02 at level  60,   0.6811320176E-15 at level  91,
+  host side timing:    431280.71799999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498822613E+02 at level  60,   0.6811316260E-15 at level  91,
+  host side timing:    373081.62900000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498822723E+02 at level  60,   0.6811312432E-15 at level  91,
+  host side timing:    425193.30200000003      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521272E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.103464 Pa/s in domain  1
+ 
+ Time step:       27, model time: 2000-01-01 00:03:36.000 forecast time 00D 00H03M36S
+  perform_dyn_substepping: physics_generation =           27  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498821438E+02 at level  60,   0.6811308737E-15 at level  91,
+  host side timing:    391226.60300000000      us, lvn_only:  T , istep:            1
+  host side timing:    445538.78000000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498821781E+02 at level  60,   0.7004527420E-15 at level  91,
+  host side timing:    416663.56500000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498822020E+02 at level  60,   0.7004521416E-15 at level  91,
+  host side timing:    354810.67300000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498822184E+02 at level  60,   0.7004515970E-15 at level  91,
+  host side timing:    355567.35399999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498822294E+02 at level  60,   0.7004511011E-15 at level  91,
+  host side timing:    408589.20400000003      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.103281 Pa/s in domain  1
+ 
+ Time step:       28, model time: 2000-01-01 00:03:44.000 forecast time 00D 00H03M44S
+  perform_dyn_substepping: physics_generation =           28  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498821009E+02 at level  60,   0.7004506467E-15 at level  91,
+  host side timing:    410997.63400000002      us, lvn_only:  T , istep:            1
+  host side timing:    354697.35900000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498821353E+02 at level  60,   0.7194033073E-15 at level  91,
+  host side timing:    355329.97800000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498821591E+02 at level  60,   0.7194024767E-15 at level  91,
+  host side timing:    524631.17700000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498821755E+02 at level  60,   0.7194017639E-15 at level  91,
+  host side timing:    425664.99699999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498821865E+02 at level  60,   0.7194011434E-15 at level  91,
+  host side timing:    434981.55599999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521273E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.106368 Pa/s in domain  1
+ 
+ Time step:       29, model time: 2000-01-01 00:03:52.000 forecast time 00D 00H03M52S
+  perform_dyn_substepping: physics_generation =           29  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498820580E+02 at level  60,   0.7194005958E-15 at level  91,
+  host side timing:    356988.35600000003      us, lvn_only:  T , istep:            1
+  host side timing:    389410.97899999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498820924E+02 at level  60,   0.7379985002E-15 at level  91,
+  host side timing:    388397.66800000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498821162E+02 at level  60,   0.7379975584E-15 at level  91,
+  host side timing:    401121.25300000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498821326E+02 at level  60,   0.7379967680E-15 at level  91,
+  host side timing:    438678.39500000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498821436E+02 at level  60,   0.7379960916E-15 at level  91,
+  host side timing:    395486.87699999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.106316 Pa/s in domain  1
+ 
+ Time step:       30, model time: 2000-01-01 00:04:00.000 forecast time 00D 00H04M00S
+  perform_dyn_substepping: physics_generation =           30  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498820151E+02 at level  60,   0.7379955026E-15 at level  91,
+  host side timing:    400189.05900000001      us, lvn_only:  T , istep:            1
+  host side timing:    436055.15299999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498820495E+02 at level  60,   0.7562509369E-15 at level  91,
+  host side timing:    443752.05400000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498820733E+02 at level  60,   0.7562499016E-15 at level  91,
+  host side timing:    401392.12400000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498820897E+02 at level  60,   0.7562490483E-15 at level  91,
+  host side timing:    372237.35200000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498821007E+02 at level  60,   0.7562483285E-15 at level  91,
+  host side timing:    357246.79900000000      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521273E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.107783 Pa/s in domain  1
+ 
+ Time step:       31, model time: 2000-01-01 00:04:08.000 forecast time 00D 00H04M08S
+  perform_dyn_substepping: physics_generation =           31  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498819722E+02 at level  60,   0.7562477089E-15 at level  91,
+  host side timing:    382195.46100000001      us, lvn_only:  T , istep:            1
+  host side timing:    389522.64700000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498820066E+02 at level  60,   0.7741840947E-15 at level  91,
+  host side timing:    400405.36499999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498820304E+02 at level  60,   0.7741829902E-15 at level  91,
+  host side timing:    412331.34600000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498820468E+02 at level  60,   0.7741820923E-15 at level  91,
+  host side timing:    402324.08600000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498820578E+02 at level  60,   0.7741813434E-15 at level  91,
+  host side timing:    411727.01400000002      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.107793 Pa/s in domain  1
+ 
+ Time step:       32, model time: 2000-01-01 00:04:16.000 forecast time 00D 00H04M16S
+  perform_dyn_substepping: physics_generation =           32  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498819293E+02 at level  60,   0.7741807050E-15 at level  91,
+  host side timing:    365536.22600000002      us, lvn_only:  T , istep:            1
+  host side timing:    436580.57400000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498819636E+02 at level  60,   0.7918204862E-15 at level  91,
+  host side timing:    442425.92099999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498819875E+02 at level  60,   0.7918193675E-15 at level  91,
+  host side timing:    441968.88000000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498820039E+02 at level  60,   0.7918184661E-15 at level  91,
+  host side timing:    430120.49599999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498820149E+02 at level  60,   0.7918177195E-15 at level  91,
+  host side timing:    426078.64299999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521273E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.109498 Pa/s in domain  1
+ 
+ Time step:       33, model time: 2000-01-01 00:04:24.000 forecast time 00D 00H04M24S
+  perform_dyn_substepping: physics_generation =           33  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498818864E+02 at level  60,   0.7918170861E-15 at level  91,
+  host side timing:    357214.28800000000      us, lvn_only:  T , istep:            1
+  host side timing:    369993.29800000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498819207E+02 at level  60,   0.8091598250E-15 at level  91,
+  host side timing:    404549.48700000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498819446E+02 at level  60,   0.8091587096E-15 at level  91,
+  host side timing:    439280.28399999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498819610E+02 at level  60,   0.8091578223E-15 at level  91,
+  host side timing:    362775.33399999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498819720E+02 at level  60,   0.8091570950E-15 at level  91,
+  host side timing:    365949.82400000002      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.109518 Pa/s in domain  1
+ 
+ Time step:       34, model time: 2000-01-01 00:04:32.000 forecast time 00D 00H04M32S
+  perform_dyn_substepping: physics_generation =           34  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498818435E+02 at level  60,   0.8091564830E-15 at level  91,
+  host side timing:    401331.11200000002      us, lvn_only:  T , istep:            1
+  host side timing:    407109.13299999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498818778E+02 at level  60,   0.8262067952E-15 at level  91,
+  host side timing:    420357.31300000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498819017E+02 at level  60,   0.8262057173E-15 at level  91,
+  host side timing:    411053.67700000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498819180E+02 at level  60,   0.8262048710E-15 at level  91,
+  host side timing:    392453.95799999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498819290E+02 at level  60,   0.8262041839E-15 at level  91,
+  host side timing:    400810.29599999997      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521274E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.112173 Pa/s in domain  1
+ 
+ Time step:       35, model time: 2000-01-01 00:04:40.000 forecast time 00D 00H04M40S
+  perform_dyn_substepping: physics_generation =           35  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498818005E+02 at level  60,   0.8262036100E-15 at level  91,
+  host side timing:    373694.59800000000      us, lvn_only:  T , istep:            1
+  host side timing:    394852.37699999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498818348E+02 at level  60,   0.8429622596E-15 at level  91,
+  host side timing:    357813.51199999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498818587E+02 at level  60,   0.8429612121E-15 at level  91,
+  host side timing:    351963.90800000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498818751E+02 at level  60,   0.8429604007E-15 at level  91,
+  host side timing:    439829.06500000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498818861E+02 at level  60,   0.8429597486E-15 at level  91,
+  host side timing:    393508.93199999997      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.112194 Pa/s in domain  1
+ 
+ Time step:       36, model time: 2000-01-01 00:04:48.000 forecast time 00D 00H04M48S
+  perform_dyn_substepping: physics_generation =           36  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498817576E+02 at level  60,   0.8429592074E-15 at level  91,
+  host side timing:    401460.99900000001      us, lvn_only:  T , istep:            1
+  host side timing:    391674.72499999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498817919E+02 at level  60,   0.8594287228E-15 at level  91,
+  host side timing:    369367.51899999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498818158E+02 at level  60,   0.8594277074E-15 at level  91,
+  host side timing:    371503.83199999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498818322E+02 at level  60,   0.8594269298E-15 at level  91,
+  host side timing:    404192.42999999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498818431E+02 at level  60,   0.8594263094E-15 at level  91,
+  host side timing:    361095.34100000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521274E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.114111 Pa/s in domain  1
+ 
+ Time step:       37, model time: 2000-01-01 00:04:56.000 forecast time 00D 00H04M56S
+  perform_dyn_substepping: physics_generation =           37  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498817146E+02 at level  60,   0.8594257961E-15 at level  91,
+  host side timing:    420796.49400000001      us, lvn_only:  T , istep:            1
+  host side timing:    390735.49200000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498817489E+02 at level  60,   0.8756011374E-15 at level  91,
+  host side timing:    397881.69099999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498817728E+02 at level  60,   0.8756002529E-15 at level  91,
+  host side timing:    391917.50099999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498817892E+02 at level  60,   0.8755995792E-15 at level  91,
+  host side timing:    431865.66899999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498818002E+02 at level  60,   0.8755990408E-15 at level  91,
+  host side timing:    434290.93400000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.114131 Pa/s in domain  1
+ 
+ Time step:       38, model time: 2000-01-01 00:05:04.000 forecast time 00D 00H05M04S
+  perform_dyn_substepping: physics_generation =           38  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498816717E+02 at level  60,   0.8755985919E-15 at level  91,
+  host side timing:    326014.08700000000      us, lvn_only:  T , istep:            1
+  host side timing:    355013.55400000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498817060E+02 at level  60,   0.8914827254E-15 at level  91,
+  host side timing:    397969.87900000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498817299E+02 at level  60,   0.8914819980E-15 at level  91,
+  host side timing:    391420.84499999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498817462E+02 at level  60,   0.8914814474E-15 at level  91,
+  host side timing:    365678.64799999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498817572E+02 at level  60,   0.8914810050E-15 at level  91,
+  host side timing:    397091.82799999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521275E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.114468 Pa/s in domain  1
+ 
+ Time step:       39, model time: 2000-01-01 00:05:12.000 forecast time 00D 00H05M12S
+  perform_dyn_substepping: physics_generation =           39  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498816287E+02 at level  60,   0.8914806307E-15 at level  91,
+  host side timing:    347911.99400000001      us, lvn_only:  T , istep:            1
+  host side timing:    392921.11300000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498816630E+02 at level  60,   0.9070754514E-15 at level  91,
+  host side timing:    500493.87699999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498816869E+02 at level  60,   0.9070748827E-15 at level  91,
+  host side timing:    407667.47800000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498817032E+02 at level  60,   0.9070744567E-15 at level  91,
+  host side timing:    386580.45600000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498817142E+02 at level  60,   0.9070741116E-15 at level  91,
+  host side timing:    365164.58199999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.114521 Pa/s in domain  1
+ 
+ Time step:       40, model time: 2000-01-01 00:05:20.000 forecast time 00D 00H05M20S
+  perform_dyn_substepping: physics_generation =           40  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498815857E+02 at level  60,   0.9070738129E-15 at level  91,
+  host side timing:    384989.18099999998      us, lvn_only:  T , istep:            1
+  host side timing:    391308.30300000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498816200E+02 at level  60,   0.9223836970E-15 at level  91,
+  host side timing:    372018.53300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498816439E+02 at level  60,   0.9223832795E-15 at level  91,
+  host side timing:    398134.54300000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498816603E+02 at level  60,   0.9223829719E-15 at level  91,
+  host side timing:    393358.28300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498816712E+02 at level  60,   0.9223827187E-15 at level  91,
+  host side timing:    412745.80800000002      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521275E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.116687 Pa/s in domain  1
+ 
+ Time step:       41, model time: 2000-01-01 00:05:28.000 forecast time 00D 00H05M28S
+  perform_dyn_substepping: physics_generation =           41  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498815427E+02 at level  60,   0.9223824911E-15 at level  91,
+  host side timing:    391095.98999999999      us, lvn_only:  T , istep:            1
+  host side timing:    356252.55400000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498815770E+02 at level  60,   0.9374092026E-15 at level  91,
+  host side timing:    429948.60300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498816009E+02 at level  60,   0.9374088487E-15 at level  91,
+  host side timing:    389855.10100000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498816173E+02 at level  60,   0.9374085905E-15 at level  91,
+  host side timing:    374011.42999999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498816282E+02 at level  60,   0.9374083740E-15 at level  91,
+  host side timing:    405745.33100000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.116758 Pa/s in domain  1
+ 
+ Time step:       42, model time: 2000-01-01 00:05:36.000 forecast time 00D 00H05M36S
+  perform_dyn_substepping: physics_generation =           42  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498814997E+02 at level  60,   0.9374081722E-15 at level  91,
+  host side timing:    430635.39799999999      us, lvn_only:  T , istep:            1
+  host side timing:    400139.53100000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498815340E+02 at level  60,   0.9521566221E-15 at level  91,
+  host side timing:    396577.98300000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498815579E+02 at level  60,   0.9521562868E-15 at level  91,
+  host side timing:    401729.52700000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498815743E+02 at level  60,   0.9521560401E-15 at level  91,
+  host side timing:    355384.99300000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498815852E+02 at level  60,   0.9521558281E-15 at level  91,
+  host side timing:    444748.24900000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521275E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.117682 Pa/s in domain  1
+ 
+ Time step:       43, model time: 2000-01-01 00:05:44.000 forecast time 00D 00H05M44S
+  perform_dyn_substepping: physics_generation =           43  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498814567E+02 at level  60,   0.9521556240E-15 at level  91,
+  host side timing:    348812.91899999999      us, lvn_only:  T , istep:            1
+  host side timing:    397736.40899999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814910E+02 at level  60,   0.9666274891E-15 at level  91,
+  host side timing:    389209.74400000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498815149E+02 at level  60,   0.9666271469E-15 at level  91,
+  host side timing:    442914.16399999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498815313E+02 at level  60,   0.9666268891E-15 at level  91,
+  host side timing:    375489.13600000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498815422E+02 at level  60,   0.9666266609E-15 at level  91,
+  host side timing:    387277.80699999997      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.117721 Pa/s in domain  1
+ 
+ Time step:       44, model time: 2000-01-01 00:05:52.000 forecast time 00D 00H05M52S
+  perform_dyn_substepping: physics_generation =           44  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498814137E+02 at level  60,   0.9666264358E-15 at level  91,
+  host side timing:    391553.57900000003      us, lvn_only:  T , istep:            1
+  host side timing:    421920.49099999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814480E+02 at level  60,   0.9808270744E-15 at level  91,
+  host side timing:    441993.75599999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814719E+02 at level  60,   0.9808267089E-15 at level  91,
+  host side timing:    369793.45799999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814882E+02 at level  60,   0.9808264250E-15 at level  91,
+  host side timing:    355134.25699999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814992E+02 at level  60,   0.9808261673E-15 at level  91,
+  host side timing:    391066.36300000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521276E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.118364 Pa/s in domain  1
+ 
+ Time step:       45, model time: 2000-01-01 00:06:00.000 forecast time 00D 00H06M00S
+  perform_dyn_substepping: physics_generation =           45  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498813707E+02 at level  60,   0.9808259091E-15 at level  91,
+  host side timing:    407354.53499999997      us, lvn_only:  T , istep:            1
+  host side timing:    359262.66600000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814050E+02 at level  60,   0.9947571675E-15 at level  91,
+  host side timing:    409156.78000000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814288E+02 at level  60,   0.9947567698E-15 at level  91,
+  host side timing:    394923.10100000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814452E+02 at level  60,   0.9947564514E-15 at level  91,
+  host side timing:    399632.64299999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814562E+02 at level  60,   0.9947561566E-15 at level  91,
+  host side timing:    368012.55599999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.118425 Pa/s in domain  1
+ 
+ Time step:       46, model time: 2000-01-01 00:06:08.000 forecast time 00D 00H06M08S
+  perform_dyn_substepping: physics_generation =           46  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498813276E+02 at level  60,   0.9947558588E-15 at level  91,
+  host side timing:    416544.34700000001      us, lvn_only:  T , istep:            1
+  host side timing:    421073.70299999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498813619E+02 at level  60,   0.1008423373E-14 at level  91,
+  host side timing:    433295.44699999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498813858E+02 at level  60,   0.1008422938E-14 at level  91,
+  host side timing:    394341.48800000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814022E+02 at level  60,   0.1008422582E-14 at level  91,
+  host side timing:    399413.06599999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498814131E+02 at level  60,   0.1008422247E-14 at level  91,
+  host side timing:    449834.17200000002      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521276E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.116779 Pa/s in domain  1
+ 
+ Time step:       47, model time: 2000-01-01 00:06:16.000 forecast time 00D 00H06M16S
+  perform_dyn_substepping: physics_generation =           47  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498812846E+02 at level  60,   0.1008421908E-14 at level  91,
+  host side timing:    327404.14299999998      us, lvn_only:  T , istep:            1
+  host side timing:    416462.93599999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498813189E+02 at level  60,   0.1021827113E-14 at level  91,
+  host side timing:    380110.80900000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498813427E+02 at level  60,   0.1021826640E-14 at level  91,
+  host side timing:    409981.96200000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498813591E+02 at level  60,   0.1021826245E-14 at level  91,
+  host side timing:    397645.34100000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498813701E+02 at level  60,   0.1021825870E-14 at level  91,
+  host side timing:    443141.68199999997      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.116505 Pa/s in domain  1
+ 
+ Time step:       48, model time: 2000-01-01 00:06:24.000 forecast time 00D 00H06M24S
+  perform_dyn_substepping: physics_generation =           48  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498812415E+02 at level  60,   0.1021825489E-14 at level  91,
+  host side timing:    418761.32500000001      us, lvn_only:  T , istep:            1
+  host side timing:    427224.76100000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498812758E+02 at level  60,   0.1034974012E-14 at level  91,
+  host side timing:    410876.71799999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498812997E+02 at level  60,   0.1034973501E-14 at level  91,
+  host side timing:    396574.40100000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498813161E+02 at level  60,   0.1034973067E-14 at level  91,
+  host side timing:    424750.34600000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498813270E+02 at level  60,   0.1034972653E-14 at level  91,
+  host side timing:    392869.27299999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521276E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.116632 Pa/s in domain  1
+ 
+ Time step:       49, model time: 2000-01-01 00:06:32.000 forecast time 00D 00H06M32S
+  perform_dyn_substepping: physics_generation =           49  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498811985E+02 at level  60,   0.1034972231E-14 at level  91,
+  host side timing:    404074.41100000002      us, lvn_only:  T , istep:            1
+  host side timing:    424608.33500000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498812328E+02 at level  60,   0.1047865335E-14 at level  91,
+  host side timing:    464458.84299999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498812566E+02 at level  60,   0.1047864785E-14 at level  91,
+  host side timing:    398400.70899999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498812730E+02 at level  60,   0.1047864313E-14 at level  91,
+  host side timing:    398183.17999999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498812840E+02 at level  60,   0.1047863859E-14 at level  91,
+  host side timing:    360872.47100000002      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.116376 Pa/s in domain  1
+ 
+ Time step:       50, model time: 2000-01-01 00:06:40.000 forecast time 00D 00H06M40S
+  perform_dyn_substepping: physics_generation =           50  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498811554E+02 at level  60,   0.1047863397E-14 at level  91,
+  host side timing:    350586.88500000001      us, lvn_only:  T , istep:            1
+  host side timing:    425154.53600000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811897E+02 at level  60,   0.1060506685E-14 at level  91,
+  host side timing:    405265.13600000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498812135E+02 at level  60,   0.1060506097E-14 at level  91,
+  host side timing:    398542.12300000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498812299E+02 at level  60,   0.1060505586E-14 at level  91,
+  host side timing:    440889.41600000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498812409E+02 at level  60,   0.1060505092E-14 at level  91,
+  host side timing:    420291.78399999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521277E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.155924 Pa/s in domain  1
+ 
+ Time step:       51, model time: 2000-01-01 00:06:48.000 forecast time 00D 00H06M48S
+  perform_dyn_substepping: physics_generation =           51  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498811123E+02 at level  60,   0.1060504590E-14 at level  91,
+  host side timing:    330255.99599999998      us, lvn_only:  T , istep:            1
+  host side timing:    378768.97499999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811466E+02 at level  60,   0.1072898776E-14 at level  91,
+  host side timing:    413227.85200000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811705E+02 at level  60,   0.1072898145E-14 at level  91,
+  host side timing:    436814.38099999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811868E+02 at level  60,   0.1072897595E-14 at level  91,
+  host side timing:    415654.01500000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811978E+02 at level  60,   0.1072897063E-14 at level  91,
+  host side timing:    405606.18099999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.155789 Pa/s in domain  1
+ 
+ Time step:       52, model time: 2000-01-01 00:06:56.000 forecast time 00D 00H06M56S
+  perform_dyn_substepping: physics_generation =           52  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498810692E+02 at level  60,   0.1072896523E-14 at level  91,
+  host side timing:    425873.58600000001      us, lvn_only:  T , istep:            1
+  host side timing:    376423.80099999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811035E+02 at level  60,   0.1085047069E-14 at level  91,
+  host side timing:    397363.91999999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811274E+02 at level  60,   0.1085046400E-14 at level  91,
+  host side timing:    437441.69000000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811437E+02 at level  60,   0.1085045813E-14 at level  91,
+  host side timing:    391764.99800000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811547E+02 at level  60,   0.1085045248E-14 at level  91,
+  host side timing:    405060.82299999997      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521277E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.167499 Pa/s in domain  1
+ 
+ Time step:       53, model time: 2000-01-01 00:07:04.000 forecast time 00D 00H07M04S
+  perform_dyn_substepping: physics_generation =           53  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498810261E+02 at level  60,   0.1085044676E-14 at level  91,
+  host side timing:    369300.12800000003      us, lvn_only:  T , istep:            1
+  host side timing:    417153.26199999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498810604E+02 at level  60,   0.1096952077E-14 at level  91,
+  host side timing:    386204.63500000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498810843E+02 at level  60,   0.1096951365E-14 at level  91,
+  host side timing:    423469.66399999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811006E+02 at level  60,   0.1096950746E-14 at level  91,
+  host side timing:    432634.16700000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498811116E+02 at level  60,   0.1096950153E-14 at level  91,
+  host side timing:    454532.62300000002      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.167320 Pa/s in domain  1
+ 
+ Time step:       54, model time: 2000-01-01 00:07:12.000 forecast time 00D 00H07M12S
+  perform_dyn_substepping: physics_generation =           54  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498809830E+02 at level  60,   0.1096949558E-14 at level  91,
+  host side timing:    365778.28999999998      us, lvn_only:  T , istep:            1
+  host side timing:    411824.92300000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498810173E+02 at level  60,   0.1108619200E-14 at level  91,
+  host side timing:    366770.03499999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498810412E+02 at level  60,   0.1108618457E-14 at level  91,
+  host side timing:    408211.08799999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498810575E+02 at level  60,   0.1108617816E-14 at level  91,
+  host side timing:    414028.37099999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498810685E+02 at level  60,   0.1108617208E-14 at level  91,
+  host side timing:    421207.05200000003      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521277E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.177603 Pa/s in domain  1
+ 
+ Time step:       55, model time: 2000-01-01 00:07:20.000 forecast time 00D 00H07M20S
+  perform_dyn_substepping: physics_generation =           55  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498809399E+02 at level  60,   0.1108616600E-14 at level  91,
+  host side timing:    378942.31000000000      us, lvn_only:  T , istep:            1
+  host side timing:    450885.00199999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498809742E+02 at level  60,   0.1120048793E-14 at level  91,
+  host side timing:    406359.63000000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498809980E+02 at level  60,   0.1120048039E-14 at level  91,
+  host side timing:    365397.66200000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498810144E+02 at level  60,   0.1120047392E-14 at level  91,
+  host side timing:    421604.28800000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498810253E+02 at level  60,   0.1120046779E-14 at level  91,
+  host side timing:    373184.57699999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.177593 Pa/s in domain  1
+ 
+ Time step:       56, model time: 2000-01-01 00:07:28.000 forecast time 00D 00H07M28S
+  perform_dyn_substepping: physics_generation =           56  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498808967E+02 at level  60,   0.1120046168E-14 at level  91,
+  host side timing:    384390.10200000001      us, lvn_only:  T , istep:            1
+  host side timing:    400872.92800000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498809310E+02 at level  60,   0.1131246235E-14 at level  91,
+  host side timing:    403945.81900000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498809549E+02 at level  60,   0.1131245475E-14 at level  91,
+  host side timing:    468765.35100000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498809713E+02 at level  60,   0.1131244824E-14 at level  91,
+  host side timing:    436921.16700000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498809822E+02 at level  60,   0.1131244210E-14 at level  91,
+  host side timing:    378459.44600000000      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521278E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.179991 Pa/s in domain  1
+ 
+ Time step:       57, model time: 2000-01-01 00:07:36.000 forecast time 00D 00H07M36S
+  perform_dyn_substepping: physics_generation =           57  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498808536E+02 at level  60,   0.1131243597E-14 at level  91,
+  host side timing:    444979.62599999999      us, lvn_only:  T , istep:            1
+  host side timing:    430202.53800000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498808879E+02 at level  60,   0.1142211999E-14 at level  91,
+  host side timing:    408344.30099999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498809118E+02 at level  60,   0.1142211233E-14 at level  91,
+  host side timing:    401879.17400000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498809281E+02 at level  60,   0.1142210579E-14 at level  91,
+  host side timing:    424497.40500000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498809391E+02 at level  60,   0.1142209962E-14 at level  91,
+  host side timing:    443540.00500000000      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.180122 Pa/s in domain  1
+ 
+ Time step:       58, model time: 2000-01-01 00:07:44.000 forecast time 00D 00H07M44S
+  perform_dyn_substepping: physics_generation =           58  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498808105E+02 at level  60,   0.1142209345E-14 at level  91,
+  host side timing:    418060.90399999998      us, lvn_only:  T , istep:            1
+  host side timing:    456782.94799999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498808448E+02 at level  60,   0.1152951428E-14 at level  91,
+  host side timing:    395504.17599999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498808686E+02 at level  60,   0.1152950650E-14 at level  91,
+  host side timing:    410208.41300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498808850E+02 at level  60,   0.1152949986E-14 at level  91,
+  host side timing:    404203.57100000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498808959E+02 at level  60,   0.1152949360E-14 at level  91,
+  host side timing:    424175.53000000003      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521278E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.181315 Pa/s in domain  1
+ 
+ Time step:       59, model time: 2000-01-01 00:07:52.000 forecast time 00D 00H07M52S
+  perform_dyn_substepping: physics_generation =           59  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498807673E+02 at level  60,   0.1152948734E-14 at level  91,
+  host side timing:    404823.48800000001      us, lvn_only:  T , istep:            1
+  host side timing:    400401.61499999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498808016E+02 at level  60,   0.1163464842E-14 at level  91,
+  host side timing:    396079.73900000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498808255E+02 at level  60,   0.1163464038E-14 at level  91,
+  host side timing:    395957.59999999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498808418E+02 at level  60,   0.1163463356E-14 at level  91,
+  host side timing:    406927.51500000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498808528E+02 at level  60,   0.1163462714E-14 at level  91,
+  host side timing:    356970.89700000000      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.181696 Pa/s in domain  1
+ 
+ Time step:       60, model time: 2000-01-01 00:08:00.000 forecast time 00D 00H08M00S
+  perform_dyn_substepping: physics_generation =           60  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498807241E+02 at level  60,   0.1163462076E-14 at level  91,
+  host side timing:    384588.30499999999      us, lvn_only:  T , istep:            1
+  host side timing:    401314.83399999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498807584E+02 at level  60,   0.1179116602E-14 at level  91,
+  host side timing:    401330.35300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498807823E+02 at level  60,   0.1179126733E-14 at level  91,
+  host side timing:    431108.68099999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498807986E+02 at level  60,   0.1179135654E-14 at level  91,
+  host side timing:    371010.31400000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498808096E+02 at level  60,   0.1179143572E-14 at level  91,
+  host side timing:    420519.13799999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521279E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.182208 Pa/s in domain  1
+ 
+ Time step:       61, model time: 2000-01-01 00:08:08.000 forecast time 00D 00H08M08S
+  perform_dyn_substepping: physics_generation =           61  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498806810E+02 at level  60,   0.1179150663E-14 at level  91,
+  host side timing:    377513.46299999999      us, lvn_only:  T , istep:            1
+  host side timing:    400278.35499999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498807153E+02 at level  60,   0.1196343771E-14 at level  91,
+  host side timing:    424416.00300000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498807391E+02 at level  60,   0.1196349309E-14 at level  91,
+  host side timing:    370030.69799999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498807555E+02 at level  60,   0.1196355280E-14 at level  91,
+  host side timing:    439235.35999999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498807664E+02 at level  60,   0.1196361562E-14 at level  91,
+  host side timing:    391761.70299999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.182465 Pa/s in domain  1
+ 
+ Time step:       62, model time: 2000-01-01 00:08:16.000 forecast time 00D 00H08M16S
+  perform_dyn_substepping: physics_generation =           62  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498806378E+02 at level  60,   0.1196368062E-14 at level  91,
+  host side timing:    374934.50599999999      us, lvn_only:  T , istep:            1
+  host side timing:    376168.38600000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498806721E+02 at level  60,   0.1214283191E-14 at level  91,
+  host side timing:    406690.59600000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498806959E+02 at level  60,   0.1214300338E-14 at level  91,
+  host side timing:    360630.07500000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498807123E+02 at level  60,   0.1214315636E-14 at level  91,
+  host side timing:    396264.37300000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498807232E+02 at level  60,   0.1214329401E-14 at level  91,
+  host side timing:    370645.66800000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521279E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.188430 Pa/s in domain  1
+ 
+ Time step:       63, model time: 2000-01-01 00:08:24.000 forecast time 00D 00H08M24S
+  perform_dyn_substepping: physics_generation =           63  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498805946E+02 at level  60,   0.1214341894E-14 at level  91,
+  host side timing:    370402.05900000001      us, lvn_only:  T , istep:            1
+  host side timing:    396557.62500000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498806289E+02 at level  60,   0.1230947722E-14 at level  91,
+  host side timing:    414284.82299999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498806527E+02 at level  60,   0.1230965291E-14 at level  91,
+  host side timing:    383077.10300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498806691E+02 at level  60,   0.1230981715E-14 at level  91,
+  host side timing:    405996.51799999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498806800E+02 at level  60,   0.1230997165E-14 at level  91,
+  host side timing:    392193.09399999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.188692 Pa/s in domain  1
+ 
+ Time step:       64, model time: 2000-01-01 00:08:32.000 forecast time 00D 00H08M32S
+  perform_dyn_substepping: physics_generation =           64  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498805514E+02 at level  60,   0.1231011784E-14 at level  91,
+  host side timing:    418364.53000000003      us, lvn_only:  T , istep:            1
+  host side timing:    406505.04499999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498805857E+02 at level  60,   0.1248483859E-14 at level  91,
+  host side timing:    420044.44400000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498806095E+02 at level  60,   0.1248506383E-14 at level  91,
+  host side timing:    399104.86900000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498806259E+02 at level  60,   0.1248526764E-14 at level  91,
+  host side timing:    354496.01699999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498806368E+02 at level  60,   0.1248545388E-14 at level  91,
+  host side timing:    417856.38699999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521279E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.188890 Pa/s in domain  1
+ 
+ Time step:       65, model time: 2000-01-01 00:08:40.000 forecast time 00D 00H08M40S
+  perform_dyn_substepping: physics_generation =           65  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498805082E+02 at level  60,   0.1248562559E-14 at level  91,
+  host side timing:    355939.74599999998      us, lvn_only:  T , istep:            1
+  host side timing:    434832.18699999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498805425E+02 at level  60,   0.1264690599E-14 at level  91,
+  host side timing:    397227.71399999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498805663E+02 at level  60,   0.1264712386E-14 at level  91,
+  host side timing:    361810.07799999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498805826E+02 at level  60,   0.1264732918E-14 at level  91,
+  host side timing:    384083.23400000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498805936E+02 at level  60,   0.1264752393E-14 at level  91,
+  host side timing:    398436.78000000003      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.187418 Pa/s in domain  1
+ 
+ Time step:       66, model time: 2000-01-01 00:08:48.000 forecast time 00D 00H08M48S
+  perform_dyn_substepping: physics_generation =           66  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498804649E+02 at level  60,   0.1264770969E-14 at level  91,
+  host side timing:    364356.26600000000      us, lvn_only:  T , istep:            1
+  host side timing:    396832.35300000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498804992E+02 at level  60,   0.1281640598E-14 at level  91,
+  host side timing:    398588.55099999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498805231E+02 at level  60,   0.1281669317E-14 at level  91,
+  host side timing:    411752.15100000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498805394E+02 at level  60,   0.1281695338E-14 at level  91,
+  host side timing:    390627.53200000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498805504E+02 at level  60,   0.1281719149E-14 at level  91,
+  host side timing:    412042.60499999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521280E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.188308 Pa/s in domain  1
+ 
+ Time step:       67, model time: 2000-01-01 00:08:56.000 forecast time 00D 00H08M56S
+  perform_dyn_substepping: physics_generation =           67  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498804217E+02 at level  60,   0.1281741132E-14 at level  91,
+  host side timing:    372781.87800000003      us, lvn_only:  T , istep:            1
+  host side timing:    348676.84499999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498804560E+02 at level  60,   0.1297279236E-14 at level  91,
+  host side timing:    403224.55800000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498804798E+02 at level  60,   0.1297308429E-14 at level  91,
+  host side timing:    388666.57199999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498804962E+02 at level  60,   0.1297335668E-14 at level  91,
+  host side timing:    396421.22999999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498805071E+02 at level  60,   0.1297361262E-14 at level  91,
+  host side timing:    431741.76699999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.157893 Pa/s in domain  1
+ 
+ Time step:       68, model time: 2000-01-01 00:09:04.000 forecast time 00D 00H09M04S
+  perform_dyn_substepping: physics_generation =           68  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498803785E+02 at level  60,   0.1297385463E-14 at level  91,
+  host side timing:    374066.04900000000      us, lvn_only:  T , istep:            1
+  host side timing:    351860.69799999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498804128E+02 at level  60,   0.1313669453E-14 at level  91,
+  host side timing:    431780.28100000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498804366E+02 at level  60,   0.1313703163E-14 at level  91,
+  host side timing:    439427.77399999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498804529E+02 at level  60,   0.1313733745E-14 at level  91,
+  host side timing:    406729.48700000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498804639E+02 at level  60,   0.1313761751E-14 at level  91,
+  host side timing:    399741.36499999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521280E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.139691 Pa/s in domain  1
+ 
+ Time step:       69, model time: 2000-01-01 00:09:12.000 forecast time 00D 00H09M12S
+  perform_dyn_substepping: physics_generation =           69  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498803352E+02 at level  60,   0.1313787621E-14 at level  91,
+  host side timing:    408425.52700000000      us, lvn_only:  T , istep:            1
+  host side timing:    434566.78100000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498803695E+02 at level  60,   0.1328852411E-14 at level  91,
+  host side timing:    411873.41499999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498803933E+02 at level  60,   0.1328883687E-14 at level  91,
+  host side timing:    412103.07100000000      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498804097E+02 at level  60,   0.1328912807E-14 at level  91,
+  host side timing:    399875.91999999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498804206E+02 at level  60,   0.1328940126E-14 at level  91,
+  host side timing:    398814.57900000003      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.134830 Pa/s in domain  1
+ 
+ Time step:       70, model time: 2000-01-01 00:09:20.000 forecast time 00D 00H09M20S
+  perform_dyn_substepping: physics_generation =           70  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498802920E+02 at level  60,   0.1328965931E-14 at level  91,
+  host side timing:    324750.35700000002      us, lvn_only:  T , istep:            1
+  host side timing:    440409.37400000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498803262E+02 at level  60,   0.1344743069E-14 at level  91,
+  host side timing:    400363.23300000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498803501E+02 at level  60,   0.1344773967E-14 at level  91,
+  host side timing:    419236.43599999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498803664E+02 at level  60,   0.1344802383E-14 at level  91,
+  host side timing:    428426.79100000003      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498803773E+02 at level  60,   0.1344828742E-14 at level  91,
+  host side timing:    411816.39299999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521280E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.129277 Pa/s in domain  1
+ 
+ Time step:       71, model time: 2000-01-01 00:09:28.000 forecast time 00D 00H09M28S
+  perform_dyn_substepping: physics_generation =           71  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498802487E+02 at level  60,   0.1344853382E-14 at level  91,
+  host side timing:    418753.54300000001      us, lvn_only:  T , istep:            1
+  host side timing:    428852.53700000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498802830E+02 at level  60,   0.1359582043E-14 at level  91,
+  host side timing:    362456.64799999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498803068E+02 at level  60,   0.1359609424E-14 at level  91,
+  host side timing:    449692.16999999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498803231E+02 at level  60,   0.1359635353E-14 at level  91,
+  host side timing:    411139.39399999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498803341E+02 at level  60,   0.1359660066E-14 at level  91,
+  host side timing:    336859.63699999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.123650 Pa/s in domain  1
+ 
+ Time step:       72, model time: 2000-01-01 00:09:36.000 forecast time 00D 00H09M36S
+  perform_dyn_substepping: physics_generation =           72  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498802054E+02 at level  60,   0.1359683753E-14 at level  91,
+  host side timing:    442806.28600000002      us, lvn_only:  T , istep:            1
+  host side timing:    364467.71899999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498802397E+02 at level  60,   0.1375106862E-14 at level  91,
+  host side timing:    441371.16399999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498802635E+02 at level  60,   0.1375134596E-14 at level  91,
+  host side timing:    435135.01799999998      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498802799E+02 at level  60,   0.1375160467E-14 at level  91,
+  host side timing:    417467.24900000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498802908E+02 at level  60,   0.1375184781E-14 at level  91,
+  host side timing:    449403.50699999998      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521281E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.121041 Pa/s in domain  1
+ 
+ Time step:       73, model time: 2000-01-01 00:09:44.000 forecast time 00D 00H09M44S
+  perform_dyn_substepping: physics_generation =           73  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498801621E+02 at level  60,   0.1375207784E-14 at level  91,
+  host side timing:    414757.24599999998      us, lvn_only:  T , istep:            1
+  host side timing:    437296.09600000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498801964E+02 at level  60,   0.1389631621E-14 at level  91,
+  host side timing:    427858.00400000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498802202E+02 at level  60,   0.1389656879E-14 at level  91,
+  host side timing:    440680.36800000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498802366E+02 at level  60,   0.1389681082E-14 at level  91,
+  host side timing:    371044.63699999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498802475E+02 at level  60,   0.1389704392E-14 at level  91,
+  host side timing:    400525.91200000001      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.116503 Pa/s in domain  1
+ 
+ Time step:       74, model time: 2000-01-01 00:09:52.000 forecast time 00D 00H09M52S
+  perform_dyn_substepping: physics_generation =           74  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498801188E+02 at level  60,   0.1389726938E-14 at level  91,
+  host side timing:    397187.97300000000      us, lvn_only:  T , istep:            1
+  host side timing:    440528.57299999997      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498801531E+02 at level  60,   0.1404807470E-14 at level  91,
+  host side timing:    383490.08600000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498801769E+02 at level  60,   0.1404834927E-14 at level  91,
+  host side timing:    401707.89000000001      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498801933E+02 at level  60,   0.1404860722E-14 at level  91,
+  host side timing:    414701.00099999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498802042E+02 at level  60,   0.1404885103E-14 at level  91,
+  host side timing:    397953.45199999999      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ mo_advection_vflux:upwind_vflux_ppm: maximum vertical CFL =  0.20521281E-12
+ nwp_nh_interface:: average |dPS/dt| =    0.110217 Pa/s in domain  1
+ 
+ Time step:       75, model time: 2000-01-01 00:10:00.000 forecast time 00D 00H10M00S
+  perform_dyn_substepping: physics_generation =           75  iau_iter =            0  dt_phy =    8.0000000000000000
+ MAXABS VN, W in domain  1:  0.3498800755E+02 at level  60,   0.1404908272E-14 at level  91,
+  host side timing:    395882.51199999999      us, lvn_only:  T , istep:            1
+  host side timing:    361321.75400000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498801098E+02 at level  60,   0.1419032587E-14 at level  91,
+  host side timing:    441222.40600000002      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498801336E+02 at level  60,   0.1419058037E-14 at level  91,
+  host side timing:    396473.46799999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498801499E+02 at level  60,   0.1419082521E-14 at level  91,
+  host side timing:    369307.06099999999      us, lvn_only:  F , istep:            2
+ MAXABS VN, W in domain  1:  0.3498801609E+02 at level  60,   0.1419106172E-14 at level  91,
+  host side timing:    352414.62199999997      us, lvn_only:  F , istep:            2
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.109057 Pa/s in domain  1
+ destruct_atmo_nonhydrostatic: start to clean up
+ mo_pp_scheduler::pp_scheduler_finalize: 
+ mo_nonhydro_state::destruct_nh_state: Destruction of NH state started
+ mo_nonhydro_state::destruct_nh_state: NH state destruction completed
+ mo_prepadv_state:destruct_prepadv_state: destruction of prep_adv state finished
+ mo_nwp_phy_state:destruct_nwp_phy_state: start to destruct 3D state vector
+ mo_nwp_phy_state:destruct_nwp_phy_state: destruction of 3D state vector finished
+ mo_nwp_lnd_state:destruct_nwp_lnd_state: Destruction of nwp land state started
+ mo_nwp_lnd_state:destruct_nwp_lnd_state: Destruction of nwp land state completed
+ destruct_atmo_nonhydrostatic: clean-up finished
+ 
+ Timer report
+ (master thread only)
+ 
+ ------------------------------   -------   ------------   ------------   ------------   -------------   -------------   -------------    
+ name                             # calls   t_min          t_avg          t_max          total min (s)   total max (s)   total avg (s)    
+ ------------------------------   -------   ------------   ------------   ------------   -------------   -------------   -------------    
+ 
+ total                            1               28m26s         28m26s         28m26s   ************        1706.768        1706.768     
+  L integrate_nh                  75            17.7018s       22.7489s       29.0812s   ************        1706.166        1706.166     
+     L nh_solve                   375            1.9662s        2.4333s        3.0486s   ************         912.501         912.501     
+        L nh_solve.veltend        450           0.32290s       0.39627s       0.55929s   ************         178.323         178.323     
+        L nh_solve.cellcomp       750           0.09437s       0.11230s       0.19002s   ************          84.222          84.222     
+        L nh_solve.edgecomp       750           0.07711s       0.14669s       0.24357s   ************         110.015         110.015     
+        L nh_solve.vnupd          750           0.07466s       0.31137s       0.69228s   ************         233.526         233.526     
+        L nh_solve.vimpl          750           0.32867s       0.40796s       0.59126s   ************         305.971         305.971     
+        L nh_solve.exch           1500          0.00000s       0.00011s       0.05595s   ************           0.166           0.166     
+     L nh_hdiff                   75            0.69618s       0.89163s        1.0938s   ************          66.872          66.872     
+     L transport                  75             3.1178s        3.9808s        4.7858s   ************         298.558         298.558     
+        L adv_horiz               75             2.5218s        3.2969s        4.0037s   ************         247.266         247.266     
+           L adv_hflx             75             2.2500s        3.0056s        3.6063s   ************         225.417         225.417     
+              L back_traj         225           0.01460s       0.04451s       0.09786s   ************          10.014          10.014     
+        L adv_vert                75            0.55077s       0.65099s       0.76897s   ************          48.824          48.824     
+           L adv_vflx             75            0.44067s       0.54091s       0.65180s   ************          40.568          40.568     
+  L action                        75            0.00003s       0.00012s       0.00065s   ************           0.009           0.009     
+ global_sum                       79            0.00000s       0.00000s       0.00000s   ************           0.000           0.000     
+ ordglb_sum                       78            0.00000s       0.00016s       0.01187s   ************           0.012           0.012     
+ physics                          76             2.5469s        5.2952s       10.9013s   ************         402.436         402.436     
+  L phys_acc_sync                 76            0.06712s       0.21438s       0.56330s   ************          16.293          16.293     
+  L satad                         76            0.04755s       0.23695s       0.29488s   ************          18.008          18.008     
+  L phys_u_v                      76            0.11788s       0.12076s       0.16013s   ************           9.178           9.178     
+  L nwp_turbulence                151           0.02063s       0.95520s        2.9013s   ************         144.236         144.236     
+     L nwp_turbtrans              76            0.02063s       0.02606s       0.09931s   ************           1.981           1.981     
+  L nwp_surface                   75            0.00242s       0.00559s       0.06232s   ************           0.419           0.419     
+  L nwp_microphysics              75            0.58904s       0.71312s       0.77288s   ************          53.484          53.484     
+  L rediag_prog_vars              76            0.04336s       0.16703s       0.23636s   ************          12.694          12.694     
+  L nwp_convection                39             1.5927s        2.3608s        3.2328s   ************          92.071          92.071     
+  L sso                           20             1.5858s        2.1994s        3.3161s   ************          43.988          43.988     
+  L cloud_cover                   39            0.27679s       0.29699s       0.37446s   ************          11.583          11.583     
+ nh_diagnostics                   230           0.00000s       0.00636s       0.69792s   ************           1.464           1.464     
+ diagnose_pres_temp               51            0.00043s       0.02388s       0.11151s   ************           1.218           1.218     
+ model_init                       3              6.1516s       15.8892s       33.1561s   ************          47.668          47.668     
+  L compute_domain_decomp         1             0.42510s       0.42510s       0.42510s   ************           0.425           0.425     
+  L compute_intp_coeffs           1              7.3892s        7.3892s        7.3892s   ************           7.389           7.389     
+  L init_ext_data                 1             0.05633s       0.05633s       0.05633s   ************           0.056           0.056     
+  L init_nwp_phy                  1              1.0415s        1.0415s        1.0415s   ************           1.042           1.042     
+ upper_atmosphere                 2             0.00001s       0.00003s       0.00005s   ************           0.000           0.000     
+  L upatmo_construction           1             0.00005s       0.00005s       0.00005s   ************           0.000           0.000     
+  L upatmo_destruction            1             0.00001s       0.00001s       0.00001s   ************           0.000           0.000     
+ write_restart                    2             0.00152s       0.00205s       0.00259s   ************           0.004           0.004     
+  L write_restart_setup           1             0.00256s       0.00256s       0.00256s   ************           0.003           0.003     
+     L write_restart_collectors   208           0.00000s       0.00001s       0.00246s   ************           0.002           0.002     
+        L write_restart_indices   3             0.00039s       0.00082s       0.00125s   ************           0.002           0.002     
+ -------------------------------------------------------------------------------------------------------------------------------------    
+ 
+ mo_ext_data_state:destruct_ext_data: Destruction of data structure for external data started
+ mo_ext_data_state:destruct_ext_data: Destruction of data structure for external data finished
+ mo_interpolation:destruct_int_state: start to destruct int state
+ mo_interpolation:destruct_int_state: destruction of interpolation state finished
+ mo_atmo_model:destruct_atmo_model: destruct_2d_interpol_state is done
+ mo_alloc_patches:destruct_comm_patterns: start
+ mo_alloc_patches:destruct_comm_patterns: destruct_comm_patterns finished
+ mo_alloc_patches:destruct_patches: start
+ mo_alloc_patches:destruct_patches: destruct_patches finished
+ mo_alloc_patches:destruct_patches: start
+ mo_alloc_patches:destruct_patches: destruct_patches finished
+ mo_atmo_model:destruct_atmo_model: destruct_patches is done
+ mo_atmo_model:destruct_atmo_model: clean-up finished
++ set +x
+Tue 24 Mar 2026 01:25:00 PM CET
+OK
+============================
+Script run successfully:  OK
+============================
