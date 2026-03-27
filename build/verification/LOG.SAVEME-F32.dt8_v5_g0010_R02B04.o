@@ -1,0 +1,2594 @@
+SLURMD_DEBUG=2
+SLURMD_NODENAME=nid006547
+SLURM_CLUSTER_NAME=alps-daint
+SLURM_CONF=/var/spool/slurmd/conf-cache/slurm.conf
+SLURM_CPUS_ON_NODE=288
+SLURM_CPU_BIND=quiet,mask_cpu:0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+SLURM_CPU_BIND_LIST=0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+SLURM_CPU_BIND_TYPE=mask_cpu:
+SLURM_CPU_BIND_VERBOSE=quiet
+SLURM_GTIDS=0
+SLURM_JOBID=3010388
+SLURM_JOB_ACCOUNT=g34
+SLURM_JOB_CPUS_PER_NODE=288
+SLURM_JOB_END_TIME=1774626555
+SLURM_JOB_GID=30905
+SLURM_JOB_GROUP=g34
+SLURM_JOB_ID=3010388
+SLURM_JOB_NAME=exclaim_ape_R02B04_dt8_v5_0010_R02B04_G
+SLURM_JOB_NODELIST=nid006547
+SLURM_JOB_NUM_NODES=1
+SLURM_JOB_PARTITION=debug
+SLURM_JOB_QOS=normal
+SLURM_JOB_START_TIME=1774624755
+SLURM_JOB_UID=30293
+SLURM_JOB_USER=pmazumde
+SLURM_LAUNCH_NODE_IPADDR=172.28.20.19
+SLURM_LOCALID=0
+SLURM_MPI_TYPE=cray_shasta
+SLURM_NNODES=1
+SLURM_NODEID=0
+SLURM_NODELIST=nid006547
+SLURM_NPROCS=1
+SLURM_NTASKS=1
+SLURM_OOM_KILL_STEP=0
+SLURM_PRIO_PROCESS=0
+SLURM_PROCID=0
+SLURM_SCRIPT_CONTEXT=prolog_task
+SLURM_SRUN_COMM_HOST=172.28.20.19
+SLURM_SRUN_COMM_PORT=42019
+SLURM_STEPID=0
+SLURM_STEP_ID=0
+SLURM_STEP_LAUNCHER_PORT=42019
+SLURM_STEP_NODELIST=nid006547
+SLURM_STEP_NUM_NODES=1
+SLURM_STEP_NUM_TASKS=1
+SLURM_STEP_RESV_PORTS=24266-24267
+SLURM_STEP_TASKS_PER_NODE=1
+SLURM_SUBMIT_DIR=/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/run
+SLURM_SUBMIT_HOST=daint-ln002
+SLURM_TASKS_PER_NODE=1
+SLURM_TASK_PID=141142
+SLURM_TIME_FORMAT=relative
+SLURM_TOPOLOGY_ADDR=global.group27.nid006547
+SLURM_TOPOLOGY_ADDR_PATTERN=switch.switch.node
+SLURM_UMASK=0022
+drwxr-xr-x+ 2 pmazumde g34 4096 Mar 27 16:17 /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/experiments/exclaim_ape_R02B04_dt8_g0010_R02B04
+cp: cannot stat '/capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/data/pmod.txt': No such file or directory
+no_of_models=1
+-rwxr-xr-x+ 1 pmazumde g34 169589480 Mar 27 14:16 /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon
+	linux-vdso.so.1 (0x00004000266f0000)
+	libvelocity.so => /capstor/scratch/cscs/pmazumde/gitspace/ico2/velocity/libvelocity.so (0x0000400026700000)
+	libblas_lp64.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libblas_lp64.so.0 (0x0000400026cb0000)
+	liblapack_lp64.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/liblapack_lp64.so.0 (0x0000400028470000)
+	libnvf.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libnvf.so (0x0000400028e00000)
+	libnetcdff.so.7 => /user-environment/env/default/lib/libnetcdff.so.7 (0x00004000293e0000)
+	libnetcdf.so.19 => /user-environment/env/default/lib64/libnetcdf.so.19 (0x0000400029640000)
+	libcudart.so.12 => /user-environment/env/default/lib64/libcudart.so.12 (0x0000400029860000)
+	libmpifort_nvidia.so.12 => /user-environment/linux-sles15-neoverse_v2/nvhpc-25.1/cray-mpich-8.1.30-cnnzosnxkgvcmu5qs6vxjnrtknkqwz4k/lib/libmpifort_nvidia.so.12 (0x0000400029920000)
+	libmpi_nvidia.so.12 => /user-environment/linux-sles15-neoverse_v2/nvhpc-25.1/cray-mpich-8.1.30-cnnzosnxkgvcmu5qs6vxjnrtknkqwz4k/lib/libmpi_nvidia.so.12 (0x00004000299c0000)
+	libmpi_gtl_cuda.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/cray-gtl-8.1.30-6fjppprta32hd7giepmvzo7dnq2bartv/lib/libmpi_gtl_cuda.so.0 (0x000040002bd70000)
+	libacchost.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libacchost.so (0x000040002be00000)
+	libaccdevaux.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libaccdevaux.so (0x000040002be90000)
+	libaccdevice.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libaccdevice.so (0x000040002bee0000)
+	libdl.so.2 => /lib64/libdl.so.2 (0x000040002c060000)
+	libcudadevice.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libcudadevice.so (0x000040002c090000)
+	libnvhpcatm.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libnvhpcatm.so (0x000040002c0d0000)
+	libatomic.so.1 => /user-environment/linux-sles15-neoverse_v2/gcc-12.3.0/gcc-13.2.0-iyisbcrs7nsbhcwcncsk52zmo3zjf33i/lib64/libatomic.so.1 (0x000040002c100000)
+	libgcc_s.so.1 => /user-environment/linux-sles15-neoverse_v2/gcc-12.3.0/gcc-13.2.0-iyisbcrs7nsbhcwcncsk52zmo3zjf33i/lib64/libgcc_s.so.1 (0x000040002c130000)
+	libstdc++.so.6 => /user-environment/linux-sles15-neoverse_v2/gcc-12.3.0/gcc-13.2.0-iyisbcrs7nsbhcwcncsk52zmo3zjf33i/lib64/libstdc++.so.6 (0x000040002c170000)
+	libnvomp.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libnvomp.so (0x000040002c3f0000)
+	libpthread.so.0 => /lib64/libpthread.so.0 (0x000040002c610000)
+	libnvcpumath.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libnvcpumath.so (0x000040002c650000)
+	libnvc.so => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/nvhpc-25.1-q44hwfxt5drpht62wudffmbe4g54kzpk/Linux_aarch64/25.1/compilers/lib/libnvc.so (0x000040002c7e0000)
+	librt.so.1 => /lib64/librt.so.1 (0x000040002c840000)
+	libc.so.6 => /lib64/libc.so.6 (0x000040002c870000)
+	libm.so.6 => /lib64/libm.so.6 (0x000040002ca00000)
+	libsqlite3.so.0 => /usr/lib64/libsqlite3.so.0 (0x000040002cac0000)
+	libz.so.1 => /user-environment/env/default/lib/libz.so.1 (0x000040002cc30000)
+	libzstd.so.1 => /usr/lib64/libzstd.so.1 (0x000040002cc70000)
+	libhdf5_hl.so.310 => /user-environment/linux-sles15-neoverse_v2/nvhpc-25.1/hdf5-1.14.3-mxg3go5iddgib4czep6izlcfs4p2xfl4/lib/libhdf5_hl.so.310 (0x000040002cda0000)
+	libhdf5.so.310 => /user-environment/linux-sles15-neoverse_v2/nvhpc-25.1/hdf5-1.14.3-mxg3go5iddgib4czep6izlcfs4p2xfl4/lib/libhdf5.so.310 (0x000040002cdf0000)
+	libbz2.so.1.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/bzip2-1.0.8-hlyoytvplt53xoyu6do2cxjhesoeute6/lib/libbz2.so.1.0 (0x000040002d560000)
+	libcurl.so.4 => /usr/lib64/libcurl.so.4 (0x000040002d590000)
+	libxml2.so.2 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/libxml2-2.10.3-ihfbk4peh3wjud75x2cp7qnouzwjuyeh/lib/libxml2.so.2 (0x000040002d660000)
+	libxpmem.so => /usr/lib64/libxpmem.so (0x000040002d7e0000)
+	libfabric.so.1 => /opt/cray/libfabric/1.15.2.0/lib64/libfabric.so.1 (0x000040002d810000)
+	libpmi.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/cray-pmi-6.1.15-r7hsp4m43hwm3hkcks6xj42nnc2qcrpo/lib/libpmi.so.0 (0x000040002d900000)
+	libpmi2.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/cray-pmi-6.1.15-r7hsp4m43hwm3hkcks6xj42nnc2qcrpo/lib/libpmi2.so.0 (0x000040002d950000)
+	libcuda.so.1 => /usr/lib64/libcuda.so.1 (0x000040002d9a0000)
+	/lib/ld-linux-aarch64.so.1 (0x0000400026680000)
+	libsz.so.2 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/libaec-1.0.6-tznkmn42xscpqqvlqj4dyiyj6f37m64s/lib64/libsz.so.2 (0x000040002f500000)
+	libnghttp2.so.14 => /usr/lib64/libnghttp2.so.14 (0x000040002f530000)
+	libidn2.so.0 => /usr/lib64/libidn2.so.0 (0x000040002f580000)
+	libssh.so.4 => /usr/lib64/libssh.so.4 (0x000040002f5c0000)
+	libpsl.so.5 => /usr/lib64/libpsl.so.5 (0x000040002f650000)
+	libssl.so.1.1 => /usr/lib64/libssl.so.1.1 (0x000040002f690000)
+	libcrypto.so.1.1 => /usr/lib64/libcrypto.so.1.1 (0x000040002f740000)
+	libgssapi_krb5.so.2 => /usr/lib64/libgssapi_krb5.so.2 (0x000040002fa20000)
+	libldap_r-2.4.so.2 => /usr/lib64/libldap_r-2.4.so.2 (0x000040002fa90000)
+	liblber-2.4.so.2 => /usr/lib64/liblber-2.4.so.2 (0x000040002fb10000)
+	libbrotlidec.so.1 => /usr/lib64/libbrotlidec.so.1 (0x000040002fb40000)
+	liblzma.so.5 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/xz-5.4.6-7daqevxuwzodwltjnlv4gad47nidziab/lib/liblzma.so.5 (0x000040002fb70000)
+	libiconv.so.2 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/libiconv-1.17-tc3rjyqgjewwwd255hhoae5egdwwart2/lib/libiconv.so.2 (0x000040002fbc0000)
+	libcxi.so.1 => /usr/lib64/libcxi.so.1 (0x000040002fcf0000)
+	libjson-c.so.3 => /usr/lib64/libjson-c.so.3 (0x000040002fd30000)
+	libpals.so.0 => /user-environment/linux-sles15-neoverse_v2/gcc-13.2.0/cray-pals-1.3.2-doui6s26ymv2ehsyff6mag3rb3x3ynbq/lib/libpals.so.0 (0x000040002fd60000)
+	libunistring.so.2 => /usr/lib64/libunistring.so.2 (0x000040002fda0000)
+	libjitterentropy.so.3 => /usr/lib64/libjitterentropy.so.3 (0x000040002ff40000)
+	libkrb5.so.3 => /usr/lib64/libkrb5.so.3 (0x000040002ff70000)
+	libk5crypto.so.3 => /usr/lib64/libk5crypto.so.3 (0x0000400030070000)
+	libcom_err.so.2 => /lib64/libcom_err.so.2 (0x00004000300b0000)
+	libkrb5support.so.0 => /usr/lib64/libkrb5support.so.0 (0x00004000300e0000)
+	libresolv.so.2 => /lib64/libresolv.so.2 (0x0000400030110000)
+	libsasl2.so.3 => /usr/lib64/libsasl2.so.3 (0x0000400030150000)
+	libbrotlicommon.so.1 => /usr/lib64/libbrotlicommon.so.1 (0x0000400030190000)
+	libnl-3.so.200 => /usr/lib64/libnl-3.so.200 (0x00004000301d0000)
+	libjansson.so.4 => /usr/lib64/libjansson.so.4 (0x0000400030220000)
+	libkeyutils.so.1 => /usr/lib64/libkeyutils.so.1 (0x0000400030250000)
+	libselinux.so.1 => /lib64/libselinux.so.1 (0x0000400030280000)
+	libpcre.so.1 => /usr/lib64/libpcre.so.1 (0x00004000302d0000)
+Fri 27 Mar 2026 04:19:28 PM CET
++ ulimit -s unlimited
++ /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon
+
+ ICON MPI interface runtime information:
+ mo_mpi::start_mpi Used MPI version: 3.1
+ mo_mpi::start_mpi ICON: Globally run on 1 mpi processes.
+
+ Single processor run.
+
+ executable: /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification/bin/icon
+ date: 20260327
+ time: 161928
+ user: Pratyai Mazumder, ETHZ (pmazumde)
+ host: nid006547 (Linux 5.14.21-150500.55.65_13.0.74-cray_shasta_c_64k aarch64)
+ version: 2024.10
+ revision: 84cf4e5a0a824e9913377cfc689d1302a3f8a406-dirty
+ repository: git@github.com:spcl/icon-dace.git
+ local branch: sc2026
+ model components:
+   JSBACH: 84cf4e5a0a824e9913377cfc689d1302a3f8a406-dirty
+ application libraries:
+   RTE-RRTMGP: 84cf4e5a0a824e9913377cfc689d1302a3f8a406-dirty
+ infrastructure and support libraries:
+   MATH-INTERPOLATION: 84cf4e5a0a824e9913377cfc689d1302a3f8a406-dirty
+   MATH-SUPPORT: 84cf4e5a0a824e9913377cfc689d1302a3f8a406-dirty
+   FORTRAN-SUPPORT: 84cf4e5a0a824e9913377cfc689d1302a3f8a406-dirty
+   MTIME: 84cf4e5a0a824e9913377cfc689d1302a3f8a406-dirty
+   CDI:
+     version: 2.4.0
+     revision: 84cf4e5a0a824e9913377cfc689d1302a3f8a406-dirty
+ other libraries:
+   NetCDF-C: 4.9.2
+   MPI: MPI VERSION    : CRAY MPICH version 8.1.30.9 (ANL base 3.4a2)...
+ compilers:
+   Fortran: NVHPC 25.1.0 (nvfortran 25.1-0)
+   C: NVHPC 25.1.0 (GNU 13.2.0)
+ probtest metadata:
+   Revision: 84cf4e5a0a824e9913377cfc689d1302a3f8a406-dirty
+   Branch: sc2026
+ 
+ master_control: start model initialization.
+
+ Single processor run.
+
+ set_nproma_nblocks: Will recompute nproma based on nblocks_c
+ set_nproma_nblocks_sub: Using namelist nproma_sub=    800
+ mo_name_list_output_init::read_name_list_output_namelists: No output definition found; disabling output.
+ mo_dbg_nml/read_dbg_namelist:: read debug namelist dbg_index_nml
+ 
+ mo_advection_nml: read_transport_nml: Evaluate the number of names in transport_nml/tracer_names
+ ---                                      number of named tracers :         0
+ mo_advection_nml: read_transport_nml: Setting default names for tracers without names.
+ ---                              number of tracers without names :         5
+ ---                                   tracer name q1 in position :         1
+ ---                                   tracer name q2 in position :         2
+ ---                                   tracer name q3 in position :         3
+ ---                                   tracer name q4 in position :         4
+ ---                                   tracer name q5 in position :         5
+ 
+ mo_nwp_phy_nml:read_nwp_phy_namelist: Warning: itype_z0 is reset to 1 because surface scheme is turned off
+ 
+ Model time step          : PT08.000S
+ 
+ 
+ Checkpoint interval      : P1D
+ Restart interval         : P1D
+ 
+ This is not a RESTART run ...
+ IAU time shift: PT00.000S
+ 
+ Calendar: Proleptic Gregorian
+ 
+ Experiment reference date: 2000-01-01T00:00:00Z
+ Experiment start date    : 2000-01-01T00:00:00Z
+ Experiment stop date     : 2000-01-01T00:10:00.000
+ 
+ Experiment stop date     : 2000-01-01T00:10:00.000
+ Start date    : 2000-01-01T00:00:00Z
+ Stop date     : 2000-01-01T00:10:00.000
+ 
+ mo_nml_crosscheck::atm_crosscheck:  WARNING! num_prefetch_proc reset to 0 !
+ mo_nml_crosscheck::atm_crosscheck: NetCDF output of floating point variables will be in 64-bit accuracy
+ mo_nml_crosscheck::atm_crosscheck: --> use_dp_mpi2io is changed to .TRUE. to allow 64-bit accuracy in the NetCDF output.
+ mo_nml_crosscheck::atm_crosscheck: namelist parameter 'activate_sync_timers' has been set to .TRUE., because global 'timers_level' is > 9.
+ set_mpi_work_communicators: num_io_procs_radar has no effect if there are no radar-active domains!
+ set_mpi_work_communicators: --> num_io_procs_radar set to 0
+ set_mpi_work_communicators: num_io_procs cannot be > 0 in seq run
+ set_mpi_work_communicators: --> num_io_procs set to 0
+ set_mpi_work_communicators: Number of procs for test: 0, work: 1, I/O: 0, Restart: 0, Prefetching: 0
+ set_mpi_work_communicators:  0 <=             0  test procs <             0  <=             1  work procs <             1  <=             0  io procs <             1  <=             0  restart procs <             1  <=             0  pref procs <             1  <=             0  radario procs <             1
+ mo_model_domimp_patches:import_pre_patches: start to import patches
+ mo_model_domimp_patches:read_pre_patch: start to init patch_pre
+ Read grid file /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification//icon_grid_0010_R02B04_G.nc
+ mo_model_domimp_patches:read_pre_patch: grid uuid: 66a341d2-1dcf-11b2-880c-0f1645f3d1dc
+ mo_model_domimp_patches:read_pre_patch: generating center of patch    1:   78
+ mo_model_domimp_patches:read_pre_patch: generating subcenter of patch    1:  255
+ mo_model_domimp_patches:read_pre_patch: number_of_grid_used of patch    1:   10
+ mo_model_domimp_patches:read_pre_patch: URI of patch    1: http://icon-downloads.mpimet.mpg.de/grids/public/icon_grid_0010_R02B04_G.nc
+ mo_model_domimp_patches:read_pre_patch: read_patches finished
+ mo_subdivision:decompose_domain: start of domain decomposition
+ mo_subdivision:decompose_domain: Is this taking a long time? Consider adding macro definition HAVE_SLOW_PASSIVE_TARGET_ONESIDED to compile time settings.
+ No splitting of processor grid
+ mo_setup_subdivision::divide_patch: dividing patch
+ New nproma::   20480
+ Secondary nproma (nproma_sub)::     800
+ mo_setup_subdivision: divide_patch: erase negative refin_ctrl flags in patch 1
+ mo_model_domimp_patches:read_remaining_patch: Read gridmap file /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification//icon_grid_0010_R02B04_G.nc
+ mo_read_netcdf_distributed::distrib_nf_open: /capstor/scratch/cscs/pmazumde/gitspace/icon-dace/build/verification//icon_grid_0010_R02B04_G.nc
+ mo_model_domimp_patches:read_remaining_patch: read finished
+ build_decomposition: Done.
+ RBF scale factors for cells/edges/vertices, domain   1:  0.50000 0.50000 0.50000
+ RBF scale factors for velocity boundary interpolation   1:  0.50000
+ mo_intp_state:construct_2d_interpol_state: start to construct int_state
+ mo_intp_state:construct_2d_interpol_state: constructing int_state for patch 1
+ mo_intp_state:allocate_int_state: memory allocation finished
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_cell: 
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_vertex: 
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_edge: 
+ mo_interpolation:tri_quadrature_pts: 
+ mo_intp_coeffs:calculate_tangent_plane_at_edge: 
+ mo_interpolation:init_tplane_c_sphere: 
+ mo_intp_coeffs_lsq_bln:lsq_stencil_create: 
+ mo_intp_coeffs_lsq_bln:create_stencil_c3: create 3-point stencil
+ mo_interpolation:lsq_compute_coeff_cell_sphere: 
+ mo_intp_coeffs_lsq_bln:lsq_stencil_create: 
+ mo_intp_coeffs_lsq_bln:create_stencil_c9: create 9-point stencil
+ mo_interpolation:lsq_compute_coeff_cell_sphere: 
+ mo_intp_state:construct_2d_interpol_state: construction of interpolation state finished
+ setup_phys_patches: Physical domain    1 belongs to logical domain    1
+ mo_dynamics_config:setup_dynamics_config: Set time level indices
+ ldynamics  =  .TRUE.: 2 time levels used for progn. dynamics  variables -> nnew /= nnow
+ ltransport =  .TRUE.: 2 time levels used for progn. transport variables -> nnew_rcf /= nnow_rcf
+ ---                                                 nnow    (01) :         1
+ ---                                                 nnew    (01) :         2
+ ---                                                 nold    (01) :         3
+ ---                                                 nnow_rcf(01) :         1
+ ---                                                 nnew_rcf(01) :         2
+ mo_lnd_nwp_config::configure_lnd_nwp: Number of hydrological active soil layers ibot_w_so is set to:  6
+ Surface tile setup
+ 
+ tileName | GRIB2 tileId | tileAtts | ICON tile Ids |  
+ -------- | ------------ | -------- | ------------- |  
+ 
+ undef    | 0            | 0,       | 1,            |  
+  
+ mo_ext_data_state:construct_ext_data: Construction of data structure for external data started
+ 
+ adding new var_list ext_data_atm_D01
+ 
+ adding new var_list ext_data_atm_td_D01
+ mo_ext_data_state:construct_ext_data: Construction of data structure for external data finished
+ mo_ext_data_init:init_ext_data: Start
+ mo_ext_data_init:init_ext_data: Running with analytical topography
+ (mo_nh_testcases) init_nh_testtopo:: running Aqua-Planet Experiment with non-hydrostatic atm. dynamics and NWP physics
+ SLEVE coord: Coordinate setup finished
+ flat coordinate surfaces starting at level  50
+ Nominal heights of coordinate half levels and layer thicknesses (m):
+ jk, vct_a, dvct:    1   75000.000    2500.062
+ jk, vct_a, dvct:    2   72499.938    2120.077
+ jk, vct_a, dvct:    3   70379.861    1973.825
+ jk, vct_a, dvct:    4   68406.037    1873.407
+ jk, vct_a, dvct:    5   66532.630    1794.666
+ jk, vct_a, dvct:    6   64737.964    1728.783
+ jk, vct_a, dvct:    7   63009.181    1671.503
+ jk, vct_a, dvct:    8   61337.677    1620.434
+ jk, vct_a, dvct:    9   59717.243    1574.090
+ jk, vct_a, dvct:   10   58143.153    1531.483
+ jk, vct_a, dvct:   11   56611.670    1491.918
+ jk, vct_a, dvct:   12   55119.752    1454.889
+ jk, vct_a, dvct:   13   53664.863    1420.013
+ jk, vct_a, dvct:   14   52244.850    1386.992
+ jk, vct_a, dvct:   15   50857.858    1355.591
+ jk, vct_a, dvct:   16   49502.267    1325.621
+ jk, vct_a, dvct:   17   48176.646    1296.923
+ jk, vct_a, dvct:   18   46879.723    1269.369
+ jk, vct_a, dvct:   19   45610.354    1242.848
+ jk, vct_a, dvct:   20   44367.505    1217.266
+ jk, vct_a, dvct:   21   43150.239    1192.543
+ jk, vct_a, dvct:   22   41957.696    1168.609
+ jk, vct_a, dvct:   23   40789.087    1145.401
+ jk, vct_a, dvct:   24   39643.685    1122.866
+ jk, vct_a, dvct:   25   38520.819    1100.956
+ jk, vct_a, dvct:   26   37419.863    1079.627
+ jk, vct_a, dvct:   27   36340.236    1058.842
+ jk, vct_a, dvct:   28   35281.394    1038.564
+ jk, vct_a, dvct:   29   34242.830    1018.763
+ jk, vct_a, dvct:   30   33224.066     999.410
+ jk, vct_a, dvct:   31   32224.657     980.478
+ jk, vct_a, dvct:   32   31244.179     961.942
+ jk, vct_a, dvct:   33   30282.237     943.782
+ jk, vct_a, dvct:   34   29338.455     925.976
+ jk, vct_a, dvct:   35   28412.479     908.504
+ jk, vct_a, dvct:   36   27503.975     891.350
+ jk, vct_a, dvct:   37   26612.625     874.495
+ jk, vct_a, dvct:   38   25738.129     857.926
+ jk, vct_a, dvct:   39   24880.204     841.626
+ jk, vct_a, dvct:   40   24038.578     825.582
+ jk, vct_a, dvct:   41   23212.996     809.781
+ jk, vct_a, dvct:   42   22403.215     794.210
+ jk, vct_a, dvct:   43   21609.005     778.857
+ jk, vct_a, dvct:   44   20830.148     763.712
+ jk, vct_a, dvct:   45   20066.437     748.762
+ jk, vct_a, dvct:   46   19317.674     733.999
+ jk, vct_a, dvct:   47   18583.676     719.411
+ jk, vct_a, dvct:   48   17864.265     704.988
+ jk, vct_a, dvct:   49   17159.277     690.723
+ jk, vct_a, dvct:   50   16468.554     676.605
+ jk, vct_a, dvct:   51   15791.949     662.625
+ jk, vct_a, dvct:   52   15129.325     648.774
+ jk, vct_a, dvct:   53   14480.551     635.044
+ jk, vct_a, dvct:   54   13845.507     621.427
+ jk, vct_a, dvct:   55   13224.080     607.913
+ jk, vct_a, dvct:   56   12616.167     594.494
+ jk, vct_a, dvct:   57   12021.673     581.162
+ jk, vct_a, dvct:   58   11440.510     567.908
+ jk, vct_a, dvct:   59   10872.602     554.724
+ jk, vct_a, dvct:   60   10317.878     541.600
+ jk, vct_a, dvct:   61    9776.278     528.528
+ jk, vct_a, dvct:   62    9247.750     515.497
+ jk, vct_a, dvct:   63    8732.253     502.500
+ jk, vct_a, dvct:   64    8229.754     489.524
+ jk, vct_a, dvct:   65    7740.229     476.561
+ jk, vct_a, dvct:   66    7263.668     463.599
+ jk, vct_a, dvct:   67    6800.069     450.625
+ jk, vct_a, dvct:   68    6349.444     437.629
+ jk, vct_a, dvct:   69    5911.815     424.595
+ jk, vct_a, dvct:   70    5487.221     411.508
+ jk, vct_a, dvct:   71    5075.712     398.354
+ jk, vct_a, dvct:   72    4677.358     385.114
+ jk, vct_a, dvct:   73    4292.244     371.768
+ jk, vct_a, dvct:   74    3920.476     358.293
+ jk, vct_a, dvct:   75    3562.183     344.665
+ jk, vct_a, dvct:   76    3217.518     330.853
+ jk, vct_a, dvct:   77    2886.665     316.825
+ jk, vct_a, dvct:   78    2569.840     302.539
+ jk, vct_a, dvct:   79    2267.301     287.948
+ jk, vct_a, dvct:   80    1979.353     272.995
+ jk, vct_a, dvct:   81    1706.358     257.606
+ jk, vct_a, dvct:   82    1448.753     241.690
+ jk, vct_a, dvct:   83    1207.063     225.130
+ jk, vct_a, dvct:   84     981.933     207.763
+ jk, vct_a, dvct:   85     774.170     189.367
+ jk, vct_a, dvct:   86     584.802     169.607
+ jk, vct_a, dvct:   87     415.195     147.947
+ jk, vct_a, dvct:   88     267.248     123.415
+ jk, vct_a, dvct:   89     143.833      93.833
+ jk, vct_a, dvct:   90      50.000      50.000
+ jk, vct_a, dvct:   91       0.000       0.000
+ parallel calculation of vgrid UUID. Generated UUID: 
+ 32113685-94f1-e2a4-a8ce-6090dd232240
+ mo_advection_utils::init_tracer_settings: Attention: NWP physics is used, ntracer is automatically reset to   6
+ mo_nonhydrostatic_config:configure_nonhydrostatic: Domain   1; computation of moist physics processes starts in layer   42
+ mo_nonhydrostatic_config:configure_nonhydrostatic: Domain   1; high- and mid-level clouds in layers above   66  80
+ Index list generation - number of land tiles:    1
+ Total number of tiles:    1
+ Number of land points in domain  1:         0
+ Number of sea points in domain  1:     20480
+ Number of lake points in domain  1:         0
+ Number of points in tile 1:         0
+ Number of corrected false glacier points in domain  1:         0
+ Time intervals for calling NWP physics on patch             1
+ 
+ Process | dt user [=> final] |  
+ ------- | ------------------ |  
+ 
+ conv    |   16.00            |  
+ ccov    |   16.00            |  
+ gwd     |   32.00            |  
+ fastphy |    8.00            |  
+  
+ mo_atm_phy_nwp_config:configure_atm_phy_nwp: itune_o3 is reset to 0 because irad_o3 is not 7, 79 or 97
+ Event-setup for phyNwpEventGroup on patch  1
+ 
+ eventName | enabled | startDate                | endDate                  | intvl     |  
+ --------- | ------- | ------------------------ | ------------------------ | --------- |  
+ 
+ conv      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT16.000S |  
+ ccov      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT16.000S |  
+ rad       | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT48.000S |  
+ sso       | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT20M     |  
+ gwd       | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT32.000S |  
+ satad     | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT08.000S |  
+ turb      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT08.000S |  
+ gscp      | T       | [2000-01-01T00:00:08.000 | 2000-01-01T00:10:00.000] | PT08.000S |  
+ sfc       | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT08.000S |  
+ radheat   | F       | ]2000-01-01T00:00:08.000 | 2000-01-01T00:00:08.000] | PT08.000S |  
+  
+ atm_phy_nwp:configure_ww: Domain   1; ih_500hPa, ihb500hPa, ih_700hPa, ih_850hPa, ih_950hPa, ihb950hPa   70  70  76  82  86  87
+ atm_phy_nwp:configure_ww: Domain   1; ifog_temp, ifog_wind   84  87
+ mo_nonhydro_state::construct_nh_state: Construction of NH state started
+ 
+ adding new var_list nh_state_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list nh_state_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list nh_state_diag_of_domain_01
+ 
+ adding new var_list nh_state_metrics_of_domain_01
+ 
+ adding new var_list nh_state_ref_of_domain_01
+ mo_nonhydro_state::construct_nh_state: NH state construction completed
+ 
+ adding new var_list nh_state_opt_diag_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_z_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_p_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_i_of_domain_01
+ 
+ adding new var_list nh_accumulation_for_ProgAndDiag_of_domain_01
+ 
+ adding new var_list prepadv_of_domain_01
+ mo_prepadv_state:construct_prepadv_state: construction of prep_adv state finished
+ mo_nwp_phy_state:construct_nwp_state: start to construct 3D state vector
+ 
+ adding new var_list prm_diag_of_domain_01
+ mo_nwp_phy_state:construct_nwp_phy_diag: construction of NWP physical fields finished
+ 
+ adding new var_list prm_tend_of_domain_01
+ mo_nwp_phy_state:construct_nwp_phy_tend: construction of NWP physical tendency fields finished
+ 
+ adding new var_list prm_stch_of_domain_01
+ mo_nwp_phy_state:construct_nwp_state: construction of state vector finished
+ mo_nwp_lnd_state:construct_nwp_lnd_state: land state construction started
+ 
+ adding new var_list lnd_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list wtr_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list lnd_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list wtr_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list lnd_diag_of_domain_01
+ mo_nwp_lnd_state:construct_nwp_lnd_state: land state construction completed
+ 
+ adding new var_list nh_state_tracer_of_domain_01_and_timelev_01
+ 
+ adding new var_list nh_state_tracer_of_domain_01_and_timelev_02
+ Tracer meta-information for patch             1
+ 
+ VarName | Tracer ID | feedback | in list trAdvect | in list trNotAdvect | in list trHydroMass | slev | substep range | nadv_substeps |  
+ ------- | --------- | -------- | ---------------- | ------------------- | ------------------- | ---- | ------------- | ------------- |  
+ 
+ qv.TL1  |   1       | X        | X                |                     |                     |   1  |   1/ 41       |   3           |  
+ qc.TL1  |   2       | X        | X                |                     | X                   |  42  | -- / --       | --            |  
+ qi.TL1  |   3       | X        | X                |                     | X                   |  42  | -- / --       | --            |  
+ qr.TL1  |   4       |          | X                |                     | X                   |  42  | -- / --       | --            |  
+ qs.TL1  |   5       |          | X                |                     | X                   |  42  | -- / --       | --            |  
+ qg.TL1  |   6       |          | X                |                     | X                   |  42  | -- / --       | --            |  
+  
+ mo_vertical_grid:set_nh_metrics: Domain   1; end index of Rayleigh damping layer for w:   15
+ mo_vertical_grid: Damping coefficient for w; diffusion enhancement coefficient:
+ mo_vertical_grid: level    1, half-level height 75000.0  0.10000E+00  0.24000E+02
+ mo_vertical_grid: level    2, half-level height 72499.9  0.63728E-01  0.15866E+02
+ mo_vertical_grid: level    3, half-level height 70379.9  0.39420E-01  0.10142E+02
+ mo_vertical_grid: level    4, half-level height 68406.0  0.23745E-01  0.64362E+01
+ mo_vertical_grid: level    5, half-level height 66532.6  0.14165E-01  0.41902E+01
+ mo_vertical_grid: level    6, half-level height 64738.0  0.84607E-02  0.28713E+01
+ mo_vertical_grid: level    7, half-level height 63009.2  0.50903E-02  0.21050E+01
+ mo_vertical_grid: level    8, half-level height 61337.7  0.30937E-02  0.16590E+01
+ mo_vertical_grid: level    9, half-level height 59717.2  0.19018E-02  0.13976E+01
+ mo_vertical_grid: level   10, half-level height 58143.2  0.11828E-02  0.12427E+01
+ mo_vertical_grid: level   11, half-level height 56611.7  0.74419E-03  0.11499E+01
+ mo_vertical_grid: level   12, half-level height 55119.8  0.47348E-03  0.10937E+01
+ mo_vertical_grid: level   13, half-level height 53664.9  0.30450E-03  0.10592E+01
+ mo_vertical_grid: level   14, half-level height 52244.9  0.19785E-03  0.10378E+01
+ mo_vertical_grid: level   15, half-level height 50857.9  0.12983E-03  0.10244E+01
+ mo_vertical_grid:set_nh_metrics: Maximum vertical wind offcentering:   0.1500
+ mo_vertical_grid:set_nh_metrics: Maximum slope:   0.0000
+ mo_vertical_grid:set_nh_metrics: Maximum height difference between adjacent points:      0.0
+ (mo_nh_testcases) init_nh_testcase:: End setup non-hydrostatic APE test (APE_nwp, APE_aes, APE_nh, APEc_nh)
+ Variables assigned to action RESET: rain_gsp, snow_gsp, graupel_gsp, ice_gsp, prec_gsp, rain_con, snow_con, prec_con, tot_prec, tot_prec_d, prec_gsp_d, prec_con_d, prec_con_rate_avg, prec_gsp_rate_avg, tot_prec_rate_avg, gust10, tmax_2m, tmin_2m
+ 
+ VarName           | PID | Ref date                | Start date              | End date                | Interval |  
+ ----------------- | --- | ----------------------- | ----------------------- | ----------------------- | -------- |  
+ 
+ rain_gsp          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ snow_gsp          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ graupel_gsp       |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ ice_gsp           |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ prec_gsp          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ rain_con          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ snow_con          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ prec_con          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ tot_prec          |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ tot_prec_d        |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ prec_gsp_d        |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ prec_con_d        |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ prec_con_rate_avg |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ prec_gsp_rate_avg |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ tot_prec_rate_avg |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | P01Y     |  
+ gust10            |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT01H    |  
+ tmax_2m           |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT06H    |  
+ tmin_2m           |  1  | 2000-01-01T00:00:00.000 | 2000-01-01T00:00:00.000 | 2000-01-01T00:10:00.000 | PT06H    |  
+  
+ multifile restart writing selected, joint proc mode.
+ mo_nwp_phy_init:: initialize sea-ice lists, call init_sea_lists
+ Number of (partly) seaice covered points in domain  1:         0
+ Number of (partly) ice-free sea points in domain  1:     20480
+ Number of sea points in domain  1:     20480
+ mo_nwp_phy_init: initialized surface temp and humidity
+ mo_nwp_phy_init: init microphysics
+ gscp_set_coefficients: microphysical values initialized
+ mo_nwp_phy_init: init convection
+ mo_cuparameters, sucumf: NJKT1, NJKT2, KSMAX
+ mo_cuparameters, sucumf:      64     46 0.15782E+06
+ mo_cuparameters, sucumf: LMFMID, LMFDD, LMFDUDV, RTAU, ENTRORG, TEXC, QEXC
+ mo_cuparameters, sucumf:          T     T     T  2.3152 0.1950E-02 0.12500 0.01250
+ mo_cuparameters, sucumf: RHEBC_LND, RHEBC_LND_TROP, RHEBC_OCE, RHEBC_OCE_TROP, RCUCOV, RCUCOV_TROP
+ mo_cuparameters, sucumf:       0.7500  0.7000  0.8500  0.7600  0.0500  0.0300
+ mo_nwp_phy_init: convection initialized
+ mo_nwp_phy_init: init roughness length
+ mo_nwp_phy_init: init COSMO turbulence
+ mo_nwp_phy_init: Cosmo turbulence initialized
+ mo_nwp_phy_init: non-orog GWs initialized
+ mo_cuparameters, sugwd: nktopg, ngwdlim, ngwdtop
+ mo_cuparameters, sugwd:     78    44     8
+ mo_nh_stepping:init_slowphysics: initial call of (slow) physics, domain  1
+ 
+ added event group: checkpointEventGroup
+ Event list: checkpointEventGroup
+        1          checkpoint
+        2          restart
+ 
+ Start date of this run: 2000-01-01T00:00:00.000
+ Stop date of this run:  2000-01-01T00:10:00.000
+ 
+ 
+ Time step:        1, model time: 2000-01-01 00:00:08.000 forecast time 00D 00H00M08S
+  perform_dyn_substepping: physics_generation =             1  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499404440E+02 at level  60,   0.0000000000E+00 at level   1,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1 took 80565 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 50146 us
+ MAXABS VN, W in domain  1:  0.3499372912E+02 at level  60,   0.8872315089E-02 at level  51,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 283 us
+ MAXABS VN, W in domain  1:  0.3499350201E+02 at level  60,   0.2334784972E-01 at level  51,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 294 us
+ MAXABS VN, W in domain  1:  0.3499333833E+02 at level  60,   0.3882556111E-01 at level  51,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 285 us
+ MAXABS VN, W in domain  1:  0.3499322035E+02 at level  60,   0.5451457834E-01 at level  51,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 290 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =   18.763401 Pa/s in domain  1
+ 
+ Time step:        2, model time: 2000-01-01 00:00:16.000 forecast time 00D 00H00M16S
+  perform_dyn_substepping: physics_generation =             2  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499305529E+02 at level  60,   0.7117246296E-01 at level  51,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 51316 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 288 us
+ MAXABS VN, W in domain  1:  0.3499300806E+02 at level  60,   0.2847658577E+00 at level  85,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 297 us
+ MAXABS VN, W in domain  1:  0.3499297423E+02 at level  60,   0.2237673054E+00 at level  82,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 293 us
+ MAXABS VN, W in domain  1:  0.3499295028E+02 at level  60,   0.4976383872E+00 at level  86,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 302 us
+ MAXABS VN, W in domain  1:  0.3499293379E+02 at level  60,   0.6787904048E+00 at level  85,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 288 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =   10.030407 Pa/s in domain  1
+ 
+ Time step:        3, model time: 2000-01-01 00:00:24.000 forecast time 00D 00H00M24S
+  perform_dyn_substepping: physics_generation =             3  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499285089E+02 at level  60,   0.7584972678E+00 at level  84,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 278 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 282 us
+ MAXABS VN, W in domain  1:  0.3499285168E+02 at level  60,   0.6486213984E+00 at level  87,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 284 us
+ MAXABS VN, W in domain  1:  0.3499285381E+02 at level  60,   0.5862243813E+00 at level  79,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 274 us
+ MAXABS VN, W in domain  1:  0.3499285716E+02 at level  60,   0.5517746028E+00 at level  77,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 273 us
+ MAXABS VN, W in domain  1:  0.3499286171E+02 at level  60,   0.7417327049E+00 at level  85,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 264 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    2.525879 Pa/s in domain  1
+ 
+ Time step:        4, model time: 2000-01-01 00:00:32.000 forecast time 00D 00H00M32S
+  perform_dyn_substepping: physics_generation =             4  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499279601E+02 at level  60,   0.8208581756E+00 at level  84,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 245 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 283 us
+ MAXABS VN, W in domain  1:  0.3499280251E+02 at level  60,   0.1054842192E+01 at level  87,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 251 us
+ MAXABS VN, W in domain  1:  0.3499281001E+02 at level  60,   0.8499182295E+00 at level  85,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 255 us
+ MAXABS VN, W in domain  1:  0.3499281848E+02 at level  60,   0.6874467422E+00 at level  83,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 249 us
+ MAXABS VN, W in domain  1:  0.3499282803E+02 at level  60,   0.5973348086E+00 at level  81,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 246 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =   19.519694 Pa/s in domain  1
+ 
+ Time step:        5, model time: 2000-01-01 00:00:40.000 forecast time 00D 00H00M40S
+  perform_dyn_substepping: physics_generation =             5  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499276689E+02 at level  60,   0.5229302997E+00 at level  80,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 250 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499277304E+02 at level  60,   0.4893581476E+00 at level  78,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 246 us
+ MAXABS VN, W in domain  1:  0.3499278184E+02 at level  60,   0.4280742149E+00 at level  77,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499279260E+02 at level  60,   0.4102092596E+00 at level  75,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499280468E+02 at level  60,   0.4176695921E+00 at level  50,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    3.521383 Pa/s in domain  1
+ 
+ Time step:        6, model time: 2000-01-01 00:00:48.000 forecast time 00D 00H00M48S
+  perform_dyn_substepping: physics_generation =             6  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499274481E+02 at level  60,   0.4306398531E+00 at level  49,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 249 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 262 us
+ MAXABS VN, W in domain  1:  0.3499274945E+02 at level  60,   0.4425194993E+00 at level  50,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 250 us
+ MAXABS VN, W in domain  1:  0.3499275619E+02 at level  60,   0.4564778185E+00 at level  48,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3499276445E+02 at level  60,   0.4702709104E+00 at level  47,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499277398E+02 at level  60,   0.4842769516E+00 at level  47,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.821967 Pa/s in domain  1
+ 
+ Time step:        7, model time: 2000-01-01 00:00:56.000 forecast time 00D 00H00M56S
+  perform_dyn_substepping: physics_generation =             7  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499271234E+02 at level  60,   0.4988204037E+00 at level  46,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 244 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 246 us
+ MAXABS VN, W in domain  1:  0.3499271134E+02 at level  60,   0.5134771070E+00 at level  45,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 253 us
+ MAXABS VN, W in domain  1:  0.3499271547E+02 at level  60,   0.5289312501E+00 at level  45,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499272355E+02 at level  60,   0.5449841507E+00 at level  44,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499273453E+02 at level  60,   0.5606189249E+00 at level  43,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.438868 Pa/s in domain  1
+ 
+ Time step:        8, model time: 2000-01-01 00:01:04.000 forecast time 00D 00H01M04S
+  perform_dyn_substepping: physics_generation =             8  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499267533E+02 at level  60,   0.5770683746E+00 at level  43,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 243 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499267662E+02 at level  60,   0.5941283132E+00 at level  42,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499268272E+02 at level  60,   0.6107694398E+00 at level  41,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499269240E+02 at level  60,   0.6292537682E+00 at level  41,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499270477E+02 at level  60,   0.6473948292E+00 at level  40,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.653775 Pa/s in domain  1
+ 
+ Time step:        9, model time: 2000-01-01 00:01:12.000 forecast time 00D 00H01M12S
+  perform_dyn_substepping: physics_generation =             9  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499264631E+02 at level  60,   0.6651164537E+00 at level  40,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 243 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499265016E+02 at level  60,   0.6848573269E+00 at level  39,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499265748E+02 at level  60,   0.7041526663E+00 at level  38,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3499266712E+02 at level  60,   0.7240783047E+00 at level  38,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 232 us
+ MAXABS VN, W in domain  1:  0.3499267844E+02 at level  60,   0.7450649228E+00 at level  37,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.771105 Pa/s in domain  1
+ 
+ Time step:       10, model time: 2000-01-01 00:01:20.000 forecast time 00D 00H01M20S
+  perform_dyn_substepping: physics_generation =            10  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499261829E+02 at level  60,   0.7651697060E+00 at level  36,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 249 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499262093E+02 at level  60,   0.7871185893E+00 at level  36,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499262748E+02 at level  60,   0.8093794356E+00 at level  35,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499263697E+02 at level  60,   0.8312065740E+00 at level  35,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499264865E+02 at level  60,   0.8553979691E+00 at level  34,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.686182 Pa/s in domain  1
+ 
+ Time step:       11, model time: 2000-01-01 00:01:28.000 forecast time 00D 00H01M28S
+  perform_dyn_substepping: physics_generation =            11  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499258915E+02 at level  60,   0.8786364399E+00 at level  33,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 249 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 232 us
+ MAXABS VN, W in domain  1:  0.3499259226E+02 at level  60,   0.9029691586E+00 at level  33,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499259919E+02 at level  60,   0.9283443243E+00 at level  32,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499260874E+02 at level  60,   0.9529785425E+00 at level  32,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 231 us
+ MAXABS VN, W in domain  1:  0.3499262001E+02 at level  60,   0.9804912752E+00 at level  31,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.516324 Pa/s in domain  1
+ 
+ Time step:       12, model time: 2000-01-01 00:01:36.000 forecast time 00D 00H01M36S
+  perform_dyn_substepping: physics_generation =            12  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499255969E+02 at level  60,   0.1006785129E+01 at level  30,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 243 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3499256230E+02 at level  60,   0.1034699400E+01 at level  30,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 231 us
+ MAXABS VN, W in domain  1:  0.3499256847E+02 at level  60,   0.1063298092E+01 at level  29,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 232 us
+ MAXABS VN, W in domain  1:  0.3499257736E+02 at level  60,   0.1091846289E+01 at level  29,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499258830E+02 at level  60,   0.1122519103E+01 at level  28,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.398460 Pa/s in domain  1
+ 
+ Time step:       13, model time: 2000-01-01 00:01:44.000 forecast time 00D 00H01M44S
+  perform_dyn_substepping: physics_generation =            13  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499252806E+02 at level  60,   0.1151454864E+01 at level  28,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 241 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3499253163E+02 at level  60,   0.1184581381E+01 at level  27,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 232 us
+ MAXABS VN, W in domain  1:  0.3499253847E+02 at level  60,   0.1214729642E+01 at level  26,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499254756E+02 at level  60,   0.1249854516E+01 at level  26,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499255820E+02 at level  60,   0.1281922492E+01 at level  25,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.273229 Pa/s in domain  1
+ 
+ Time step:       14, model time: 2000-01-01 00:01:52.000 forecast time 00D 00H01M52S
+  perform_dyn_substepping: physics_generation =            14  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499249732E+02 at level  60,   0.1318330437E+01 at level  25,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 244 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499250085E+02 at level  60,   0.1352187706E+01 at level  24,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 227 us
+ MAXABS VN, W in domain  1:  0.3499250735E+02 at level  60,   0.1390414078E+01 at level  24,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499251606E+02 at level  60,   0.1425859382E+01 at level  23,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499252639E+02 at level  60,   0.1466136781E+01 at level  23,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.189675 Pa/s in domain  1
+ 
+ Time step:       15, model time: 2000-01-01 00:02:00.000 forecast time 00D 00H02M00S
+  perform_dyn_substepping: physics_generation =            15  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499246544E+02 at level  60,   0.1502736227E+01 at level  22,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 234 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499246968E+02 at level  60,   0.1545540883E+01 at level  22,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3499247654E+02 at level  60,   0.1583303852E+01 at level  21,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3499248521E+02 at level  60,   0.1629266723E+01 at level  21,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3499249512E+02 at level  60,   0.1668370974E+01 at level  21,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.108499 Pa/s in domain  1
+ 
+ Time step:       16, model time: 2000-01-01 00:02:08.000 forecast time 00D 00H02M08S
+  perform_dyn_substepping: physics_generation =            16  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499243356E+02 at level  60,   0.1717451863E+01 at level  20,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 246 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3499243779E+02 at level  60,   0.1759971589E+01 at level  20,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499244433E+02 at level  60,   0.1810810290E+01 at level  19,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499245257E+02 at level  60,   0.1857595304E+01 at level  19,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499246205E+02 at level  60,   0.1909101124E+01 at level  18,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.051756 Pa/s in domain  1
+ 
+ Time step:       17, model time: 2000-01-01 00:02:16.000 forecast time 00D 00H02M16S
+  perform_dyn_substepping: physics_generation =            17  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499240026E+02 at level  60,   0.1960945953E+01 at level  18,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 240 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3499240505E+02 at level  60,   0.2011453995E+01 at level  17,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3499241186E+02 at level  60,   0.2070162808E+01 at level  17,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 229 us
+ MAXABS VN, W in domain  1:  0.3499242008E+02 at level  60,   0.2119098326E+01 at level  17,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499242928E+02 at level  60,   0.2184465398E+01 at level  16,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 232 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.027925 Pa/s in domain  1
+ 
+ Time step:       18, model time: 2000-01-01 00:02:24.000 forecast time 00D 00H02M24S
+  perform_dyn_substepping: physics_generation =            18  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499236712E+02 at level  60,   0.2240430871E+01 at level  16,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 245 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499237215E+02 at level  60,   0.2302329471E+01 at level  15,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3499237888E+02 at level  60,   0.2367934517E+01 at level  15,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3499238684E+02 at level  60,   0.2422211119E+01 at level  14,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499239569E+02 at level  60,   0.2499811936E+01 at level  14,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 231 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.057160 Pa/s in domain  1
+ 
+ Time step:       19, model time: 2000-01-01 00:02:32.000 forecast time 00D 00H02M32S
+  perform_dyn_substepping: physics_generation =            19  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499233331E+02 at level  60,   0.2563670947E+01 at level  14,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 245 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3499233882E+02 at level  60,   0.2632621513E+01 at level  13,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3499234574E+02 at level  60,   0.2710494572E+01 at level  13,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499235363E+02 at level  60,   0.2773435445E+01 at level  13,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3499236219E+02 at level  60,   0.2857518333E+01 at level  12,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.096318 Pa/s in domain  1
+ 
+ Time step:       20, model time: 2000-01-01 00:02:40.000 forecast time 00D 00H02M40S
+  perform_dyn_substepping: physics_generation =            20  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499229950E+02 at level  60,   0.2935825402E+01 at level  12,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 242 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 232 us
+ MAXABS VN, W in domain  1:  0.3499230529E+02 at level  60,   0.2997861219E+01 at level  12,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499231217E+02 at level  60,   0.3096311253E+01 at level  11,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 230 us
+ MAXABS VN, W in domain  1:  0.3499231984E+02 at level  60,   0.3176649493E+01 at level  11,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 231 us
+ MAXABS VN, W in domain  1:  0.3499232809E+02 at level  60,   0.3244422004E+01 at level  10,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.134305 Pa/s in domain  1
+ 
+ Time step:       21, model time: 2000-01-01 00:02:48.000 forecast time 00D 00H02M48S
+  perform_dyn_substepping: physics_generation =            21  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499226517E+02 at level  60,   0.3348074400E+01 at level  10,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 246 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499227139E+02 at level  60,   0.3431168833E+01 at level  10,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3499227843E+02 at level  60,   0.3498391218E+01 at level   9,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3499228605E+02 at level  60,   0.3609358401E+01 at level   9,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499229407E+02 at level  60,   0.3696570009E+01 at level   9,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.179812 Pa/s in domain  1
+ 
+ Time step:       22, model time: 2000-01-01 00:02:56.000 forecast time 00D 00H02M56S
+  perform_dyn_substepping: physics_generation =            22  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499223092E+02 at level  60,   0.3760612825E+01 at level   9,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 241 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499223750E+02 at level  60,   0.3869968194E+01 at level   8,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3499224462E+02 at level  60,   0.3963104518E+01 at level   8,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3499225215E+02 at level  60,   0.4030623899E+01 at level   8,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499225996E+02 at level  60,   0.4113684043E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 229 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.210514 Pa/s in domain  1
+ 
+ Time step:       23, model time: 2000-01-01 00:03:04.000 forecast time 00D 00H03M04S
+  perform_dyn_substepping: physics_generation =            23  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499219664E+02 at level  60,   0.4214499833E+01 at level   7,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 243 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499220366E+02 at level  60,   0.4286957266E+01 at level   7,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499221095E+02 at level  60,   0.4330147343E+01 at level   7,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499221844E+02 at level  60,   0.4422105459E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499222606E+02 at level  60,   0.4501912561E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.225697 Pa/s in domain  1
+ 
+ Time step:       24, model time: 2000-01-01 00:03:12.000 forecast time 00D 00H03M12S
+  perform_dyn_substepping: physics_generation =            24  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499216258E+02 at level  60,   0.4548225677E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 241 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 247 us
+ MAXABS VN, W in domain  1:  0.3499216998E+02 at level  60,   0.4569263439E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 230 us
+ MAXABS VN, W in domain  1:  0.3499217741E+02 at level  60,   0.4626615782E+01 at level   5,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3499218484E+02 at level  60,   0.4681726151E+01 at level   5,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499219229E+02 at level  60,   0.4702800373E+01 at level   5,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 229 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.232215 Pa/s in domain  1
+ 
+ Time step:       25, model time: 2000-01-01 00:03:20.000 forecast time 00D 00H03M20S
+  perform_dyn_substepping: physics_generation =            25  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499212867E+02 at level  60,   0.4693763870E+01 at level   5,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 241 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499213649E+02 at level  60,   0.4649945476E+01 at level   5,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499214408E+02 at level  60,   0.4670141166E+01 at level   4,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499215151E+02 at level  60,   0.4662776950E+01 at level   4,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499215881E+02 at level  60,   0.4615408797E+01 at level   4,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.220855 Pa/s in domain  1
+ 
+ Time step:       26, model time: 2000-01-01 00:03:28.000 forecast time 00D 00H03M28S
+  perform_dyn_substepping: physics_generation =            26  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499209503E+02 at level  60,   0.4529020834E+01 at level   4,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 240 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 335 us
+ MAXABS VN, W in domain  1:  0.3499210321E+02 at level  60,   0.4405488156E+01 at level   4,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 318 us
+ MAXABS VN, W in domain  1:  0.3499211093E+02 at level  60,   0.4246488824E+01 at level   4,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 317 us
+ MAXABS VN, W in domain  1:  0.3499211835E+02 at level  60,   0.4105798059E+01 at level   3,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 319 us
+ MAXABS VN, W in domain  1:  0.3499212557E+02 at level  60,   0.3961141437E+01 at level   3,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 320 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.196391 Pa/s in domain  1
+ 
+ Time step:       27, model time: 2000-01-01 00:03:36.000 forecast time 00D 00H03M36S
+  perform_dyn_substepping: physics_generation =            27  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499206180E+02 at level  60,   0.3776009289E+01 at level   3,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 330 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 322 us
+ MAXABS VN, W in domain  1:  0.3499207060E+02 at level  60,   0.3553626150E+01 at level   3,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 307 us
+ MAXABS VN, W in domain  1:  0.3499207887E+02 at level  60,   0.3555358758E+01 at level  11,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 299 us
+ MAXABS VN, W in domain  1:  0.3499208681E+02 at level  60,   0.3655764504E+01 at level  11,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 304 us
+ MAXABS VN, W in domain  1:  0.3499209457E+02 at level  60,   0.3580274031E+01 at level  11,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 306 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.164118 Pa/s in domain  1
+ 
+ Time step:       28, model time: 2000-01-01 00:03:44.000 forecast time 00D 00H03M44S
+  perform_dyn_substepping: physics_generation =            28  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499203127E+02 at level  60,   0.3672001202E+01 at level  10,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 331 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 310 us
+ MAXABS VN, W in domain  1:  0.3499204184E+02 at level  60,   0.3808671254E+01 at level  10,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 303 us
+ MAXABS VN, W in domain  1:  0.3499205129E+02 at level  60,   0.3757508509E+01 at level  10,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 302 us
+ MAXABS VN, W in domain  1:  0.3499205974E+02 at level  60,   0.3749173184E+01 at level   9,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 310 us
+ MAXABS VN, W in domain  1:  0.3499206730E+02 at level  60,   0.3945845331E+01 at level   9,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 287 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.123552 Pa/s in domain  1
+ 
+ Time step:       29, model time: 2000-01-01 00:03:52.000 forecast time 00D 00H03M52S
+  perform_dyn_substepping: physics_generation =            29  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499200298E+02 at level  60,   0.3939285739E+01 at level   9,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 316 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 303 us
+ MAXABS VN, W in domain  1:  0.3499201297E+02 at level  60,   0.3909073131E+01 at level   5,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 297 us
+ MAXABS VN, W in domain  1:  0.3499202134E+02 at level  60,   0.4255696203E+01 at level   4,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 303 us
+ MAXABS VN, W in domain  1:  0.3499202848E+02 at level  60,   0.4506790136E+01 at level   4,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 320 us
+ MAXABS VN, W in domain  1:  0.3499203468E+02 at level  60,   0.4617279369E+01 at level   4,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 292 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.084324 Pa/s in domain  1
+ 
+ Time step:       30, model time: 2000-01-01 00:04:00.000 forecast time 00D 00H04M00S
+  perform_dyn_substepping: physics_generation =            30  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499196923E+02 at level  60,   0.4550520841E+01 at level   4,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 310 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 299 us
+ MAXABS VN, W in domain  1:  0.3499197637E+02 at level  60,   0.4746045338E+01 at level   3,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 295 us
+ MAXABS VN, W in domain  1:  0.3499198267E+02 at level  60,   0.4910517621E+01 at level   3,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 295 us
+ MAXABS VN, W in domain  1:  0.3499198872E+02 at level  60,   0.4930839050E+01 at level   3,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 301 us
+ MAXABS VN, W in domain  1:  0.3499199487E+02 at level  60,   0.4789817081E+01 at level   3,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 292 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.051372 Pa/s in domain  1
+ 
+ Time step:       31, model time: 2000-01-01 00:04:08.000 forecast time 00D 00H04M08S
+  perform_dyn_substepping: physics_generation =            31  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499193085E+02 at level  60,   0.4455961274E+01 at level   3,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 322 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 307 us
+ MAXABS VN, W in domain  1:  0.3499194110E+02 at level  60,   0.4092010664E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 303 us
+ MAXABS VN, W in domain  1:  0.3499195035E+02 at level  60,   0.3775015016E+01 at level   5,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499195896E+02 at level  60,   0.4131947002E+01 at level   5,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499196722E+02 at level  60,   0.4251325799E+01 at level   5,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 231 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.042606 Pa/s in domain  1
+ 
+ Time step:       32, model time: 2000-01-01 00:04:16.000 forecast time 00D 00H04M16S
+  perform_dyn_substepping: physics_generation =            32  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499190449E+02 at level  60,   0.4117022757E+01 at level   5,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 248 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499191945E+02 at level  60,   0.4014264717E+01 at level   4,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499193196E+02 at level  60,   0.4466866974E+01 at level   4,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499194208E+02 at level  60,   0.4678216288E+01 at level   4,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499194990E+02 at level  60,   0.4639162368E+01 at level   4,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.063096 Pa/s in domain  1
+ 
+ Time step:       33, model time: 2000-01-01 00:04:24.000 forecast time 00D 00H04M24S
+  perform_dyn_substepping: physics_generation =            33  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499188432E+02 at level  60,   0.4746494326E+01 at level   3,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 253 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499189532E+02 at level  60,   0.5311845041E+01 at level   3,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499190366E+02 at level  60,   0.5629821342E+01 at level   3,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499190995E+02 at level  60,   0.5684452826E+01 at level   3,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499191449E+02 at level  60,   0.5476840624E+01 at level   3,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.067367 Pa/s in domain  1
+ 
+ Time step:       34, model time: 2000-01-01 00:04:32.000 forecast time 00D 00H04M32S
+  perform_dyn_substepping: physics_generation =            34  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499184775E+02 at level  60,   0.5483143258E+01 at level   2,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 254 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 249 us
+ MAXABS VN, W in domain  1:  0.3499185549E+02 at level  60,   0.5665723162E+01 at level   2,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499186184E+02 at level  60,   0.5583344572E+01 at level   2,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3499186780E+02 at level  60,   0.5380348392E+01 at level   8,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3499187406E+02 at level  60,   0.5426825529E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 230 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.099915 Pa/s in domain  1
+ 
+ Time step:       35, model time: 2000-01-01 00:04:40.000 forecast time 00D 00H04M40S
+  perform_dyn_substepping: physics_generation =            35  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499181188E+02 at level  60,   0.5489202494E+01 at level   7,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 239 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3499182536E+02 at level  60,   0.5525850666E+01 at level   7,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3499183769E+02 at level  60,   0.5534967626E+01 at level   7,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 251 us
+ MAXABS VN, W in domain  1:  0.3499184938E+02 at level  60,   0.5515949113E+01 at level   7,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 252 us
+ MAXABS VN, W in domain  1:  0.3499186107E+02 at level  60,   0.5469350539E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 249 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.145573 Pa/s in domain  1
+ 
+ Time step:       36, model time: 2000-01-01 00:04:48.000 forecast time 00D 00H04M48S
+  perform_dyn_substepping: physics_generation =            36  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499180144E+02 at level  60,   0.5396757145E+01 at level   7,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 250 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 250 us
+ MAXABS VN, W in domain  1:  0.3499182522E+02 at level  60,   0.5360480817E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499184549E+02 at level  60,   0.5307172513E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499186140E+02 at level  60,   0.5229099355E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3499187226E+02 at level  60,   0.5363139115E+01 at level   3,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.159573 Pa/s in domain  1
+ 
+ Time step:       37, model time: 2000-01-01 00:04:56.000 forecast time 00D 00H04M56S
+  perform_dyn_substepping: physics_generation =            37  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499180377E+02 at level  60,   0.5590118566E+01 at level   2,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 240 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499181612E+02 at level  60,   0.5690856199E+01 at level   2,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499182112E+02 at level  60,   0.5784943185E+01 at level   3,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499181943E+02 at level  60,   0.5845020156E+01 at level   3,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 231 us
+ MAXABS VN, W in domain  1:  0.3499181188E+02 at level  60,   0.5863163176E+01 at level   3,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.139393 Pa/s in domain  1
+ 
+ Time step:       38, model time: 2000-01-01 00:05:04.000 forecast time 00D 00H05M04S
+  perform_dyn_substepping: physics_generation =            38  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499173019E+02 at level  60,   0.5817239018E+01 at level   3,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 248 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 250 us
+ MAXABS VN, W in domain  1:  0.3499171137E+02 at level  60,   0.5813649743E+01 at level   4,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ MAXABS VN, W in domain  1:  0.3499169589E+02 at level  60,   0.5736373001E+01 at level   4,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ MAXABS VN, W in domain  1:  0.3499168727E+02 at level  60,   0.5580443687E+01 at level   4,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3499168758E+02 at level  60,   0.5350086116E+01 at level   4,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.151066 Pa/s in domain  1
+ 
+ Time step:       39, model time: 2000-01-01 00:05:12.000 forecast time 00D 00H05M12S
+  perform_dyn_substepping: physics_generation =            39  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499163293E+02 at level  60,   0.5043858544E+01 at level   4,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 258 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499164713E+02 at level  60,   0.4689347364E+01 at level   4,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499166763E+02 at level  60,   0.4290124324E+01 at level   4,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3499169370E+02 at level  60,   0.3855453905E+01 at level   4,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499172440E+02 at level  60,   0.3395356853E+01 at level   4,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.129823 Pa/s in domain  1
+ 
+ Time step:       40, model time: 2000-01-01 00:05:20.000 forecast time 00D 00H05M20S
+  perform_dyn_substepping: physics_generation =            40  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499169080E+02 at level  60,   0.2914254950E+01 at level   4,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 241 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 248 us
+ MAXABS VN, W in domain  1:  0.3499174066E+02 at level  60,   0.2430229958E+01 at level   4,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499177764E+02 at level  60,   0.2069809727E+01 at level   3,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3499179786E+02 at level  60,   0.1739047988E+01 at level   3,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 251 us
+ MAXABS VN, W in domain  1:  0.3499180095E+02 at level  60,   0.1408857695E+01 at level   3,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.108723 Pa/s in domain  1
+ 
+ Time step:       41, model time: 2000-01-01 00:05:28.000 forecast time 00D 00H05M28S
+  perform_dyn_substepping: physics_generation =            41  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499172097E+02 at level  60,   0.1384371904E+01 at level  12,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 251 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499171365E+02 at level  60,   0.1528630845E+01 at level  12,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3499170191E+02 at level  60,   0.1670693107E+01 at level  11,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 249 us
+ MAXABS VN, W in domain  1:  0.3499168817E+02 at level  60,   0.1815647386E+01 at level  11,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499167244E+02 at level  60,   0.1957883005E+01 at level  10,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.079773 Pa/s in domain  1
+ 
+ Time step:       42, model time: 2000-01-01 00:05:36.000 forecast time 00D 00H05M36S
+  perform_dyn_substepping: physics_generation =            42  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499158723E+02 at level  60,   0.2126712091E+01 at level  10,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 242 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3499156699E+02 at level  60,   0.2296956363E+01 at level   9,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499155374E+02 at level  60,   0.2520327343E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3499155322E+02 at level  60,   0.2822542455E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499156667E+02 at level  60,   0.3107312733E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.057506 Pa/s in domain  1
+ 
+ Time step:       43, model time: 2000-01-01 00:05:44.000 forecast time 00D 00H05M44S
+  perform_dyn_substepping: physics_generation =            43  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499152172E+02 at level  60,   0.3367741015E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 245 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499155405E+02 at level  60,   0.3614167079E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499158123E+02 at level  60,   0.3840908357E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499160373E+02 at level  60,   0.4050173320E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499162452E+02 at level  60,   0.4247586968E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.039141 Pa/s in domain  1
+ 
+ Time step:       44, model time: 2000-01-01 00:05:52.000 forecast time 00D 00H05M52S
+  perform_dyn_substepping: physics_generation =            44  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499157392E+02 at level  60,   0.4441247845E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 246 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499160869E+02 at level  60,   0.4617646030E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499163551E+02 at level  60,   0.4776162264E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3499165205E+02 at level  60,   0.4917178422E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 230 us
+ MAXABS VN, W in domain  1:  0.3499165792E+02 at level  60,   0.5041140098E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.038249 Pa/s in domain  1
+ 
+ Time step:       45, model time: 2000-01-01 00:06:00.000 forecast time 00D 00H06M00S
+  perform_dyn_substepping: physics_generation =            45  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499158295E+02 at level  60,   0.5148033805E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 245 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3499159132E+02 at level  60,   0.5239326605E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3499159481E+02 at level  60,   0.5314929642E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499159569E+02 at level  60,   0.5375251225E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3499159422E+02 at level  60,   0.5420715178E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.033074 Pa/s in domain  1
+ 
+ Time step:       46, model time: 2000-01-01 00:06:08.000 forecast time 00D 00H06M08S
+  perform_dyn_substepping: physics_generation =            46  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499152012E+02 at level  60,   0.5451299798E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 251 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499152743E+02 at level  60,   0.5467635751E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499153165E+02 at level  60,   0.5469748432E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3499166502E+02 at level  59,   0.5457910137E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 246 us
+ MAXABS VN, W in domain  1:  0.3499212160E+02 at level  59,   0.5432452234E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 247 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.056564 Pa/s in domain  1
+ 
+ Time step:       47, model time: 2000-01-01 00:06:16.000 forecast time 00D 00H06M16S
+  perform_dyn_substepping: physics_generation =            47  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499251454E+02 at level  59,   0.5393764811E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 250 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499297930E+02 at level  59,   0.5342480777E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3499344367E+02 at level  59,   0.5279389944E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499390685E+02 at level  59,   0.5205125017E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3499436820E+02 at level  59,   0.5121108087E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 246 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.056603 Pa/s in domain  1
+ 
+ Time step:       48, model time: 2000-01-01 00:06:24.000 forecast time 00D 00H06M24S
+  perform_dyn_substepping: physics_generation =            48  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499476205E+02 at level  59,   0.5027285285E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 252 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3499522587E+02 at level  59,   0.4924379227E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3499568647E+02 at level  59,   0.4812969546E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3499614509E+02 at level  59,   0.4693408189E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 251 us
+ MAXABS VN, W in domain  1:  0.3499660258E+02 at level  59,   0.4566617640E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.071908 Pa/s in domain  1
+ 
+ Time step:       49, model time: 2000-01-01 00:06:32.000 forecast time 00D 00H06M32S
+  perform_dyn_substepping: physics_generation =            49  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499699493E+02 at level  59,   0.4430950948E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 245 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3499745586E+02 at level  59,   0.4288461711E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3499791604E+02 at level  59,   0.4138591635E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3499837654E+02 at level  59,   0.3981452969E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3499883746E+02 at level  59,   0.3817287508E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 250 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.065947 Pa/s in domain  1
+ 
+ Time step:       50, model time: 2000-01-01 00:06:40.000 forecast time 00D 00H06M40S
+  perform_dyn_substepping: physics_generation =            50  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3499923365E+02 at level  59,   0.3646196127E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 246 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 249 us
+ MAXABS VN, W in domain  1:  0.3499970014E+02 at level  59,   0.3468646657E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3500016368E+02 at level  59,   0.3285052608E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 246 us
+ MAXABS VN, W in domain  1:  0.3500062577E+02 at level  59,   0.3095997205E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 229 us
+ MAXABS VN, W in domain  1:  0.3500108750E+02 at level  59,   0.2902148487E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.074979 Pa/s in domain  1
+ 
+ Time step:       51, model time: 2000-01-01 00:06:48.000 forecast time 00D 00H06M48S
+  perform_dyn_substepping: physics_generation =            51  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500148387E+02 at level  59,   0.2704175604E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 241 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3500195282E+02 at level  59,   0.2502887253E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 246 us
+ MAXABS VN, W in domain  1:  0.3500241882E+02 at level  59,   0.2309731697E+01 at level   5,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3500288283E+02 at level  59,   0.2119659102E+01 at level   5,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3500334549E+02 at level  59,   0.1927434870E+01 at level   5,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.058913 Pa/s in domain  1
+ 
+ Time step:       52, model time: 2000-01-01 00:06:56.000 forecast time 00D 00H06M56S
+  perform_dyn_substepping: physics_generation =            52  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500374115E+02 at level  59,   0.1733116550E+01 at level   5,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 247 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ MAXABS VN, W in domain  1:  0.3500421190E+02 at level  59,   0.1547246396E+01 at level   4,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3500467899E+02 at level  59,   0.1376896460E+01 at level   4,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ MAXABS VN, W in domain  1:  0.3500514371E+02 at level  59,   0.1205088798E+01 at level   4,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3500560681E+02 at level  59,   0.1032174510E+01 at level   4,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.065075 Pa/s in domain  1
+ 
+ Time step:       53, model time: 2000-01-01 00:07:04.000 forecast time 00D 00H07M04S
+  perform_dyn_substepping: physics_generation =            53  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500600169E+02 at level  59,   0.8727462448E+00 at level   3,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 236 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3500647380E+02 at level  59,   0.7346271176E+00 at level   3,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3500694133E+02 at level  59,   0.5947791060E+00 at level   3,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3500740570E+02 at level  59,   0.6011798926E+00 at level   8,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 231 us
+ MAXABS VN, W in domain  1:  0.3500786783E+02 at level  59,   0.7628092087E+00 at level   8,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.043139 Pa/s in domain  1
+ 
+ Time step:       54, model time: 2000-01-01 00:07:12.000 forecast time 00D 00H07M12S
+  perform_dyn_substepping: physics_generation =            54  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3500826100E+02 at level  59,   0.9178101682E+00 at level   8,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 247 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ MAXABS VN, W in domain  1:  0.3500873239E+02 at level  59,   0.1104437999E+01 at level   9,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3500919907E+02 at level  59,   0.1289401978E+01 at level   8,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 251 us
+ MAXABS VN, W in domain  1:  0.3500966236E+02 at level  59,   0.1479765425E+01 at level   8,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3501012326E+02 at level  59,   0.1660624876E+01 at level   8,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 253 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.048474 Pa/s in domain  1
+ 
+ Time step:       55, model time: 2000-01-01 00:07:20.000 forecast time 00D 00H07M20S
+  perform_dyn_substepping: physics_generation =            55  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501051457E+02 at level  59,   0.1831519634E+01 at level   8,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 249 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 249 us
+ MAXABS VN, W in domain  1:  0.3501098501E+02 at level  59,   0.1993024534E+01 at level   8,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3501145133E+02 at level  59,   0.2144796767E+01 at level   8,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3501191490E+02 at level  59,   0.2303536342E+01 at level   7,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 250 us
+ MAXABS VN, W in domain  1:  0.3501237633E+02 at level  59,   0.2452351950E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.041404 Pa/s in domain  1
+ 
+ Time step:       56, model time: 2000-01-01 00:07:28.000 forecast time 00D 00H07M28S
+  perform_dyn_substepping: physics_generation =            56  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501276731E+02 at level  59,   0.2590038576E+01 at level   7,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 244 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3501323731E+02 at level  59,   0.2717656549E+01 at level   7,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ MAXABS VN, W in domain  1:  0.3501370248E+02 at level  59,   0.2834886122E+01 at level   7,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3501416452E+02 at level  59,   0.2941905128E+01 at level   7,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3501462483E+02 at level  59,   0.3040025202E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.122209 Pa/s in domain  1
+ 
+ Time step:       57, model time: 2000-01-01 00:07:36.000 forecast time 00D 00H07M36S
+  perform_dyn_substepping: physics_generation =            57  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501501553E+02 at level  59,   0.3140149844E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 243 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3501548725E+02 at level  59,   0.3230010833E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3501595564E+02 at level  59,   0.3309077929E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3501642211E+02 at level  59,   0.3377653635E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 231 us
+ MAXABS VN, W in domain  1:  0.3501688732E+02 at level  59,   0.3436093169E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.123784 Pa/s in domain  1
+ 
+ Time step:       58, model time: 2000-01-01 00:07:44.000 forecast time 00D 00H07M44S
+  perform_dyn_substepping: physics_generation =            58  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501728103E+02 at level  59,   0.3484397669E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 242 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3501775263E+02 at level  59,   0.3523893490E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 227 us
+ MAXABS VN, W in domain  1:  0.3501821715E+02 at level  59,   0.3554738136E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3501867456E+02 at level  59,   0.3577573401E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3501912532E+02 at level  59,   0.3593595197E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.183916 Pa/s in domain  1
+ 
+ Time step:       59, model time: 2000-01-01 00:07:52.000 forecast time 00D 00H07M52S
+  perform_dyn_substepping: physics_generation =            59  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3501950406E+02 at level  59,   0.3602145047E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 249 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3501996238E+02 at level  59,   0.3605769200E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3502041913E+02 at level  59,   0.3603839004E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3502087764E+02 at level  59,   0.3596824167E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3502133905E+02 at level  59,   0.3590389734E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.185930 Pa/s in domain  1
+ 
+ Time step:       60, model time: 2000-01-01 00:08:00.000 forecast time 00D 00H08M00S
+  perform_dyn_substepping: physics_generation =            60  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502173700E+02 at level  59,   0.3581815300E+01 at level   7,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 244 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ MAXABS VN, W in domain  1:  0.3502221298E+02 at level  59,   0.3568153994E+01 at level   7,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3502268376E+02 at level  59,   0.3548526616E+01 at level   7,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ MAXABS VN, W in domain  1:  0.3502314927E+02 at level  59,   0.3522616547E+01 at level   7,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3502360984E+02 at level  59,   0.3490415238E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.178018 Pa/s in domain  1
+ 
+ Time step:       61, model time: 2000-01-01 00:08:08.000 forecast time 00D 00H08M08S
+  perform_dyn_substepping: physics_generation =            61  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502400108E+02 at level  59,   0.3451299847E+01 at level   7,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 247 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3502446753E+02 at level  59,   0.3404639259E+01 at level   7,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3502492934E+02 at level  59,   0.3350336959E+01 at level   7,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3502538920E+02 at level  59,   0.3288222714E+01 at level   7,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 231 us
+ MAXABS VN, W in domain  1:  0.3502584925E+02 at level  59,   0.3218231210E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.106168 Pa/s in domain  1
+ 
+ Time step:       62, model time: 2000-01-01 00:08:16.000 forecast time 00D 00H08M16S
+  perform_dyn_substepping: physics_generation =            62  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502624499E+02 at level  59,   0.3140569724E+01 at level   7,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 245 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3502671596E+02 at level  59,   0.3056128022E+01 at level   7,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3502718285E+02 at level  59,   0.2965383322E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3502764557E+02 at level  59,   0.2874157883E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3502810464E+02 at level  59,   0.2776329181E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.051550 Pa/s in domain  1
+ 
+ Time step:       63, model time: 2000-01-01 00:08:24.000 forecast time 00D 00H08M24S
+  perform_dyn_substepping: physics_generation =            63  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3502849596E+02 at level  59,   0.2671595718E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 242 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3502896118E+02 at level  59,   0.2561414570E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 247 us
+ MAXABS VN, W in domain  1:  0.3502942346E+02 at level  59,   0.2445691456E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3502988442E+02 at level  59,   0.2324935782E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3503034548E+02 at level  59,   0.2199714189E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.106066 Pa/s in domain  1
+ 
+ Time step:       64, model time: 2000-01-01 00:08:32.000 forecast time 00D 00H08M32S
+  perform_dyn_substepping: physics_generation =            64  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503074166E+02 at level  59,   0.2071439728E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 238 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3503121293E+02 at level  59,   0.1939969957E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3503168074E+02 at level  59,   0.1814010650E+01 at level   5,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 247 us
+ MAXABS VN, W in domain  1:  0.3503214481E+02 at level  59,   0.1690573005E+01 at level   5,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3503260527E+02 at level  59,   0.1565788764E+01 at level   5,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.134968 Pa/s in domain  1
+ 
+ Time step:       65, model time: 2000-01-01 00:08:40.000 forecast time 00D 00H08M40S
+  perform_dyn_substepping: physics_generation =            65  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503299595E+02 at level  59,   0.1438724607E+01 at level   5,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 243 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3503345974E+02 at level  59,   0.1320600716E+01 at level   4,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3503392005E+02 at level  59,   0.1211023986E+01 at level   4,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ MAXABS VN, W in domain  1:  0.3503437816E+02 at level  59,   0.1099070344E+01 at level   4,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3503483510E+02 at level  59,   0.9846481799E+00 at level   4,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.117783 Pa/s in domain  1
+ 
+ Time step:       66, model time: 2000-01-01 00:08:48.000 forecast time 00D 00H08M48S
+  perform_dyn_substepping: physics_generation =            66  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503522688E+02 at level  59,   0.8674978043E+00 at level   4,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 248 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 246 us
+ MAXABS VN, W in domain  1:  0.3503569467E+02 at level  59,   0.7708433562E+00 at level   3,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3503616087E+02 at level  59,   0.6735765058E+00 at level   3,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3503662726E+02 at level  59,   0.5734954421E+00 at level   3,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ MAXABS VN, W in domain  1:  0.3503709536E+02 at level  59,   0.4708032465E+00 at level   3,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.123902 Pa/s in domain  1
+ 
+ Time step:       67, model time: 2000-01-01 00:08:56.000 forecast time 00D 00H08M56S
+  perform_dyn_substepping: physics_generation =            67  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503749780E+02 at level  59,   0.3995749945E+00 at level  10,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 247 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3503797076E+02 at level  59,   0.5282543562E+00 at level  10,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3503843935E+02 at level  59,   0.6596173519E+00 at level   9,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3503890285E+02 at level  59,   0.7887593785E+00 at level   9,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3503936189E+02 at level  59,   0.9138475458E+00 at level   9,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.140018 Pa/s in domain  1
+ 
+ Time step:       68, model time: 2000-01-01 00:09:04.000 forecast time 00D 00H09M04S
+  perform_dyn_substepping: physics_generation =            68  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3503974936E+02 at level  59,   0.1034048834E+01 at level   9,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 247 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3504021413E+02 at level  59,   0.1150521176E+01 at level   9,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3504067578E+02 at level  59,   0.1264012419E+01 at level   8,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3504113568E+02 at level  59,   0.1378254739E+01 at level   8,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3504159463E+02 at level  59,   0.1487848639E+01 at level   8,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.130916 Pa/s in domain  1
+ 
+ Time step:       69, model time: 2000-01-01 00:09:12.000 forecast time 00D 00H09M12S
+  perform_dyn_substepping: physics_generation =            69  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3504198484E+02 at level  59,   0.1591920612E+01 at level   8,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 251 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3504245337E+02 at level  59,   0.1691978935E+01 at level   8,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3504291673E+02 at level  59,   0.1787150985E+01 at level   8,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3504337584E+02 at level  59,   0.1877373471E+01 at level   8,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 232 us
+ MAXABS VN, W in domain  1:  0.3504383185E+02 at level  59,   0.1968986151E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.181711 Pa/s in domain  1
+ 
+ Time step:       70, model time: 2000-01-01 00:09:20.000 forecast time 00D 00H09M20S
+  perform_dyn_substepping: physics_generation =            70  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3504421883E+02 at level  59,   0.2055581877E+01 at level   7,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 247 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3504468316E+02 at level  59,   0.2137812919E+01 at level   7,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3504514448E+02 at level  59,   0.2214503369E+01 at level   7,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3504560466E+02 at level  59,   0.2285563240E+01 at level   7,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3504606500E+02 at level  59,   0.2350924970E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.227824 Pa/s in domain  1
+ 
+ Time step:       71, model time: 2000-01-01 00:09:28.000 forecast time 00D 00H09M28S
+  perform_dyn_substepping: physics_generation =            71  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3504645845E+02 at level  59,   0.2409715598E+01 at level   7,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 248 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 233 us
+ MAXABS VN, W in domain  1:  0.3504693187E+02 at level  59,   0.2463572729E+01 at level   7,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 243 us
+ MAXABS VN, W in domain  1:  0.3504740041E+02 at level  59,   0.2511647689E+01 at level   7,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3504786469E+02 at level  59,   0.2553945778E+01 at level   7,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 244 us
+ MAXABS VN, W in domain  1:  0.3504832526E+02 at level  59,   0.2590479503E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.226166 Pa/s in domain  1
+ 
+ Time step:       72, model time: 2000-01-01 00:09:36.000 forecast time 00D 00H09M36S
+  perform_dyn_substepping: physics_generation =            72  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3504871296E+02 at level  59,   0.2621041694E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 246 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3504918031E+02 at level  59,   0.2647408376E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3504964045E+02 at level  59,   0.2667567903E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ MAXABS VN, W in domain  1:  0.3505009561E+02 at level  59,   0.2681659148E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3505054797E+02 at level  59,   0.2689829459E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 241 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.180226 Pa/s in domain  1
+ 
+ Time step:       73, model time: 2000-01-01 00:09:44.000 forecast time 00D 00H09M44S
+  perform_dyn_substepping: physics_generation =            73  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3505093091E+02 at level  59,   0.2691487095E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 239 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3505139840E+02 at level  59,   0.2688271751E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3505185883E+02 at level  59,   0.2679567490E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 239 us
+ MAXABS VN, W in domain  1:  0.3505231243E+02 at level  59,   0.2665516905E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 242 us
+ MAXABS VN, W in domain  1:  0.3505275978E+02 at level  59,   0.2646264237E+01 at level   6,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 235 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.114848 Pa/s in domain  1
+ 
+ Time step:       74, model time: 2000-01-01 00:09:52.000 forecast time 00D 00H09M52S
+  perform_dyn_substepping: physics_generation =            74  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3505313759E+02 at level  59,   0.2621716241E+01 at level   6,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 245 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 234 us
+ MAXABS VN, W in domain  1:  0.3505359663E+02 at level  59,   0.2592525998E+01 at level   6,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 247 us
+ MAXABS VN, W in domain  1:  0.3505405030E+02 at level  59,   0.2560030355E+01 at level   6,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 236 us
+ MAXABS VN, W in domain  1:  0.3505450123E+02 at level  59,   0.2523306452E+01 at level   6,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 246 us
+ MAXABS VN, W in domain  1:  0.3505495110E+02 at level  59,   0.2482597835E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 238 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.041835 Pa/s in domain  1
+ 
+ Time step:       75, model time: 2000-01-01 00:10:00.000 forecast time 00D 00H10M00S
+  perform_dyn_substepping: physics_generation =            75  iau_iter =             0  dt_phy =     8.000000000000000       ndyn_substeps =             5
+ MAXABS VN, W in domain  1:  0.3505533890E+02 at level  59,   0.2437850992E+01 at level   7,
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1 took 253 us
+  Starting solve_nh for dycore_generation             1
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 245 us
+ MAXABS VN, W in domain  1:  0.3505580719E+02 at level  59,   0.2389602734E+01 at level   7,
+  Starting solve_nh for dycore_generation             2
+  Starting solve_nh for dycore_generation             2
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 237 us
+ MAXABS VN, W in domain  1:  0.3505627194E+02 at level  59,   0.2337800990E+01 at level   7,
+  Starting solve_nh for dycore_generation             3
+  Starting solve_nh for dycore_generation             3
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 231 us
+ MAXABS VN, W in domain  1:  0.3505673469E+02 at level  59,   0.2286618030E+01 at level   7,
+  Starting solve_nh for dycore_generation             4
+  Starting solve_nh for dycore_generation             4
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ MAXABS VN, W in domain  1:  0.3505719646E+02 at level  59,   0.2232404650E+01 at level   7,
+  Starting solve_nh for dycore_generation             5
+  Starting solve_nh for dycore_generation             5
+Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2 took 240 us
+ integrate_nh: call advection  DOM: 1
+ nwp_nh_interface:: average |dPS/dt| =    0.102591 Pa/s in domain  1
+ destruct_atmo_nonhydrostatic: start to clean up
+ mo_pp_scheduler::pp_scheduler_finalize: 
+ mo_nonhydro_state::destruct_nh_state: Destruction of NH state started
+ mo_nonhydro_state::destruct_nh_state: NH state destruction completed
+ mo_prepadv_state:destruct_prepadv_state: destruction of prep_adv state finished
+ mo_nwp_phy_state:destruct_nwp_phy_state: start to destruct 3D state vector
+ mo_nwp_phy_state:destruct_nwp_phy_state: destruction of 3D state vector finished
+ mo_nwp_lnd_state:destruct_nwp_lnd_state: Destruction of nwp land state started
+ mo_nwp_lnd_state:destruct_nwp_lnd_state: Destruction of nwp land state completed
+ destruct_atmo_nonhydrostatic: clean-up finished
+ 
+ Timer report
+ 
+ ------------------------------   -------   ------------   ------------   ------------   -------------   -------------   -------------    
+ name                             # calls   t_min          t_avg          t_max          total min (s)   total max (s)   total avg (s)    
+ ------------------------------   -------   ------------   ------------   ------------   -------------   -------------   -------------    
+ 
+ total                            1               03m17s         03m17s         03m17s        197.242         197.242         197.242     
+  L integrate_nh                  75             2.4370s        2.6298s        4.8006s        197.233         197.233         197.233     
+     L nh_solve                   375           0.39617s       0.52100s        1.6414s        195.374         195.374         195.374     
+        L nh_solve.veltend        450           0.39385s       0.43218s       0.85563s        194.480         194.480         194.480     
+        L nh_solve.cellcomp       750           0.00013s       0.00016s       0.00344s          0.122           0.122           0.122     
+        L nh_solve.edgecomp       750           0.00013s       0.00018s       0.00023s          0.138           0.138           0.138     
+        L nh_solve.vnupd          750           0.00015s       0.00024s       0.00071s          0.178           0.178           0.178     
+        L nh_solve.vimpl          750           0.00046s       0.00048s       0.00051s          0.362           0.362           0.362     
+        L nh_solve.exch           1500          0.00000s       0.00000s       0.00001s          0.005           0.005           0.005     
+     L nh_hdiff                   75            0.00050s       0.00053s       0.00198s          0.039           0.039           0.039     
+     L transport                  75            0.00544s       0.00591s       0.03343s          0.444           0.444           0.444     
+        L adv_horiz               75            0.00391s       0.00434s       0.03004s          0.326           0.326           0.326     
+           L adv_hflx             75            0.00366s       0.00409s       0.02978s          0.307           0.307           0.307     
+              L back_traj         225           0.00004s       0.00010s       0.00069s          0.022           0.022           0.022     
+        L adv_vert                75            0.00141s       0.00146s       0.00291s          0.109           0.109           0.109     
+           L adv_vflx             75            0.00111s       0.00116s       0.00261s          0.087           0.087           0.087     
+  L action                        75            0.00002s       0.00003s       0.00005s          0.002           0.002           0.002     
+ global_sum                       84            0.00000s       0.00000s       0.00000s          0.000           0.000           0.000     
+ ordglb_sum                       78            0.00001s       0.00003s       0.00131s          0.002           0.002           0.002     
+ physics                          76            0.00992s       0.01616s       0.04021s          1.228           1.228           1.228     
+  L phys_acc_sync                 76            0.00017s       0.00037s       0.00226s          0.028           0.028           0.028     
+  L satad                         76            0.00061s       0.00064s       0.00190s          0.049           0.049           0.049     
+  L phys_u_v                      76            0.00008s       0.00010s       0.00095s          0.007           0.007           0.007     
+  L nwp_turbulence                151           0.00110s       0.00402s       0.01318s          0.607           0.607           0.607     
+     L nwp_turbtrans              76            0.00109s       0.00122s       0.00644s          0.092           0.092           0.092     
+     L nwp_turbdiff               75            0.00447s       0.00456s       0.00894s          0.342           0.342           0.342     
+  L nwp_surface                   75            0.00010s       0.00012s       0.00135s          0.009           0.009           0.009     
+  L nwp_microphysics              75            0.00076s       0.00082s       0.00166s          0.062           0.062           0.062     
+  L rediag_prog_vars              76            0.00012s       0.00021s       0.00023s          0.016           0.016           0.016     
+  L nwp_convection                39            0.00687s       0.00727s       0.01651s          0.284           0.284           0.284     
+  L sso                           20            0.00573s       0.00617s       0.00783s          0.123           0.123           0.123     
+  L cloud_cover                   39            0.00066s       0.00068s       0.00082s          0.026           0.026           0.026     
+ nh_diagnostics                   230           0.00000s       0.00042s       0.06564s          0.097           0.097           0.097     
+ diagnose_pres_temp               51            0.00001s       0.00814s       0.09042s          0.415           0.415           0.415     
+ model_init                       3             0.54889s        4.1813s       10.8627s         12.544          12.544          12.544     
+  L compute_domain_decomp         1             0.25522s       0.25522s       0.25522s          0.255           0.255           0.255     
+  L compute_intp_coeffs           1             0.80299s       0.80299s       0.80299s          0.803           0.803           0.803     
+  L init_ext_data                 1             0.01820s       0.01820s       0.01820s          0.018           0.018           0.018     
+  L init_nwp_phy                  1             0.20573s       0.20573s       0.20573s          0.206           0.206           0.206     
+ upper_atmosphere                 2             0.00001s       0.00003s       0.00005s          0.000           0.000           0.000     
+  L upatmo_construction           1             0.00005s       0.00005s       0.00005s          0.000           0.000           0.000     
+  L upatmo_destruction            1             0.00001s       0.00001s       0.00001s          0.000           0.000           0.000     
+ write_restart                    2             0.00008s       0.00545s       0.01082s          0.011           0.011           0.011     
+  L write_restart_setup           1             0.01076s       0.01076s       0.01076s          0.011           0.011           0.011     
+     L write_restart_collectors   208           0.00000s       0.00000s       0.00072s          0.001           0.001           0.001     
+        L write_restart_indices   3             0.00012s       0.00024s       0.00036s          0.001           0.001           0.001     
+ -------------------------------------------------------------------------------------------------------------------------------------    
+ 
+ mo_ext_data_state:destruct_ext_data: Destruction of data structure for external data started
+ mo_ext_data_state:destruct_ext_data: Destruction of data structure for external data finished
+ mo_interpolation:destruct_int_state: start to destruct int state
+ mo_interpolation:destruct_int_state: destruction of interpolation state finished
+ mo_atmo_model:destruct_atmo_model: destruct_2d_interpol_state is done
+ mo_alloc_patches:destruct_comm_patterns: start
+ mo_alloc_patches:destruct_comm_patterns: destruct_comm_patterns finished
+ mo_alloc_patches:destruct_patches: start
+ mo_alloc_patches:destruct_patches: destruct_patches finished
+ mo_alloc_patches:destruct_patches: start
+ mo_alloc_patches:destruct_patches: destruct_patches finished
+ mo_atmo_model:destruct_atmo_model: destruct_patches is done
+ mo_atmo_model:destruct_atmo_model: clean-up finished
++ set +x
+Fri 27 Mar 2026 04:23:03 PM CET
+OK
+============================
+Script run successfully:  OK
+============================
