@@ -2,10 +2,10 @@
 # Submit an SC2026 ICON integration run with libvelocity.so LD_PRELOAD'd.
 #
 # Usage:
-#   ./sbatch_sc2026.sh <ATM_TIMESTEP> [VT_PREC=f64] [GRID=0010_R02B04]
+#   ./sbatch_sc2026.sh <ATM_TIMESTEP> [VT_PREC=fp64] [GRID=0010_R02B04]
 #
 # ATM_TIMESTEP : atmosphere time step in seconds (e.g. 2, 4, 8)
-# VT_PREC      : VT precision: f16 | f32 | f64 (default f64)
+# VT_PREC      : VT precision: fp16 | fp32 | fp64 (default fp64)
 # GRID         : <gridID>_<refinement>, e.g. 0010_R02B04 (default),
 #                0008_R02B05, 0002_R02B06, 0050_R02B03
 #
@@ -13,8 +13,8 @@
 # libvelocity_gpu_stage8_solve_nh_integration_release.${VT_PREC}.so files.
 set -euo pipefail
 
-export ATM_TIMESTEP=${1:? "Usage: $0 <ATM_TIMESTEP> [VT_PREC=f64] [GRID=0010_R02B04]"}
-export VT_PREC=${2:-f64}
+export ATM_TIMESTEP=${1:? "Usage: $0 <ATM_TIMESTEP> [VT_PREC=fp64] [GRID=0010_R02B04]"}
+export VT_PREC=${2:-fp64}
 export GRID=${3:-0010_R02B04}
 
 VT_DIR="${VT_DIR:-/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-vt-dace}"
