@@ -2984,10 +2984,10 @@ use vt_serde, only: do_serialize, physics_tic, physics_generation, dyn_substeps,
     call physics_tic()
     write(message_text, *) "perform_dyn_substepping: physics_generation = ", physics_generation, " iau_iter = ", iau_iter, " dt_phy = ", dt_phy, " ndyn_substeps = ", ndyn_substeps_var(jg)
     call message('', message_text)
-    if (physics_generation >= serde_gen_start) then
+    if (ndyn_substeps_override > 0) then
       ndyn_substeps_var(jg) = ndyn_substeps_override
       dyn_substeps = ndyn_substeps_var(jg)
-      write(message_text, *) "At physics_generation = ", physics_generation, " switching to dynamics substeps = ", ndyn_substeps_var(jg)
+      write(message_text, *) "At physics_generation = ", physics_generation, " forcing dynamics substeps = ", ndyn_substeps_var(jg)
     endif
     if (physics_generation >= serde_gen_start) then
       do_serialize = .true.

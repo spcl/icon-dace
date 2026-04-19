@@ -2083,7 +2083,7 @@ MODULE vt_serde
   INTEGER :: dyn_substeps = 0
   LOGICAL :: do_serialize = .false.
   ! Runtime-tunable knobs (overridable via env vars at first physics_tic)
-  INTEGER :: ndyn_substeps_override = 10
+  INTEGER :: ndyn_substeps_override = 0       ! 0 = don't override; >0 = force this value
   INTEGER :: serde_gen_start        = 0
   INTEGER :: serde_gen_end          = 51
   LOGICAL :: use_vt_gpu             = .true.  ! dispatch solve_nh's velocity_tendencies to VT's libvelocity.so
