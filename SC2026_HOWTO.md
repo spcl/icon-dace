@@ -1,5 +1,10 @@
 # SC2026 — ICON integration
 
+This HOWTO is the **data-generation half** of the SC2026 reproduction.
+Its output = serialized `.data` files for all 5 variants × 4 grids. For
+analysis (SNR comparisons, table population) return to VT's
+`SC2026_HOWTO.md §5`.
+
 ## 1. Get the code
 ```bash
 git clone --branch prat/sc2026 git@github.com:spcl/icon-dace.git
@@ -69,51 +74,88 @@ Drop the `.nc` for any other `GRID` you plan to submit with.
 
 ## 8. Submit
 
-```
-./run/sbatch_sc2026.sh <ATM_TIMESTEP> [VT_PREC=fp64] [GRID=0010_R02B04]
-```
-Caller env passes through, so vt_serde knobs work via `--export=ALL`.
+`sbatch_all_sc2026.sh <GRID>` fires all 5 variants (§8.1–8.5) for one grid:
 
-### vt_serde knobs
+```bash
+SERDE_GEN_END=51 ./run/sbatch_all_sc2026.sh 0050_R02B03   # 320 km
+SERDE_GEN_END=51 ./run/sbatch_all_sc2026.sh 0010_R02B04   # 160 km
+SERDE_GEN_END=11 ./run/sbatch_all_sc2026.sh 0008_R02B05   #  80 km — trim
+SERDE_GEN_END=6  ./run/sbatch_all_sc2026.sh 0002_R02B06   #  40 km — trim hard
+```
+
+Drop the matching `icon_grid_<GRID>_G.nc` into `build/verification/`
+before submitting.
+
+`SERDE_GEN_END` sets the serialization window (physics_generation
+`0..N-1` are dumped). Each refinement ≈4× more cells = 4× fatter `.data`
+files, so the finer grids get trimmed windows above. Paper-table numbers
+only need the first physics step; bump to `51` if you want the full
+50-step curve for SNR-evolution plots.
+
+VT variants need `libvelocity_gpu_stage8_solve_nh_integration_release.<VT_PREC>.so`
+under `${VT_DIR}` (default `/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-vt-dace`).
+
+### 8.1–8.5 Variants (what sbatch_all_sc2026.sh dispatches)
+
+| # | Purpose                                            | Underlying command (fixed `ATM_TIMESTEP=8`)                                    |
+|---|----------------------------------------------------|--------------------------------------------------------------------------------|
+| 8.1 | Vanilla FP64, ss5 (reference)                    | `USE_VT_GPU=0 NDYN_SUBSTEPS_OVERRIDE=5  ./run/sbatch_sc2026.sh 8 fp64 <GRID>` |
+| 8.2 | Vanilla FP64, ss10 (temporally-refined reference)| `USE_VT_GPU=0 NDYN_SUBSTEPS_OVERRIDE=10 ./run/sbatch_sc2026.sh 8 fp64 <GRID>` |
+| 8.3 | VT FP64                                          | `USE_VT_GPU=1 NDYN_SUBSTEPS_OVERRIDE=5  ./run/sbatch_sc2026.sh 8 fp64 <GRID>` |
+| 8.4 | VT FP32                                          | `USE_VT_GPU=1 NDYN_SUBSTEPS_OVERRIDE=5  ./run/sbatch_sc2026.sh 8 fp32 <GRID>` |
+| 8.5 | VT FP16                                          | `USE_VT_GPU=1 NDYN_SUBSTEPS_OVERRIDE=5  ./run/sbatch_sc2026.sh 8 fp16 <GRID>` |
+
+All set `SERDE_GEN_END=51`, so `.data` dumps cover `physics_generation 0..50`.
+
+### vt_serde knobs (for single-variant re-runs via `sbatch_sc2026.sh`)
 
 | Env var                   | Default  | Effect |
 |---------------------------|----------|--------|
 | `USE_VT_GPU`              | `.true.` | false → ICON's built-in `velocity_tendencies`; true → VT's `libvelocity.so` |
 | `NDYN_SUBSTEPS_OVERRIDE`  | `0`      | 0 = leave namelist (5) alone; `N>0` = force `N` |
 | `SERDE_GEN_START`         | `0`      | first `physics_generation` where `do_serialize` flips on |
-| `SERDE_GEN_END`           | `51`     | `physics_generation` where `do_serialize` flips off |
+| `SERDE_GEN_END`           | `51`     | `physics_generation` where `do_serialize` flips off (0 = no dumps, pure timing) |
 
-All five variants below set `SERDE_GEN_END=51` (explicit default) —
-`.data` dumps for `physics_generation 0..50` are produced. Set
-`SERDE_GEN_END=0` for pure-timing runs with no dumps.
+## 9. Artifacts
 
-### 8.1–8.5 Variants
+This HOWTO is a data-generation pipeline — analysis lives back in VT's
+`SC2026_HOWTO.md §5`. At the end you should have:
 
-VT variants need `libvelocity_gpu_stage8_solve_nh_integration_release.<VT_PREC>.so`
-under `${VT_DIR}` (default `/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-vt-dace`).
+### Experiment dirs
 
-| # | Purpose | Command (explicit GRID shown on 8.1; same positional arg for the rest) |
-|---|---|---|
-| 8.1 | Vanilla, 5 substeps (got reference)  | `USE_VT_GPU=0 NDYN_SUBSTEPS_OVERRIDE=5  SERDE_GEN_END=51 ./run/sbatch_sc2026.sh 8 fp64 0010_R02B04` |
-| 8.2 | Vanilla, 10 substeps (temporal-refined reference) | `USE_VT_GPU=0 NDYN_SUBSTEPS_OVERRIDE=10 SERDE_GEN_END=51 ./run/sbatch_sc2026.sh 8 fp64 0010_R02B04` |
-| 8.3 | VT fp64                              | `USE_VT_GPU=1 NDYN_SUBSTEPS_OVERRIDE=5  SERDE_GEN_END=51 ./run/sbatch_sc2026.sh 8 fp64 0010_R02B04` |
-| 8.4 | VT fp32                              | `USE_VT_GPU=1 NDYN_SUBSTEPS_OVERRIDE=5  SERDE_GEN_END=51 ./run/sbatch_sc2026.sh 8 fp32 0010_R02B04` |
-| 8.5 | VT fp16                              | `USE_VT_GPU=1 NDYN_SUBSTEPS_OVERRIDE=5  SERDE_GEN_END=51 ./run/sbatch_sc2026.sh 8 fp16 0010_R02B04` |
+One per variant per grid, under `build/verification/experiments/`:
 
-Swap the last positional for a different grid tag (`0008_R02B05`,
-`0002_R02B06`, `0050_R02B03`) after dropping the matching `.nc` into
-`build/verification/`. For 8.1/8.2 (`USE_VT_GPU=0`) the precision/grid
-args only shape `EXPNAME` and log filenames — no `.so` is loaded.
+```
+experiments/sc2026_dt8_ss5_vanilla_<grid>/     # 8.1 (FP64 reference)
+experiments/sc2026_dt8_ss10_vanilla_<grid>/    # 8.2 (FP64 temporally-refined)
+experiments/sc2026_dt8_ss5_gpufp64_<grid>/     # 8.3 (VT FP64)
+experiments/sc2026_dt8_ss5_gpufp32_<grid>/     # 8.4 (VT FP32)
+experiments/sc2026_dt8_ss5_gpufp16_<grid>/     # 8.5 (VT FP16)
+```
 
-Each variant writes to `experiments/<EXPNAME>/` where
-`EXPNAME=sc2026_dt<dt>_ss<substeps>_{vanilla|gpu<prec>}_<grid>`
-(`ss` = effective dyn substeps; `NDYN_SUBSTEPS_OVERRIDE=0` resolves to the
-namelist default 5).
+`EXPNAME = sc2026_dt<dt>_ss<substeps>_{vanilla|gpu<prec>}_<grid>`
+(`ss` = effective dyn substeps; `NDYN_SUBSTEPS_OVERRIDE=0` → namelist default 5).
 
-### Serialized data
-Files land in `build/verification/experiments/${EXPNAME}/` as
-`<field>.p<phys>.d<dycore>.vt<vt>.ss<substep>.data`
-(e.g. `p_prog.t0.p0.d1.vt1.ss0.data`). Pair 8.1 (vanilla) with 8.3–8.5
-(VT) for `got`/`want` comparison.
+### Serialized `.data` files
 
-Logs: `run/LOG.SAVEME-SER-<PREC>.<EXPNAME>.<jobid>.o`.
+Inside each experiment dir, one file per serialized field × physics_generation:
+
+```
+<field>.t0.p<phys>.d<dycore>.vt<vt>.ss<substep>.data
+```
+
+Example: `p_prog.t0.p0.d1.vt1.ss5.data`. Fields of interest for the SNR
+table: `p_prog` (contains `vn`, `w`) and `p_diag` (contains `vt`,
+`vn_ie`, `w_concorr_c`). Default `SERDE_GEN_END=51` → `physics_generation
+0..50` covered (≈50 dumps per field per run).
+
+### Logs
+
+`run/LOG.SAVEME-SER-<PREC>.<EXPNAME>.<jobid>.o` — stdout + stderr
+combined. Look for `D2H <n>` and `Starting velocity_tendencies for
+vt_generation <n>` messages to confirm the serialize path fired.
+
+### Next
+
+Head back to VT's `SC2026_HOWTO.md §5` to run the SNR comparisons on
+these artifacts.
