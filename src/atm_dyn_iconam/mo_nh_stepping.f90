@@ -2939,7 +2939,8 @@ MODULE mo_nh_stepping
   !!
   SUBROUTINE perform_dyn_substepping (time_config, p_patch, p_nh_state, p_int_state, prep_adv, &
     &                                 jstep, iau_iter, dt_phy, mtime_current)
-use vt_serde, only: do_serialize, physics_tic, physics_generation, dyn_substeps
+use vt_serde, only: do_serialize, physics_tic, physics_generation, dyn_substeps, &
+                    ndyn_substeps_override, serde_gen_start, serde_gen_end
     TYPE(t_time_config), INTENT(IN)    :: time_config
 
     TYPE(t_patch)       ,INTENT(INOUT) :: p_patch
@@ -2981,20 +2982,21 @@ use vt_serde, only: do_serialize, physics_tic, physics_generation, dyn_substeps
 
     ! START INSTRUMENT
     call physics_tic()
-    write(message_text, *) "perform_dyn_substepping: physics_generation = ", physics_generation, " iau_iter = ", iau_iter, " dt_phy = ", dt_phy
+    write(message_text, *) "perform_dyn_substepping: physics_generation = ", physics_generation, " iau_iter = ", iau_iter, " dt_phy = ", dt_phy, " ndyn_substeps = ", ndyn_substeps_var(jg)
     call message('', message_text)
-    if (physics_generation == 100) then
-      do_serialize = .true.
-      ndyn_substeps_var(jg) = ndyn_substeps_var(jg) * 1
+    if (physics_generation >= serde_gen_start) then
+      ndyn_substeps_var(jg) = ndyn_substeps_override
       dyn_substeps = ndyn_substeps_var(jg)
       write(message_text, *) "At physics_generation = ", physics_generation, " switching to dynamics substeps = ", ndyn_substeps_var(jg)
-      call message('', message_text)
-      ! compute dynamics timestep
-      dt_dyn = dt_phy / REAL(ndyn_substeps_var(jg), wp)
     endif
-    if (physics_generation == 151) then
+    if (physics_generation >= serde_gen_start) then
+      do_serialize = .true.
+    endif
+    if (physics_generation >= serde_gen_end) then
       do_serialize = .false.
     endif
+    ! compute dynamics timestep
+    dt_dyn = dt_phy / REAL(ndyn_substeps_var(jg), wp)
     ! END INSTRUMENT
 
     IF ( ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e == 6 ) THEN

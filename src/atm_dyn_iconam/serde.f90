@@ -2082,10 +2082,27 @@ MODULE vt_serde
   INTEGER :: physics_generation = 0
   INTEGER :: dyn_substeps = 0
   LOGICAL :: do_serialize = .false.
+  ! Runtime-tunable knobs (overridable via env vars at first physics_tic)
+  INTEGER :: ndyn_substeps_override = 10
+  INTEGER :: serde_gen_start        = 0
+  INTEGER :: serde_gen_end          = 51
+  LOGICAL, PRIVATE :: vt_serde_inited = .false.
   CONTAINS
   ! SUBROUTINE tic
   !   generation = generation + 1
   ! END SUBROUTINE tic
+  SUBROUTINE vt_serde_init
+    CHARACTER(LEN = 64) :: v
+    INTEGER :: ios
+    IF (vt_serde_inited) RETURN
+    vt_serde_inited = .true.
+    CALL GET_ENVIRONMENT_VARIABLE('NDYN_SUBSTEPS_OVERRIDE', v)
+    IF (LEN_TRIM(v) > 0) READ (v, *, IOSTAT = ios) ndyn_substeps_override
+    CALL GET_ENVIRONMENT_VARIABLE('SERDE_GEN_START',        v)
+    IF (LEN_TRIM(v) > 0) READ (v, *, IOSTAT = ios) serde_gen_start
+    CALL GET_ENVIRONMENT_VARIABLE('SERDE_GEN_END',          v)
+    IF (LEN_TRIM(v) > 0) READ (v, *, IOSTAT = ios) serde_gen_end
+  END SUBROUTINE vt_serde_init
   SUBROUTINE vt_tic
     vt_generation = vt_generation + 1
   END SUBROUTINE vt_tic
@@ -2094,6 +2111,7 @@ MODULE vt_serde
     vt_generation = 0
   END SUBROUTINE dycore_tic
   SUBROUTINE physics_tic
+    CALL vt_serde_init
     physics_generation = physics_generation + 1
     dycore_generation = 0
   END SUBROUTINE physics_tic
