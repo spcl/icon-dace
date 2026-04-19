@@ -49,20 +49,35 @@ make -j
 ```
 
 ## 6. Grid file
+
+`GRID=<gridID>_<refinement>` maps to `icon_grid_<GRID>_G.nc`:
+
+| `GRID`        | File                                   |
+|---------------|----------------------------------------|
+| `0050_R02B03` | `icon_grid_0050_R02B03_G.nc`           |
+| `0010_R02B04` | `icon_grid_0010_R02B04_G.nc` (default) |
+| `0008_R02B05` | `icon_grid_0008_R02B05_G.nc`           |
+| `0002_R02B06` | `icon_grid_0002_R02B06_G.nc`           |
+
+The public DWD mirror at
+`http://icon-downloads.mpimet.mpg.de/grids/public/edzw/` only carries a
+subset (missing at least R02B06 at the time of writing). On Daint, all
+four live under
+`/capstor/store/cscs/userlab/cws01/pool/data/ICON/input/icon/public/grids/`
+— copy what you need into `build/verification/`:
+
+```bash
+GRIDS=/capstor/store/cscs/userlab/cws01/pool/data/ICON/input/icon/public/grids
+cp "$GRIDS"/**/icon_grid_0050_R02B03_G.nc ./
+cp "$GRIDS"/**/icon_grid_0010_R02B04_G.nc ./
+cp "$GRIDS"/**/icon_grid_0008_R02B05_G.nc ./
+cp "$GRIDS"/**/icon_grid_0002_R02B06_G.nc ./
+```
+
+Off-cluster, pull from DWD where available:
 ```bash
 curl -LO http://icon-downloads.mpimet.mpg.de/grids/public/edzw/icon_grid_0010_R02B04_G.nc
 ```
-
-`GRID=<gridID>_<refinement>` maps to `icon_grid_<GRID>_G.nc`. DWD catalog:
-
-| `GRID`        | File                            |
-|---------------|---------------------------------|
-| `0010_R02B04` | `icon_grid_0010_R02B04_G.nc` (default) |
-| `0008_R02B05` | `icon_grid_0008_R02B05_G.nc`    |
-| `0002_R02B06` | `icon_grid_0002_R02B06_G.nc`    |
-| `0050_R02B03` | `icon_grid_0050_R02B03_G.nc`    |
-
-Drop the `.nc` for any other `GRID` you plan to submit with.
 
 ## 7. Runscript
 `run/exp.sc2026` is the template; `make_sc2026_runscript.sh` generates
