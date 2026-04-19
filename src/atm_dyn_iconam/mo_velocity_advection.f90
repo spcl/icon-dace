@@ -146,6 +146,38 @@ MODULE mo_velocity_advection
     ! --- START INSTRUMENTATION ---
     ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
     if (do_serialize .AND. dycore_generation == 1 .AND. vt_generation == 1) then
+#ifdef _OPENACC
+      WRITE (message_text, *) 'D2H ', vt_generation
+      CALL message('', message_text)
+      !$ACC UPDATE HOST(p_prog%vn, p_prog%w) &
+      !$ACC&  HOST(p_diag%vn_ie, p_diag%vt, p_diag%w_concorr_c, &
+      !$ACC&       p_diag%ddt_vn_apc_pc, p_diag%ddt_w_adv_pc, &
+      !$ACC&       p_diag%max_vcfl_dyn) &
+      !$ACC&  HOST(p_metrics%coeff_gradekin, p_metrics%coeff1_dwdz, &
+      !$ACC&       p_metrics%coeff2_dwdz, p_metrics%wgtfac_c, &
+      !$ACC&       p_metrics%wgtfac_e, p_metrics%wgtfacq_e, &
+      !$ACC&       p_metrics%ddqz_z_half, p_metrics%ddqz_z_full_e, &
+      !$ACC&       p_metrics%ddxn_z_full, p_metrics%ddxt_z_full, &
+      !$ACC&       p_metrics%deepatmo_gradh_mc, p_metrics%deepatmo_invr_mc, &
+      !$ACC&       p_metrics%deepatmo_gradh_ifc, p_metrics%deepatmo_invr_ifc) &
+      !$ACC&  HOST(p_int%c_lin_e, p_int%e_bln_c_s, &
+      !$ACC&       p_int%geofac_rot, p_int%geofac_grdiv, &
+      !$ACC&       p_int%geofac_n2s, p_int%rbf_vec_coeff_e, &
+      !$ACC&       p_int%cells_aw_verts) &
+      !$ACC&  HOST(p_patch%edges%tangent_orientation, &
+      !$ACC&       p_patch%edges%inv_dual_edge_length, &
+      !$ACC&       p_patch%edges%inv_primal_edge_length, &
+      !$ACC&       p_patch%edges%area_edge, p_patch%edges%f_e, &
+      !$ACC&       p_patch%edges%cell_idx, p_patch%edges%cell_blk, &
+      !$ACC&       p_patch%edges%vertex_idx, p_patch%edges%vertex_blk, &
+      !$ACC&       p_patch%edges%quad_idx, p_patch%edges%quad_blk, &
+      !$ACC&       p_patch%cells%edge_idx, p_patch%cells%edge_blk, &
+      !$ACC&       p_patch%cells%neighbor_idx, p_patch%cells%neighbor_blk, &
+      !$ACC&       p_patch%cells%area, p_patch%cells%f_c, &
+      !$ACC&       p_patch%cells%vertex_idx, p_patch%cells%vertex_blk) &
+      !$ACC&  HOST(z_w_concorr_me, z_kin_hor_e, z_vt_ie)
+      !$ACC WAIT
+#endif
       write (message_text, *) "Starting velocity_tendencies for vt_generation ", vt_generation
       call message('', message_text)
       call serialize(at("p_patch"), p_patch)

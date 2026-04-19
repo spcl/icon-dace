@@ -1465,7 +1465,7 @@ CONTAINS
     ! --- START INSTRUMENTATION ---
     ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
     CALL vt_tic()
-    IF (do_serialize) THEN
+    IF (do_serialize .AND. dycore_generation == 1 .AND. vt_generation == 1) THEN
 #ifdef _OPENACC
       WRITE (message_text, *) 'D2H ', vt_generation
       CALL message('', message_text)
@@ -2272,29 +2272,6 @@ CONTAINS
 
     CALL timer_stop(timer_solve_nh_veltend)
 
-    ! --- START INSTRUMENTATION (after call) ---
-    IF (do_serialize) THEN
-#ifdef _OPENACC
-      WRITE (message_text, *) 'D2H (after) ', vt_generation
-      CALL message('', message_text)
-      !$ACC UPDATE HOST(p_prog%vn, p_prog%w) &
-      !$ACC&  HOST(p_diag%vn_ie, p_diag%vt, p_diag%w_concorr_c, &
-      !$ACC&       p_diag%ddt_vn_apc_pc, p_diag%ddt_w_adv_pc, &
-      !$ACC&       p_diag%max_vcfl_dyn) &
-      !$ACC&  HOST(z_w_concorr_me, z_kin_hor_e, z_vt_ie)
-      !$ACC WAIT
-#endif
-
-      WRITE (message_text, *) 'Done velocity_tendencies for vt_generation ', vt_generation
-      CALL message('', message_text)
-      CALL serialize_global_data(at('global_data.t1'))
-      CALL serialize(at('p_prog.t1'), p_prog)
-      CALL serialize(at('p_diag.t1'), p_diag)
-      CALL serialize(at('z_w_concorr_me.t1'), z_w_concorr_me)
-      CALL serialize(at('z_kin_hor_e.t1'), z_kin_hor_e)
-      CALL serialize(at('z_vt_ie.t1'), z_vt_ie)
-    ENDIF
-    ! --- END INSTRUMENTATION (after call) ---
 
   END SUBROUTINE velocity_tendencies_gpu
 
