@@ -100,7 +100,7 @@ MODULE mo_solve_nonhydro
   SUBROUTINE solve_nh (p_nh, p_patch, p_int, prep_adv, nnow, nnew, l_init, l_recompute, lsave_mflx, &
                        lprep_adv, lclean_mflx, idyn_timestep, jstep, dtime, lacc)
 
-    use vt_serde, only: dycore_tic, dycore_generation
+    use vt_serde, only: dycore_tic, dycore_generation, physics_generation, use_vt_gpu
     use mo_exception, only: message, message_text
 
     TYPE(t_nh_state),    TARGET, INTENT(INOUT) :: p_nh
@@ -445,14 +445,24 @@ MODULE mo_solve_nonhydro
           ELSE
             lvn_only = .FALSE.
           ENDIF
-          CALL velocity_tendencies(p_nh%prog(nnow),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
-            z_kin_hor_e,z_vt_ie,ntl1,istep,lvn_only,dtime,dt_linintp_ubc_nnow,ldeepatmo)
+          IF (use_vt_gpu) THEN
+            CALL velocity_tendencies_gpu(p_nh%prog(nnow),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
+              z_kin_hor_e,z_vt_ie,ntl1,istep,lvn_only,dtime,dt_linintp_ubc_nnow,ldeepatmo)
+          ELSE
+            CALL velocity_tendencies(p_nh%prog(nnow),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
+              z_kin_hor_e,z_vt_ie,ntl1,istep,lvn_only,dtime,dt_linintp_ubc_nnow,ldeepatmo)
+          ENDIF
         ENDIF
         nvar = nnow
       ELSE                 ! corrector step
         lvn_only = .FALSE.
-        CALL velocity_tendencies(p_nh%prog(nnew),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
-          z_kin_hor_e,z_vt_ie,ntl2,istep,lvn_only,dtime,dt_linintp_ubc_nnew,ldeepatmo)
+        IF (use_vt_gpu) THEN
+          CALL velocity_tendencies_gpu(p_nh%prog(nnew),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
+            z_kin_hor_e,z_vt_ie,ntl2,istep,lvn_only,dtime,dt_linintp_ubc_nnew,ldeepatmo)
+        ELSE
+          CALL velocity_tendencies(p_nh%prog(nnew),p_patch,p_int,p_nh%metrics,p_nh%diag,z_w_concorr_me, &
+            z_kin_hor_e,z_vt_ie,ntl2,istep,lvn_only,dtime,dt_linintp_ubc_nnew,ldeepatmo)
+        ENDIF
         nvar = nnew
       ENDIF
 

@@ -2086,6 +2086,7 @@ MODULE vt_serde
   INTEGER :: ndyn_substeps_override = 10
   INTEGER :: serde_gen_start        = 0
   INTEGER :: serde_gen_end          = 51
+  LOGICAL :: use_vt_gpu             = .true.  ! dispatch solve_nh's velocity_tendencies to VT's libvelocity.so
   LOGICAL, PRIVATE :: vt_serde_inited = .false.
   CONTAINS
   ! SUBROUTINE tic
@@ -2102,6 +2103,15 @@ MODULE vt_serde
     IF (LEN_TRIM(v) > 0) READ (v, *, IOSTAT = ios) serde_gen_start
     CALL GET_ENVIRONMENT_VARIABLE('SERDE_GEN_END',          v)
     IF (LEN_TRIM(v) > 0) READ (v, *, IOSTAT = ios) serde_gen_end
+    CALL GET_ENVIRONMENT_VARIABLE('USE_VT_GPU',             v)
+    IF (LEN_TRIM(v) > 0) THEN
+      SELECT CASE (TRIM(ADJUSTL(v)))
+        CASE ('0', 'F', 'f', 'false', 'FALSE', '.false.', '.FALSE.')
+          use_vt_gpu = .false.
+        CASE DEFAULT
+          use_vt_gpu = .true.
+      END SELECT
+    END IF
   END SUBROUTINE vt_serde_init
   SUBROUTINE vt_tic
     vt_generation = vt_generation + 1
