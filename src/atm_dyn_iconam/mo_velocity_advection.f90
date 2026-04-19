@@ -906,21 +906,6 @@ MODULE mo_velocity_advection
 
     IF (timers_level > 5) CALL timer_stop(timer_solve_nh_veltend)
 
-    ! --- START INSTRUMENTATION ---
-    ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
-    if (do_serialize .AND. dycore_generation == 1 .AND. vt_generation == 1) then
-      write (message_text, *) "Stopping velocity_tendencies for vt_generation ", vt_generation
-      call message('', message_text)
-      ! call serialize_global_data(at("global_data.t1"))
-      ! call serialize(at("p_prog.t1"), p_prog)
-      ! call serialize(at("p_metrics.t1"), p_metrics)
-      ! call serialize(at("p_diag.t1"), p_diag)
-      ! call serialize(at("z_w_concorr_me.t1"), z_w_concorr_me)
-      ! call serialize(at("z_kin_hor_e.t1"), z_kin_hor_e)
-      ! call serialize(at("z_vt_ie.t1"), z_vt_ie)
-    endif
-    ! --- END INSTRUMENTATION ---
-
     CALL SYSTEM_CLOCK(t_end)
     write (message_text, *) "host side timing: ", REAL(t_end - t_start, wp) * 1000000.0_wp / REAL(t_rate, wp), "us, lvn_only: ", lvn_only, ", istep: ", istep
     call message('', message_text)
