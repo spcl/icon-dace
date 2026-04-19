@@ -48,8 +48,6 @@ ln -sf "$VT_SO" "${LINK_DIR}/libvelocity.so"
 SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
 BUILD_VERIF=${SCRIPT_DIR%/run}
 
-export EXPNAME="sc2026_dt${ATM_TIMESTEP}_${VT_PREC}_${GRID}"
-
 sbatch --job-name="${EXPNAME}" \
        --output="${BUILD_VERIF}/run/LOG.SAVEME-SER-${VT_PREC^^}.${EXPNAME}.%j.o" \
        --error="${BUILD_VERIF}/run/LOG.SAVEME-SER-${VT_PREC^^}.${EXPNAME}.%j.o" \
