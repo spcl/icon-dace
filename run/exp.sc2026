@@ -13,12 +13,13 @@
 # SC2026 VT integration runscript
 # Derived from exp.exclaim_ape_R02B04 (EXCLAIM Aquaplanet R02B04, NWP physics).
 
-# Basic model configuration
-atmos_gridID="0010"
-atmos_refinement="R02B04"
+# Basic model configuration — GRID defaults to 0010_R02B04, override via env
+GRID=${GRID:-0010_R02B04}
+atmos_gridID="${GRID%_*}"
+atmos_refinement="${GRID#*_}"
 
 # Time stepping
-atmTimeStep=2                  # atmosphere time step [s]
+atmTimeStep=${ATM_TIMESTEP}    # atmosphere time step [s], set via ATM_TIMESTEP env
 dt_rad=`expr 6 \* $atmTimeStep`
 dt_conv=`expr 2 \* $atmTimeStep`
 dt_ccov=`expr 2 \* $atmTimeStep`
@@ -215,52 +216,10 @@ izenith                     =                          3         ! zenith angle 
 ! initicon_nml: specify read-in of initial state ------------------------------
 ! Needed for probtest
 &initicon_nml
- pinit_seed                  =                               -1  ! seed for perturbation of initial model state. no perturbation by default
+ pinit_seed                  =                               0   ! seed for perturbation of initial model state. no perturbation by default
  pinit_amplitude             =                               0.  ! amplitude of perturbation
 /
 
-! output namelist: specify output of 2D fields  ------------------------------
-&output_nml
- output_filename             =              '${EXPNAME}_atm_2d'  ! file name base
- filetype                    =                               5   ! output format 5:NetCDFv4
- filename_format             = "<output_filename>_<datetime2>"   ! Output filename format
- output_start                =          "2000-01-01T00:00:03Z"
- output_end                  =                   "${end_date}"
- output_interval             =     "${atm_output_interval_2d}"
- file_interval               =      "${atm_file_interval_2d}"
- include_last                =                          .TRUE.   ! flag whether to include the last time step
- remap                       =                               0   ! 0: no remapping 1: lat-lon grid
- reg_lat_def                 =                    -90,0.5,90.0
- reg_lon_def                 =                  -180,0.5,179.5
- output_grid                 =                          .TRUE.
- ml_varlist                  = 'pres_sfc',
-                               'tqv'     , 'tqc'     , 'tqi'     ,
-                               'tqr'     , 'tqs'     ,
-                               'clch'    , 'clcm'    , 'clcl'    , 'clct'   ,
-                               'tot_prec','prec_gsp',
-                               't_2m'    , 'qv_2m'   , 'u_10m'  , 'v_10m'   ,
-                               't_g'     , 'rh_2m' , 'qv_s', 'tcm','tch',
-                               'lhfl_s'  , 'shfl_s' , 'umfl_s', 'vmfl_s'
-                               'sob_s'   , 'sob_t' , 'sod_t',  'sou_s',
-                               'thb_s'   , 'thb_t' ,'thu_s','pres_sfc'
-/
-
-&output_nml
- output_filename             =             '${EXPNAME}_atm_3d_pl'! file name base
- filetype                    =                               5   ! output format: 2=GRIB2, 4=NetCDFv2, 5=NetCDFv4
- filename_format             = "<output_filename>_<datetime2>"
- output_start                =                 "${start_date}"
- output_end                  =                   "${end_date}"
- output_interval             =     "${atm_output_interval_pl}"
- file_interval               =       "${atm_file_interval_pl}"
- include_last                =                         .TRUE.    ! flag whether to include the last time step
- remap                       =                              0    ! 0: no remapping 1: lat-lon grid
- reg_lat_def                 =                   -90,0.5,90.0
- reg_lon_def                 =                 -180,0.5,179.5
- output_grid                 =                          .TRUE.
- p_levels                    = 10000,20000,25000,30000,50000,70000,85000,90000,95000,100000
- pl_varlist                  = 'geopot', 'temp','u', 'v', 'w', 'qv', 'qc', 'qi'
-/
 EOF
 #---------------------------------------------------------------
 # add standard atmo_non-hydrostatic_files

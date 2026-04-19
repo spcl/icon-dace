@@ -22,4 +22,13 @@ sed -i \
   -e 's|^: \${no_of_nodes:=2}|: ${no_of_nodes:=1}|' \
   "$RUN"
 
+# --- ulimit -s unlimited right before ${START_MODEL} invocation ---
+sed -i '/^\${START_MODEL}/ i\
+ulimit -s unlimited' "$RUN"
+
+# --- ATM_TIMESTEP guard, inserted before the EXPNAME line ---
+sed -i '/^export EXPNAME="sc2026"$/ i\
+: ${ATM_TIMESTEP:? "Error: ATM_TIMESTEP is not set. Please provide a value."}\
+' "$RUN"
+
 echo "[patched] $RUN"
