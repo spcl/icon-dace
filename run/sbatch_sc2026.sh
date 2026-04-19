@@ -17,6 +17,19 @@ export ATM_TIMESTEP=${1:? "Usage: $0 <ATM_TIMESTEP> [VT_PREC=fp64] [GRID=0010_R0
 export VT_PREC=${2:-fp64}
 export GRID=${3:-0010_R02B04}
 
+# vt_serde knob passthroughs (default values preserved if env unset)
+export USE_VT_GPU=${USE_VT_GPU:-1}
+export SERDE_GEN_START=${SERDE_GEN_START:-0}
+export SERDE_GEN_END=${SERDE_GEN_END:-51}
+export NDYN_SUBSTEPS_OVERRIDE=${NDYN_SUBSTEPS_OVERRIDE:-0}
+
+# EXPNAME: tags the experiment dir so parallel runs don't overwrite each other
+case "${USE_VT_GPU}" in
+  0|F|f|false|FALSE|.false.|.FALSE.) VARIANT="vanilla" ;;
+  *)                                  VARIANT="gpu${VT_PREC}" ;;
+esac
+export EXPNAME="sc2026_dt${ATM_TIMESTEP}_${VARIANT}_${GRID}"
+
 VT_DIR="${VT_DIR:-/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-vt-dace}"
 VT_SO="${VT_DIR}/libvelocity_gpu_stage8_solve_nh_integration_release.${VT_PREC}.so"
 

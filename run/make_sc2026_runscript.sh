@@ -31,4 +31,7 @@ sed -i '/^export EXPNAME="sc2026"$/ i\
 : ${ATM_TIMESTEP:? "Error: ATM_TIMESTEP is not set. Please provide a value."}\
 ' "$RUN"
 
+# --- Drop the hardcoded EXPNAME="sc2026" so the submitter-exported value survives ---
+sed -i '/^export EXPNAME="sc2026"$/d' "$RUN"
+
 echo "[patched] $RUN"

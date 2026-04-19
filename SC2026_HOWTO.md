@@ -130,20 +130,24 @@ Requires `libvelocity_gpu_stage8_solve_nh_integration_release.fp64.so`
 under `${VT_DIR}` (default
 `/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-vt-dace`).
 ```bash
-SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp64
+USE_VT_GPU=1 SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp64
 ```
 
 ### 8.3 VT fp32
 Requires `...release.fp32.so`.
 ```bash
-SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp32
+USE_VT_GPU=1 SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp32
 ```
 
 ### 8.4 VT fp16
 Requires `...release.fp16.so`.
 ```bash
-SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp16
+USE_VT_GPU=1 SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp16
 ```
+
+Each variant lands in a **separate `experiments/<EXPNAME>/`** directory —
+`sbatch_sc2026.sh` builds `EXPNAME=sc2026_dt<dt>_{vanilla|gpu<prec>}_<grid>`
+so runs don't overwrite each other's serialized dumps.
 
 ### Collecting serialized data
 To actually write `.data` dumps (for validation against the reference run),
