@@ -10,78 +10,35 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ------------------------------------------
 
-#=============================================================================
-# EXCLAIM Aquaplanet setup (R02B04) for BUILDBOT tests using NWP physics. Radiation is done
-# on original grid
+# SC2026 VT integration runscript
+# Derived from exp.exclaim_ape_R02B04 (EXCLAIM Aquaplanet R02B04, NWP physics).
 
-# Date: 16 June. Authors:  Anurag Dipankar, David Leutwyler, Abishek Gopal and Praveen Pothapakula
-#
-#=============================================================================
-#=============================================================================
-#
-# This section of the run script contains the specifications of the experiment.
-# The specifications are passed by namelist to the program.
-# For a complete list see Namelist_overview.pdf
-#
-#=============================================================================
-
-
-# (0) Basic model configuration
-# -----------------------------
-
-atmos_gridID="0013"
+# Basic model configuration
+atmos_gridID="0010"
 atmos_refinement="R02B04"
 
-#
-#--------------------------------------------------------------------------------------------------
-#
-# (1) Define the model time stepping
-# ----------------------------------
-
+# Time stepping
 atmTimeStep=2                  # atmosphere time step [s]
-
 dt_rad=`expr 6 \* $atmTimeStep`
 dt_conv=`expr 2 \* $atmTimeStep`
 dt_ccov=`expr 2 \* $atmTimeStep`
 dt_gwd=`expr 4 \* $atmTimeStep`
-#--------------------------------------------------------------------------------------------------
-
-# (2) Variables provided by the scripting mechanism
-
-# EXPNAME                       = name of exp. in 'exp.<name>'
-# basedir                       = base directory, where src/, run/ etc exist
-# icon_data_poolFolder          = base directory, where grids/, input/ and setup/ exist
 
 icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}"
 
-#--------------------------------------------------------------------------------------------------
+# Horizontal grid
+atmo_grid_folder=/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-dace/build/verification/
+atmo_dyn_grid=${atmo_grid_folder}/icon_grid_${atmos_gridID}_${atmos_refinement}_G.nc
 
-# (3) Set variables needed by the scripting mechanism
-# ---------------------------------------------------
-
-# horizontal grid(s)
-# ------------------
-atmo_grid_folder=${icon_data_poolFolder}/buildbot_data/nwp/grids/public/edzw/
-atmo_dyn_grid=${atmo_grid_folder}/icon_grid_${atmos_gridID}_${atmos_refinement}_R.nc
-
-
-###  Inorder to avoid path issues the radiation and atmosphere grid are the same. 
-
-# start and end date+time
+# Start / end date
 start_date=${start_date:="2000-01-01T00:00:00Z"}
-end_date=${end_date:="2000-01-01T00:00:30Z"}
+end_date=${end_date:="2000-01-01T00:10:00Z"}
 
-# restart intervals (set in master namelist)
-# ---------------------------
+# Restart / checkpoint
 checkpoint_interval="P1D"
 restart_interval="P1D"
 
-# output intervals
-# ----------------
-
-#output_bounds="0.,10000000.,600"
-#steps_per_file=6
-
+# Output intervals
 atm_file_interval="P1D"
 atm_file_interval_2d="P1D"
 atm_file_interval_3d="P1D"
@@ -92,18 +49,10 @@ atm_output_interval_2d="PT2S"
 atm_output_interval_3d="PT2S"
 atm_output_interval_pl="PT2S"
 
-# namelist files
-# --------------
 atm_namelist=NAMELIST_${EXPNAME}
 atmo_namelist=${atm_namelist}
 
-# files needed for radiation
 add_link_file ${basedir}/externals/ecrad/data ecrad_data
-
-#-----------------------------------------------------------------------------
-# II. ATMOSPHERE and LAND
-#-----------------------------------------------------------------------------
-
 
 cat > ${basedir}/run/${atmo_namelist} << EOF
 ! parallel_nml: MPI parallelization ------------------------------------------
@@ -125,7 +74,7 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
 
 ! run_nml: general switches ---------------------------------------------------
 &run_nml
- num_lev                     =                         60         ! number of full levels of vertical grid
+ num_lev                     =                         90         ! number of full levels of vertical grid
  dtime                       =                   ${atmTimeStep}   ! [s] timestep in seconds
  ldynamics                   =                     .TRUE.         ! dynamics                     --> dynamics_ctl, diffusion_ctl
  ltransport                  =                     .TRUE.         ! switch on tracer transport   --> transport_ctl
@@ -146,7 +95,7 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
  rain_n0_factor              =                        0.1         ! tuning factor for intercept parameter of raindrop size distr.
  inwp_convection             =                          1         ! convection
  lshallowconv_only           =                    .FALSE.         ! only shallow convection
- inwp_radiation              =                          4         ! 1: RRTM, 2: Ritter-Geleyn  4: ecRad:
+ inwp_radiation              =                          0         ! 1: RRTM, 2: Ritter-Geleyn  4: ecRad:
  latm_above_top              =                      .TRUE.        ! take into account atmosphere above model top for radiation computation
  inwp_cldcover               =                          1         ! cloud cover scheme for radiation 5: all or nothing
  inwp_turb                   =                          1         ! 1: Raschendorfer, 5: Smagorinsky diffusion (Dipankar et al.)
