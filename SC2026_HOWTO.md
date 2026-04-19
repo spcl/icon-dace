@@ -93,43 +93,84 @@ regenerates + patches the generated `.run`:
 
 ## 8. Submit
 
-The submit wrapper expects the VT shared library at:
+Wrapper signature:
 ```
-${VT_DIR}/libvelocity_gpu_stage8_solve_nh_integration_release.${VT_PREC}.so
-```
-Default `VT_DIR=/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-vt-dace`
-(override via env). Default `VT_PREC=fp64`. So with defaults it looks for:
-```
-/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-vt-dace/libvelocity_gpu_stage8_solve_nh_integration_release.fp64.so
-```
-Build this via the velocity HOWTO's integration step.
-
-```bash
 ./run/sbatch_sc2026.sh <ATM_TIMESTEP> [VT_PREC=fp64] [GRID=0010_R02B04]
-# e.g.
-./run/sbatch_sc2026.sh 2                     # dt=2, fp64, default grid
-./run/sbatch_sc2026.sh 8 fp16 0008_R02B05    # dt=8, fp16, different grid
-VT_DIR=/other/path ./run/sbatch_sc2026.sh 2 fp32
 ```
+Submits `run/exp.sc2026.run` via sbatch. Caller env is passed through, so
+all vt_serde knobs (below) can be exported on the command line.
 
 ### vt_serde runtime knobs
-The wrapper passes the caller's env through (`sbatch --export=ALL,...`), so
-these env vars reach `vt_serde_init` inside the job:
 
-| Env var                   | Default | SC2026 value | Effect |
-|---------------------------|---------|--------------|--------|
-| `NDYN_SUBSTEPS_OVERRIDE`  | 10      | 5–10         | sets `ndyn_substeps_var(jg)` inside the instrumented window |
-| `SERDE_GEN_START`         | 0       | 0            | first `physics_generation` where `do_serialize` flips on |
-| `SERDE_GEN_END`           | 51      | 51           | `physics_generation` where `do_serialize` flips off |
+| Env var                   | Default   | Effect |
+|---------------------------|-----------|--------|
+| `USE_VT_GPU`              | `.true.`  | if false, use ICON's built-in `velocity_tendencies` (CPU/OpenACC) instead of dispatching to VT's `libvelocity.so` |
+| `NDYN_SUBSTEPS_OVERRIDE`  | `10`      | `ndyn_substeps_var(jg)` inside the instrumentation window |
+| `SERDE_GEN_START`         | `0`       | first `physics_generation` where `do_serialize` flips on |
+| `SERDE_GEN_END`           | `51`      | `physics_generation` where `do_serialize` flips off |
 
-Defaults already match the paper's (10, 0, 51) configuration, so for the
-standard SC2026 experiment you don't need to set anything:
+Defaults (10 substeps, VT-GPU on) are what we've been using for SC2026
+runs so far. The four variants below all pass `SERDE_GEN_END=0` — this
+**disables serialization** (no `.data` dumps), which is the right default
+for timing runs. To *enable* serialization, remove `SERDE_GEN_END=0`
+(default is `51`, meaning dumps fire for `physics_generation` 0..50). See
+"**Collecting serialized data**" below.
+
+### 8.1 Vanilla ICON (reference run)
+No `libvelocity.so`. Uses ICON's built-in `velocity_tendencies`. Used to
+generate the reference `got` files that the VT runs are validated against.
 ```bash
-./run/sbatch_sc2026.sh 2                     # dt=2, fp64, 10 substeps, gens 0..51
+USE_VT_GPU=0 SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp64
 ```
-For the lower-substep variant:
+(`fp64`/grid values here just drive `EXPNAME` and log naming — no `.so` is
+loaded when `USE_VT_GPU=0`.)
+
+### 8.2 VT fp64
+Requires `libvelocity_gpu_stage8_solve_nh_integration_release.fp64.so`
+under `${VT_DIR}` (default
+`/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-vt-dace`).
 ```bash
-NDYN_SUBSTEPS_OVERRIDE=5 ./run/sbatch_sc2026.sh 2 fp32
+SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp64
+```
+
+### 8.3 VT fp32
+Requires `...release.fp32.so`.
+```bash
+SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp32
+```
+
+### 8.4 VT fp16
+Requires `...release.fp16.so`.
+```bash
+SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp16
+```
+
+### Collecting serialized data
+To actually write `.data` dumps (for validation against the reference run),
+drop `SERDE_GEN_END=0` — the default `SERDE_GEN_END=51` enables serialization
+for `physics_generation = 0..50`. Combine with the reference (vanilla) run
+so you have a `got` vs `want` pair.
+
+```bash
+# reference (vanilla ICON, full 51-gen dumps)
+USE_VT_GPU=0 ./run/sbatch_sc2026.sh 8 fp64
+
+# corresponding VT fp32 run (same gens, same grid, same dt → same filenames)
+./run/sbatch_sc2026.sh 8 fp32
+```
+
+**Where the dumps land:** each file is written relative to the job's CWD,
+which the generated `exp.sc2026.run` sets to the experiment directory:
+```
+build/verification/experiments/${EXPNAME}/
+```
+Filenames follow `<field>.p<phys>.d<dycore>.vt<vt>.ss<substep>.data`, e.g.
+`p_patch.p0.d1.vt1.ss0.data`, `p_prog.t0.p0.d1.vt1.ss0.data`, etc.
+
+### Lower-substep variant
+Any of the above can be run with 5 substeps instead of 10:
+```bash
+NDYN_SUBSTEPS_OVERRIDE=5 SERDE_GEN_END=0 ./run/sbatch_sc2026.sh 8 fp32
 ```
 
 Logs: `run/LOG.SAVEME-SER-<PREC>.sc2026_dt<step>_<prec>_<grid>.<jobid>.o`.
