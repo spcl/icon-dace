@@ -106,7 +106,9 @@ Swap the last positional for a different grid tag (`0008_R02B05`,
 args only shape `EXPNAME` and log filenames — no `.so` is loaded.
 
 Each variant writes to `experiments/<EXPNAME>/` where
-`EXPNAME=sc2026_dt<dt>_{vanilla|gpu<prec>}_<grid>`.
+`EXPNAME=sc2026_dt<dt>_ss<substeps>_{vanilla|gpu<prec>}_<grid>`
+(`ss` = effective dyn substeps; `NDYN_SUBSTEPS_OVERRIDE=0` resolves to the
+namelist default 5).
 
 ### Serialized data
 Files land in `build/verification/experiments/${EXPNAME}/` as

@@ -28,7 +28,10 @@ case "${USE_VT_GPU}" in
   0|F|f|false|FALSE|.false.|.FALSE.) VARIANT="vanilla" ;;
   *)                                  VARIANT="gpu${VT_PREC}" ;;
 esac
-export EXPNAME="sc2026_dt${ATM_TIMESTEP}_${VARIANT}_${GRID}"
+# ss tag = effective dyn substeps. 0 means "no override" → namelist default (5).
+SS="${NDYN_SUBSTEPS_OVERRIDE}"
+[[ "$SS" == "0" ]] && SS=5
+export EXPNAME="sc2026_dt${ATM_TIMESTEP}_ss${SS}_${VARIANT}_${GRID}"
 
 VT_DIR="${VT_DIR:-/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-vt-dace}"
 VT_SO="${VT_DIR}/libvelocity_gpu_stage8_solve_nh_integration_release.${VT_PREC}.so"
