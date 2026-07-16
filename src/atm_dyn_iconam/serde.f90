@@ -2086,6 +2086,10 @@ MODULE vt_serde
   INTEGER :: ndyn_substeps_override = 0       ! 0 = don't override; >0 = force this value
   INTEGER :: serde_gen_start        = 0
   INTEGER :: serde_gen_end          = 51
+  INTEGER :: serde_gen_stride       = 1
+  INTEGER, PARAMETER :: serde_gen_maxset = 64
+  INTEGER :: serde_gen_nset         = 0   ! >0 => use explicit gen list, ignore stride window
+  INTEGER :: serde_gen_set(64)      = 0
   LOGICAL :: use_vt_gpu             = .true.  ! dispatch solve_nh's velocity_tendencies to VT's libvelocity.so
   LOGICAL, PRIVATE :: vt_serde_inited = .false.
   CONTAINS
@@ -2103,6 +2107,9 @@ MODULE vt_serde
     IF (LEN_TRIM(v) > 0) READ (v, *, IOSTAT = ios) serde_gen_start
     CALL GET_ENVIRONMENT_VARIABLE('SERDE_GEN_END',          v)
     IF (LEN_TRIM(v) > 0) READ (v, *, IOSTAT = ios) serde_gen_end
+    CALL GET_ENVIRONMENT_VARIABLE('SERDE_GEN_STRIDE',       v)
+    IF (LEN_TRIM(v) > 0) READ (v, *, IOSTAT = ios) serde_gen_stride
+    CALL parse_serde_gen_list
     CALL GET_ENVIRONMENT_VARIABLE('USE_VT_GPU',             v)
     IF (LEN_TRIM(v) > 0) THEN
       SELECT CASE (TRIM(ADJUSTL(v)))
@@ -2113,6 +2120,29 @@ MODULE vt_serde
       END SELECT
     END IF
   END SUBROUTINE vt_serde_init
+  SUBROUTINE parse_serde_gen_list
+    ! Read SERDE_GEN_LIST (comma/space separated ints) into serde_gen_set.
+    ! When serde_gen_nset>0, the gate uses set-membership (logspace dumps).
+    CHARACTER(LEN = 2048) :: vl
+    INTEGER :: i, n, ios2
+    LOGICAL :: prev_blank, cur_blank
+    serde_gen_nset = 0
+    CALL GET_ENVIRONMENT_VARIABLE('SERDE_GEN_LIST', vl)
+    IF (LEN_TRIM(vl) == 0) RETURN
+    DO i = 1, LEN_TRIM(vl)
+      IF (vl(i:i) == ',') vl(i:i) = ' '
+    END DO
+    n = 0
+    prev_blank = .true.
+    DO i = 1, LEN_TRIM(vl)
+      cur_blank = (vl(i:i) == ' ')
+      IF (prev_blank .AND. .NOT. cur_blank) n = n + 1
+      prev_blank = cur_blank
+    END DO
+    IF (n > serde_gen_maxset) n = serde_gen_maxset
+    IF (n > 0) READ (vl, *, IOSTAT = ios2) (serde_gen_set(i), i = 1, n)
+    IF (n > 0 .AND. ios2 == 0) serde_gen_nset = n
+  END SUBROUTINE parse_serde_gen_list
   SUBROUTINE vt_tic
     vt_generation = vt_generation + 1
   END SUBROUTINE vt_tic

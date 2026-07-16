@@ -2940,7 +2940,8 @@ MODULE mo_nh_stepping
   SUBROUTINE perform_dyn_substepping (time_config, p_patch, p_nh_state, p_int_state, prep_adv, &
     &                                 jstep, iau_iter, dt_phy, mtime_current)
 use vt_serde, only: do_serialize, physics_tic, physics_generation, dyn_substeps, &
-                    ndyn_substeps_override, serde_gen_start, serde_gen_end
+                    ndyn_substeps_override, serde_gen_start, serde_gen_end, serde_gen_stride, &
+                    serde_gen_nset, serde_gen_set
     TYPE(t_time_config), INTENT(IN)    :: time_config
 
     TYPE(t_patch)       ,INTENT(INOUT) :: p_patch
@@ -2989,12 +2990,13 @@ use vt_serde, only: do_serialize, physics_tic, physics_generation, dyn_substeps,
       dyn_substeps = ndyn_substeps_var(jg)
       write(message_text, *) "At physics_generation = ", physics_generation, " forcing dynamics substeps = ", ndyn_substeps_var(jg)
     endif
-    if (physics_generation >= serde_gen_start) then
-      do_serialize = .true.
-    endif
-    if (physics_generation >= serde_gen_end) then
-      do_serialize = .false.
-    endif
+    if (serde_gen_nset > 0) then
+      do_serialize = ANY(serde_gen_set(1:serde_gen_nset) == physics_generation)
+    else
+      do_serialize = (physics_generation >= serde_gen_start            &
+               .and. physics_generation <  serde_gen_end               &
+               .and. MOD(physics_generation, serde_gen_stride) == 0)
+    end if
     ! compute dynamics timestep
     dt_dyn = dt_phy / REAL(ndyn_substeps_var(jg), wp)
     ! END INSTRUMENT
