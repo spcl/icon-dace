@@ -1462,6 +1462,17 @@ CONTAINS
     REAL(c_double) :: c_dtime, c_dt_linintp_ubc
     REAL(c_double) :: c_max_vcfl_dyn
 
+    ! Fortran-side timers. Names carry a suffix (_fortran/_presync/
+    ! _soprog) so extract_icon_timers.py's DACE_RE, which requires
+    ! `_istep_<N> took`, ignores them and still sees only the core timer.
+    INTEGER(c_int64_t) :: vt_t0, vt_t1, vt_rate, vt_p0, vt_p1, vt_w0, vt_w1
+    CHARACTER(LEN=80) :: vt_tag
+    ! First-call flag: constant structs marshal once (glue copy gating)
+    LOGICAL, SAVE :: vt_first_call = .TRUE.
+    ! prog/diag reach DaCe as device pointers (HOST_DATA USE_DEVICE),
+    ! so their glue host copies are never read — marshal them once.
+    LOGICAL, SAVE :: vt_prog_diag_alloc = .TRUE.
+
     ! --- START INSTRUMENTATION ---
     ! NOTE: If you modify this instrumentation, please update velocity_tendencies_gpu in wrapper.f90.
     CALL vt_tic()
@@ -1520,6 +1531,7 @@ CONTAINS
     ! --- END INSTRUMENTATION ---
 
     CALL timer_start(timer_solve_nh_veltend)
+    CALL SYSTEM_CLOCK(vt_t0, vt_rate)
 
     ! Host helper arrays (allocated once via SAVE)
     IF (.NOT. ALLOCATED(a_nflatlev)) THEN
@@ -1534,12 +1546,16 @@ CONTAINS
     ! Fill C-compatible structs
     g_global%nproma = INT(nproma, c_int)
 
-    ! Pack Fortran structs into C-compatible glue types
-    CALL ctor(p_patch, g_patch, .TRUE.)
-    CALL ctor(p_int, g_int, .TRUE.)
-    CALL ctor(p_prog, g_prog, .TRUE.)
-    CALL ctor(p_metrics, g_metrics, .TRUE.)
-    CALL ctor(p_diag, g_diag, .TRUE.)
+    ! Pack Fortran structs into C-compatible glue types.
+    ! Constant structs (patch/int/metrics) marshal once (vt_first_call);
+    ! prog/diag likewise marshal once (vt_prog_diag_alloc).
+    CALL ctor(p_patch, g_patch, vt_first_call)
+    CALL ctor(p_int, g_int, vt_first_call)
+    CALL ctor(p_prog, g_prog, vt_prog_diag_alloc)
+    CALL ctor(p_metrics, g_metrics, vt_first_call)
+    CALL ctor(p_diag, g_diag, vt_prog_diag_alloc)
+    vt_first_call = .FALSE.
+    vt_prog_diag_alloc = .FALSE.
 
     ! Convert scalars
     c_istep = INT(istep, c_int)
@@ -1697,6 +1713,12 @@ CONTAINS
           c_ntnd &
         )
       END IF
+      CALL SYSTEM_CLOCK(vt_w0)
+      !$ACC WAIT
+      CALL SYSTEM_CLOCK(vt_w1)
+      WRITE(0,'(A,I0,A)') 'Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1_presync took ', &
+        (vt_w1 - vt_w0) * 1000000_c_int64_t / vt_rate, ' us'
+      CALL SYSTEM_CLOCK(vt_p0)
       CALL __program_velocity_no_nproma_if_prop_lvn_only_0_istep_1( &
         state_lvn_only_0_istep_1, &
         c_loc(a_nflatlev), &
@@ -1791,6 +1813,9 @@ CONTAINS
         c_lvn_only, &
         c_ntnd &
       )
+      CALL SYSTEM_CLOCK(vt_p1)
+      WRITE(0,'(A,I0,A)') 'Timer velocity_no_nproma_if_prop_lvn_only_0_istep_1_soprog took ', &
+        (vt_p1 - vt_p0) * 1000000_c_int64_t / vt_rate, ' us'
 
     ELSE IF ((lvn_only .EQV. .FALSE.) .AND. (istep == 2)) THEN
       IF (.NOT. C_ASSOCIATED(state_lvn_only_0_istep_2)) THEN
@@ -1877,6 +1902,12 @@ CONTAINS
           c_ntnd &
         )
       END IF
+      CALL SYSTEM_CLOCK(vt_w0)
+      !$ACC WAIT
+      CALL SYSTEM_CLOCK(vt_w1)
+      WRITE(0,'(A,I0,A)') 'Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2_presync took ', &
+        (vt_w1 - vt_w0) * 1000000_c_int64_t / vt_rate, ' us'
+      CALL SYSTEM_CLOCK(vt_p0)
       CALL __program_velocity_no_nproma_if_prop_lvn_only_0_istep_2( &
         state_lvn_only_0_istep_2, &
         c_loc(a_nflatlev), &
@@ -1960,6 +1991,9 @@ CONTAINS
         c_lvn_only, &
         c_ntnd &
       )
+      CALL SYSTEM_CLOCK(vt_p1)
+      WRITE(0,'(A,I0,A)') 'Timer velocity_no_nproma_if_prop_lvn_only_0_istep_2_soprog took ', &
+        (vt_p1 - vt_p0) * 1000000_c_int64_t / vt_rate, ' us'
 
     ELSE IF ((lvn_only .EQV. .TRUE.) .AND. (istep == 1)) THEN
       IF (.NOT. C_ASSOCIATED(state_lvn_only_1_istep_1)) THEN
@@ -2045,6 +2079,12 @@ CONTAINS
           c_ntnd &
         )
       END IF
+      CALL SYSTEM_CLOCK(vt_w0)
+      !$ACC WAIT
+      CALL SYSTEM_CLOCK(vt_w1)
+      WRITE(0,'(A,I0,A)') 'Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1_presync took ', &
+        (vt_w1 - vt_w0) * 1000000_c_int64_t / vt_rate, ' us'
+      CALL SYSTEM_CLOCK(vt_p0)
       CALL __program_velocity_no_nproma_if_prop_lvn_only_1_istep_1( &
         state_lvn_only_1_istep_1, &
         c_loc(a_nflatlev), &
@@ -2127,6 +2167,9 @@ CONTAINS
         c_lvn_only, &
         c_ntnd &
       )
+      CALL SYSTEM_CLOCK(vt_p1)
+      WRITE(0,'(A,I0,A)') 'Timer velocity_no_nproma_if_prop_lvn_only_1_istep_1_soprog took ', &
+        (vt_p1 - vt_p0) * 1000000_c_int64_t / vt_rate, ' us'
 
     ELSE IF ((lvn_only .EQV. .TRUE.) .AND. (istep == 2)) THEN
       IF (.NOT. C_ASSOCIATED(state_lvn_only_1_istep_2)) THEN
@@ -2196,6 +2239,12 @@ CONTAINS
           c_ntnd &
         )
       END IF
+      CALL SYSTEM_CLOCK(vt_w0)
+      !$ACC WAIT
+      CALL SYSTEM_CLOCK(vt_w1)
+      WRITE(0,'(A,I0,A)') 'Timer velocity_no_nproma_if_prop_lvn_only_1_istep_2_presync took ', &
+        (vt_w1 - vt_w0) * 1000000_c_int64_t / vt_rate, ' us'
+      CALL SYSTEM_CLOCK(vt_p0)
       CALL __program_velocity_no_nproma_if_prop_lvn_only_1_istep_2( &
         state_lvn_only_1_istep_2, &
         c_loc(a_nflatlev), &
@@ -2262,6 +2311,9 @@ CONTAINS
         c_lvn_only, &
         c_ntnd &
       )
+      CALL SYSTEM_CLOCK(vt_p1)
+      WRITE(0,'(A,I0,A)') 'Timer velocity_no_nproma_if_prop_lvn_only_1_istep_2_soprog took ', &
+        (vt_p1 - vt_p0) * 1000000_c_int64_t / vt_rate, ' us'
 
     END IF
 
@@ -2269,6 +2321,12 @@ CONTAINS
 
     ! Copy scalar output back to Fortran type
     p_diag%max_vcfl_dyn = c_max_vcfl_dyn
+
+    CALL SYSTEM_CLOCK(vt_t1)
+    WRITE(vt_tag,'(A,I0,A,I0,A)') 'velocity_no_nproma_if_prop_lvn_only_', &
+      MERGE(1,0,lvn_only), '_istep_', istep, '_fortran'
+    WRITE(0,'(A,A,A,I0,A)') 'Timer ', TRIM(vt_tag), ' took ', &
+      (vt_t1 - vt_t0) * 1000000_c_int64_t / vt_rate, ' us'
 
     CALL timer_stop(timer_solve_nh_veltend)
 
