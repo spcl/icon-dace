@@ -11,6 +11,13 @@
 #
 # VT_DIR may be overridden via the environment. It must contain the
 # libvelocity_gpu_stage8_solve_nh_integration_release.${VT_PREC}.so files.
+#
+# Serialization is gated by (env, passed through to the job):
+#   SERDE_GEN_START/END    : dump generations in [START, END). Default 0..51.
+#   SERDE_GEN_STRIDE       : within that window, dump every S-th generation.
+#                            Default 1.
+#   SERDE_GEN_LIST         : explicit generations, comma/space separated, max 64.
+#                            When set, replaces the window/stride gate entirely.
 set -euo pipefail
 
 export ATM_TIMESTEP=${1:? "Usage: $0 <ATM_TIMESTEP> [VT_PREC=fp64] [GRID=0010_R02B04]"}

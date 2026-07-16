@@ -2,10 +2,18 @@
 # Submit all 5 SC2026 SNR variants (§8.1–8.5) for one grid.
 #
 # Usage:
-#   [SERDE_GEN_END=<N>] ./sbatch_all_sc2026.sh <GRID>
-#     GRID          : <gridID>_<refinement>, e.g. 0010_R02B04
-#     SERDE_GEN_END : serialized-window size (physics_generation 0..N-1);
-#                     env passthrough to sbatch_sc2026.sh. Default 51.
+#   [SERDE_GEN_END=<N>] [SERDE_GEN_STRIDE=<S>] [SERDE_GEN_LIST=<g1,g2,...>] \
+#     ./sbatch_all_sc2026.sh <GRID>
+#     GRID             : <gridID>_<refinement>, e.g. 0010_R02B04
+#
+#   The serde knobs below are env passthroughs to sbatch_sc2026.sh.
+#     SERDE_GEN_END    : serialized-window size (physics_generation 0..N-1).
+#                        Default 51.
+#     SERDE_GEN_STRIDE : within the window, dump every S-th generation.
+#                        Default 1 (every generation).
+#     SERDE_GEN_LIST   : explicit generations to dump, comma/space separated,
+#                        max 64 (e.g. logspace points over a long run). When
+#                        set, it replaces the window/stride gate entirely.
 set -euo pipefail
 
 GRID=${1:? "Usage: $0 <GRID>  (e.g. 0010_R02B04)"}
