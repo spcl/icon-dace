@@ -22,6 +22,12 @@ sed -i \
   -e 's|^: \${no_of_nodes:=2}|: ${no_of_nodes:=1}|' \
   "$RUN"
 
+# --- uenv: the job must load it itself, since sbatch cannot be called from
+#     inside a uenv session (libslurm-uenv-mount rc=-3000) ---
+sed -i '/^#SBATCH --account=/ a\
+#SBATCH --uenv=icon/25.2:v1@santis\
+#SBATCH --view=default' "$RUN"
+
 # --- ulimit -s unlimited right before ${START_MODEL} invocation ---
 sed -i '/^\${START_MODEL}/ i\
 ulimit -s unlimited' "$RUN"

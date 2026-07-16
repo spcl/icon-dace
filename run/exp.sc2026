@@ -35,9 +35,9 @@ atmo_dyn_grid=${atmo_grid_folder}/icon_grid_${atmos_gridID}_${atmos_refinement}_
 start_date=${start_date:="2000-01-01T00:00:00Z"}
 end_date=${end_date:="2000-01-01T00:10:00Z"}
 
-# Restart / checkpoint
-checkpoint_interval="P1D"
-restart_interval="P1D"
+# Restart / checkpoint. P1D truncates any run longer than 24h of model time.
+checkpoint_interval="P3D"
+restart_interval="P3D"
 
 # Output intervals
 atm_file_interval="P1D"
