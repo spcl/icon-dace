@@ -990,7 +990,7 @@ MODULE f90_glue_vt_serde
     out % m_nudgecoeff_e = c_null_ptr
     out % m_pos_on_tplane_e = c_null_ptr
     IF (initalloc .AND. .NOT. ALLOCATED(a_c_lin_e)) ALLOCATE(a_c_lin_e(SIZE(inp % c_lin_e, 1), SIZE(inp % c_lin_e, 2), SIZE(inp % c_lin_e, 3)))
-    a_c_lin_e = inp % c_lin_e
+    if (initalloc) a_c_lin_e = inp % c_lin_e
     out % m_c_lin_e = c_loc(a_c_lin_e)
     out % m___f2dace_SA_c_lin_e_d_0_s_25 = SIZE(inp % c_lin_e, 1)
     out % m___f2dace_SA_c_lin_e_d_1_s_26 = SIZE(inp % c_lin_e, 2)
@@ -999,7 +999,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_c_lin_e_d_1_s_26 = LBOUND(inp % c_lin_e, 2)
     out % m___f2dace_SOA_c_lin_e_d_2_s_27 = LBOUND(inp % c_lin_e, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_cells_aw_verts)) ALLOCATE(a_cells_aw_verts(SIZE(inp % cells_aw_verts, 1), SIZE(inp % cells_aw_verts, 2), SIZE(inp % cells_aw_verts, 3)))
-    a_cells_aw_verts = inp % cells_aw_verts
+    if (initalloc) a_cells_aw_verts = inp % cells_aw_verts
     out % m_cells_aw_verts = c_loc(a_cells_aw_verts)
     out % m___f2dace_SA_cells_aw_verts_d_0_s_31 = SIZE(inp % cells_aw_verts, 1)
     out % m___f2dace_SA_cells_aw_verts_d_1_s_32 = SIZE(inp % cells_aw_verts, 2)
@@ -1008,7 +1008,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_cells_aw_verts_d_1_s_32 = LBOUND(inp % cells_aw_verts, 2)
     out % m___f2dace_SOA_cells_aw_verts_d_2_s_33 = LBOUND(inp % cells_aw_verts, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_e_bln_c_s)) ALLOCATE(a_e_bln_c_s(SIZE(inp % e_bln_c_s, 1), SIZE(inp % e_bln_c_s, 2), SIZE(inp % e_bln_c_s, 3)))
-    a_e_bln_c_s = inp % e_bln_c_s
+    if (initalloc) a_e_bln_c_s = inp % e_bln_c_s
     out % m_e_bln_c_s = c_loc(a_e_bln_c_s)
     out % m___f2dace_SA_e_bln_c_s_d_0_s_28 = SIZE(inp % e_bln_c_s, 1)
     out % m___f2dace_SA_e_bln_c_s_d_1_s_29 = SIZE(inp % e_bln_c_s, 2)
@@ -1017,7 +1017,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_e_bln_c_s_d_1_s_29 = LBOUND(inp % e_bln_c_s, 2)
     out % m___f2dace_SOA_e_bln_c_s_d_2_s_30 = LBOUND(inp % e_bln_c_s, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_geofac_grdiv)) ALLOCATE(a_geofac_grdiv(SIZE(inp % geofac_grdiv, 1), SIZE(inp % geofac_grdiv, 2), SIZE(inp % geofac_grdiv, 3)))
-    a_geofac_grdiv = inp % geofac_grdiv
+    if (initalloc) a_geofac_grdiv = inp % geofac_grdiv
     out % m_geofac_grdiv = c_loc(a_geofac_grdiv)
     out % m___f2dace_SA_geofac_grdiv_d_0_s_37 = SIZE(inp % geofac_grdiv, 1)
     out % m___f2dace_SA_geofac_grdiv_d_1_s_38 = SIZE(inp % geofac_grdiv, 2)
@@ -1026,7 +1026,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_geofac_grdiv_d_1_s_38 = LBOUND(inp % geofac_grdiv, 2)
     out % m___f2dace_SOA_geofac_grdiv_d_2_s_39 = LBOUND(inp % geofac_grdiv, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_geofac_n2s)) ALLOCATE(a_geofac_n2s(SIZE(inp % geofac_n2s, 1), SIZE(inp % geofac_n2s, 2), SIZE(inp % geofac_n2s, 3)))
-    a_geofac_n2s = inp % geofac_n2s
+    if (initalloc) a_geofac_n2s = inp % geofac_n2s
     out % m_geofac_n2s = c_loc(a_geofac_n2s)
     out % m___f2dace_SA_geofac_n2s_d_0_s_43 = SIZE(inp % geofac_n2s, 1)
     out % m___f2dace_SA_geofac_n2s_d_1_s_44 = SIZE(inp % geofac_n2s, 2)
@@ -1035,7 +1035,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_geofac_n2s_d_1_s_44 = LBOUND(inp % geofac_n2s, 2)
     out % m___f2dace_SOA_geofac_n2s_d_2_s_45 = LBOUND(inp % geofac_n2s, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_geofac_rot)) ALLOCATE(a_geofac_rot(SIZE(inp % geofac_rot, 1), SIZE(inp % geofac_rot, 2), SIZE(inp % geofac_rot, 3)))
-    a_geofac_rot = inp % geofac_rot
+    if (initalloc) a_geofac_rot = inp % geofac_rot
     out % m_geofac_rot = c_loc(a_geofac_rot)
     out % m___f2dace_SA_geofac_rot_d_0_s_40 = SIZE(inp % geofac_rot, 1)
     out % m___f2dace_SA_geofac_rot_d_1_s_41 = SIZE(inp % geofac_rot, 2)
@@ -1044,7 +1044,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_geofac_rot_d_1_s_41 = LBOUND(inp % geofac_rot, 2)
     out % m___f2dace_SOA_geofac_rot_d_2_s_42 = LBOUND(inp % geofac_rot, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_rbf_vec_coeff_e)) ALLOCATE(a_rbf_vec_coeff_e(SIZE(inp % rbf_vec_coeff_e, 1), SIZE(inp % rbf_vec_coeff_e, 2), SIZE(inp % rbf_vec_coeff_e, 3)))
-    a_rbf_vec_coeff_e = inp % rbf_vec_coeff_e
+    if (initalloc) a_rbf_vec_coeff_e = inp % rbf_vec_coeff_e
     out % m_rbf_vec_coeff_e = c_loc(a_rbf_vec_coeff_e)
     out % m___f2dace_SA_rbf_vec_coeff_e_d_0_s_34 = SIZE(inp % rbf_vec_coeff_e, 1)
     out % m___f2dace_SA_rbf_vec_coeff_e_d_1_s_35 = SIZE(inp % rbf_vec_coeff_e, 2)
@@ -1081,7 +1081,7 @@ MODULE f90_glue_vt_serde
     out % m_rho = c_null_ptr
     out % m_theta_v = c_null_ptr
     IF (initalloc .AND. .NOT. ALLOCATED(a_vn)) ALLOCATE(a_vn(SIZE(inp % vn, 1), SIZE(inp % vn, 2), SIZE(inp % vn, 3)))
-    a_vn = inp % vn
+    if (initalloc) a_vn = inp % vn
     out % m_vn = c_loc(a_vn)
     out % m___f2dace_SA_vn_d_0_s_288 = SIZE(inp % vn, 1)
     out % m___f2dace_SA_vn_d_1_s_289 = SIZE(inp % vn, 2)
@@ -1090,7 +1090,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_vn_d_1_s_289 = LBOUND(inp % vn, 2)
     out % m___f2dace_SOA_vn_d_2_s_290 = LBOUND(inp % vn, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_w)) ALLOCATE(a_w(SIZE(inp % w, 1), SIZE(inp % w, 2), SIZE(inp % w, 3)))
-    a_w = inp % w
+    if (initalloc) a_w = inp % w
     out % m_w = c_loc(a_w)
     out % m___f2dace_SA_w_d_0_s_285 = SIZE(inp % w, 1)
     out % m___f2dace_SA_w_d_1_s_286 = SIZE(inp % w, 2)
@@ -1293,7 +1293,7 @@ MODULE f90_glue_vt_serde
     out % m_wgtfacq_c = c_null_ptr
     out % m_zdiff_gradp = c_null_ptr
     IF (initalloc .AND. .NOT. ALLOCATED(a_coeff1_dwdz)) ALLOCATE(a_coeff1_dwdz(SIZE(inp % coeff1_dwdz, 1), SIZE(inp % coeff1_dwdz, 2), SIZE(inp % coeff1_dwdz, 3)))
-    a_coeff1_dwdz = inp % coeff1_dwdz
+    if (initalloc) a_coeff1_dwdz = inp % coeff1_dwdz
     out % m_coeff1_dwdz = c_loc(a_coeff1_dwdz)
     out % m___f2dace_SA_coeff1_dwdz_d_0_s_332 = SIZE(inp % coeff1_dwdz, 1)
     out % m___f2dace_SA_coeff1_dwdz_d_1_s_333 = SIZE(inp % coeff1_dwdz, 2)
@@ -1302,7 +1302,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_coeff1_dwdz_d_1_s_333 = LBOUND(inp % coeff1_dwdz, 2)
     out % m___f2dace_SOA_coeff1_dwdz_d_2_s_334 = LBOUND(inp % coeff1_dwdz, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_coeff2_dwdz)) ALLOCATE(a_coeff2_dwdz(SIZE(inp % coeff2_dwdz, 1), SIZE(inp % coeff2_dwdz, 2), SIZE(inp % coeff2_dwdz, 3)))
-    a_coeff2_dwdz = inp % coeff2_dwdz
+    if (initalloc) a_coeff2_dwdz = inp % coeff2_dwdz
     out % m_coeff2_dwdz = c_loc(a_coeff2_dwdz)
     out % m___f2dace_SA_coeff2_dwdz_d_0_s_335 = SIZE(inp % coeff2_dwdz, 1)
     out % m___f2dace_SA_coeff2_dwdz_d_1_s_336 = SIZE(inp % coeff2_dwdz, 2)
@@ -1311,7 +1311,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_coeff2_dwdz_d_1_s_336 = LBOUND(inp % coeff2_dwdz, 2)
     out % m___f2dace_SOA_coeff2_dwdz_d_2_s_337 = LBOUND(inp % coeff2_dwdz, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_coeff_gradekin)) ALLOCATE(a_coeff_gradekin(SIZE(inp % coeff_gradekin, 1), SIZE(inp % coeff_gradekin, 2), SIZE(inp % coeff_gradekin, 3)))
-    a_coeff_gradekin = inp % coeff_gradekin
+    if (initalloc) a_coeff_gradekin = inp % coeff_gradekin
     out % m_coeff_gradekin = c_loc(a_coeff_gradekin)
     out % m___f2dace_SA_coeff_gradekin_d_0_s_329 = SIZE(inp % coeff_gradekin, 1)
     out % m___f2dace_SA_coeff_gradekin_d_1_s_330 = SIZE(inp % coeff_gradekin, 2)
@@ -1320,7 +1320,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_coeff_gradekin_d_1_s_330 = LBOUND(inp % coeff_gradekin, 2)
     out % m___f2dace_SOA_coeff_gradekin_d_2_s_331 = LBOUND(inp % coeff_gradekin, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_ddqz_z_full_e)) ALLOCATE(a_ddqz_z_full_e(SIZE(inp % ddqz_z_full_e, 1), SIZE(inp % ddqz_z_full_e, 2), SIZE(inp % ddqz_z_full_e, 3)))
-    a_ddqz_z_full_e = inp % ddqz_z_full_e
+    if (initalloc) a_ddqz_z_full_e = inp % ddqz_z_full_e
     out % m_ddqz_z_full_e = c_loc(a_ddqz_z_full_e)
     out % m___f2dace_SA_ddqz_z_full_e_d_0_s_314 = SIZE(inp % ddqz_z_full_e, 1)
     out % m___f2dace_SA_ddqz_z_full_e_d_1_s_315 = SIZE(inp % ddqz_z_full_e, 2)
@@ -1329,7 +1329,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddqz_z_full_e_d_1_s_315 = LBOUND(inp % ddqz_z_full_e, 2)
     out % m___f2dace_SOA_ddqz_z_full_e_d_2_s_316 = LBOUND(inp % ddqz_z_full_e, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_ddqz_z_half)) ALLOCATE(a_ddqz_z_half(SIZE(inp % ddqz_z_half, 1), SIZE(inp % ddqz_z_half, 2), SIZE(inp % ddqz_z_half, 3)))
-    a_ddqz_z_half = inp % ddqz_z_half
+    if (initalloc) a_ddqz_z_half = inp % ddqz_z_half
     out % m_ddqz_z_half = c_loc(a_ddqz_z_half)
     out % m___f2dace_SA_ddqz_z_half_d_0_s_317 = SIZE(inp % ddqz_z_half, 1)
     out % m___f2dace_SA_ddqz_z_half_d_1_s_318 = SIZE(inp % ddqz_z_half, 2)
@@ -1338,7 +1338,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddqz_z_half_d_1_s_318 = LBOUND(inp % ddqz_z_half, 2)
     out % m___f2dace_SOA_ddqz_z_half_d_2_s_319 = LBOUND(inp % ddqz_z_half, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_ddxn_z_full)) ALLOCATE(a_ddxn_z_full(SIZE(inp % ddxn_z_full, 1), SIZE(inp % ddxn_z_full, 2), SIZE(inp % ddxn_z_full, 3)))
-    a_ddxn_z_full = inp % ddxn_z_full
+    if (initalloc) a_ddxn_z_full = inp % ddxn_z_full
     out % m_ddxn_z_full = c_loc(a_ddxn_z_full)
     out % m___f2dace_SA_ddxn_z_full_d_0_s_308 = SIZE(inp % ddxn_z_full, 1)
     out % m___f2dace_SA_ddxn_z_full_d_1_s_309 = SIZE(inp % ddxn_z_full, 2)
@@ -1347,7 +1347,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddxn_z_full_d_1_s_309 = LBOUND(inp % ddxn_z_full, 2)
     out % m___f2dace_SOA_ddxn_z_full_d_2_s_310 = LBOUND(inp % ddxn_z_full, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_ddxt_z_full)) ALLOCATE(a_ddxt_z_full(SIZE(inp % ddxt_z_full, 1), SIZE(inp % ddxt_z_full, 2), SIZE(inp % ddxt_z_full, 3)))
-    a_ddxt_z_full = inp % ddxt_z_full
+    if (initalloc) a_ddxt_z_full = inp % ddxt_z_full
     out % m_ddxt_z_full = c_loc(a_ddxt_z_full)
     out % m___f2dace_SA_ddxt_z_full_d_0_s_311 = SIZE(inp % ddxt_z_full, 1)
     out % m___f2dace_SA_ddxt_z_full_d_1_s_312 = SIZE(inp % ddxt_z_full, 2)
@@ -1356,27 +1356,27 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddxt_z_full_d_1_s_312 = LBOUND(inp % ddxt_z_full, 2)
     out % m___f2dace_SOA_ddxt_z_full_d_2_s_313 = LBOUND(inp % ddxt_z_full, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_deepatmo_gradh_ifc)) ALLOCATE(a_deepatmo_gradh_ifc(SIZE(inp % deepatmo_gradh_ifc, 1)))
-    a_deepatmo_gradh_ifc = inp % deepatmo_gradh_ifc
+    if (initalloc) a_deepatmo_gradh_ifc = inp % deepatmo_gradh_ifc
     out % m_deepatmo_gradh_ifc = c_loc(a_deepatmo_gradh_ifc)
     out % m___f2dace_SA_deepatmo_gradh_ifc_d_0_s_340 = SIZE(inp % deepatmo_gradh_ifc, 1)
     out % m___f2dace_SOA_deepatmo_gradh_ifc_d_0_s_340 = LBOUND(inp % deepatmo_gradh_ifc, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_deepatmo_gradh_mc)) ALLOCATE(a_deepatmo_gradh_mc(SIZE(inp % deepatmo_gradh_mc, 1)))
-    a_deepatmo_gradh_mc = inp % deepatmo_gradh_mc
+    if (initalloc) a_deepatmo_gradh_mc = inp % deepatmo_gradh_mc
     out % m_deepatmo_gradh_mc = c_loc(a_deepatmo_gradh_mc)
     out % m___f2dace_SA_deepatmo_gradh_mc_d_0_s_338 = SIZE(inp % deepatmo_gradh_mc, 1)
     out % m___f2dace_SOA_deepatmo_gradh_mc_d_0_s_338 = LBOUND(inp % deepatmo_gradh_mc, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_deepatmo_invr_ifc)) ALLOCATE(a_deepatmo_invr_ifc(SIZE(inp % deepatmo_invr_ifc, 1)))
-    a_deepatmo_invr_ifc = inp % deepatmo_invr_ifc
+    if (initalloc) a_deepatmo_invr_ifc = inp % deepatmo_invr_ifc
     out % m_deepatmo_invr_ifc = c_loc(a_deepatmo_invr_ifc)
     out % m___f2dace_SA_deepatmo_invr_ifc_d_0_s_341 = SIZE(inp % deepatmo_invr_ifc, 1)
     out % m___f2dace_SOA_deepatmo_invr_ifc_d_0_s_341 = LBOUND(inp % deepatmo_invr_ifc, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_deepatmo_invr_mc)) ALLOCATE(a_deepatmo_invr_mc(SIZE(inp % deepatmo_invr_mc, 1)))
-    a_deepatmo_invr_mc = inp % deepatmo_invr_mc
+    if (initalloc) a_deepatmo_invr_mc = inp % deepatmo_invr_mc
     out % m_deepatmo_invr_mc = c_loc(a_deepatmo_invr_mc)
     out % m___f2dace_SA_deepatmo_invr_mc_d_0_s_339 = SIZE(inp % deepatmo_invr_mc, 1)
     out % m___f2dace_SOA_deepatmo_invr_mc_d_0_s_339 = LBOUND(inp % deepatmo_invr_mc, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_wgtfac_c)) ALLOCATE(a_wgtfac_c(SIZE(inp % wgtfac_c, 1), SIZE(inp % wgtfac_c, 2), SIZE(inp % wgtfac_c, 3)))
-    a_wgtfac_c = inp % wgtfac_c
+    if (initalloc) a_wgtfac_c = inp % wgtfac_c
     out % m_wgtfac_c = c_loc(a_wgtfac_c)
     out % m___f2dace_SA_wgtfac_c_d_0_s_320 = SIZE(inp % wgtfac_c, 1)
     out % m___f2dace_SA_wgtfac_c_d_1_s_321 = SIZE(inp % wgtfac_c, 2)
@@ -1385,7 +1385,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_wgtfac_c_d_1_s_321 = LBOUND(inp % wgtfac_c, 2)
     out % m___f2dace_SOA_wgtfac_c_d_2_s_322 = LBOUND(inp % wgtfac_c, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_wgtfac_e)) ALLOCATE(a_wgtfac_e(SIZE(inp % wgtfac_e, 1), SIZE(inp % wgtfac_e, 2), SIZE(inp % wgtfac_e, 3)))
-    a_wgtfac_e = inp % wgtfac_e
+    if (initalloc) a_wgtfac_e = inp % wgtfac_e
     out % m_wgtfac_e = c_loc(a_wgtfac_e)
     out % m___f2dace_SA_wgtfac_e_d_0_s_323 = SIZE(inp % wgtfac_e, 1)
     out % m___f2dace_SA_wgtfac_e_d_1_s_324 = SIZE(inp % wgtfac_e, 2)
@@ -1394,7 +1394,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_wgtfac_e_d_1_s_324 = LBOUND(inp % wgtfac_e, 2)
     out % m___f2dace_SOA_wgtfac_e_d_2_s_325 = LBOUND(inp % wgtfac_e, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_wgtfacq_e)) ALLOCATE(a_wgtfacq_e(SIZE(inp % wgtfacq_e, 1), SIZE(inp % wgtfacq_e, 2), SIZE(inp % wgtfacq_e, 3)))
-    a_wgtfacq_e = inp % wgtfacq_e
+    if (initalloc) a_wgtfacq_e = inp % wgtfacq_e
     out % m_wgtfacq_e = c_loc(a_wgtfacq_e)
     out % m___f2dace_SA_wgtfacq_e_d_0_s_326 = SIZE(inp % wgtfacq_e, 1)
     out % m___f2dace_SA_wgtfacq_e_d_1_s_327 = SIZE(inp % wgtfacq_e, 2)
@@ -1683,7 +1683,7 @@ MODULE f90_glue_vt_serde
     out % m_w_int = c_null_ptr
     out % m_w_ubc = c_null_ptr
     IF (initalloc .AND. .NOT. ALLOCATED(a_ddt_vn_apc_pc)) ALLOCATE(a_ddt_vn_apc_pc(SIZE(inp % ddt_vn_apc_pc, 1), SIZE(inp % ddt_vn_apc_pc, 2), SIZE(inp % ddt_vn_apc_pc, 3), SIZE(inp % ddt_vn_apc_pc, 4)))
-    a_ddt_vn_apc_pc = inp % ddt_vn_apc_pc
+    if (initalloc) a_ddt_vn_apc_pc = inp % ddt_vn_apc_pc
     out % m_ddt_vn_apc_pc = c_loc(a_ddt_vn_apc_pc)
     out % m___f2dace_SA_ddt_vn_apc_pc_d_0_s_300 = SIZE(inp % ddt_vn_apc_pc, 1)
     out % m___f2dace_SA_ddt_vn_apc_pc_d_1_s_301 = SIZE(inp % ddt_vn_apc_pc, 2)
@@ -1694,7 +1694,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddt_vn_apc_pc_d_2_s_302 = LBOUND(inp % ddt_vn_apc_pc, 3)
     out % m___f2dace_SOA_ddt_vn_apc_pc_d_3_s_303 = LBOUND(inp % ddt_vn_apc_pc, 4)
     IF (initalloc .AND. .NOT. ALLOCATED(a_ddt_w_adv_pc)) ALLOCATE(a_ddt_w_adv_pc(SIZE(inp % ddt_w_adv_pc, 1), SIZE(inp % ddt_w_adv_pc, 2), SIZE(inp % ddt_w_adv_pc, 3), SIZE(inp % ddt_w_adv_pc, 4)))
-    a_ddt_w_adv_pc = inp % ddt_w_adv_pc
+    if (initalloc) a_ddt_w_adv_pc = inp % ddt_w_adv_pc
     out % m_ddt_w_adv_pc = c_loc(a_ddt_w_adv_pc)
     out % m___f2dace_SA_ddt_w_adv_pc_d_0_s_304 = SIZE(inp % ddt_w_adv_pc, 1)
     out % m___f2dace_SA_ddt_w_adv_pc_d_1_s_305 = SIZE(inp % ddt_w_adv_pc, 2)
@@ -1706,7 +1706,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_ddt_w_adv_pc_d_3_s_307 = LBOUND(inp % ddt_w_adv_pc, 4)
     out % m_max_vcfl_dyn = inp % max_vcfl_dyn
     IF (initalloc .AND. .NOT. ALLOCATED(a_vn_ie)) ALLOCATE(a_vn_ie(SIZE(inp % vn_ie, 1), SIZE(inp % vn_ie, 2), SIZE(inp % vn_ie, 3)))
-    a_vn_ie = inp % vn_ie
+    if (initalloc) a_vn_ie = inp % vn_ie
     out % m_vn_ie = c_loc(a_vn_ie)
     out % m___f2dace_SA_vn_ie_d_0_s_294 = SIZE(inp % vn_ie, 1)
     out % m___f2dace_SA_vn_ie_d_1_s_295 = SIZE(inp % vn_ie, 2)
@@ -1715,7 +1715,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_vn_ie_d_1_s_295 = LBOUND(inp % vn_ie, 2)
     out % m___f2dace_SOA_vn_ie_d_2_s_296 = LBOUND(inp % vn_ie, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_vt)) ALLOCATE(a_vt(SIZE(inp % vt, 1), SIZE(inp % vt, 2), SIZE(inp % vt, 3)))
-    a_vt = inp % vt
+    if (initalloc) a_vt = inp % vt
     out % m_vt = c_loc(a_vt)
     out % m___f2dace_SA_vt_d_0_s_291 = SIZE(inp % vt, 1)
     out % m___f2dace_SA_vt_d_1_s_292 = SIZE(inp % vt, 2)
@@ -1724,7 +1724,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_vt_d_1_s_292 = LBOUND(inp % vt, 2)
     out % m___f2dace_SOA_vt_d_2_s_293 = LBOUND(inp % vt, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_w_concorr_c)) ALLOCATE(a_w_concorr_c(SIZE(inp % w_concorr_c, 1), SIZE(inp % w_concorr_c, 2), SIZE(inp % w_concorr_c, 3)))
-    a_w_concorr_c = inp % w_concorr_c
+    if (initalloc) a_w_concorr_c = inp % w_concorr_c
     out % m_w_concorr_c = c_loc(a_w_concorr_c)
     out % m___f2dace_SA_w_concorr_c_d_0_s_297 = SIZE(inp % w_concorr_c, 1)
     out % m___f2dace_SA_w_concorr_c_d_1_s_298 = SIZE(inp % w_concorr_c, 2)
@@ -1774,14 +1774,14 @@ MODULE f90_glue_vt_serde
     out % m_primal_normal_cell = c_null_ptr
     out % m_refin_ctrl = c_null_ptr
     IF (initalloc .AND. .NOT. ALLOCATED(a_area_edge)) ALLOCATE(a_area_edge(SIZE(inp % area_edge, 1), SIZE(inp % area_edge, 2)))
-    a_area_edge = inp % area_edge
+    if (initalloc) a_area_edge = inp % area_edge
     out % m_area_edge = c_loc(a_area_edge)
     out % m___f2dace_SA_area_edge_d_0_s_188 = SIZE(inp % area_edge, 1)
     out % m___f2dace_SA_area_edge_d_1_s_189 = SIZE(inp % area_edge, 2)
     out % m___f2dace_SOA_area_edge_d_0_s_188 = LBOUND(inp % area_edge, 1)
     out % m___f2dace_SOA_area_edge_d_1_s_189 = LBOUND(inp % area_edge, 2)
     IF (initalloc .AND. .NOT. ALLOCATED(a_cell_blk)) ALLOCATE(a_cell_blk(SIZE(inp % cell_blk, 1), SIZE(inp % cell_blk, 2), SIZE(inp % cell_blk, 3)))
-    a_cell_blk = inp % cell_blk
+    if (initalloc) a_cell_blk = inp % cell_blk
     out % m_cell_blk = c_loc(a_cell_blk)
     out % m___f2dace_SA_cell_blk_d_0_s_167 = SIZE(inp % cell_blk, 1)
     out % m___f2dace_SA_cell_blk_d_1_s_168 = SIZE(inp % cell_blk, 2)
@@ -1790,7 +1790,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_cell_blk_d_1_s_168 = LBOUND(inp % cell_blk, 2)
     out % m___f2dace_SOA_cell_blk_d_2_s_169 = LBOUND(inp % cell_blk, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_cell_idx)) ALLOCATE(a_cell_idx(SIZE(inp % cell_idx, 1), SIZE(inp % cell_idx, 2), SIZE(inp % cell_idx, 3)))
-    a_cell_idx = inp % cell_idx
+    if (initalloc) a_cell_idx = inp % cell_idx
     out % m_cell_idx = c_loc(a_cell_idx)
     out % m___f2dace_SA_cell_idx_d_0_s_164 = SIZE(inp % cell_idx, 1)
     out % m___f2dace_SA_cell_idx_d_1_s_165 = SIZE(inp % cell_idx, 2)
@@ -1799,52 +1799,52 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_cell_idx_d_1_s_165 = LBOUND(inp % cell_idx, 2)
     out % m___f2dace_SOA_cell_idx_d_2_s_166 = LBOUND(inp % cell_idx, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_end_block)) ALLOCATE(a_end_block(SIZE(inp % end_block, 1)))
-    a_end_block = inp % end_block
+    if (initalloc) a_end_block = inp % end_block
     out % m_end_block = c_loc(a_end_block)
     out % m___f2dace_SA_end_block_d_0_s_199 = SIZE(inp % end_block, 1)
     out % m___f2dace_SOA_end_block_d_0_s_199 = LBOUND(inp % end_block, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_end_index)) ALLOCATE(a_end_index(SIZE(inp % end_index, 1)))
-    a_end_index = inp % end_index
+    if (initalloc) a_end_index = inp % end_index
     out % m_end_index = c_loc(a_end_index)
     out % m___f2dace_SA_end_index_d_0_s_197 = SIZE(inp % end_index, 1)
     out % m___f2dace_SOA_end_index_d_0_s_197 = LBOUND(inp % end_index, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_f_e)) ALLOCATE(a_f_e(SIZE(inp % f_e, 1), SIZE(inp % f_e, 2)))
-    a_f_e = inp % f_e
+    if (initalloc) a_f_e = inp % f_e
     out % m_f_e = c_loc(a_f_e)
     out % m___f2dace_SA_f_e_d_0_s_190 = SIZE(inp % f_e, 1)
     out % m___f2dace_SA_f_e_d_1_s_191 = SIZE(inp % f_e, 2)
     out % m___f2dace_SOA_f_e_d_0_s_190 = LBOUND(inp % f_e, 1)
     out % m___f2dace_SOA_f_e_d_1_s_191 = LBOUND(inp % f_e, 2)
     IF (initalloc .AND. .NOT. ALLOCATED(a_fn_e)) ALLOCATE(a_fn_e(SIZE(inp % fn_e, 1), SIZE(inp % fn_e, 2)))
-    a_fn_e = inp % fn_e
+    if (initalloc) a_fn_e = inp % fn_e
     out % m_fn_e = c_loc(a_fn_e)
     out % m___f2dace_SA_fn_e_d_0_s_192 = SIZE(inp % fn_e, 1)
     out % m___f2dace_SA_fn_e_d_1_s_193 = SIZE(inp % fn_e, 2)
     out % m___f2dace_SOA_fn_e_d_0_s_192 = LBOUND(inp % fn_e, 1)
     out % m___f2dace_SOA_fn_e_d_1_s_193 = LBOUND(inp % fn_e, 2)
     IF (initalloc .AND. .NOT. ALLOCATED(a_ft_e)) ALLOCATE(a_ft_e(SIZE(inp % ft_e, 1), SIZE(inp % ft_e, 2)))
-    a_ft_e = inp % ft_e
+    if (initalloc) a_ft_e = inp % ft_e
     out % m_ft_e = c_loc(a_ft_e)
     out % m___f2dace_SA_ft_e_d_0_s_194 = SIZE(inp % ft_e, 1)
     out % m___f2dace_SA_ft_e_d_1_s_195 = SIZE(inp % ft_e, 2)
     out % m___f2dace_SOA_ft_e_d_0_s_194 = LBOUND(inp % ft_e, 1)
     out % m___f2dace_SOA_ft_e_d_1_s_195 = LBOUND(inp % ft_e, 2)
     IF (initalloc .AND. .NOT. ALLOCATED(a_inv_dual_edge_length)) ALLOCATE(a_inv_dual_edge_length(SIZE(inp % inv_dual_edge_length, 1), SIZE(inp % inv_dual_edge_length, 2)))
-    a_inv_dual_edge_length = inp % inv_dual_edge_length
+    if (initalloc) a_inv_dual_edge_length = inp % inv_dual_edge_length
     out % m_inv_dual_edge_length = c_loc(a_inv_dual_edge_length)
     out % m___f2dace_SA_inv_dual_edge_length_d_0_s_186 = SIZE(inp % inv_dual_edge_length, 1)
     out % m___f2dace_SA_inv_dual_edge_length_d_1_s_187 = SIZE(inp % inv_dual_edge_length, 2)
     out % m___f2dace_SOA_inv_dual_edge_length_d_0_s_186 = LBOUND(inp % inv_dual_edge_length, 1)
     out % m___f2dace_SOA_inv_dual_edge_length_d_1_s_187 = LBOUND(inp % inv_dual_edge_length, 2)
     IF (initalloc .AND. .NOT. ALLOCATED(a_inv_primal_edge_length)) ALLOCATE(a_inv_primal_edge_length(SIZE(inp % inv_primal_edge_length, 1), SIZE(inp % inv_primal_edge_length, 2)))
-    a_inv_primal_edge_length = inp % inv_primal_edge_length
+    if (initalloc) a_inv_primal_edge_length = inp % inv_primal_edge_length
     out % m_inv_primal_edge_length = c_loc(a_inv_primal_edge_length)
     out % m___f2dace_SA_inv_primal_edge_length_d_0_s_184 = SIZE(inp % inv_primal_edge_length, 1)
     out % m___f2dace_SA_inv_primal_edge_length_d_1_s_185 = SIZE(inp % inv_primal_edge_length, 2)
     out % m___f2dace_SOA_inv_primal_edge_length_d_0_s_184 = LBOUND(inp % inv_primal_edge_length, 1)
     out % m___f2dace_SOA_inv_primal_edge_length_d_1_s_185 = LBOUND(inp % inv_primal_edge_length, 2)
     IF (initalloc .AND. .NOT. ALLOCATED(a_quad_blk)) ALLOCATE(a_quad_blk(SIZE(inp % quad_blk, 1), SIZE(inp % quad_blk, 2), SIZE(inp % quad_blk, 3)))
-    a_quad_blk = inp % quad_blk
+    if (initalloc) a_quad_blk = inp % quad_blk
     out % m_quad_blk = c_loc(a_quad_blk)
     out % m___f2dace_SA_quad_blk_d_0_s_181 = SIZE(inp % quad_blk, 1)
     out % m___f2dace_SA_quad_blk_d_1_s_182 = SIZE(inp % quad_blk, 2)
@@ -1853,7 +1853,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_quad_blk_d_1_s_182 = LBOUND(inp % quad_blk, 2)
     out % m___f2dace_SOA_quad_blk_d_2_s_183 = LBOUND(inp % quad_blk, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_quad_idx)) ALLOCATE(a_quad_idx(SIZE(inp % quad_idx, 1), SIZE(inp % quad_idx, 2), SIZE(inp % quad_idx, 3)))
-    a_quad_idx = inp % quad_idx
+    if (initalloc) a_quad_idx = inp % quad_idx
     out % m_quad_idx = c_loc(a_quad_idx)
     out % m___f2dace_SA_quad_idx_d_0_s_178 = SIZE(inp % quad_idx, 1)
     out % m___f2dace_SA_quad_idx_d_1_s_179 = SIZE(inp % quad_idx, 2)
@@ -1862,24 +1862,24 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_quad_idx_d_1_s_179 = LBOUND(inp % quad_idx, 2)
     out % m___f2dace_SOA_quad_idx_d_2_s_180 = LBOUND(inp % quad_idx, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_start_block)) ALLOCATE(a_start_block(SIZE(inp % start_block, 1)))
-    a_start_block = inp % start_block
+    if (initalloc) a_start_block = inp % start_block
     out % m_start_block = c_loc(a_start_block)
     out % m___f2dace_SA_start_block_d_0_s_198 = SIZE(inp % start_block, 1)
     out % m___f2dace_SOA_start_block_d_0_s_198 = LBOUND(inp % start_block, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_start_index)) ALLOCATE(a_start_index(SIZE(inp % start_index, 1)))
-    a_start_index = inp % start_index
+    if (initalloc) a_start_index = inp % start_index
     out % m_start_index = c_loc(a_start_index)
     out % m___f2dace_SA_start_index_d_0_s_196 = SIZE(inp % start_index, 1)
     out % m___f2dace_SOA_start_index_d_0_s_196 = LBOUND(inp % start_index, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_tangent_orientation)) ALLOCATE(a_tangent_orientation(SIZE(inp % tangent_orientation, 1), SIZE(inp % tangent_orientation, 2)))
-    a_tangent_orientation = inp % tangent_orientation
+    if (initalloc) a_tangent_orientation = inp % tangent_orientation
     out % m_tangent_orientation = c_loc(a_tangent_orientation)
     out % m___f2dace_SA_tangent_orientation_d_0_s_176 = SIZE(inp % tangent_orientation, 1)
     out % m___f2dace_SA_tangent_orientation_d_1_s_177 = SIZE(inp % tangent_orientation, 2)
     out % m___f2dace_SOA_tangent_orientation_d_0_s_176 = LBOUND(inp % tangent_orientation, 1)
     out % m___f2dace_SOA_tangent_orientation_d_1_s_177 = LBOUND(inp % tangent_orientation, 2)
     IF (initalloc .AND. .NOT. ALLOCATED(a_vertex_blk)) ALLOCATE(a_vertex_blk(SIZE(inp % vertex_blk, 1), SIZE(inp % vertex_blk, 2), SIZE(inp % vertex_blk, 3)))
-    a_vertex_blk = inp % vertex_blk
+    if (initalloc) a_vertex_blk = inp % vertex_blk
     out % m_vertex_blk = c_loc(a_vertex_blk)
     out % m___f2dace_SA_vertex_blk_d_0_s_173 = SIZE(inp % vertex_blk, 1)
     out % m___f2dace_SA_vertex_blk_d_1_s_174 = SIZE(inp % vertex_blk, 2)
@@ -1888,7 +1888,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_vertex_blk_d_1_s_174 = LBOUND(inp % vertex_blk, 2)
     out % m___f2dace_SOA_vertex_blk_d_2_s_175 = LBOUND(inp % vertex_blk, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_vertex_idx)) ALLOCATE(a_vertex_idx(SIZE(inp % vertex_idx, 1), SIZE(inp % vertex_idx, 2), SIZE(inp % vertex_idx, 3)))
-    a_vertex_idx = inp % vertex_idx
+    if (initalloc) a_vertex_idx = inp % vertex_idx
     out % m_vertex_idx = c_loc(a_vertex_idx)
     out % m___f2dace_SA_vertex_idx_d_0_s_170 = SIZE(inp % vertex_idx, 1)
     out % m___f2dace_SA_vertex_idx_d_1_s_171 = SIZE(inp % vertex_idx, 2)
@@ -1922,7 +1922,7 @@ MODULE f90_glue_vt_serde
     out % m_end_blk = c_null_ptr
     out % m_start_blk = c_null_ptr
     IF (initalloc .AND. .NOT. ALLOCATED(a_area)) ALLOCATE(a_area(SIZE(inp % area, 1), SIZE(inp % area, 2)))
-    a_area = inp % area
+    if (initalloc) a_area = inp % area
     out % m_area = c_loc(a_area)
     out % m___f2dace_SA_area_d_0_s_158 = SIZE(inp % area, 1)
     out % m___f2dace_SA_area_d_1_s_159 = SIZE(inp % area, 2)
@@ -1932,7 +1932,7 @@ MODULE f90_glue_vt_serde
     CALL ctor(inp % decomp_info, a_decomp_info, initalloc)
     out % m_decomp_info = c_loc(a_decomp_info)
     IF (initalloc .AND. .NOT. ALLOCATED(a_edge_blk)) ALLOCATE(a_edge_blk(SIZE(inp % edge_blk, 1), SIZE(inp % edge_blk, 2), SIZE(inp % edge_blk, 3)))
-    a_edge_blk = inp % edge_blk
+    if (initalloc) a_edge_blk = inp % edge_blk
     out % m_edge_blk = c_loc(a_edge_blk)
     out % m___f2dace_SA_edge_blk_d_0_s_155 = SIZE(inp % edge_blk, 1)
     out % m___f2dace_SA_edge_blk_d_1_s_156 = SIZE(inp % edge_blk, 2)
@@ -1941,7 +1941,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_edge_blk_d_1_s_156 = LBOUND(inp % edge_blk, 2)
     out % m___f2dace_SOA_edge_blk_d_2_s_157 = LBOUND(inp % edge_blk, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_edge_idx)) ALLOCATE(a_edge_idx(SIZE(inp % edge_idx, 1), SIZE(inp % edge_idx, 2), SIZE(inp % edge_idx, 3)))
-    a_edge_idx = inp % edge_idx
+    if (initalloc) a_edge_idx = inp % edge_idx
     out % m_edge_idx = c_loc(a_edge_idx)
     out % m___f2dace_SA_edge_idx_d_0_s_152 = SIZE(inp % edge_idx, 1)
     out % m___f2dace_SA_edge_idx_d_1_s_153 = SIZE(inp % edge_idx, 2)
@@ -1950,17 +1950,17 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_edge_idx_d_1_s_153 = LBOUND(inp % edge_idx, 2)
     out % m___f2dace_SOA_edge_idx_d_2_s_154 = LBOUND(inp % edge_idx, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_end_block)) ALLOCATE(a_end_block(SIZE(inp % end_block, 1)))
-    a_end_block = inp % end_block
+    if (initalloc) a_end_block = inp % end_block
     out % m_end_block = c_loc(a_end_block)
     out % m___f2dace_SA_end_block_d_0_s_163 = SIZE(inp % end_block, 1)
     out % m___f2dace_SOA_end_block_d_0_s_163 = LBOUND(inp % end_block, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_end_index)) ALLOCATE(a_end_index(SIZE(inp % end_index, 1)))
-    a_end_index = inp % end_index
+    if (initalloc) a_end_index = inp % end_index
     out % m_end_index = c_loc(a_end_index)
     out % m___f2dace_SA_end_index_d_0_s_161 = SIZE(inp % end_index, 1)
     out % m___f2dace_SOA_end_index_d_0_s_161 = LBOUND(inp % end_index, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_neighbor_blk)) ALLOCATE(a_neighbor_blk(SIZE(inp % neighbor_blk, 1), SIZE(inp % neighbor_blk, 2), SIZE(inp % neighbor_blk, 3)))
-    a_neighbor_blk = inp % neighbor_blk
+    if (initalloc) a_neighbor_blk = inp % neighbor_blk
     out % m_neighbor_blk = c_loc(a_neighbor_blk)
     out % m___f2dace_SA_neighbor_blk_d_0_s_149 = SIZE(inp % neighbor_blk, 1)
     out % m___f2dace_SA_neighbor_blk_d_1_s_150 = SIZE(inp % neighbor_blk, 2)
@@ -1969,7 +1969,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_neighbor_blk_d_1_s_150 = LBOUND(inp % neighbor_blk, 2)
     out % m___f2dace_SOA_neighbor_blk_d_2_s_151 = LBOUND(inp % neighbor_blk, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_neighbor_idx)) ALLOCATE(a_neighbor_idx(SIZE(inp % neighbor_idx, 1), SIZE(inp % neighbor_idx, 2), SIZE(inp % neighbor_idx, 3)))
-    a_neighbor_idx = inp % neighbor_idx
+    if (initalloc) a_neighbor_idx = inp % neighbor_idx
     out % m_neighbor_idx = c_loc(a_neighbor_idx)
     out % m___f2dace_SA_neighbor_idx_d_0_s_146 = SIZE(inp % neighbor_idx, 1)
     out % m___f2dace_SA_neighbor_idx_d_1_s_147 = SIZE(inp % neighbor_idx, 2)
@@ -1978,12 +1978,12 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_neighbor_idx_d_1_s_147 = LBOUND(inp % neighbor_idx, 2)
     out % m___f2dace_SOA_neighbor_idx_d_2_s_148 = LBOUND(inp % neighbor_idx, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_start_block)) ALLOCATE(a_start_block(SIZE(inp % start_block, 1)))
-    a_start_block = inp % start_block
+    if (initalloc) a_start_block = inp % start_block
     out % m_start_block = c_loc(a_start_block)
     out % m___f2dace_SA_start_block_d_0_s_162 = SIZE(inp % start_block, 1)
     out % m___f2dace_SOA_start_block_d_0_s_162 = LBOUND(inp % start_block, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_start_index)) ALLOCATE(a_start_index(SIZE(inp % start_index, 1)))
-    a_start_index = inp % start_index
+    if (initalloc) a_start_index = inp % start_index
     out % m_start_index = c_loc(a_start_index)
     out % m___f2dace_SA_start_index_d_0_s_160 = SIZE(inp % start_index, 1)
     out % m___f2dace_SOA_start_index_d_0_s_160 = LBOUND(inp % start_index, 1)
@@ -1994,7 +1994,7 @@ MODULE f90_glue_vt_serde
     LOGICAL, INTENT(IN) :: initalloc
     INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_owner_mask(:, :)
     IF (initalloc .AND. .NOT. ALLOCATED(a_owner_mask)) ALLOCATE(a_owner_mask(SIZE(inp % owner_mask, 1), SIZE(inp % owner_mask, 2)))
-    a_owner_mask = inp % owner_mask
+    if (initalloc) a_owner_mask = inp % owner_mask
     out % m_owner_mask = c_loc(a_owner_mask)
     out % m___f2dace_SA_owner_mask_d_0_s_2 = SIZE(inp % owner_mask, 1)
     out % m___f2dace_SA_owner_mask_d_1_s_3 = SIZE(inp % owner_mask, 2)
@@ -2014,7 +2014,7 @@ MODULE f90_glue_vt_serde
     INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_start_block(:)
     INTEGER(KIND = c_int), ALLOCATABLE, TARGET, SAVE :: a_start_index(:)
     IF (initalloc .AND. .NOT. ALLOCATED(a_cell_blk)) ALLOCATE(a_cell_blk(SIZE(inp % cell_blk, 1), SIZE(inp % cell_blk, 2), SIZE(inp % cell_blk, 3)))
-    a_cell_blk = inp % cell_blk
+    if (initalloc) a_cell_blk = inp % cell_blk
     out % m_cell_blk = c_loc(a_cell_blk)
     out % m___f2dace_SA_cell_blk_d_0_s_167 = SIZE(inp % cell_blk, 1)
     out % m___f2dace_SA_cell_blk_d_1_s_168 = SIZE(inp % cell_blk, 2)
@@ -2023,7 +2023,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_cell_blk_d_1_s_168 = LBOUND(inp % cell_blk, 2)
     out % m___f2dace_SOA_cell_blk_d_2_s_169 = LBOUND(inp % cell_blk, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_cell_idx)) ALLOCATE(a_cell_idx(SIZE(inp % cell_idx, 1), SIZE(inp % cell_idx, 2), SIZE(inp % cell_idx, 3)))
-    a_cell_idx = inp % cell_idx
+    if (initalloc) a_cell_idx = inp % cell_idx
     out % m_cell_idx = c_loc(a_cell_idx)
     out % m___f2dace_SA_cell_idx_d_0_s_164 = SIZE(inp % cell_idx, 1)
     out % m___f2dace_SA_cell_idx_d_1_s_165 = SIZE(inp % cell_idx, 2)
@@ -2032,7 +2032,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_cell_idx_d_1_s_165 = LBOUND(inp % cell_idx, 2)
     out % m___f2dace_SOA_cell_idx_d_2_s_166 = LBOUND(inp % cell_idx, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_edge_blk)) ALLOCATE(a_edge_blk(SIZE(inp % edge_blk, 1), SIZE(inp % edge_blk, 2), SIZE(inp % edge_blk, 3)))
-    a_edge_blk = inp % edge_blk
+    if (initalloc) a_edge_blk = inp % edge_blk
     out % m_edge_blk = c_loc(a_edge_blk)
     out % m___f2dace_SA_edge_blk_d_0_s_155 = SIZE(inp % edge_blk, 1)
     out % m___f2dace_SA_edge_blk_d_1_s_156 = SIZE(inp % edge_blk, 2)
@@ -2041,7 +2041,7 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_edge_blk_d_1_s_156 = LBOUND(inp % edge_blk, 2)
     out % m___f2dace_SOA_edge_blk_d_2_s_157 = LBOUND(inp % edge_blk, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_edge_idx)) ALLOCATE(a_edge_idx(SIZE(inp % edge_idx, 1), SIZE(inp % edge_idx, 2), SIZE(inp % edge_idx, 3)))
-    a_edge_idx = inp % edge_idx
+    if (initalloc) a_edge_idx = inp % edge_idx
     out % m_edge_idx = c_loc(a_edge_idx)
     out % m___f2dace_SA_edge_idx_d_0_s_152 = SIZE(inp % edge_idx, 1)
     out % m___f2dace_SA_edge_idx_d_1_s_153 = SIZE(inp % edge_idx, 2)
@@ -2050,22 +2050,22 @@ MODULE f90_glue_vt_serde
     out % m___f2dace_SOA_edge_idx_d_1_s_153 = LBOUND(inp % edge_idx, 2)
     out % m___f2dace_SOA_edge_idx_d_2_s_154 = LBOUND(inp % edge_idx, 3)
     IF (initalloc .AND. .NOT. ALLOCATED(a_end_block)) ALLOCATE(a_end_block(SIZE(inp % end_block, 1)))
-    a_end_block = inp % end_block
+    if (initalloc) a_end_block = inp % end_block
     out % m_end_block = c_loc(a_end_block)
     out % m___f2dace_SA_end_block_d_0_s_163 = SIZE(inp % end_block, 1)
     out % m___f2dace_SOA_end_block_d_0_s_163 = LBOUND(inp % end_block, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_end_index)) ALLOCATE(a_end_index(SIZE(inp % end_index, 1)))
-    a_end_index = inp % end_index
+    if (initalloc) a_end_index = inp % end_index
     out % m_end_index = c_loc(a_end_index)
     out % m___f2dace_SA_end_index_d_0_s_161 = SIZE(inp % end_index, 1)
     out % m___f2dace_SOA_end_index_d_0_s_161 = LBOUND(inp % end_index, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_start_block)) ALLOCATE(a_start_block(SIZE(inp % start_block, 1)))
-    a_start_block = inp % start_block
+    if (initalloc) a_start_block = inp % start_block
     out % m_start_block = c_loc(a_start_block)
     out % m___f2dace_SA_start_block_d_0_s_162 = SIZE(inp % start_block, 1)
     out % m___f2dace_SOA_start_block_d_0_s_162 = LBOUND(inp % start_block, 1)
     IF (initalloc .AND. .NOT. ALLOCATED(a_start_index)) ALLOCATE(a_start_index(SIZE(inp % start_index, 1)))
-    a_start_index = inp % start_index
+    if (initalloc) a_start_index = inp % start_index
     out % m_start_index = c_loc(a_start_index)
     out % m___f2dace_SA_start_index_d_0_s_160 = SIZE(inp % start_index, 1)
     out % m___f2dace_SOA_start_index_d_0_s_160 = LBOUND(inp % start_index, 1)
