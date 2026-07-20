@@ -16,7 +16,14 @@ unset CDPATH
 script_dir=$(cd "$(dirname "$0")"; pwd)
 icon_dir=$(cd "${script_dir}/../.."; pwd)
 
-DACE_LDFLAGS="-L/capstor/scratch/cscs/pmazumde/gitspace/ico2/velocity/ -Wl,-rpath,/capstor/scratch/cscs/pmazumde/gitspace/ico2/velocity/"
+# Directory holding the VT shared library. It must contain a `libvelocity.so`
+# (symlink to the precision you link against is fine) — ICON records it as
+# DT_NEEDED plus an RPATH, so the loader needs it present at every launch, not
+# only at link time. The precision actually executed is chosen at run time by
+# the LD_PRELOAD that `run/sbatch_sc2026.sh` sets.
+VT_DIR="${VT_DIR:-/capstor/scratch/cscs/pmazumde/gitspace/ico2/velocity}"
+
+DACE_LDFLAGS="-L${VT_DIR}/ -Wl,-rpath,${VT_DIR}/"
 DACE_LIBS="-lvelocity"
 
 # NOTE: maybe we should enable mpi-gpu

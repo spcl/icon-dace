@@ -1,5 +1,5 @@
 #!/bin/bash
-# Submit all 5 SC2026 SNR variants (§8.1–8.5) for one grid.
+# Submit all 6 SC2026 SNR variants (§8.1–8.6) for one grid.
 #
 # Usage:
 #   [SERDE_GEN_END=<N>] [SERDE_GEN_STRIDE=<S>] [SERDE_GEN_LIST=<g1,g2,...>] \
@@ -31,3 +31,5 @@ USE_VT_GPU=1 NDYN_SUBSTEPS_OVERRIDE=5  "$SBATCH" 8 fp64 "$GRID"
 USE_VT_GPU=1 NDYN_SUBSTEPS_OVERRIDE=5  "$SBATCH" 8 fp32 "$GRID"
 # 8.5 VT FP16
 USE_VT_GPU=1 NDYN_SUBSTEPS_OVERRIDE=5  "$SBATCH" 8 fp16 "$GRID"
+# 8.6 VT BF16
+USE_VT_GPU=1 NDYN_SUBSTEPS_OVERRIDE=5  "$SBATCH" 8 bf16 "$GRID"
