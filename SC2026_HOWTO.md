@@ -212,9 +212,11 @@ spack -e icon-gpu install
 spack env activate icon-gpu     # puts mpif90/mpicc, netcdf, cmake on PATH
 ```
 
-`icon-gpu` builds `nvhpc@26.1`, so the spack clone must be the pinned one from
-VT `SC2026_HOWTO.ault.md` (*Spack, one-time*). An unpinned `HEAD` fails at
-concretize with `No version exists that satisfies nvhpc@26.1`.
+`icon-gpu` builds `nvhpc@26.1` then reuses it as the fortran compiler for
+`netcdf-fortran`, so the env sets `concretizer:unify:when_possible` — a single
+unified solve rejects a from-source fortran compiler and fails to concretize.
+Use the pinned spack from VT `SC2026_HOWTO.ault.md` (*Spack, one-time*); an
+unpinned clone may not carry `nvhpc@26.1`.
 
 **§4 configure — ault config script (sm_80).** Same `VT_DIR` symlink as daint,
 then:
