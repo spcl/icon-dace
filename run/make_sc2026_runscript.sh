@@ -12,6 +12,11 @@ SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
 BUILD_VERIF=${SCRIPT_DIR%/run}
 cd "$BUILD_VERIF"
 
+# make_runscripts reads the target from run/set-up.info. configure records
+# use_target='default', which emits no SLURM batch header at all; force the
+# daint_gpu target so the header (account, node/queue directives) is generated.
+sed -i "s/^use_target=.*/use_target='daint_gpu'/" run/set-up.info
+
 ./make_runscripts sc2026
 
 RUN="run/exp.sc2026.run"
@@ -23,10 +28,15 @@ sed -i \
   "$RUN"
 
 # --- uenv: the job must load it itself, since sbatch cannot be called from
-#     inside a uenv session (libslurm-uenv-mount rc=-3000) ---
+#     inside a uenv session (libslurm-uenv-mount rc=-3000). The daint_gpu
+#     target already emits the account line to anchor after. ---
 sed -i '/^#SBATCH --account=/ a\
 #SBATCH --uenv=icon/25.2:v1@santis\
 #SBATCH --view=default' "$RUN"
+
+# --- launcher: the daint_gpu target defaults to mpiexec, which is not on PATH
+#     under the uenv; use SLURM's srun. ---
+sed -i 's|^export START="mpiexec -n \$mpi_total_procs"$|export START="srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS"|' "$RUN"
 
 # --- ulimit -s unlimited right before ${START_MODEL} invocation ---
 sed -i '/^\${START_MODEL}/ i\

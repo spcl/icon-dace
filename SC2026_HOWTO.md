@@ -132,24 +132,19 @@ VT variants need `libvelocity_gpu_stage8_solve_nh_integration_release.<VT_PREC>.
 under `${VT_DIR}` (default `/capstor/scratch/cscs/pmazumde/sc2026-ad-test/icon-vt-dace`),
 so export `VT_DIR` here too unless your VT tree sits at that path.
 
-Submit from a shell that has `sqlite` and `zstd` on `LD_LIBRARY_PATH`:
+The VT build bakes its `sqlite`, `zlib` and `libzstd` directories into the
+`.so` as RUNPATH, so the job resolves them without `LD_LIBRARY_PATH`. Confirm
+with:
 
 ```bash
-spack load sqlite zstd
-export LD_LIBRARY_PATH="$(spack location -i sqlite)/lib:$(spack location -i zstd)/lib:$LD_LIBRARY_PATH"
-ldd "$VT_DIR"/libvelocity_gpu_stage8_solve_nh_integration_release.fp64.so | grep -c 'not found'   # must print 0
+ldd "$VT_DIR"/libvelocity_gpu_stage8_solve_nh_integration_release.fp64.so | grep -c 'not found'   # 0
 ```
 
-`sbatch_sc2026.sh` passes the VT `.so` to the job as `LD_PRELOAD` via
-`--export=ALL`, which also puts it in front of SLURM's task prolog. If the
-prolog's shell cannot resolve the `.so`'s own dependencies, it exits non-zero
-and the job dies within seconds with `TaskProlog failed status=127` — before
-ICON starts, and with nothing useful in the log. `spack load` alone does not
-populate `LD_LIBRARY_PATH` on this spack configuration, hence the explicit
-export. The `ldd` check above is the cheap way to confirm before submitting.
-
-Newer VT builds bake their dependency paths in as RUNPATH and resolve without
-this; the check costs nothing either way.
+A non-zero count means the `.so` was linked without the `vt-gpu` env active.
+`sbatch_sc2026.sh` passes it to the job as `LD_PRELOAD` via `--export=ALL`,
+which also puts it in front of SLURM's task prolog: an unresolvable dependency
+there kills the job within seconds with `TaskProlog failed status=127`, before
+ICON starts and with nothing useful in the log.
 
 ### 8.1–8.6 Variants (what sbatch_all_sc2026.sh dispatches)
 
