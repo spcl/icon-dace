@@ -168,6 +168,58 @@ All set `SERDE_GEN_END=51`, so `.data` dumps cover `physics_generation 0..50`.
 | `SERDE_GEN_START`         | `0`      | first `physics_generation` where `do_serialize` flips on |
 | `SERDE_GEN_END`           | `51`     | `physics_generation` where `do_serialize` flips off (0 = no dumps, pure timing) |
 
+## Running on ault (A100)
+
+The daint flow above assumes the `icon/25.2` uenv. ault (CSCS A100 node) has no
+uenv; the toolchain comes from a spack environment instead. Only the steps below
+differ — §1, §3, §9 are identical.
+
+**§2 prereqs — spack `icon-gpu` env (no uenv).** ICON needs the NVHPC Fortran
+compiler and a matching `netcdf-fortran`; build them once from the committed
+env spec (`icon-vt-dace/velocity/arch/cscs/ault/spack-icon.yaml`):
+
+```bash
+export SPACK_TREE=$SCRATCH/spack-tree
+source $SPACK_TREE/spack/share/spack/setup-env.sh
+spack env create icon-gpu $SCRATCH/icon-vt-dace/velocity/arch/cscs/ault/spack-icon.yaml
+spack -e icon-gpu install
+spack env activate icon-gpu     # puts mpif90/mpicc, netcdf, cmake on PATH
+```
+
+**§4 configure — ault config script (sm_80).** Same `VT_DIR` symlink as daint,
+then:
+
+```bash
+../../config/cscs/ault_ben_dace.gpu.a100.nvidia
+```
+
+This config passes `--disable-rpaths`, so `netcdf` and the NVHPC runtime are
+*not* baked into `bin/icon` — they must be on `LD_LIBRARY_PATH` at launch (§8).
+
+**§7 runscript — the ault maker.** `make_runscripts` has no ault machine target,
+so it falls back to the `default` (CPU) target: no SLURM header, cache-blocking
+`nproma`, multiple MPI ranks. `make_sc2026_runscript.ault.sh` rewrites those to
+the single-GPU values the daint_gpu target uses (`nproma=0`, `nblocks_c=1`, one
+rank, direct binary launch) and injects the ault SLURM header:
+
+```bash
+./run/make_sc2026_runscript.ault.sh
+```
+
+**§8 submit — three env exports.** ault has no uenv to provide the runtime, and
+the grid path is taken from `$grids_folder`. Export all three before submitting;
+`--export=ALL` carries them into the job:
+
+```bash
+export LD_LIBRARY_PATH=$SPACK_TREE/spack/var/spack/environments/icon-gpu/.spack-env/view/lib:$LD_LIBRARY_PATH
+export VT_DIR=$SCRATCH/icon-vt-dace/velocity        # holds the VT .so files
+export grids_folder=$SCRATCH/icon-grids             # holds icon_grid_<GRID>_G.nc
+
+./run/sbatch_all_sc2026.sh 0050_R02B03
+```
+
+The variants, knobs and outputs (§8.1–8.6, §9) are identical to daint.
+
 ## 9. Artifacts
 
 This HOWTO is a data-generation pipeline — analysis lives back in VT's
