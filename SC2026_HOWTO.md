@@ -212,6 +212,10 @@ spack -e icon-gpu install
 spack env activate icon-gpu     # puts mpif90/mpicc, netcdf, cmake on PATH
 ```
 
+`icon-gpu` builds `nvhpc@26.1`, so the spack clone must be the pinned one from
+VT `SC2026_HOWTO.ault.md` (*Spack, one-time*). An unpinned `HEAD` fails at
+concretize with `No version exists that satisfies nvhpc@26.1`.
+
 **§4 configure — ault config script (sm_80).** Same `VT_DIR` symlink as daint,
 then:
 
