@@ -167,6 +167,32 @@ All set `SERDE_GEN_END=51`, so `.data` dumps cover `physics_generation 0..50`.
 | `NDYN_SUBSTEPS_OVERRIDE`  | `0`      | 0 = leave namelist (5) alone; `N>0` = force `N` |
 | `SERDE_GEN_START`         | `0`      | first `physics_generation` where `do_serialize` flips on |
 | `SERDE_GEN_END`           | `51`     | `physics_generation` where `do_serialize` flips off (0 = no dumps, pure timing) |
+| `SERDE_GEN_LIST`          | (unset)  | explicit comma/space-separated generations to dump (max 64); overrides the window/stride gate — drives the logspaced long run below |
+
+### Long run for the SNR-evolution figure (Figure 6(a))
+
+Figure 6(a) is not the 50-generation window above: it is a single **long
+R02B04 run** with `vn` sampled at logspaced physics generations out to 25 000.
+Extend the run with `end_date` and gate the dumps with `SERDE_GEN_LIST`:
+
+```bash
+export end_date=2000-01-03T07:33:20Z          # 25000 x 8 s of model time
+export SERDE_GEN_START=0 SERDE_GEN_END=25001
+export SERDE_GEN_LIST=1,2,3,5,8,14,24,42,71,121,206,352,599,1021,1740,2965,5053,8610,14671,25000
+
+for SS in 5 10; do
+  for P in fp64 fp32 fp16; do
+    NDYN_SUBSTEPS_OVERRIDE=$SS USE_VT_GPU=1 \
+      ./run/sbatch_sc2026.sh 8 "$P" 0010_R02B04
+  done
+done
+```
+
+`end_date - start_date = 200000 s = 25000 × 8 s`, so the run reaches
+`physics_generation 25000`. The 20-point list is `round(10**(i/19 · log10 25000))`
+for `i = 0..19`. Comparison (VT `SC2026_HOWTO.daint.md §3`) writes `snr_25k.db`,
+which `plotbooks/snr_evolution.ipynb` reads (as `vt_snr_25k.db`) to render
+Figure 6(a). BF16 is omitted — this run predates it.
 
 ## Running on ault (A100)
 
