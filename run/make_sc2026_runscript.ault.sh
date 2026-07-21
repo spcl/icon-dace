@@ -2,15 +2,17 @@
 # ault (A100) counterpart of make_sc2026_runscript.sh.
 #
 # make_runscripts has no ault machine target (create_target_header ships
-# daint_* and balfrin_gpu only), so the runscript comes out for the "default"
-# target with no SLURM batch header at all. This injects an ault header
-# directly. Unlike daint there is no uenv, but the launcher is swapped to srun
-# to match the daint script.
+# daint_*, balfrin_gpu, lumi_*, etc. but nothing for ault), so the runscript
+# comes out for the "default" target: no SLURM header, CPU cache-blocking
+# (nproma=48, nblocks_c=0), and multiple MPI ranks. This rewrites those to the
+# single-GPU values the daint_gpu target uses (nproma=0, nblocks_c=1, one rank)
+# and injects an ault SLURM header.
 #
-# The launcher is srun, same as the daint script. The job inherits the
-# submitter's environment via sbatch --export=ALL, so submit from a shell that
-# has the nvhpc runtime, netcdf and the VT .so on LD_LIBRARY_PATH (see
-# SC2026_HOWTO.ault.md).
+# The grid directory is taken from $grids_folder at run time (it must hold
+# icon_grid_<id>_<ref>_G.nc); the same variable also drives the grid symlink.
+# The job inherits the submitter's environment via sbatch --export=ALL, so submit
+# from a shell that has the nvhpc runtime and netcdf on LD_LIBRARY_PATH and
+# grids_folder / VT_DIR set (see SC2026_HOWTO.ault.md).
 #
 # Usage:   ./run/make_sc2026_runscript.ault.sh     (from build/verification/)
 set -euo pipefail
@@ -31,14 +33,26 @@ sed -i "1a\\
 #SBATCH --nodelist=ault25\\
 #SBATCH --gres=gpu:a100:1\\
 #SBATCH --nodes=1\\
+#SBATCH --ntasks=1\\
 #SBATCH --time=04:00:00" "$RUN"
 
-# --- single node ---
-sed -i 's|^: \${no_of_nodes:=2}|: ${no_of_nodes:=1}|' "$RUN"
+# --- single MPI rank (default target sets 4) ---
+sed -i 's|mpi_procs_pernode:=[0-9]\+|mpi_procs_pernode:=1|' "$RUN"
+sed -i 's|^: \${no_of_nodes:=[0-9]\+}|: ${no_of_nodes:=1}|' "$RUN"
 
-# --- launcher: default target records the nvhpc mpiexec in START; swap to srun
-#     to match the daint script. ---
-sed -i 's|^export START=.*mpiexec.*|export START="srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS"|' "$RUN"
+# --- GPU blocking: whole cell dimension in one block, as the daint_gpu target
+#     does. The VT no_nproma library requires nblk_c == 1. ---
+sed -i 's|^nproma=[0-9]\+|nproma=0|'       "$RUN"
+sed -i 's|^nproma_sub=[0-9]\+|nproma_sub=800|' "$RUN"
+sed -i 's|^nblocks_c=[0-9]\+|nblocks_c=1|' "$RUN"
+
+# --- launcher: single-rank GPU job runs the binary directly (OpenMPI singleton
+#     init); no srun/mpiexec needed. ---
+sed -i 's|^export START=.*|export START=""|' "$RUN"
+
+# --- grid directory: the experiment template hardcodes an absolute path; take
+#     it from $grids_folder instead (same variable used for the grid symlink). ---
+sed -i 's|^atmo_grid_folder=.*|atmo_grid_folder=${grids_folder:?set grids_folder to the directory holding icon_grid_<id>_<ref>_G.nc}|' "$RUN"
 
 # --- ulimit -s unlimited right before ${START_MODEL} invocation ---
 sed -i '/^\${START_MODEL}/ i\
