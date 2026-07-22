@@ -209,7 +209,7 @@ export SPACK_TREE=$SCRATCH/spack-tree
 source $SPACK_TREE/spack/share/spack/setup-env.sh
 spack env create icon-gpu $SCRATCH/icon-vt-dace/velocity/arch/cscs/ault/spack-icon.yaml
 spack -e icon-gpu install
-spack env activate icon-gpu     # puts mpif90/mpicc, netcdf, cmake on PATH
+spack env activate icon-gpu
 ```
 
 `icon-gpu` builds `nvhpc@26.1` then reuses it as the fortran compiler for
@@ -218,10 +218,13 @@ unified solve rejects a from-source fortran compiler and fails to concretize.
 Use the pinned spack from VT `SC2026_HOWTO.ault.md` (*Spack, one-time*); an
 unpinned clone may not carry `nvhpc@26.1`.
 
-**§4 configure — ault config script (sm_80).** Same `VT_DIR` symlink as daint,
-then:
+**§4 configure — ault config script (sm_80).** Same `libvelocity.so` symlink as
+daint. Source the build-env helper (it puts the `icon-gpu` env's NVHPC/netCDF
+toolchain and the VT library on the build paths — the env has no view), then
+configure and build in the same shell:
 
 ```bash
+source ../../config/cscs/ault-icon-build-env.sh
 ../../config/cscs/ault_ben_dace.gpu.a100.nvidia
 ```
 
@@ -238,14 +241,15 @@ rank, direct binary launch) and injects the ault SLURM header:
 ./run/make_sc2026_runscript.ault.sh
 ```
 
-**§8 submit — three env exports.** ault has no uenv to provide the runtime, and
-the grid path is taken from `$grids_folder`. Export all three before submitting;
-`--export=ALL` carries them into the job:
+**§8 submit.** ault has no uenv to provide the runtime libraries, and the grid
+path is taken from `$grids_folder`. Set the VT and grid dirs and source the
+build-env helper (it sets `LD_LIBRARY_PATH`); `--export=ALL` carries them into
+the job:
 
 ```bash
-export LD_LIBRARY_PATH=$SPACK_TREE/spack/var/spack/environments/icon-gpu/.spack-env/view/lib:$LD_LIBRARY_PATH
 export VT_DIR=$SCRATCH/icon-vt-dace/velocity        # holds the VT .so files
 export grids_folder=$SCRATCH/icon-grids             # holds icon_grid_<GRID>_G.nc
+source ../../config/cscs/ault-icon-build-env.sh
 
 ./run/sbatch_all_sc2026.sh 0050_R02B03
 ```
