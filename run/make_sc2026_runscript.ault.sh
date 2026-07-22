@@ -46,9 +46,13 @@ sed -i 's|^nproma=[0-9]\+|nproma=0|'       "$RUN"
 sed -i 's|^nproma_sub=[0-9]\+|nproma_sub=800|' "$RUN"
 sed -i 's|^nblocks_c=[0-9]\+|nblocks_c=1|' "$RUN"
 
-# --- launcher: single-rank GPU job runs the binary directly (OpenMPI singleton
-#     init); no srun/mpiexec needed. ---
-sed -i 's|^export START=.*|export START=""|' "$RUN"
+# --- launcher: the binary is MPI-enabled, so it needs an mpirun launcher even
+#     for one rank; a direct exec hangs in MPI_Init (no PMIx bootstrap). ---
+sed -i 's|^export START=.*|export START="mpirun -n 1"|' "$RUN"
+
+# --- helper include: the template sources add_required_* relative to ${thisdir},
+#     but that helper lives in run/; point the include there. ---
+sed -i 's|\${thisdir}/add_required_atmo_non-hydrostatic_files|${thisdir}/run/add_required_atmo_non-hydrostatic_files|' "$RUN"
 
 # --- grid directory: the experiment template hardcodes an absolute path; take
 #     it from $grids_folder instead (same variable used for the grid symlink). ---
