@@ -136,6 +136,7 @@ void c_generate_index_list_gpu_generic_device(
     }
 
     ZeroCmp<T> select(startid, dev_conditions);
+    cudaMemsetAsync(dev_nvalid, 0, sizeof(int), stream);  // CUB skips writing the count when n==0; keep it defined
     cub::DeviceSelect::If(
             storage->getScratchPtr(), storageRequirement,
             iterator, dev_indices,
